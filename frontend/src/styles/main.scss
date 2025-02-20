@@ -1,3 +1,20 @@
 // Base
 @use "base/variables";
 @use "base/reset";
+
+//======SCROLLBAR=====//
+*::-webkit-scrollbar {
+  width: 7px;
+  height: 10px;
+}
+
+*::-webkit-scrollbar-thumb {
+  background: variables.$primary-color;
+  border-radius: 5px;
+}
+
+*::-webkit-scrollbar-track {
+  background-color: #ddd;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+}

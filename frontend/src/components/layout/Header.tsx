@@ -36,6 +36,11 @@ import {
   Article,
   Person,
   ExitToApp,
+  School as SchoolIcon,
+  Person as PersonIcon,
+  Forum as ForumIcon,
+  Article as ArticleIcon,
+  LocalLibrary as CourseIcon,
 } from "@mui/icons-material";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -306,6 +311,7 @@ const Header = () => {
             >
               <Button
                 color="inherit"
+                startIcon={<CourseIcon />}
                 endIcon={<KeyboardArrowDown />}
                 onClick={handleCoursesClick}
                 sx={{
@@ -363,6 +369,7 @@ const Header = () => {
 
               <Button
                 color="inherit"
+                startIcon={<PersonIcon />}
                 sx={{
                   color: "white",
                   fontWeight: 500,
@@ -375,6 +382,7 @@ const Header = () => {
 
               <Button
                 color="inherit"
+                startIcon={<ForumIcon />}
                 sx={{
                   color: "white",
                   fontWeight: 500,
@@ -387,6 +395,7 @@ const Header = () => {
 
               <Button
                 color="inherit"
+                startIcon={<ArticleIcon />}
                 sx={{
                   color: "white",
                   fontWeight: 500,
@@ -395,6 +404,15 @@ const Header = () => {
                 onClick={() => navigate("/blog")}
               >
                 Blog
+              </Button>
+
+              <Button
+                color="inherit"
+                startIcon={<SchoolIcon />}
+                onClick={() => navigate("/enrolled-courses")}
+                sx={{ ml: 2 }}
+              >
+                Khóa học của tôi
               </Button>
             </Box>
           </Box>
@@ -415,18 +433,38 @@ const Header = () => {
               sx={{
                 display: { xs: "none", lg: "flex" },
                 alignItems: "center",
-                bgcolor: "rgba(255, 255, 255, 0.1)",
-                borderRadius: 1,
+                bgcolor: "rgba(255, 255, 255, 0.15)",
+                borderRadius: "20px",
                 px: 2,
                 mr: 2,
-                width: 300,
+                width: 250,
+                height: "40px",
                 cursor: "pointer",
-                "&:hover": { bgcolor: "rgba(255, 255, 255, 0.2)" },
+                border: "1px solid rgba(255, 255, 255, 0.2)",
+                transition: "all 0.3s ease",
+                "&:hover": {
+                  bgcolor: "rgba(255, 255, 255, 0.25)",
+                  border: "1px solid rgba(255, 255, 255, 0.3)",
+                  boxShadow: "0 0 10px rgba(255, 255, 255, 0.1)",
+                },
               }}
               onClick={handleSearchOpen}
             >
-              <Search sx={{ color: "white", mr: 1 }} />
-              <Typography color="white" sx={{ opacity: 0.7 }}>
+              <Search
+                sx={{
+                  color: "white",
+                  mr: 1,
+                  fontSize: "20px",
+                }}
+              />
+              <Typography
+                color="white"
+                sx={{
+                  opacity: 0.9,
+                  fontSize: "0.95rem",
+                  fontWeight: 500,
+                }}
+              >
                 Tìm kiếm...
               </Typography>
             </Box>
