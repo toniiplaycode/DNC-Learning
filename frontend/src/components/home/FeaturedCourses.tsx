@@ -17,6 +17,8 @@ const mockCourses = [
     price: 499000,
     image: "/src/assets/logo.png",
     isBestseller: true,
+    isEnrolled: true,
+    progress: 65,
   },
   {
     id: 2,
@@ -32,6 +34,8 @@ const mockCourses = [
     price: 699000,
     image: "/src/assets/logo.png",
     isBestseller: true,
+    isEnrolled: false,
+    progress: 0,
   },
   {
     id: 2,
@@ -47,6 +51,8 @@ const mockCourses = [
     price: 699000,
     image: "/src/assets/logo.png",
     isBestseller: true,
+    isEnrolled: false,
+    progress: 0,
   },
   {
     id: 2,
@@ -62,6 +68,8 @@ const mockCourses = [
     price: 699000,
     image: "/src/assets/logo.png",
     isBestseller: true,
+    isEnrolled: false,
+    progress: 0,
   },
   {
     id: 2,
@@ -77,6 +85,8 @@ const mockCourses = [
     price: 699000,
     image: "/src/assets/logo.png",
     isBestseller: true,
+    isEnrolled: false,
+    progress: 0,
   },
 ];
 

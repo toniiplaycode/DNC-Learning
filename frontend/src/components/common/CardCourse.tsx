@@ -7,6 +7,8 @@ import {
   Box,
   Avatar,
   Stack,
+  Button,
+  LinearProgress,
 } from "@mui/material";
 import { AccessTime, PlayCircle } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
@@ -24,6 +26,8 @@ interface CardCourseProps {
   totalLessons: number;
   price: number;
   image: string;
+  progress?: number;
+  isEnrolled?: boolean;
 }
 
 const CardCourse: React.FC<CardCourseProps> = ({
@@ -36,6 +40,8 @@ const CardCourse: React.FC<CardCourseProps> = ({
   totalLessons,
   price,
   image,
+  progress = 0,
+  isEnrolled = false,
 }) => {
   const navigate = useNavigate();
 
@@ -100,50 +106,87 @@ const CardCourse: React.FC<CardCourseProps> = ({
           </Typography>
         </Box>
 
-        <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-          <Typography
-            variant="body2"
-            color="warning.main"
-            fontWeight="bold"
-            sx={{ mr: 1 }}
-          >
-            {rating}
-          </Typography>
-          <Box
-            component="span"
-            sx={{
-              display: "flex",
-              color: "warning.main",
-              fontSize: "1rem",
-            }}
-          >
-            {"★".repeat(Math.floor(rating))}
-            {"☆".repeat(5 - Math.floor(rating))}
-          </Box>
-          <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-            ({totalRatings})
-          </Typography>
-        </Box>
+        {!isEnrolled ? (
+          <>
+            <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+              <Typography
+                variant="body2"
+                color="warning.main"
+                fontWeight="bold"
+                sx={{ mr: 1 }}
+              >
+                {rating}
+              </Typography>
+              <Box
+                component="span"
+                sx={{
+                  display: "flex",
+                  color: "warning.main",
+                  fontSize: "1rem",
+                }}
+              >
+                {"★".repeat(Math.floor(rating))}
+                {"☆".repeat(5 - Math.floor(rating))}
+              </Box>
+              <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
+                ({totalRatings})
+              </Typography>
+            </Box>
 
-        <Stack
-          direction="row"
-          spacing={1}
-          alignItems="center"
-          sx={{ mb: 1, color: "text.secondary" }}
-        >
-          <AccessTime sx={{ fontSize: "1rem" }} />
-          <Typography variant="body2">{duration}</Typography>
-          <PlayCircle sx={{ fontSize: "1rem", ml: 1 }} />
-          <Typography variant="body2">{totalLessons} bài học</Typography>
-        </Stack>
+            <Stack
+              direction="row"
+              spacing={1}
+              alignItems="center"
+              sx={{ mb: 1, color: "text.secondary" }}
+            >
+              <AccessTime sx={{ fontSize: "1rem" }} />
+              <Typography variant="body2">{duration}</Typography>
+              <PlayCircle sx={{ fontSize: "1rem", ml: 1 }} />
+              <Typography variant="body2">{totalLessons} bài học</Typography>
+            </Stack>
 
-        <Typography
-          variant="h6"
-          color="primary"
-          sx={{ mt: "auto", fontWeight: "bold" }}
-        >
-          {formatPrice(price)}
-        </Typography>
+            <Typography
+              variant="h6"
+              color="primary"
+              sx={{ mt: "auto", fontWeight: "bold" }}
+            >
+              {formatPrice(price)}
+            </Typography>
+          </>
+        ) : (
+          <>
+            <Box sx={{ width: "100%", mb: 2 }}>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                <Box sx={{ flexGrow: 1, mr: 1 }}>
+                  <LinearProgress
+                    variant="determinate"
+                    value={progress}
+                    sx={{ height: 6, borderRadius: 1 }}
+                  />
+                </Box>
+                <Typography variant="body2" color="text.secondary">
+                  {progress}%
+                </Typography>
+              </Box>
+              <Typography variant="body2" color="text.secondary">
+                {Math.round((progress / 100) * totalLessons)} / {totalLessons}{" "}
+                bài học
+              </Typography>
+            </Box>
+
+            <Button
+              variant="contained"
+              fullWidth
+              sx={{ mt: "auto" }}
+              onClick={(e) => {
+                e.stopPropagation();
+                navigate(`/course/${id}/learn`);
+              }}
+            >
+              Tiếp tục học
+            </Button>
+          </>
+        )}
       </CardContent>
     </Card>
   );

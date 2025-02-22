@@ -1,67 +1,61 @@
 import React from "react";
-import {
-  Box,
-  Typography,
-  Grid,
-  Card,
-  CardContent,
-  CardMedia,
-  Button,
-  LinearProgress,
-} from "@mui/material";
-import { useNavigate } from "react-router-dom";
+import { Box, Typography, Grid } from "@mui/material";
 import CustomContainer from "../components/common/CustomContainer";
-
-interface EnrolledCourse {
-  id: number;
-  title: string;
-  thumbnailUrl: string;
-  progress: number;
-  instructorName: string;
-}
+import CardCourse from "../components/common/CardCourse";
 
 // Mock data - sau này sẽ được thay thế bằng dữ liệu thật từ API
-const mockEnrolledCourses: EnrolledCourse[] = [
+const mockEnrolledCourses = [
   {
     id: 1,
     title: "Khóa học React Cơ bản",
-    thumbnailUrl: "https://example.com/react.jpg",
+    instructor: {
+      name: "Nguyễn Văn A",
+      avatar: "/path/to/avatar1.jpg",
+    },
+    rating: 4.8,
+    totalRatings: 2341,
+    duration: "20 giờ",
+    totalLessons: 32,
+    price: 499000,
+    image: "/src/assets/logo.png",
     progress: 65,
-    instructorName: "Nguyễn Văn A",
+    isEnrolled: true,
   },
   {
     id: 2,
     title: "Lập trình TypeScript",
-    thumbnailUrl: "https://example.com/typescript.jpg",
+    instructor: {
+      name: "Trần Thị B",
+      avatar: "/path/to/avatar2.jpg",
+    },
+    rating: 4.9,
+    totalRatings: 1892,
+    duration: "25 giờ",
+    totalLessons: 40,
+    price: 699000,
+    image: "/src/assets/logo.png",
     progress: 30,
-    instructorName: "Trần Thị B",
+    isEnrolled: true,
   },
   {
-    id: 2,
-    title: "Lập trình TypeScript",
-    thumbnailUrl: "https://example.com/typescript.jpg",
-    progress: 30,
-    instructorName: "Trần Thị B",
-  },
-  {
-    id: 2,
-    title: "Lập trình TypeScript",
-    thumbnailUrl: "https://example.com/typescript.jpg",
-    progress: 30,
-    instructorName: "Trần Thị B",
-  },
-  {
-    id: 2,
-    title: "Lập trình TypeScript",
-    thumbnailUrl: "https://example.com/typescript.jpg",
-    progress: 30,
-    instructorName: "Trần Thị B",
+    id: 3,
+    title: "Machine Learning cơ bản đến nâng cao",
+    instructor: {
+      name: "Sarah Johnson",
+      avatar: "/path/to/avatar3.jpg",
+    },
+    rating: 4.7,
+    totalRatings: 1234,
+    duration: "30 giờ",
+    totalLessons: 45,
+    price: 899000,
+    image: "/src/assets/logo.png",
+    progress: 15,
+    isEnrolled: true,
   },
 ];
 
 const EnrolledCourses: React.FC = () => {
-  const navigate = useNavigate();
-
   return (
     <CustomContainer>
       <Box sx={{ py: 4 }}>
@@ -79,69 +73,7 @@ const EnrolledCourses: React.FC = () => {
               lg={3} // 4 cột trên desktop (>=1200px)
               key={course.id}
             >
-              <Card
-                sx={{
-                  height: "100%",
-                  display: "flex",
-                  flexDirection: "column",
-                }}
-              >
-                <CardMedia
-                  component="img"
-                  height="140"
-                  image={course.thumbnailUrl}
-                  alt={course.title}
-                  sx={{ objectFit: "cover" }}
-                />
-                <CardContent
-                  sx={{ flexGrow: 1, display: "flex", flexDirection: "column" }}
-                >
-                  <Typography
-                    gutterBottom
-                    variant="h6"
-                    component="div"
-                    sx={{
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
-                      display: "-webkit-box",
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: "vertical",
-                      minHeight: "3.6em",
-                    }}
-                  >
-                    {course.title}
-                  </Typography>
-                  <Typography
-                    variant="body2"
-                    color="text.secondary"
-                    sx={{ mb: 1 }}
-                  >
-                    Giảng viên: {course.instructorName}
-                  </Typography>
-                  <Box sx={{ mt: "auto" }}>
-                    <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                      <Box sx={{ width: "100%", mr: 1 }}>
-                        <LinearProgress
-                          variant="determinate"
-                          value={course.progress}
-                        />
-                      </Box>
-                      <Box sx={{ minWidth: 35 }}>
-                        <Typography variant="body2" color="text.secondary">
-                          {course.progress}%
-                        </Typography>
-                      </Box>
-                    </Box>
-                    <Button
-                      variant="contained"
-                      fullWidth
-                      onClick={() => navigate(`/course/${course.id}`)}
-                    >
-                      Tiếp tục học
-                    </Button>
-                  </Box>
-                </CardContent>
-              </Card>
+              <CardCourse {...course} />
             </Grid>
           ))}
         </Grid>
