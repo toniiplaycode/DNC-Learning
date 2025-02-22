@@ -225,7 +225,7 @@ const CourseDetail: React.FC = () => {
 
   return (
     <CustomContainer>
-      <Grid container spacing={4} mt={2}>
+      <Grid container spacing={4}>
         {/* Left Column */}
         <Grid item xs={12} md={8}>
           <Typography variant="h4" fontWeight="bold" gutterBottom>

@@ -113,6 +113,7 @@ const Header = () => {
 
   const handleProfileClick = (event: React.MouseEvent<HTMLElement>) => {
     setProfileAnchor(event.currentTarget);
+    navigate("/profile");
   };
 
   const handleNotificationsClick = (event: React.MouseEvent<HTMLElement>) => {

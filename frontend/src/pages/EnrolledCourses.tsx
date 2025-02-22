@@ -58,7 +58,7 @@ const mockEnrolledCourses = [
 const EnrolledCourses: React.FC = () => {
   return (
     <CustomContainer>
-      <Box sx={{ py: 4 }}>
+      <Box>
         <Typography variant="h4" fontWeight="bold" py={2}>
           Khóa học của tôi
         </Typography>
