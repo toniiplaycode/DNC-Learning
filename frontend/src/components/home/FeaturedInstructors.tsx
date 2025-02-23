@@ -10,6 +10,7 @@ import {
   Button,
   Chip,
 } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 interface Instructor {
   id: number;
@@ -66,13 +67,17 @@ const instructors: Instructor[] = [
 ];
 
 const FeaturedInstructors = () => {
+  const navigate = useNavigate();
+
   return (
     <Box sx={{ mb: 8 }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
         <Typography variant="h4" fontWeight="bold">
           Giảng viên tiêu biểu
         </Typography>
-        <Button variant="outlined">Xem tất cả</Button>
+        <Button variant="outlined" onClick={() => navigate("/instructors")}>
+          Xem tất cả
+        </Button>
       </Box>
 
       <Grid container spacing={3}>

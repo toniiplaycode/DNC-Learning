@@ -2,7 +2,7 @@ import { Container, Typography, Grid, Button, Box, Stack } from "@mui/material";
 
 import FeaturedCourses from "../components/home/FeaturedCourses";
 import FeaturedInstructors from "../components/home/FeaturedInstructors";
-import ForumDiscussions from "../components/home/ForumDiscussions";
+import FeaturedForumDiscussions from "../components/home/FeaturedForumDiscussions";
 import FeaturedPosts from "../components/home/FeaturedPosts";
 
 const HomePage = () => {
@@ -88,7 +88,7 @@ const HomePage = () => {
       <Container sx={{ py: 8 }}>
         <FeaturedCourses />
         <FeaturedInstructors />
-        <ForumDiscussions />
+        <FeaturedForumDiscussions />
         <FeaturedPosts />
       </Container>
     </>

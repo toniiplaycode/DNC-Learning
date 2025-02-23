@@ -1,6 +1,7 @@
 import React from "react";
-import { Box, Typography, Grid } from "@mui/material";
+import { Box, Typography, Grid, Button } from "@mui/material";
 import CardCourse from "../common/CardCourse";
+import { useNavigate } from "react-router-dom";
 
 const mockCourses = [
   {
@@ -91,12 +92,19 @@ const mockCourses = [
 ];
 
 const FeaturedCourses: React.FC = () => {
+  const navigate = useNavigate();
+
   return (
     <Box component="section" sx={{ pb: 6 }}>
       <>
-        <Typography variant="h4" fontWeight="bold" gutterBottom>
-          Khóa học nổi bật
-        </Typography>
+        <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
+          <Typography variant="h4" fontWeight="bold">
+            Giảng viên tiêu biểu
+          </Typography>
+          <Button variant="outlined" onClick={() => navigate("/courses")}>
+            Xem tất cả
+          </Button>
+        </Box>
         <Grid container spacing={3}>
           {mockCourses.map((course) => (
             <Grid item xs={12} sm={6} md={4} lg={3} key={course.id}>

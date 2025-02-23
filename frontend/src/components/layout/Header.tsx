@@ -106,6 +106,7 @@ const Header = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [isLogin, setIsLogin] = useState(true);
 
   const handleCoursesClick = (event: React.MouseEvent<HTMLElement>) => {
     setCoursesAnchor(event.currentTarget);
@@ -480,40 +481,74 @@ const Header = () => {
             </IconButton>
 
             {/* Notifications */}
-            <IconButton color="inherit">
-              <Badge badgeContent={3} color="error">
-                <Notifications />
-              </Badge>
-            </IconButton>
+            {isLogin && (
+              <IconButton color="inherit">
+                <Badge badgeContent={3} color="error">
+                  <Notifications />
+                </Badge>
+              </IconButton>
+            )}
 
             {/* Desktop Profile */}
-            <Box
-              sx={{
-                display: { xs: "none", lg: "flex" },
-                alignItems: "center",
-                ml: 1,
-              }}
-            >
-              <Button
-                onClick={handleProfileClick}
+            {isLogin ? (
+              <Box
                 sx={{
-                  color: "white",
-                  textTransform: "none",
-                  gap: 1,
+                  display: { xs: "none", lg: "flex" },
+                  alignItems: "center",
+                  ml: 1,
                 }}
               >
-                <Avatar
-                  sx={{ width: 32, height: 32 }}
-                  src="/src/assets/avatar.png"
-                />
-                <Box sx={{ textAlign: "left" }}>
-                  <Typography variant="subtitle2">Nguyễn Văn A</Typography>
-                  <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                    Học viên
-                  </Typography>
-                </Box>
-              </Button>
-            </Box>
+                <Button
+                  onClick={handleProfileClick}
+                  sx={{
+                    color: "white",
+                    textTransform: "none",
+                    gap: 1,
+                  }}
+                >
+                  <Avatar
+                    sx={{ width: 32, height: 32 }}
+                    src="/src/assets/avatar.png"
+                  />
+                  <Box sx={{ textAlign: "left" }}>
+                    <Typography variant="subtitle2">Nguyễn Văn A</Typography>
+                    <Typography variant="caption" sx={{ opacity: 0.7 }}>
+                      Học viên
+                    </Typography>
+                  </Box>
+                </Button>
+              </Box>
+            ) : (
+              /* Login/Register Buttons */
+              <Box sx={{ display: "flex", gap: 1 }}>
+                <Button
+                  variant="outlined"
+                  onClick={() => navigate("/login")}
+                  sx={{
+                    color: "white",
+                    borderColor: "rgba(255, 255, 255, 0.3)",
+                    "&:hover": {
+                      borderColor: "rgba(255, 255, 255, 0.6)",
+                    },
+                  }}
+                >
+                  Đăng nhập
+                </Button>
+                <Button
+                  variant="contained"
+                  onClick={() => navigate("/register")}
+                  sx={{
+                    bgcolor: "white",
+                    color: "primary.main",
+                    "&:hover": {
+                      bgcolor: "rgba(255, 255, 255, 0.9)",
+                    },
+                  }}
+                >
+                  Đăng ký
+                </Button>
+              </Box>
+            )}
           </Box>
         </Toolbar>
       </Container>
