@@ -9,6 +9,7 @@ import {
   Stack,
   Button,
   LinearProgress,
+  Chip,
 } from "@mui/material";
 import { AccessTime, PlayCircle } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
@@ -28,6 +29,7 @@ interface CardCourseProps {
   image: string;
   progress?: number;
   isEnrolled?: boolean;
+  category: string;
 }
 
 const CardCourse: React.FC<CardCourseProps> = ({
@@ -42,6 +44,7 @@ const CardCourse: React.FC<CardCourseProps> = ({
   image,
   progress = 0,
   isEnrolled = false,
+  category,
 }) => {
   const navigate = useNavigate();
 
@@ -63,7 +66,7 @@ const CardCourse: React.FC<CardCourseProps> = ({
           boxShadow: 6,
         },
       }}
-      onClick={() => navigate(`/course/${id}`)}
+      onClick={() => navigate(`/course-detail/${id}`)}
     >
       <Box sx={{ position: "relative" }}>
         <CardMedia
@@ -72,6 +75,17 @@ const CardCourse: React.FC<CardCourseProps> = ({
           image={image}
           alt={title}
           sx={{ objectFit: "cover" }}
+        />
+        <Chip
+          label={category}
+          size="small"
+          sx={{
+            position: "absolute",
+            top: 8,
+            left: 8,
+            bgcolor: "rgba(255, 255, 255, 0.9)",
+            fontWeight: 500,
+          }}
         />
       </Box>
 

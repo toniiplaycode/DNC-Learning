@@ -20,6 +20,7 @@ const mockCourses = [
     isBestseller: true,
     isEnrolled: true,
     progress: 65,
+    category: "Công nghệ thông tin",
   },
   {
     id: 2,
@@ -37,6 +38,7 @@ const mockCourses = [
     isBestseller: true,
     isEnrolled: false,
     progress: 0,
+    category: "Công nghệ thông tin",
   },
   {
     id: 2,
@@ -54,6 +56,7 @@ const mockCourses = [
     isBestseller: true,
     isEnrolled: false,
     progress: 0,
+    category: "Công nghệ thông tin",
   },
   {
     id: 2,
@@ -71,6 +74,7 @@ const mockCourses = [
     isBestseller: true,
     isEnrolled: false,
     progress: 0,
+    category: "Công nghệ thông tin",
   },
   {
     id: 2,
@@ -88,6 +92,7 @@ const mockCourses = [
     isBestseller: true,
     isEnrolled: false,
     progress: 0,
+    category: "Công nghệ thông tin",
   },
 ];
 
@@ -99,7 +104,7 @@ const FeaturedCourses: React.FC = () => {
       <>
         <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
           <Typography variant="h4" fontWeight="bold">
-            Giảng viên tiêu biểu
+            Khóa học tiêu biểu
           </Typography>
           <Button variant="outlined" onClick={() => navigate("/courses")}>
             Xem tất cả

@@ -48,6 +48,7 @@ import {
 } from "@mui/icons-material";
 import CustomContainer from "../components/common/CustomContainer";
 import CertificateDetail from "../components/profile/CertificateDetail";
+import AvatarUpload from "../components/common/AvatarUpload";
 
 // Cập nhật mock data theo cấu trúc CSDL
 const mockUserData = {
@@ -308,6 +309,12 @@ const ProfileAccount: React.FC = () => {
       newPassword: "",
       confirmPassword: "",
     });
+  };
+
+  const handleAvatarChange = (file: File) => {
+    // Xử lý upload avatar
+    console.log("Upload avatar:", file);
+    // Sau này sẽ gọi API để upload file và cập nhật avatar_url
   };
 
   const EditProfileModal = () => (
@@ -601,9 +608,9 @@ const ProfileAccount: React.FC = () => {
                     mb: 2,
                   }}
                 >
-                  <Avatar
-                    src={mockUserData.avatar_url}
-                    sx={{ width: 120, height: 120, mb: 2 }}
+                  <AvatarUpload
+                    currentAvatar={mockUserData.avatar_url}
+                    onAvatarChange={handleAvatarChange}
                   />
                   <Typography variant="h5" gutterBottom>
                     {mockUserData.studentInfo.full_name}

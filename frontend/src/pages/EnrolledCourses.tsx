@@ -20,6 +20,7 @@ const mockEnrolledCourses = [
     image: "/src/assets/logo.png",
     progress: 65,
     isEnrolled: true,
+    category: "Công nghệ thông tin",
   },
   {
     id: 2,
@@ -36,6 +37,7 @@ const mockEnrolledCourses = [
     image: "/src/assets/logo.png",
     progress: 30,
     isEnrolled: true,
+    category: "Công nghệ thông tin",
   },
   {
     id: 3,
@@ -52,6 +54,7 @@ const mockEnrolledCourses = [
     image: "/src/assets/logo.png",
     progress: 15,
     isEnrolled: true,
+    category: "Công nghệ thông tin",
   },
 ];
 

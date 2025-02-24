@@ -21,6 +21,7 @@ import {
   Share,
 } from "@mui/icons-material";
 import { useParams } from "react-router-dom";
+import ScrollOnTop from "../../components/common/ScrollOnTop";
 
 interface Reply {
   id: number;
@@ -116,6 +117,7 @@ const ForumDiscussionDetail = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      <ScrollOnTop />
       {/* Main Discussion */}
       <Card sx={{ mb: 3 }}>
         <CardContent>

@@ -227,14 +227,6 @@ const Header = () => {
             <ListItemText primary="Diễn đàn" />
           </ListItemButton>
         </ListItem>
-        <ListItem disablePadding>
-          <ListItemButton onClick={() => navigate("/blog")}>
-            <ListItemIcon>
-              <Article />
-            </ListItemIcon>
-            <ListItemText primary="Blog" />
-          </ListItemButton>
-        </ListItem>
       </List>
       <Divider />
 
@@ -394,25 +386,10 @@ const Header = () => {
               >
                 Diễn đàn
               </Button>
-
-              <Button
-                color="inherit"
-                startIcon={<ArticleIcon />}
-                sx={{
-                  color: "white",
-                  fontWeight: 500,
-                  "&:hover": { bgcolor: "rgba(255, 255, 255, 0.1)" },
-                }}
-                onClick={() => navigate("/blog")}
-              >
-                Blog
-              </Button>
-
               <Button
                 color="inherit"
                 startIcon={<SchoolIcon />}
                 onClick={() => navigate("/enrolled-courses")}
-                sx={{ ml: 2 }}
               >
                 Khóa học của tôi
               </Button>

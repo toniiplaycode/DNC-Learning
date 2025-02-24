@@ -48,6 +48,7 @@ interface CourseData {
   title: string;
   description: string;
   thumbnail: string;
+  category: string;
   instructor: {
     name: string;
     avatar: string;
@@ -78,6 +79,7 @@ const mockCourseData = {
   description:
     "Học cách xây dựng ứng dụng web hiện đại với React và TypeScript. Khóa học này sẽ giúp bạn nắm vững các khái niệm cơ bản và nâng cao.",
   thumbnail: "/src/assets/courses/react-ts.jpg",
+  category: "Frontend Development",
   instructor: {
     name: "Nguyễn Văn A",
     avatar: "/src/assets/instructors/avatar.jpg",
@@ -231,6 +233,19 @@ const CourseDetail: React.FC = () => {
           <Typography variant="h4" fontWeight="bold" gutterBottom>
             {mockCourseData.title}
           </Typography>
+
+          <Box sx={{ mb: 2 }}>
+            <Chip
+              label={mockCourseData.category}
+              color="primary"
+              variant="outlined"
+              size="small"
+              sx={{ mr: 1 }}
+            />
+            <Typography variant="body2" color="text.secondary" component="span">
+              Cập nhật lần cuối: {mockCourseData.lastUpdated}
+            </Typography>
+          </Box>
 
           <Typography color="text.secondary" paragraph>
             {mockCourseData.description}

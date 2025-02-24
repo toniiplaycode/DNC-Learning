@@ -3,7 +3,6 @@ import { Container, Typography, Grid, Button, Box, Stack } from "@mui/material";
 import FeaturedCourses from "../components/home/FeaturedCourses";
 import FeaturedInstructors from "../components/home/FeaturedInstructors";
 import FeaturedForumDiscussions from "../components/home/FeaturedForumDiscussions";
-import FeaturedPosts from "../components/home/FeaturedPosts";
 
 const HomePage = () => {
   return (
@@ -89,7 +88,6 @@ const HomePage = () => {
         <FeaturedCourses />
         <FeaturedInstructors />
         <FeaturedForumDiscussions />
-        <FeaturedPosts />
       </Container>
     </>
   );
