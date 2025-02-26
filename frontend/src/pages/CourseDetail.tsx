@@ -16,6 +16,8 @@ import {
   Stack,
   CardMedia,
   LinearProgress,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import {
   PlayCircleOutline,
@@ -27,19 +29,43 @@ import {
   CheckCircle,
   KeyboardArrowDown,
   KeyboardArrowUp,
+  PictureAsPdf,
+  Slideshow,
+  Code,
+  Link,
+  LibraryBooks,
 } from "@mui/icons-material";
 import { useParams } from "react-router-dom";
 import CustomContainer from "../components/common/CustomContainer";
 
+interface Lesson {
+  id: number;
+  title: string;
+  duration: string;
+  type: "video" | "assignment" | "quiz";
+  isLocked: boolean;
+}
+
 interface Section {
   id: number;
   title: string;
-  lessons: {
+  lessons: Lesson[];
+  practice: {
     id: number;
     title: string;
+    description: string;
     duration: string;
-    type: "video" | "assignment" | "quiz";
+    points: number;
     isLocked: boolean;
+  };
+  materials: {
+    id: number;
+    title: string;
+    type: "pdf" | "slide" | "code" | "link";
+    url: string;
+    size?: string;
+    isLocked: boolean;
+    section: string;
   }[];
 }
 
@@ -71,6 +97,15 @@ interface CourseData {
   whatYouWillLearn: string[];
   requirements: string[];
   certificates: string[];
+  materials: {
+    id: number;
+    title: string;
+    type: "pdf" | "slide" | "code" | "link";
+    url: string;
+    size?: string;
+    isLocked: boolean;
+    section: string;
+  }[];
 }
 
 const mockCourseData = {
@@ -115,6 +150,35 @@ const mockCourseData = {
           isLocked: false,
         },
       ],
+      practice: {
+        id: 101,
+        title: "Bài tập: Cài đặt và cấu hình môi trường",
+        description:
+          "Thực hành cài đặt Node.js, VS Code và các extension cần thiết",
+        duration: "30:00",
+        points: 10,
+        isLocked: false,
+      },
+      materials: [
+        {
+          id: 201,
+          title: "Slide giới thiệu khóa học",
+          type: "slide",
+          url: "/materials/intro-slides.pdf",
+          size: "2.5 MB",
+          isLocked: false,
+          section: "Giới thiệu khóa học",
+        },
+        {
+          id: 202,
+          title: "Hướng dẫn cài đặt môi trường",
+          type: "pdf",
+          url: "/materials/setup-guide.pdf",
+          size: "1.8 MB",
+          isLocked: false,
+          section: "Giới thiệu khóa học",
+        },
+      ],
     },
     {
       id: 2,
@@ -129,10 +193,47 @@ const mockCourseData = {
         },
         {
           id: 4,
-          title: "Bài tập Components",
-          duration: "30:00",
-          type: "assignment",
+          title: "State và Lifecycle",
+          duration: "25:00",
+          type: "video",
           isLocked: true,
+        },
+      ],
+      practice: {
+        id: 102,
+        title: "Bài tập: Xây dựng Component Todo List",
+        description:
+          "Thực hành tạo components, sử dụng props và state để xây dựng ứng dụng Todo List",
+        duration: "45:00",
+        points: 20,
+        isLocked: true,
+      },
+      materials: [
+        {
+          id: 203,
+          title: "Tài liệu React Components",
+          type: "pdf",
+          url: "/materials/react-components.pdf",
+          size: "3.2 MB",
+          isLocked: true,
+          section: "React Fundamentals",
+        },
+        {
+          id: 204,
+          title: "Source code ví dụ",
+          type: "code",
+          url: "https://github.com/example/react-examples",
+          isLocked: true,
+          section: "React Fundamentals",
+        },
+        {
+          id: 205,
+          title: "Slide bài giảng React Fundamentals",
+          type: "slide",
+          url: "/materials/react-fundamentals.pdf",
+          size: "4.5 MB",
+          isLocked: true,
+          section: "React Fundamentals",
         },
       ],
     },
@@ -153,11 +254,74 @@ const mockCourseData = {
     "Không cần kinh nghiệm với React hoặc TypeScript",
   ],
   certificates: ["Khóa học được cấp chứng chỉ theo chuẩn quốc tế"],
+  materials: [
+    {
+      id: 201,
+      title: "Slide giới thiệu khóa học",
+      type: "slide",
+      url: "/materials/intro-slides.pdf",
+      size: "2.5 MB",
+      isLocked: false,
+      section: "Giới thiệu khóa học",
+    },
+    {
+      id: 202,
+      title: "Hướng dẫn cài đặt môi trường",
+      type: "pdf",
+      url: "/materials/setup-guide.pdf",
+      size: "1.8 MB",
+      isLocked: false,
+      section: "Giới thiệu khóa học",
+    },
+    {
+      id: 203,
+      title: "Tài liệu React Components",
+      type: "pdf",
+      url: "/materials/react-components.pdf",
+      size: "3.2 MB",
+      isLocked: true,
+      section: "React Fundamentals",
+    },
+    {
+      id: 204,
+      title: "Source code ví dụ",
+      type: "code",
+      url: "https://github.com/example/react-examples",
+      isLocked: true,
+      section: "React Fundamentals",
+    },
+    {
+      id: 205,
+      title: "Slide bài giảng React Fundamentals",
+      type: "slide",
+      url: "/materials/react-fundamentals.pdf",
+      size: "4.5 MB",
+      isLocked: true,
+      section: "React Fundamentals",
+    },
+  ],
 } as CourseData;
+
+// Thêm interface và component TabPanel
+interface TabPanelProps {
+  children?: React.ReactNode;
+  value: number;
+  index: number;
+}
+
+const TabPanel = (props: TabPanelProps) => {
+  const { children, value, index } = props;
+  return (
+    <Box role="tabpanel" hidden={value !== index}>
+      {value === index && children}
+    </Box>
+  );
+};
 
 const CourseDetail: React.FC = () => {
   const { courseId } = useParams();
   const [expandedSections, setExpandedSections] = useState<number[]>([0]);
+  const [activeTab, setActiveTab] = useState(0);
 
   const handleSectionToggle = (sectionId: number) => {
     setExpandedSections((prev) =>
@@ -274,196 +438,385 @@ const CourseDetail: React.FC = () => {
             />
           </Box>
 
-          {/* Course Content */}
-          <Typography variant="h5" fontWeight="bold" gutterBottom>
-            Nội dung khóa học
-          </Typography>
+          <Box>
+            <Tabs
+              value={activeTab}
+              onChange={(e, newValue) => setActiveTab(newValue)}
+              sx={{ borderBottom: 1, borderColor: "divider", mb: 2 }}
+            >
+              <Tab label="Nội dung khóa học" />
+              <Tab label="Tài liệu học tập" />
+            </Tabs>
 
-          <Card>
-            <CardContent>
-              <List>
-                {mockCourseData.sections.map((section, sectionIndex) => (
-                  <Box key={section.id}>
-                    {/* Section Header - Clickable */}
-                    <Box
-                      onClick={() => handleSectionToggle(sectionIndex)}
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        bgcolor: "grey.50",
-                        p: 2,
-                        borderRadius: 1,
-                        cursor: "pointer",
-                        "&:hover": {
-                          bgcolor: "grey.100",
-                        },
-                      }}
-                    >
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", flex: 1 }}
-                      >
-                        <Typography variant="subtitle1" fontWeight="bold">
-                          Phần {sectionIndex + 1}: {section.title}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ ml: "auto", mr: 2 }}
-                        >
-                          {section.lessons.length} bài học
-                        </Typography>
-                      </Box>
-                      {expandedSections.includes(sectionIndex) ? (
-                        <KeyboardArrowUp color="action" />
-                      ) : (
-                        <KeyboardArrowDown color="action" />
-                      )}
-                    </Box>
-
-                    {/* Lessons */}
-                    <List
-                      sx={{
-                        pl: 2,
-                        height: expandedSections.includes(sectionIndex)
-                          ? "auto"
-                          : "0px",
-                        overflow: "hidden",
-                        transition: "height 0.3s ease",
-                        visibility: expandedSections.includes(sectionIndex)
-                          ? "visible"
-                          : "hidden",
-                      }}
-                    >
-                      {section.lessons.map((lesson, lessonIndex) => (
-                        <ListItem
-                          key={lesson.id}
+            {/* Content Tab */}
+            <TabPanel value={activeTab} index={0}>
+              <Card>
+                <CardContent>
+                  <List>
+                    {mockCourseData.sections.map((section, sectionIndex) => (
+                      <Box key={section.id}>
+                        {/* Section Header - Clickable */}
+                        <Box
+                          onClick={() => handleSectionToggle(sectionIndex)}
                           sx={{
-                            borderLeft: "2px solid",
-                            borderColor: "grey.200",
-                            pl: 3,
-                            py: 1.5,
+                            display: "flex",
+                            alignItems: "center",
+                            bgcolor: "grey.50",
+                            p: 2,
+                            borderRadius: 1,
                             cursor: "pointer",
                             "&:hover": {
-                              bgcolor: "action.hover",
+                              bgcolor: "grey.100",
                             },
                           }}
                         >
-                          <ListItemIcon sx={{ minWidth: 40 }}>
-                            {lesson.type === "video" && (
-                              <PlayCircleOutline color="primary" />
-                            )}
-                            {lesson.type === "assignment" && (
-                              <Assignment color="primary" />
-                            )}
-                            {lesson.type === "quiz" && <Quiz color="primary" />}
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={
-                              <Typography variant="body2">
-                                {sectionIndex + 1}.{lessonIndex + 1}{" "}
-                                {lesson.title}
-                              </Typography>
-                            }
-                            secondary={
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              flex: 1,
+                            }}
+                          >
+                            <Typography variant="subtitle1" fontWeight="bold">
+                              Phần {sectionIndex + 1}: {section.title}
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ ml: "auto", mr: 2 }}
+                            >
+                              {section.lessons.length} bài học
+                            </Typography>
+                          </Box>
+                          {expandedSections.includes(sectionIndex) ? (
+                            <KeyboardArrowUp color="action" />
+                          ) : (
+                            <KeyboardArrowDown color="action" />
+                          )}
+                        </Box>
+
+                        {/* Lessons and Practice */}
+                        <List
+                          sx={{
+                            pl: 2,
+                            height: expandedSections.includes(sectionIndex)
+                              ? "auto"
+                              : "0px",
+                            overflow: "hidden",
+                            transition: "height 0.3s ease",
+                            visibility: expandedSections.includes(sectionIndex)
+                              ? "visible"
+                              : "hidden",
+                          }}
+                        >
+                          {section.lessons.map((lesson, lessonIndex) => (
+                            <ListItem
+                              key={lesson.id}
+                              sx={{
+                                pl: 2,
+                                py: 1,
+                                borderRadius: 1,
+                              }}
+                            >
+                              <ListItemIcon sx={{ minWidth: 40 }}>
+                                {lesson.type === "video" && (
+                                  <PlayCircleOutline color="primary" />
+                                )}
+                                {lesson.type === "assignment" && (
+                                  <Assignment color="primary" />
+                                )}
+                                {lesson.type === "quiz" && (
+                                  <Quiz color="primary" />
+                                )}
+                              </ListItemIcon>
+                              <ListItemText
+                                primary={
+                                  <Typography variant="body2">
+                                    {sectionIndex + 1}.{lessonIndex + 1}{" "}
+                                    {lesson.title}
+                                  </Typography>
+                                }
+                                secondary={
+                                  <Box
+                                    sx={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      gap: 1,
+                                      mt: 0.5,
+                                    }}
+                                  >
+                                    <AccessTime
+                                      sx={{
+                                        fontSize: 16,
+                                        color: "text.secondary",
+                                      }}
+                                    />
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                    >
+                                      {lesson.duration}
+                                    </Typography>
+                                  </Box>
+                                }
+                              />
+                              {!mockCourseData.isEnrolled && (
+                                <Chip
+                                  label="Khóa"
+                                  size="small"
+                                  color="default"
+                                  variant="outlined"
+                                />
+                              )}
+                            </ListItem>
+                          ))}
+
+                          {/* Render practice */}
+                          <ListItem
+                            sx={{
+                              bgcolor: "action.hover",
+                              borderRadius: 1,
+                              mt: 1,
+                              flexDirection: "column",
+                              alignItems: "flex-start",
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                display: "flex",
+                                width: "100%",
+                                alignItems: "center",
+                                mb: section.practice.description ? 1 : 0,
+                              }}
+                            >
                               <Box
                                 sx={{
                                   display: "flex",
                                   alignItems: "center",
-                                  gap: 1,
-                                  mt: 0.5,
+                                  flex: 1,
                                 }}
                               >
-                                <AccessTime
-                                  sx={{ fontSize: 16, color: "text.secondary" }}
-                                />
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
-                                  {lesson.duration}
+                                <Assignment color="primary" sx={{ mr: 2 }} />
+                                <Typography variant="subtitle2">
+                                  {section.practice.title}
                                 </Typography>
                               </Box>
-                            }
-                          />
-                          {lesson.isLocked ? (
-                            <Chip
-                              label="Khóa"
-                              size="small"
-                              color="default"
-                              variant="outlined"
-                              sx={{ ml: 1 }}
-                            />
-                          ) : (
-                            <CheckCircle
-                              color="success"
-                              sx={{ ml: 1, fontSize: 20 }}
-                            />
-                          )}
-                        </ListItem>
-                      ))}
-                    </List>
-                  </Box>
-                ))}
-              </List>
-            </CardContent>
-          </Card>
+                              <Stack
+                                direction="row"
+                                spacing={2}
+                                alignItems="center"
+                              >
+                                <Chip
+                                  label={`${section.practice.points} điểm`}
+                                  size="small"
+                                  color="primary"
+                                  variant="outlined"
+                                />
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
+                                  {section.practice.duration}
+                                </Typography>
+                                {!mockCourseData.isEnrolled && (
+                                  <Chip
+                                    label="Khóa"
+                                    size="small"
+                                    color="default"
+                                    variant="outlined"
+                                  />
+                                )}
+                              </Stack>
+                            </Box>
+                            {section.practice.description && (
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{ pl: 5 }}
+                              >
+                                {section.practice.description}
+                              </Typography>
+                            )}
+                          </ListItem>
+                        </List>
+                      </Box>
+                    ))}
+                  </List>
+                </CardContent>
+              </Card>
 
-          {/* Add What You'll Learn section */}
-          <Card sx={{ mb: 4 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Bạn sẽ học được gì
-              </Typography>
-              <Grid container spacing={2}>
-                {mockCourseData.whatYouWillLearn.map((item, index) => (
-                  <Grid item xs={12} sm={6} key={index}>
-                    <Box sx={{ display: "flex", gap: 1 }}>
-                      <CheckCircle color="success" sx={{ mt: 0.5 }} />
-                      <Typography>{item}</Typography>
-                    </Box>
+              {/* Add What You'll Learn section */}
+              <Card sx={{ mb: 4 }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Bạn sẽ học được gì
+                  </Typography>
+                  <Grid container spacing={2}>
+                    {mockCourseData.whatYouWillLearn.map((item, index) => (
+                      <Grid item xs={12} sm={6} key={index}>
+                        <Box sx={{ display: "flex", gap: 1 }}>
+                          <CheckCircle color="success" sx={{ mt: 0.5 }} />
+                          <Typography>{item}</Typography>
+                        </Box>
+                      </Grid>
+                    ))}
                   </Grid>
-                ))}
-              </Grid>
-            </CardContent>
-          </Card>
+                </CardContent>
+              </Card>
 
-          {/* Add Requirements section */}
-          <Card sx={{ mb: 4 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Yêu cầu
-              </Typography>
-              <List>
-                {mockCourseData.requirements.map((req, index) => (
-                  <ListItem key={index} sx={{ px: 0 }}>
-                    <ListItemIcon>
-                      <CheckCircle color="primary" />
-                    </ListItemIcon>
-                    <ListItemText primary={req} />
-                  </ListItem>
-                ))}
-              </List>
-            </CardContent>
-          </Card>
+              {/* Add Requirements section */}
+              <Card sx={{ mb: 4 }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Yêu cầu
+                  </Typography>
+                  <List>
+                    {mockCourseData.requirements.map((req, index) => (
+                      <ListItem key={index} sx={{ px: 0 }}>
+                        <ListItemIcon>
+                          <CheckCircle color="primary" />
+                        </ListItemIcon>
+                        <ListItemText primary={req} />
+                      </ListItem>
+                    ))}
+                  </List>
+                </CardContent>
+              </Card>
 
-          {/* Add Certificate section */}
-          <Card sx={{ mb: 4 }}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Chứng chỉ
-              </Typography>
-              <List>
-                {mockCourseData.certificates.map((req, index) => (
-                  <ListItem key={index} sx={{ px: 0 }}>
-                    <ListItemIcon>
-                      <CheckCircle color="info" />
-                    </ListItemIcon>
-                    <ListItemText primary={req} />
-                  </ListItem>
-                ))}
-              </List>
-            </CardContent>
-          </Card>
+              {/* Add Certificate section */}
+              <Card sx={{ mb: 4 }}>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Chứng chỉ
+                  </Typography>
+                  <List>
+                    {mockCourseData.certificates.map((req, index) => (
+                      <ListItem key={index} sx={{ px: 0 }}>
+                        <ListItemIcon>
+                          <CheckCircle color="info" />
+                        </ListItemIcon>
+                        <ListItemText primary={req} />
+                      </ListItem>
+                    ))}
+                  </List>
+                </CardContent>
+              </Card>
+            </TabPanel>
+
+            {/* Materials Tab */}
+            <TabPanel value={activeTab} index={1}>
+              <Card>
+                <CardContent>
+                  <Typography variant="h6" gutterBottom>
+                    Tài liệu khóa học
+                  </Typography>
+
+                  {/* Group materials by section */}
+                  {Array.from(
+                    new Set(mockCourseData.materials.map((m) => m.section))
+                  ).map((section) => (
+                    <Box key={section} sx={{ mb: 3 }}>
+                      <Typography
+                        variant="subtitle1"
+                        color="text.secondary"
+                        gutterBottom
+                        sx={{ mt: 2 }}
+                      >
+                        {section}
+                      </Typography>
+
+                      <List>
+                        {mockCourseData.materials
+                          .filter((m) => m.section === section)
+                          .map((material) => (
+                            <ListItem
+                              key={material.id}
+                              sx={{
+                                bgcolor: "background.paper",
+                                borderRadius: 1,
+                                mb: 1,
+                                border: "1px solid",
+                                borderColor: "divider",
+                              }}
+                            >
+                              <ListItemIcon>
+                                {material.type === "pdf" && (
+                                  <PictureAsPdf
+                                    color="error"
+                                    sx={{ fontSize: 24 }}
+                                  />
+                                )}
+                                {material.type === "slide" && (
+                                  <Slideshow
+                                    color="primary"
+                                    sx={{ fontSize: 24 }}
+                                  />
+                                )}
+                                {material.type === "code" && (
+                                  <Code color="success" sx={{ fontSize: 24 }} />
+                                )}
+                                {material.type === "link" && (
+                                  <Link color="info" sx={{ fontSize: 24 }} />
+                                )}
+                              </ListItemIcon>
+                              <ListItemText
+                                primary={material.title}
+                                secondary={
+                                  <Stack
+                                    direction="row"
+                                    spacing={2}
+                                    alignItems="center"
+                                  >
+                                    <Typography
+                                      variant="body2"
+                                      color="text.secondary"
+                                    >
+                                      {material.size}
+                                    </Typography>
+                                    {material.type === "pdf" && (
+                                      <Chip
+                                        label="PDF"
+                                        size="small"
+                                        color="error"
+                                        variant="outlined"
+                                      />
+                                    )}
+                                    {material.type === "slide" && (
+                                      <Chip
+                                        label="Slide"
+                                        size="small"
+                                        color="primary"
+                                        variant="outlined"
+                                      />
+                                    )}
+                                    {material.type === "code" && (
+                                      <Chip
+                                        label="Code"
+                                        size="small"
+                                        color="success"
+                                        variant="outlined"
+                                      />
+                                    )}
+                                  </Stack>
+                                }
+                              />
+                              {!mockCourseData.isEnrolled && (
+                                <Chip
+                                  label="Khóa"
+                                  size="small"
+                                  color="default"
+                                  variant="outlined"
+                                />
+                              )}
+                            </ListItem>
+                          ))}
+                      </List>
+                    </Box>
+                  ))}
+                </CardContent>
+              </Card>
+            </TabPanel>
+          </Box>
         </Grid>
 
         {/* Right Column */}
@@ -584,6 +937,12 @@ const CourseDetail: React.FC = () => {
                         <Quiz />
                         <Typography variant="body2">
                           Kiểm tra đánh giá
+                        </Typography>
+                      </Box>
+                      <Box sx={{ display: "flex", gap: 1 }}>
+                        <LibraryBooks />
+                        <Typography variant="body2">
+                          Tài liệu học tập
                         </Typography>
                       </Box>
                     </Stack>
