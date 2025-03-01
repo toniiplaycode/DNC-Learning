@@ -15,6 +15,7 @@ const CustomContainer: React.FC<CustomContainerProps> = ({
       sx={{
         maxWidth: "1200px !important",
         marginTop: { sm: 2, md: 6 },
+        marginBottom: 2,
         px: { xs: 2, sm: 3 },
         ...props.sx,
       }}

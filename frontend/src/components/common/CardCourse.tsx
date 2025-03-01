@@ -66,7 +66,7 @@ const CardCourse: React.FC<CardCourseProps> = ({
           boxShadow: 6,
         },
       }}
-      onClick={() => navigate(`/course-detail/${id}`)}
+      onClick={() => navigate(`/course/${id}`)}
     >
       <Box sx={{ position: "relative" }}>
         <CardMedia

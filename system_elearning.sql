@@ -346,6 +346,44 @@ LOCK TABLES `course_documents` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `course_lesson_discussions`
+--
+
+DROP TABLE IF EXISTS `course_lesson_discussions`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `course_lesson_discussions` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `lesson_id` bigint NOT NULL,
+  `user_id` bigint NOT NULL,
+  `parent_id` bigint DEFAULT NULL COMMENT 'NULL cho thảo luận chính, ID của thảo luận cha cho phản hồi',
+  `content` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `is_pinned` tinyint(1) DEFAULT '0' COMMENT 'Chỉ áp dụng cho thảo luận chính',
+  `status` enum('active','hidden','locked') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'active',
+  `is_solution` tinyint(1) DEFAULT '0' COMMENT 'Đánh dấu phản hồi là giải pháp',
+  `replies_count` int DEFAULT '0' COMMENT 'Số lượng phản hồi (cho thảo luận chính)',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `lesson_id` (`lesson_id`),
+  KEY `user_id` (`user_id`),
+  KEY `parent_id` (`parent_id`),
+  CONSTRAINT `course_lesson_discussions_ibfk_1` FOREIGN KEY (`lesson_id`) REFERENCES `course_lessons` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `course_lesson_discussions_ibfk_2` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `course_lesson_discussions_ibfk_3` FOREIGN KEY (`parent_id`) REFERENCES `course_lesson_discussions` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `course_lesson_discussions`
+--
+
+LOCK TABLES `course_lesson_discussions` WRITE;
+/*!40000 ALTER TABLE `course_lesson_discussions` DISABLE KEYS */;
+/*!40000 ALTER TABLE `course_lesson_discussions` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `course_lessons`
 --
 
@@ -1242,4 +1280,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-02-27 10:36:45
+-- Dump completed on 2025-03-01  9:14:21

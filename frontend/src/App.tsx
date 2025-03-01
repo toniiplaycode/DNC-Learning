@@ -11,6 +11,7 @@ import Courses from "./pages/Courses";
 import Instructors from "./pages/instructor/Instructors";
 import ForumDiscussions from "./pages/forum/ForumDiscussions";
 import ForumDiscussionDetail from "./pages/forum/ForumDiscussionDetail";
+import CourseContent from "./pages/course/CourseContent";
 
 const App = () => {
   return (
@@ -20,13 +21,15 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/enrolled-courses" element={<EnrolledCourses />} />
-        <Route path="/course-detail/:courseId" element={<CourseDetail />} />
         <Route path="/profile" element={<ProfileAccount />} />
         <Route path="/instructor/:id" element={<InstructorProfile />} />
         <Route path="/courses" element={<Courses />} />
         <Route path="/instructors" element={<Instructors />} />
         <Route path="/forum" element={<ForumDiscussions />} />
         <Route path="/forum/:id" element={<ForumDiscussionDetail />} />
+        <Route path="/coursecontent" element={<CourseContent />} />
+        <Route path="/course/:id" element={<CourseDetail />} />
+        <Route path="/course/:id/learn" element={<CourseContent />} />
       </Routes>
     </MainLayout>
   );

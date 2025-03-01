@@ -35,7 +35,7 @@ import {
   Link,
   LibraryBooks,
 } from "@mui/icons-material";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import CustomContainer from "../components/common/CustomContainer";
 
 interface Lesson {
@@ -322,6 +322,7 @@ const CourseDetail: React.FC = () => {
   const { courseId } = useParams();
   const [expandedSections, setExpandedSections] = useState<number[]>([0]);
   const [activeTab, setActiveTab] = useState(0);
+  const navigate = useNavigate();
 
   const handleSectionToggle = (sectionId: number) => {
     setExpandedSections((prev) =>
@@ -953,6 +954,7 @@ const CourseDetail: React.FC = () => {
                     fullWidth
                     size="large"
                     sx={{ mb: 2 }}
+                    onClick={() => navigate(`/course/${courseId}/learn`)}
                   >
                     Đăng ký ngay
                   </Button>
