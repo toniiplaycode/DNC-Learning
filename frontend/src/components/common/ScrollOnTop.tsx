@@ -48,8 +48,8 @@ const ScrollOnTop = () => {
         onClick={scrollToTop}
         sx={{
           position: "fixed",
-          bottom: 16,
-          right: 16,
+          bottom: 100,
+          right: 32,
           zIndex: 1000,
         }}
         aria-label="Scroll to top"

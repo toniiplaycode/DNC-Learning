@@ -44,6 +44,7 @@ import {
 } from "@mui/icons-material";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import NotificationCenter from "../notification/NotificationCenter";
 
 const categories = [
   { name: "Lập trình", path: "/courses/programming" },
@@ -172,75 +173,111 @@ const Header = () => {
   };
 
   const mobileMenu = (
-    <Box sx={{ width: 280 }}>
-      {/* Mobile Menu Header */}
-      <Box sx={{ p: 2, display: "flex", alignItems: "center" }}>
-        <Box
-          component="img"
-          src="/src/assets/logo.png"
-          sx={{ height: "40px" }}
-        />
-        <IconButton onClick={handleDrawerToggle} sx={{ ml: "auto" }}>
-          <ChevronRight />
-        </IconButton>
-      </Box>
-      <Divider />
-
-      {/* User Info */}
-      <Box sx={{ p: 2 }}>
-        <Stack direction="row" spacing={2} alignItems="center">
-          <Avatar src="/src/assets/avatar.png" />
-          <Box>
-            <Typography variant="subtitle1">Nguyễn Văn A</Typography>
-            <Typography variant="body2" color="text.secondary">
-              Học viên
-            </Typography>
+    <Box sx={{ py: 2 }}>
+      {/* User Profile Section */}
+      {isLogin && (
+        <>
+          <Box sx={{ px: 2, mb: 2 }}>
+            <Stack direction="row" spacing={2} alignItems="center">
+              <Avatar src="/src/assets/avatar.png" />
+              <Box>
+                <Typography variant="subtitle1">Nguyễn Văn A</Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Học viên
+                </Typography>
+              </Box>
+            </Stack>
           </Box>
-        </Stack>
-      </Box>
-      <Divider />
+          <Divider />
+        </>
+      )}
 
-      {/* Navigation Menu */}
+      {/* Main Navigation */}
       <List>
         <ListItem disablePadding>
-          <ListItemButton onClick={handleCoursesClick}>
+          <ListItemButton onClick={() => navigate("/")}>
+            <ListItemIcon>
+              <SchoolIcon />
+            </ListItemIcon>
+            <ListItemText primary="Trang chủ" />
+          </ListItemButton>
+        </ListItem>
+
+        {isLogin && (
+          <ListItem disablePadding>
+            <ListItemButton onClick={() => navigate("/enrolled-courses")}>
+              <ListItemIcon>
+                <CourseIcon />
+              </ListItemIcon>
+              <ListItemText primary="Khóa học của tôi" />
+            </ListItemButton>
+          </ListItem>
+        )}
+
+        <ListItem disablePadding>
+          <ListItemButton onClick={() => navigate("/courses")}>
             <ListItemIcon>
               <School />
             </ListItemIcon>
             <ListItemText primary="Khóa học" />
-            <KeyboardArrowDown />
           </ListItemButton>
         </ListItem>
+
         <ListItem disablePadding>
           <ListItemButton onClick={() => navigate("/instructors")}>
             <ListItemIcon>
-              <Person />
+              <PersonIcon />
             </ListItemIcon>
             <ListItemText primary="Giảng viên" />
           </ListItemButton>
         </ListItem>
+
         <ListItem disablePadding>
           <ListItemButton onClick={() => navigate("/forum")}>
             <ListItemIcon>
-              <Forum />
+              <ForumIcon />
             </ListItemIcon>
             <ListItemText primary="Diễn đàn" />
           </ListItemButton>
         </ListItem>
       </List>
-      <Divider />
 
-      {/* Bottom Actions */}
-      <List>
-        <ListItem disablePadding>
-          <ListItemButton onClick={() => navigate("/logout")}>
-            <ListItemIcon>
-              <ExitToApp />
-            </ListItemIcon>
-            <ListItemText primary="Đăng xuất" />
-          </ListItemButton>
-        </ListItem>
-      </List>
+      {/* Auth Buttons */}
+      {!isLogin && (
+        <Box sx={{ p: 2 }}>
+          <Stack spacing={1}>
+            <Button
+              fullWidth
+              variant="contained"
+              onClick={() => navigate("/register")}
+            >
+              Đăng ký
+            </Button>
+            <Button
+              fullWidth
+              variant="outlined"
+              onClick={() => navigate("/login")}
+            >
+              Đăng nhập
+            </Button>
+          </Stack>
+        </Box>
+      )}
+
+      {/* Logout Button */}
+      {isLogin && (
+        <List>
+          <Divider />
+          <ListItem disablePadding>
+            <ListItemButton onClick={() => console.log("Logout")}>
+              <ListItemIcon>
+                <ExitToApp />
+              </ListItemIcon>
+              <ListItemText primary="Đăng xuất" />
+            </ListItemButton>
+          </ListItem>
+        </List>
+      )}
     </Box>
   );
 
@@ -403,7 +440,7 @@ const Header = () => {
               alignItems: "center",
               gap: 1,
               position: { xs: "absolute", lg: "static" },
-              right: 24,
+              right: 0,
               zIndex: 1,
             }}
           >
@@ -458,13 +495,7 @@ const Header = () => {
             </IconButton>
 
             {/* Notifications */}
-            {isLogin && (
-              <IconButton color="inherit">
-                <Badge badgeContent={3} color="error">
-                  <Notifications />
-                </Badge>
-              </IconButton>
-            )}
+            <NotificationCenter />
 
             {/* Desktop Profile */}
             {isLogin ? (

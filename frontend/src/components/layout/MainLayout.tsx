@@ -2,6 +2,7 @@ import { Box } from "@mui/material";
 import { ReactNode } from "react";
 import Header from "./Header";
 import Footer from "./Footer";
+import ChatBox from "../chat/ChatBox";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -21,6 +22,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
         {children}
       </Box>
       <Footer />
+      <ChatBox />
     </Box>
   );
 };

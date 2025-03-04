@@ -861,6 +861,7 @@ const CourseDetail: React.FC = () => {
                     fullWidth
                     size="large"
                     sx={{ mb: 3 }}
+                    onClick={() => navigate(`/course/${courseId}/learn`)}
                   >
                     Tiếp tục học
                   </Button>
@@ -954,18 +955,9 @@ const CourseDetail: React.FC = () => {
                     fullWidth
                     size="large"
                     sx={{ mb: 2 }}
-                    onClick={() => navigate(`/course/${courseId}/learn`)}
+                    onClick={() => navigate(`/purchase/${courseId}`)}
                   >
                     Đăng ký ngay
-                  </Button>
-
-                  <Button
-                    variant="outlined"
-                    fullWidth
-                    size="large"
-                    sx={{ mb: 3 }}
-                  >
-                    Thêm vào giỏ hàng
                   </Button>
 
                   <Divider sx={{ mb: 3 }} />
