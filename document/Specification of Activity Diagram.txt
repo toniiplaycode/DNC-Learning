@@ -1,0 +1,44 @@
+Đặc tả vẽ sơ đồ hoạt động
+A. NGƯỜI HỌC (STUDENT)
+	Quy trình đăng ký/đăng nhập:
+		- Đăng ký tài khoản mới
+		- Đăng nhập (email/google), Xác thực 2FA
+	Quy trình học tập:
+		- Tìm kiếm, đăng ký, Thanh toán khóa học		
+		- Truy cập nội dung khóa học, Nộp bài tập/làm quiz, Tham gia lớp học trực tuyến
+	Quy trình tương tác:
+		- Tham gia diễn đàn thảo luận
+		- Chat giữa học viên và giảng viên
+		- Đánh giá khóa học
+B. GIẢNG VIÊN (INSTRUCTOR)
+	Quy trình quản lý khóa học:
+		Tạo khóa học mới
+		Upload nội dung học tập
+		Tạo bài tập/quiz
+		Lên lịch dạy trực tuyến
+	Quy trình đánh giá:
+		Chấm điểm bài tập
+		Tạo đề kiểm tra
+		Đánh giá học viên
+		Xuất báo cáo kết quả
+	Quy trình tương tác:
+		- Tham gia diễn đàn thảo luận
+		- Chat giữa học viên và giảng viên
+		- Gửi thông báo cho lớp
+C. QUẢN TRỊ VIÊN (ADMIN)
+	Quy trình quản lý người dùng:
+		Thêm/sửa/xóa người dùng
+		Phân quyền người dùng
+		Quản lý thông tin cá nhân
+	Quy trình quản lý khóa học:
+		Duyệt khóa học mới
+		Quản lý danh mục
+		Theo dõi hoạt động
+	Quy trình quản lý tài chính:
+		Xử lý thanh toán
+		Quản lý ưu đãi
+		Xuất báo cáo doanh thu
+	Quy trình báo cáo:
+		Thống kê người dùng
+		Thống kê khóa học
+		Báo cáo doanh thu

@@ -1,0 +1,104 @@
+Hệ thống hỗ trợ học tập eLearning trên nền tảng web
+
+1. Quản lý người dùng
+- Phân quyền người dùng:
+  - Người học (học viên), giảng viên, quản trị viên.
+- Đăng ký và đăng nhập:
+  - Đăng ký tài khoản.
+  - Đăng nhập qua email, số điện thoại, hoặc mạng xã hội.
+- Hồ sơ cá nhân:
+  - Quản lý thông tin cá nhân.
+  - Cập nhật ảnh đại diện, thông tin liên hệ.
+- Quản lý bảo mật:
+  - Đổi mật khẩu, xác thực hai yếu tố (2FA), quản lý quyền truy cập.
+
+2. Quản lý khóa học
+- Thông tin khóa học:
+  - Tên khóa học, mô tả, nội dung, giảng viên phụ trách, học phí.
+- Danh mục khóa học:
+  - Phân loại theo lĩnh vực (CNTT, ngoại ngữ, kỹ năng mềm, v.v.).
+- Lịch học:
+  - Quản lý thời gian bắt đầu, kết thúc, và lịch trình học tập.
+- Đăng ký khóa học:
+  - Đăng ký trực tuyến, thanh toán học phí, kích hoạt tài khoản học tập.
+
+3. Quản lý nội dung học tập
+- Tài liệu và bài giảng:
+  - Video, tài liệu PDF, bài giảng trực tuyến hoặc ghi âm.
+- Hệ thống bài tập:
+  - Bài tập trắc nghiệm, tự luận, bài tập nhóm.
+- Học liệu bổ sung:
+  - Đường dẫn tài liệu tham khảo, bài đọc mở rộng.
+- Công cụ đánh dấu:
+  - Lưu ghi chú, đánh dấu bài học quan trọng.
+
+4. Quản lý bài kiểm tra và đánh giá
+- Tạo bài kiểm tra:
+  - Tự động hóa bài kiểm tra với các loại câu hỏi (trắc nghiệm, tự luận).
+- Chấm điểm tự động:
+  - Chấm điểm nhanh với câu hỏi trắc nghiệm, cung cấp phản hồi ngay lập tức.
+- Bài kiểm tra định kỳ:
+  - Kiểm tra giữa kỳ, cuối kỳ, bài kiểm tra đánh giá năng lực.
+- Phản hồi và nhận xét:
+  - Giảng viên đưa ra nhận xét cá nhân cho từng bài kiểm tra.
+
+5. Hỗ trợ tương tác và cộng đồng
+- Diễn đàn thảo luận:
+  - Không gian trao đổi kiến thức, hỏi đáp giữa học viên và giảng viên.
+- Lớp học trực tuyến:
+  - Tích hợp Zoom, Microsoft Teams, hoặc hệ thống học trực tiếp qua nền tảng.
+- Nhắn tin nội bộ:
+  - Chat trực tiếp giữa học viên và giảng viên.
+- Hệ thống thông báo:
+  - Thông báo lịch học, bài kiểm tra, hạn nộp bài qua email hoặc ứng dụng.
+
+6. Quản lý giảng viên
+- Thông tin giảng viên:
+  - Lý lịch, chuyên môn, kinh nghiệm, khóa học đang giảng dạy.
+- Tạo và quản lý khóa học:
+  - Công cụ tạo khóa học, thêm nội dung học tập và bài tập.
+- Theo dõi tiến độ học viên:
+  - Xem báo cáo kết quả học tập của từng học viên.
+- Gửi thông báo:
+  - Tương tác với học viên qua thông báo khóa học.
+
+7. Theo dõi tiến độ học tập
+- Bảng điều khiển cá nhân:
+  - Hiển thị tiến độ học tập, bài kiểm tra hoàn thành, bài giảng chưa học.
+- Lưu trữ điểm số:
+  - Lưu trữ kết quả các bài kiểm tra, chứng nhận hoàn thành khóa học.
+- Huy hiệu và phần thưởng:
+  - Cấp huy hiệu cho học viên xuất sắc, khuyến khích học tập.
+
+8. Quản lý tài chính
+- Thanh toán học phí:
+  - Hỗ trợ thanh toán qua thẻ tín dụng, ví điện tử, chuyển khoản.
+- Hệ thống ưu đãi:
+  - Áp dụng mã giảm giá, các chương trình khuyến mãi.
+- Báo cáo doanh thu:
+  - Thống kê doanh thu theo khóa học, giảng viên.
+
+9. Báo cáo và thống kê
+- Báo cáo học viên:
+  - Thống kê số lượng học viên đăng ký, tỷ lệ hoàn thành khóa học.
+- Báo cáo giảng viên:
+  - Thống kê hiệu suất giảng dạy, kết quả học tập của học viên.
+- Thống kê tổng quan:
+  - Biểu đồ, báo cáo về doanh thu, lượt truy cập website.
+  - Xuất báo cáo dưới nhiều định dạng (PDF, Excel).
+
+10. Tích hợp và tiện ích bổ sung
+- Tích hợp công cụ học tập:
+  - Google Classroom, Moodle, hoặc các nền tảng LMS.
+- Ứng dụng di động:
+  - Phiên bản eLearning trên iOS/Android.
+- Hỗ trợ AI:
+  - Đề xuất khóa học dựa trên sở thích, chatbot hỗ trợ học tập.
+- Đa ngôn ngữ:
+  - Hỗ trợ giao diện và nội dung khóa học bằng nhiều ngôn ngữ.
+- Thắc mắc, hỏi đáp, góp ý:
+  - Tạo kênh hỗ trợ học viên để hỏi đáp và góp ý.
+- Đánh giá giảng viên:
+  - Học viên có thể để lại đánh giá, nhận xét về giảng viên.
+
+

@@ -1,0 +1,594 @@
+Mermaid Diagram
+------------Signup------------
+%%{init: {'theme': 'dark'}}%%
+graph TD
+
+subgraph Student [NGƯỜI DÙNG]
+    Start((●))
+    A[Truy cập hệ thống]
+    C{Chọn phương thức đăng ký}
+    
+    %% Đăng ký thông thường
+    D1[Chọn đăng ký thông thường]
+    E1[Nhập thông tin cá nhân]
+    F1[Nhập mã xác thực từ email]
+    G1[Thiết lập mật khẩu]
+    H1[Thiết lập 2FA]
+    
+    %% Đăng ký Google
+    D2[Chọn đăng ký bằng Google]
+    E2[Xác thực tài khoản Google]
+    F2[Bổ sung thông tin cá nhân]
+    
+    I[Hoàn tất đăng ký]
+    End((●))
+end
+
+subgraph System [HỆ THỐNG]
+    B[Hiển thị form đăng ký]
+    
+    %% Xử lý đăng ký thông thường
+    V1{Kiểm tra thông tin?}
+    W1{Email đã tồn tại?}
+    X1[Gửi mã xác thực email]
+    Y1{Mã xác thực hợp lệ?}
+    Z1[Tạo tài khoản mới]
+    
+    %% Xử lý đăng ký Google
+    V2[Chuyển hướng đến Google]
+    W2[Nhận thông tin từ Google]
+    X2{Email đã đăng ký?}
+    Y2[Tạo tài khoản với Google]
+    
+    Z[Lưu thông tin & Kích hoạt tài khoản]
+end
+
+%% Luồng xử lý chính
+Start --> A
+A --> B
+B --> C
+
+%% Luồng đăng ký thông thường
+C -->|1. Thông thường| D1
+D1 --> E1
+E1 --> V1
+V1 -->|Không hợp lệ| E1
+V1 -->|Hợp lệ| W1
+W1 -->|Đã tồn tại| E1
+W1 -->|Chưa tồn tại| X1
+X1 --> F1
+F1 --> Y1
+Y1 -->|Không hợp lệ| F1
+Y1 -->|Hợp lệ| G1
+G1 --> H1
+H1 --> Z1
+Z1 --> Z
+
+%% Luồng đăng ký Google
+C -->|2. Google| D2
+D2 --> V2
+V2 --> E2
+E2 --> W2
+W2 --> X2
+X2 -->|Đã tồn tại| I
+X2 -->|Chưa tồn tại| F2
+F2 --> Y2
+Y2 --> Z
+
+Z --> I
+I --> End
+
+%% Định dạng
+classDef default fill:#2a2a2a,stroke:#666,color:#fff,stroke-width:2px;
+classDef system fill:#1a1a1a,stroke:#666,color:#fff,stroke-width:2px;
+classDef decision fill:#483D8B,stroke:#666,color:#fff,stroke-width:2px;
+class B,X1,Z1,V2,W2,Y2,Z system;
+class C,V1,W1,Y1,X2 decision;
+
+
+------------Signin------------
+%%{init: {'theme': 'dark'}}%%
+graph TD
+
+
+subgraph System [HỆ THỐNG]
+    B[Hiển thị trang đăng nhập]
+    
+    %% Xử lý đăng nhập thông thường
+    V1{Kiểm tra email & mật khẩu?}
+    W1[Gửi mã xác thực email]
+    X1{Mã xác thực email hợp lệ?}
+    
+    %% Xử lý đăng nhập Google
+    V2[Chuyển hướng đến Google]
+    W2[Nhận thông tin từ Google]
+    X2{Tài khoản tồn tại?}
+    Y2[Thông báo cần đăng ký]
+    
+    Z[Tạo phiên đăng nhập]
+end
+
+
+subgraph Student [NGƯỜI DÙNG]
+    Start((●))
+    A[Truy cập hệ thống]
+    C{Chọn phương thức đăng nhập}
+    
+    %% Đăng nhập thông thường
+    D1[Chọn đăng nhập thông thường]
+    E1[Nhập email và mật khẩu]
+    F1[Nhập mã xác thực email]
+    
+    %% Đăng nhập Google
+    D2[Chọn đăng nhập bằng Google]
+    E2[Xác thực tài khoản Google]
+    
+    H[Truy cập trang chủ]
+    End((●))
+end
+
+%% Luồng xử lý chính
+Start --> A
+A --> B
+B --> C
+
+%% Luồng đăng nhập thông thường
+C -->|1. Thông thường| D1
+D1 --> E1
+E1 --> V1
+V1 -->|Không hợp lệ| E1
+V1 -->|Hợp lệ| W1
+W1 --> F1
+F1 --> X1
+X1 -->|Không hợp lệ| F1
+X1 -->|Hợp lệ| Z
+
+%% Luồng đăng nhập Google
+C -->|2. Google| D2
+D2 --> V2
+V2 --> E2
+E2 --> W2
+W2 --> X2
+X2 -->|Không| Y2
+X2 -->|Có| Z
+Y2 --> End
+
+Z --> H
+H --> End
+
+%% Định dạng
+classDef default fill:#2a2a2a,stroke:#666,color:#fff,stroke-width:2px;
+classDef system fill:#1a1a1a,stroke:#666,color:#fff,stroke-width:2px;
+classDef decision fill:#483D8B,stroke:#666,color:#fff,stroke-width:2px;
+class B,W1,V2,W2,Y2,Z system;
+class C,V1,X1,X2 decision;
+
+------------Search, enrollment, payment course------------
+%%{init: {'theme': 'dark'}}%%
+graph TD
+
+subgraph System [HỆ THỐNG]
+    B[Hiển thị form tìm kiếm]
+    
+    %% Xử lý tìm kiếm
+    V1[Lọc theo điều kiện]
+    W1[Hiển thị kết quả tìm kiếm]
+    X1[Hiển thị thông tin chi tiết]
+    
+    %% Kiểm tra khóa học
+    Y1{Khóa học miễn phí?}
+    
+    %% Xử lý đăng ký miễn phí
+    Z1[Kích hoạt khóa học]
+    
+    %% Xử lý thanh toán
+    V2[Tạo hóa đơn thanh toán]
+    
+    %% Xử lý giao dịch
+    W2[Xử lý giao dịch thanh toán]
+    X2{Thanh toán thành công?}
+    Y2[Kích hoạt khóa học]
+    Z2[Gửi email xác nhận]
+    V3[Thông báo lỗi]
+    
+    Z[Cập nhật danh sách khóa học]
+end
+
+subgraph Student [NGƯỜI DÙNG]
+    Start((●))
+    A[Truy cập danh sách khóa học]
+    C[Tìm kiếm khóa học]
+    D[Xem chi tiết khóa học]
+    E{Đăng ký học?}
+    
+    %% Khóa học miễn phí
+    F1[Xác nhận đăng ký]
+    
+    %% Khóa học có phí
+    F2[Chọn phương thức thanh toán]
+    G2[Xác nhận thông tin thanh toán]
+    
+    %% Các phương thức thanh toán
+    H2a[Thanh toán qua ví điện tử]
+    H2b[Thanh toán qua thẻ]
+    H2c[Chuyển khoản ngân hàng]
+    
+    J[Truy cập khóa học]
+    End((●))
+end
+
+%% Luồng xử lý chính
+Start --> A
+A --> B
+B --> C
+C --> V1
+V1 --> W1
+W1 --> D
+D --> X1
+X1 --> E
+
+%% Kiểm tra loại khóa học
+E -->|Có| Y1
+
+%% Luồng khóa học miễn phí
+Y1 -->|Có| F1
+F1 --> Z1
+Z1 --> Z
+
+%% Luồng khóa học có phí
+Y1 -->|Không| F2
+F2 --> V2
+V2 --> G2
+
+%% Các phương thức thanh toán
+G2 --> H2a
+G2 --> H2b
+G2 --> H2c
+H2a & H2b & H2c --> W2
+
+%% Xử lý kết quả thanh toán
+W2 --> X2
+X2 -->|Có| Y2
+X2 -->|Không| V3
+V3 --> F2
+Y2 --> Z2
+Z2 --> Z
+
+%% Kết thúc
+Z --> J
+J --> End
+
+E -->|Không| End
+
+%% Định dạng
+classDef default fill:#2a2a2a,stroke:#666,color:#fff,stroke-width:2px;
+classDef system fill:#1a1a1a,stroke:#666,color:#fff,stroke-width:2px;
+classDef decision fill:#483D8B,stroke:#666,color:#fff,stroke-width:2px;
+class B,V1,W1,X1,Z1,V2,W2,Y2,Z2,V3,Z system;
+class E,Y1,X2 decision;
+
+
+------------Content, Assignment, Online Course------------
+%%{init: {'theme': 'dark'}}%%
+graph TD
+
+subgraph System [HỆ THỐNG]
+    %% Xử lý nội dung
+    V1[Hiển thị danh sách bài học]
+    W1[Phát video/tài liệu]
+    X1[Cập nhật tiến độ học]
+    
+    %% Xử lý bài tập
+    V2[Hiển thị đề bài]
+    W2[Kiểm tra thời gian]
+    X2{Đã hết hạn?}
+    Y2[Chấm điểm tự động]
+    Z2[Lưu kết quả]
+    
+    %% Xử lý lớp trực tuyến
+    V3[Kiểm tra lịch học]
+    W3{Đến giờ học?}
+    X3[Kết nối phòng học]
+    Y3[Ghi nhận tham gia]
+    
+    Z[Cập nhật trạng thái học tập]
+end
+
+subgraph Student [NGƯỜI DÙNG]
+    Start((●))
+    A[Truy cập khóa học]
+    B{Chọn hoạt động học tập}
+    
+    %% Xem nội dung
+    C1[Chọn bài học]
+    D1[Xem video bài giảng]
+    E1[Tải slide/tài liệu]
+    F1[Đánh dấu hoàn thành]
+    
+    %% Làm bài tập/Quiz
+    C2[Chọn bài tập/Quiz]
+    D2[Làm bài]
+    E2[Nộp bài]
+    
+    %% Học trực tuyến
+    C3[Chọn lớp học trực tuyến]
+    D3[Tham gia lớp học]
+    E3[Tương tác trong lớp]
+    
+    End((●))
+end
+
+%% Luồng xử lý chính
+Start --> A
+A --> V1
+V1 --> B
+
+%% Luồng xem nội dung
+B -->|1. Xem nội dung| C1
+C1 --> W1
+W1 --> D1
+D1 --> E1
+E1 --> F1
+F1 --> X1
+X1 --> Z
+
+%% Luồng làm bài tập
+B -->|2. Làm bài tập| C2
+C2 --> V2
+V2 --> W2
+W2 --> X2
+X2 -->|Không| D2
+D2 --> E2
+E2 --> Y2
+Y2 --> Z2
+Z2 --> Z
+X2 -->|Có| Z
+
+%% Luồng học trực tuyến
+B -->|3. Học trực tuyến| C3
+C3 --> V3
+V3 --> W3
+W3 -->|Chưa| C3
+W3 -->|Rồi| X3
+X3 --> D3
+D3 --> E3
+E3 --> Y3
+Y3 --> Z
+
+Z --> End
+
+%% Định dạng
+classDef default fill:#2a2a2a,stroke:#666,color:#fff,stroke-width:2px;
+classDef system fill:#1a1a1a,stroke:#666,color:#fff,stroke-width:2px;
+classDef decision fill:#483D8B,stroke:#666,color:#fff,stroke-width:2px;
+class V1,W1,X1,V2,W2,Y2,Z2,V3,X3,Y3,Z system;
+class B,X2,W3 decision;
+
+
+------------Forum Student------------
+%%{init: {'theme': 'dark'}}%%
+graph TD
+
+subgraph Student [NGƯỜI DÙNG]
+    Start((●))
+    A[Truy cập diễn đàn]
+    B[Xem danh sách bài viết]
+    
+    %% Đọc và bình luận
+    C[Chọn bài viết]
+    D[Đọc nội dung]
+    E{Muốn bình luận?}
+    F[Viết bình luận]
+    G[Trả lời bình luận khác]
+    
+    %% Tương tác cơ bản
+    H[Like/Dislike bài viết/bình luận]
+    
+    End((●))
+end
+
+subgraph System [HỆ THỐNG]
+    %% Xử lý hiển thị
+    V1[Tải danh sách bài viết]
+    W1[Sắp xếp theo thời gian]
+    X1[Hiển thị nội dung bài viết]
+    
+    %% Xử lý bình luận
+    Y1[Kiểm tra nội dung bình luận]
+    Z1{Bình luận hợp lệ?}
+    V2[Đăng bình luận]
+    W2[Thông báo lỗi]
+    
+    %% Xử lý tương tác
+    X2[Cập nhật số lượt tương tác]
+    Y2[Gửi thông báo cho người viết]
+    
+    Z[Cập nhật hoạt động diễn đàn]
+end
+
+%% Luồng xử lý chính
+Start --> A
+A --> V1
+V1 --> W1
+W1 --> B
+B --> C
+C --> X1
+X1 --> D
+
+%% Luồng bình luận
+D --> E
+E -->|Có| F
+F --> Y1
+Y1 --> Z1
+Z1 -->|Có| V2
+Z1 -->|Không| W2
+W2 --> F
+V2 --> Z
+
+%% Luồng trả lời bình luận
+D --> G
+G --> Y1
+
+%% Luồng tương tác
+D --> H
+H --> X2
+X2 --> Y2
+Y2 --> Z
+
+E -->|Không| End
+Z --> End
+
+%% Định dạng
+classDef default fill:#2a2a2a,stroke:#666,color:#fff,stroke-width:2px;
+classDef system fill:#1a1a1a,stroke:#666,color:#fff,stroke-width:2px;
+classDef decision fill:#483D8B,stroke:#666,color:#fff,stroke-width:2px;
+class V1,W1,X1,Y1,V2,W2,X2,Y2,Z system;
+class E,Z1 decision;
+
+
+------------Chat Student------------
+%%{init: {'theme': 'dark'}}%%
+graph TD
+
+subgraph System [HỆ THỐNG]
+    %% Xử lý hiển thị
+    V1[Tải danh sách giảng viên]
+    W1[Hiển thị trạng thái online]
+    X1[Tải lịch sử chat]
+    
+    %% Xử lý tin nhắn
+    Y1[Kiểm tra nội dung]
+    Z1{Tin nhắn hợp lệ?}
+    V2[Lưu và gửi tin nhắn]
+    W2[Thông báo lỗi]
+    
+    %% Thông báo
+    X2[Gửi thông báo cho giảng viên]
+    Y2[Đánh dấu đã đọc]
+    
+    Z[Cập nhật trạng thái chat]
+end
+
+
+subgraph Student [NGƯỜI DÙNG]
+    Start((●))
+    A[Truy cập mục chat]
+    B[Chọn giảng viên]
+    
+    %% Gửi tin nhắn
+    C[Soạn tin nhắn]
+    D[Đính kèm tệp]
+    E[Gửi tin nhắn]
+    
+    %% Xem tin nhắn
+    F[Xem tin nhắn]
+    G[Đọc tin nhắn mới]
+    
+    End((●))
+end
+
+%% Luồng xử lý chính
+Start --> A
+A --> V1
+V1 --> W1
+W1 --> B
+B --> X1
+X1 --> F
+
+%% Luồng gửi tin nhắn
+F --> C
+C --> D
+D --> E
+E --> Y1
+Y1 --> Z1
+Z1 -->|Có| V2
+Z1 -->|Không| W2
+W2 --> C
+V2 --> X2
+X2 --> Z
+
+%% Luồng xem tin nhắn mới
+F --> G
+G --> Y2
+Y2 --> Z
+
+Z --> End
+
+%% Định dạng
+classDef default fill:#2a2a2a,stroke:#666,color:#fff,stroke-width:2px;
+classDef system fill:#1a1a1a,stroke:#666,color:#fff,stroke-width:2px;
+classDef decision fill:#483D8B,stroke:#666,color:#fff,stroke-width:2px;
+classDef teacher fill:#4B0082,stroke:#666,color:#fff,stroke-width:2px;
+class V1,W1,X1,Y1,V2,W2,X2,Y2,Z system;
+class Z1 decision;
+class T1,T2,T3 teacher;
+
+
+------------Reviews------------
+%%{init: {'theme': 'dark'}}%%
+graph TD
+
+subgraph System [HỆ THỐNG]
+    %% Kiểm tra điều kiện
+    V1{Đã hoàn thành khóa học?}
+    W1[Hiển thị form đánh giá]
+    
+    %% Xử lý đánh giá
+    X1[Kiểm tra nội dung đánh giá]
+    Y1{Nội dung hợp lệ?}
+    Z1[Lưu đánh giá]
+    V2[Thông báo lỗi]
+    
+    %% Cập nhật
+    W2[Tính toán điểm trung bình]
+    X2[Cập nhật thống kê khóa học]
+    Y2[Gửi thông báo cho giảng viên]
+    
+    Z[Hiển thị kết quả]
+end
+
+subgraph Student [NGƯỜI DÙNG]
+    Start((●))
+    A[Hoàn thành khóa học]
+    B[Truy cập mục đánh giá]
+    
+    %% Đánh giá
+    C[Chọn số sao đánh giá]
+    D[Viết nhận xét]
+    E[Gửi đánh giá]
+    
+    End((●))
+end
+
+%% Luồng xử lý chính
+Start --> A
+A --> B
+B --> V1
+V1 -->|Có| W1
+V1 -->|Không| End
+W1 --> C
+
+%% Luồng đánh giá
+C --> D
+D --> E
+
+%% Xử lý đánh giá
+E --> X1
+X1 --> Y1
+Y1 -->|Có| Z1
+Y1 -->|Không| V2
+V2 --> D
+
+%% Cập nhật hệ thống
+Z1 --> W2
+W2 --> X2
+X2 --> Y2
+Y2 --> Z
+Z --> End
+
+%% Định dạng
+classDef default fill:#2a2a2a,stroke:#666,color:#fff,stroke-width:2px;
+classDef system fill:#1a1a1a,stroke:#666,color:#fff,stroke-width:2px;
+classDef decision fill:#483D8B,stroke:#666,color:#fff,stroke-width:2px;
+class V1,W1,X1,Z1,V2,W2,X2,Y2,Z system;
+class V1,Y1 decision;
