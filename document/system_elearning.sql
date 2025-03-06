@@ -593,6 +593,36 @@ LOCK TABLES `enrollments` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `forum_likes`
+--
+
+DROP TABLE IF EXISTS `forum_likes`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `forum_likes` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `user_id` bigint NOT NULL,
+  `topic_id` bigint NOT NULL COMMENT 'ID của bài viết được like',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_user_topic_like` (`user_id`,`topic_id`),
+  KEY `topic_id` (`topic_id`),
+  CONSTRAINT `forum_likes_topic_fk` FOREIGN KEY (`topic_id`) REFERENCES `forum_topics` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `forum_likes_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `forum_likes`
+--
+
+LOCK TABLES `forum_likes` WRITE;
+/*!40000 ALTER TABLE `forum_likes` DISABLE KEYS */;
+/*!40000 ALTER TABLE `forum_likes` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `forum_replies`
 --
 
@@ -1280,4 +1310,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-03-01  9:14:21
+-- Dump completed on 2025-03-06 20:00:42

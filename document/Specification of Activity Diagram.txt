@@ -12,33 +12,25 @@ A. NGƯỜI HỌC (STUDENT)
 		- Đánh giá khóa học
 B. GIẢNG VIÊN (INSTRUCTOR)
 	Quy trình quản lý khóa học:
-		Tạo khóa học mới
-		Upload nội dung học tập
-		Tạo bài tập/quiz
-		Lên lịch dạy trực tuyến
+		- Tạo khóa học mới, Upload nội dung học tập
+		- Chỉnh sửa khóa học
+		- Tạo bài tập/quiz
+		- Lên lịch dạy trực tuyến
+	Quy trình quản lý học viên
+		- Xem thông tin và tiến độ học tập của học viên
 	Quy trình đánh giá:
-		Chấm điểm bài tập
-		Tạo đề kiểm tra
-		Đánh giá học viên
-		Xuất báo cáo kết quả
+		- Chấm điểm bài tập, Đánh giá học viên
+		- Xuất báo cáo kết quả
 	Quy trình tương tác:
-		- Tham gia diễn đàn thảo luận
+		- Đăng bài và Tham gia diễn đàn thảo luận
 		- Chat giữa học viên và giảng viên
-		- Gửi thông báo cho lớp
 C. QUẢN TRỊ VIÊN (ADMIN)
 	Quy trình quản lý người dùng:
-		Thêm/sửa/xóa người dùng
-		Phân quyền người dùng
-		Quản lý thông tin cá nhân
+		- Phần quyền, thông tin, trạng thái tài khoản người dùng
 	Quy trình quản lý khóa học:
-		Duyệt khóa học mới
-		Quản lý danh mục
-		Theo dõi hoạt động
+		- Quản lý khóa học của giảng viên
+		- Quản lý danh mục
 	Quy trình quản lý tài chính:
-		Xử lý thanh toán
-		Quản lý ưu đãi
-		Xuất báo cáo doanh thu
+		- báo cáo doanh thu
 	Quy trình báo cáo:
-		Thống kê người dùng
-		Thống kê khóa học
-		Báo cáo doanh thu
+		- Thống kê học viên, giảng viên và khóa học
