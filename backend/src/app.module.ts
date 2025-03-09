@@ -6,9 +6,10 @@ import {
 } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { JwtModule } from '@nestjs/jwt';
 import { AuthModule } from './auth/auth.module';
-import { UserModule } from './user/user.module';
-import { CourseModule } from './course/course.module';
+import { UserModule } from './modules/user/user.module';
+import { CourseModule } from './modules/course/course.module';
 import { LoggerMiddleware } from './common/middleware/logger.middleware';
 import { AuthMiddleware } from './common/middleware/auth.middleware';
 import { CorsMiddleware } from './common/middleware/cors.middleware';
@@ -28,7 +29,18 @@ import { CorsMiddleware } from './common/middleware/cors.middleware';
         password: configService.get('DB_PASSWORD'),
         database: configService.get('DB_DATABASE'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: process.env.NODE_ENV !== 'production',
+        synchronize: false,
+        logging: true,
+      }),
+      inject: [ConfigService],
+    }),
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        secret: configService.get('JWT_SECRET'),
+        signOptions: {
+          expiresIn: configService.get('JWT_EXPIRES_IN', '7d'),
+        },
       }),
       inject: [ConfigService],
     }),
@@ -36,6 +48,7 @@ import { CorsMiddleware } from './common/middleware/cors.middleware';
     UserModule,
     CourseModule,
   ],
+  providers: [AuthMiddleware],
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer) {

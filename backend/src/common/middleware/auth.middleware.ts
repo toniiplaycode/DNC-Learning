@@ -10,8 +10,8 @@ import { ConfigService } from '@nestjs/config';
 @Injectable()
 export class AuthMiddleware implements NestMiddleware {
   constructor(
-    private jwtService: JwtService,
-    private configService: ConfigService,
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
   ) {}
 
   async use(req: Request, res: Response, next: NextFunction) {
