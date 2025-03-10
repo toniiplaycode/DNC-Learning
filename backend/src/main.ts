@@ -1,34 +1,25 @@
 import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
-import { SwaggerModule, DocumentBuilder } from '@nestjs/swagger';
 import { AppModule } from './app.module';
+import { BadRequestException, ValidationPipe } from '@nestjs/common';
+import { ValidationError } from 'class-validator';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create(AppModule); // tạo app
 
-  // Global prefix
-
-  // CORS
-  app.enableCors();
-
-  // Validation
+  // custom validation pipe cho toàn bộ controller
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true,
       transform: true,
+      exceptionFactory: (validationErrors: ValidationError[] = []) => {
+        return new BadRequestException(
+          validationErrors.map((error) => ({
+            [error.property]: Object.values(error.constraints || {})[0],
+          })),
+        );
+      },
     }),
   );
 
-  // Swagger
-  const config = new DocumentBuilder()
-    .setTitle('E-Learning API')
-    .setDescription('API documentation for E-Learning system')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api-docs', app, document);
-
-  await app.listen(process.env.PORT || 3000);
+  await app.listen(process.env.PORT ?? 3000);
 }
 bootstrap();

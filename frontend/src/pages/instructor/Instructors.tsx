@@ -237,7 +237,7 @@ const Instructors = () => {
                     "&:hover": { boxShadow: 6 },
                     height: "100%",
                   }}
-                  onClick={() => navigate(`/instructor/${instructor.id}`)}
+                  onClick={() => navigate(`/view-instructor/${instructor.id}`)}
                 >
                   <CardContent>
                     <Box sx={{ display: "flex", gap: 2 }}>

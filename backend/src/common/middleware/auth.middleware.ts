@@ -6,33 +6,47 @@ import {
 import { Request, Response, NextFunction } from 'express';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import { User } from '../../entities/User';
+import { UsersService } from 'src/modules/users/users.service';
+
+interface RequestWithUser extends Request {
+  user: User;
+}
 
 @Injectable()
 export class AuthMiddleware implements NestMiddleware {
   constructor(
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
+    private readonly userService: UsersService,
   ) {}
 
-  async use(req: Request, res: Response, next: NextFunction) {
+  async use(req: RequestWithUser, res: Response, next: NextFunction) {
     try {
       const authHeader = req.headers.authorization;
 
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
-        throw new UnauthorizedException('No token provided');
+        throw new UnauthorizedException('Token không hợp lệ');
       }
 
       const token = authHeader.split(' ')[1];
+
+      // verify token và trả về thông tin của user
       const payload = await this.jwtService.verifyAsync(token, {
         secret: this.configService.get<string>('JWT_SECRET'),
       });
 
-      // Thêm thông tin user vào request
-      req['user'] = payload;
+      // tìm user theo email
+      const user = await this.userService.findByEmail(payload.email);
 
+      if (!user) {
+        throw new UnauthorizedException('User không tồn tại');
+      }
+
+      req.user = user;
       next();
     } catch (error) {
-      throw new UnauthorizedException('Invalid token');
+      throw new UnauthorizedException('Token không hợp lệ hoặc đã hết hạn');
     }
   }
 }

@@ -1,14 +1,10 @@
 import { Box } from "@mui/material";
-import { ReactNode } from "react";
+import { Outlet } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./Footer";
 import ChatBox from "../chat/ChatBox";
 
-interface MainLayoutProps {
-  children: ReactNode;
-}
-
-const MainLayout = ({ children }: MainLayoutProps) => {
+const MainLayout = () => {
   return (
     <Box
       sx={{
@@ -19,7 +15,7 @@ const MainLayout = ({ children }: MainLayoutProps) => {
     >
       <Header />
       <Box component="main" sx={{ pt: 8, flexGrow: 1 }}>
-        {children}
+        <Outlet />
       </Box>
       <Footer />
       <ChatBox />

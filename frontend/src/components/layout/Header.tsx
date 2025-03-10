@@ -224,7 +224,7 @@ const Header = () => {
         </ListItem>
 
         <ListItem disablePadding>
-          <ListItemButton onClick={() => navigate("/instructors")}>
+          <ListItemButton onClick={() => navigate("/list-instructors")}>
             <ListItemIcon>
               <PersonIcon />
             </ListItemIcon>
@@ -406,7 +406,7 @@ const Header = () => {
                   fontWeight: 500,
                   "&:hover": { bgcolor: "rgba(255, 255, 255, 0.1)" },
                 }}
-                onClick={() => navigate("/instructors")}
+                onClick={() => navigate("/list-instructors")}
               >
                 Giảng viên
               </Button>
