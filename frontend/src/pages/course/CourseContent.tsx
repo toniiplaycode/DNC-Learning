@@ -39,6 +39,10 @@ import ContentDiscussion from "../../components/course/ContentDiscussion";
 import { useParams, useNavigate } from "react-router-dom";
 import QuizContent from "../../components/course/QuizContent";
 import AssignmentContent from "../../components/course/AssignmentContent";
+import ContentDocuments from "../../components/course/ContentDocuments";
+import CourseRating from "../../components/course/CourseRating";
+import GradeOverview from "../../components/course/GradeOverview";
+import CourseStructure from "../../components/course/CourseStructure";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -374,6 +378,38 @@ const CourseContent = () => {
     },
   ];
 
+  // Thêm dữ liệu mock cho tài liệu
+  const mockDocuments = [
+    {
+      id: 1,
+      title: "Slide bài giảng React Hooks",
+      fileType: "pdf",
+      fileSize: "2.5 MB",
+      downloadUrl: "https://example.com/slides.pdf",
+    },
+    {
+      id: 2,
+      title: "Source code mẫu",
+      fileType: "code",
+      fileSize: "350 KB",
+      downloadUrl: "https://example.com/code.zip",
+    },
+    {
+      id: 3,
+      title: "Hình minh họa kiến trúc",
+      fileType: "image",
+      fileSize: "1.2 MB",
+      downloadUrl: "https://example.com/architecture.png",
+    },
+    {
+      id: 4,
+      title: "Tài liệu tham khảo",
+      fileType: "pdf",
+      fileSize: "4.8 MB",
+      downloadUrl: "https://example.com/references.pdf",
+    },
+  ];
+
   return (
     <Container maxWidth="xl" sx={{ py: 4, mt: 2 }}>
       <Box sx={{ mb: 3, display: "flex", alignItems: "center", gap: 2 }}>
@@ -434,151 +470,10 @@ const CourseContent = () => {
             {/* Course Structure */}
             <Card>
               <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Nội dung khóa học
-                </Typography>
-                <List>
-                  {mockCourseData.sections.map((section, sectionIndex) => (
-                    <Box key={section.id}>
-                      <ListItem
-                        onClick={() => handleSectionToggle(section.id)}
-                        sx={{
-                          cursor: "pointer",
-                          "&:hover": {
-                            bgcolor: "action.hover",
-                          },
-                        }}
-                      >
-                        <ListItemText
-                          primary={
-                            <Box sx={{ display: "flex", alignItems: "center" }}>
-                              <Typography variant="body1" sx={{ mr: 1 }}>
-                                {sectionIndex + 1}.
-                              </Typography>
-                              {section.title}
-                              {expandedSections.includes(section.id) ? (
-                                <ExpandLess sx={{ ml: "auto" }} />
-                              ) : (
-                                <ExpandMore sx={{ ml: "auto" }} />
-                              )}
-                            </Box>
-                          }
-                          secondary={
-                            <LinearProgress
-                              variant="determinate"
-                              value={section.progress}
-                              sx={{ height: 4, mt: 1 }}
-                            />
-                          }
-                        />
-                      </ListItem>
-                      <Box
-                        sx={{
-                          display: expandedSections.includes(section.id)
-                            ? "block"
-                            : "none",
-                        }}
-                      >
-                        <List dense>
-                          {section.contents.map((content, contentIndex) => (
-                            <ListItem
-                              key={content.id}
-                              onClick={() => handleContentClick(content)}
-                              sx={{
-                                pl: 4,
-                                opacity: content.locked ? 0.5 : 1,
-                                cursor: "pointer",
-                                bgcolor:
-                                  selectedContent?.id === content.id
-                                    ? "action.selected"
-                                    : "transparent",
-                                "&:hover": {
-                                  bgcolor:
-                                    selectedContent?.id === content.id
-                                      ? "action.selected"
-                                      : "action.hover",
-                                },
-                              }}
-                            >
-                              <ListItemIcon>
-                                {getContentIcon(content.type)}
-                              </ListItemIcon>
-                              <ListItemText
-                                primary={
-                                  <Box
-                                    sx={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                    }}
-                                  >
-                                    <Typography variant="body2" sx={{ mr: 1 }}>
-                                      {sectionIndex + 1}.{contentIndex + 1}
-                                    </Typography>
-                                    {content.title}
-                                  </Box>
-                                }
-                                secondary={content.duration}
-                                primaryTypographyProps={{
-                                  color:
-                                    selectedContent?.id === content.id
-                                      ? "primary"
-                                      : "text.primary",
-                                }}
-                              />
-                              {content.completed && (
-                                <CheckCircle color="success" />
-                              )}
-                              {content.locked && <Lock />}
-                            </ListItem>
-                          ))}
-                          {section.assessment && (
-                            <ListItem
-                              sx={{
-                                pl: 4,
-                                opacity: section.assessment.locked ? 0.5 : 1,
-                                cursor: "pointer",
-                                bgcolor:
-                                  selectedContent?.id === section.assessment.id
-                                    ? "action.selected"
-                                    : "transparent",
-                                "&:hover": {
-                                  bgcolor:
-                                    selectedContent?.id ===
-                                    section.assessment.id
-                                      ? "action.selected"
-                                      : "action.hover",
-                                },
-                              }}
-                            >
-                              <ListItemIcon>
-                                <Quiz
-                                  color={
-                                    selectedContent?.id ===
-                                    section.assessment.id
-                                      ? "primary"
-                                      : "inherit"
-                                  }
-                                />
-                              </ListItemIcon>
-                              <ListItemText
-                                primary={section.assessment.title}
-                                secondary={`${section.assessment.questions} câu hỏi • ${section.assessment.duration}`}
-                                primaryTypographyProps={{
-                                  color:
-                                    selectedContent?.id ===
-                                    section.assessment.id
-                                      ? "primary"
-                                      : "text.primary",
-                                }}
-                              />
-                              {section.assessment.locked && <Lock />}
-                            </ListItem>
-                          )}
-                        </List>
-                      </Box>
-                    </Box>
-                  ))}
-                </List>
+                <CourseStructure
+                  sections={mockCourseData.sections}
+                  handleContentClick={handleContentClick}
+                />
               </CardContent>
             </Card>
           </Stack>
@@ -616,68 +511,9 @@ const CourseContent = () => {
                 </TabPanel>
 
                 <TabPanel value={activeTab} index={2}>
-                  <Typography variant="h6" gutterBottom>
-                    Tài liệu học tập
-                  </Typography>
-                  <Stack spacing={3}>
-                    {mockCourseData.sections.map((section, index) => (
-                      <Box key={section.id}>
-                        <Typography
-                          variant="subtitle1"
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            mb: 1,
-                            color: "text.secondary",
-                          }}
-                        >
-                          <Typography component="span" sx={{ mr: 1 }}>
-                            {index + 1}.
-                          </Typography>
-                          {section.title}
-                        </Typography>
-                        {section.materials.length > 0 ? (
-                          <Card variant="outlined">
-                            <List dense>
-                              {section.materials.map((material) => (
-                                <ListItem
-                                  key={material.id}
-                                  sx={{
-                                    "&:hover": {
-                                      bgcolor: "action.hover",
-                                    },
-                                  }}
-                                >
-                                  <ListItemIcon>
-                                    {material.type === "pdf" ? (
-                                      <Description color="error" />
-                                    ) : material.type === "doc" ? (
-                                      <Description color="primary" />
-                                    ) : (
-                                      <LinkIcon color="info" />
-                                    )}
-                                  </ListItemIcon>
-                                  <ListItemText
-                                    primary={material.title}
-                                    sx={{ cursor: "pointer" }}
-                                    onClick={() => window.open(material.url)}
-                                  />
-                                </ListItem>
-                              ))}
-                            </List>
-                          </Card>
-                        ) : (
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            sx={{ ml: 2 }}
-                          >
-                            Chưa có tài liệu
-                          </Typography>
-                        )}
-                      </Box>
-                    ))}
-                  </Stack>
+                  <Box sx={{ mb: 4 }}>
+                    <ContentDocuments documents={mockDocuments} />
+                  </Box>
                 </TabPanel>
 
                 <TabPanel value={activeTab} index={3}>
@@ -685,139 +521,7 @@ const CourseContent = () => {
                 </TabPanel>
 
                 <TabPanel value={activeTab} index={4}>
-                  <Box>
-                    <Typography variant="h6" gutterBottom>
-                      Đánh giá khóa học
-                    </Typography>
-
-                    {/* Form đánh giá */}
-                    <Card sx={{ mb: 4 }}>
-                      <CardContent>
-                        <Stack spacing={2}>
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 1,
-                            }}
-                          >
-                            <Typography>Đánh giá của bạn:</Typography>
-                            <Rating
-                              value={rating}
-                              onChange={(event, newValue) => {
-                                setRating(newValue);
-                              }}
-                              size="large"
-                            />
-                            <Typography color="text.secondary">
-                              ({rating} / 5)
-                            </Typography>
-                          </Box>
-
-                          <TextField
-                            fullWidth
-                            multiline
-                            rows={3}
-                            placeholder="Chia sẻ nhận xét của bạn về khóa học..."
-                            value={comment}
-                            onChange={(e) => setComment(e.target.value)}
-                          />
-
-                          <Box
-                            sx={{ display: "flex", justifyContent: "flex-end" }}
-                          >
-                            <Button
-                              variant="contained"
-                              disabled={!rating || !comment.trim()}
-                              onClick={() => {
-                                // Xử lý gửi đánh giá
-                                console.log({ rating, comment });
-                              }}
-                            >
-                              Gửi đánh giá
-                            </Button>
-                          </Box>
-                        </Stack>
-                      </CardContent>
-                    </Card>
-
-                    {/* Danh sách đánh giá */}
-                    <Typography variant="h6" gutterBottom sx={{ mt: 4 }}>
-                      Đánh giá từ học viên
-                    </Typography>
-
-                    <Stack spacing={2}>
-                      {mockReviews.map((review) => (
-                        <Card key={review.id} variant="outlined">
-                          <CardContent>
-                            <Stack spacing={2}>
-                              <Box sx={{ display: "flex", gap: 2 }}>
-                                <Avatar src={review.user.avatar} />
-                                <Box sx={{ flex: 1 }}>
-                                  <Typography variant="subtitle1">
-                                    {review.user.name}
-                                  </Typography>
-                                  <Box
-                                    sx={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      gap: 1,
-                                    }}
-                                  >
-                                    <Rating
-                                      value={review.rating}
-                                      readOnly
-                                      size="small"
-                                    />
-                                    <Typography
-                                      variant="body2"
-                                      color="text.secondary"
-                                    >
-                                      {new Date(
-                                        review.createdAt
-                                      ).toLocaleDateString()}
-                                    </Typography>
-                                  </Box>
-                                </Box>
-                              </Box>
-
-                              <Typography variant="body1">
-                                {review.comment}
-                              </Typography>
-
-                              {review.reply && (
-                                <Box sx={{ pl: 6, pt: 1 }}>
-                                  <Card variant="outlined">
-                                    <CardContent>
-                                      <Typography
-                                        variant="subtitle2"
-                                        color="primary"
-                                        gutterBottom
-                                      >
-                                        Phản hồi từ giảng viên
-                                      </Typography>
-                                      <Typography variant="body2">
-                                        {review.reply.comment}
-                                      </Typography>
-                                      <Typography
-                                        variant="caption"
-                                        color="text.secondary"
-                                        sx={{ mt: 1, display: "block" }}
-                                      >
-                                        {new Date(
-                                          review.reply.createdAt
-                                        ).toLocaleDateString()}
-                                      </Typography>
-                                    </CardContent>
-                                  </Card>
-                                </Box>
-                              )}
-                            </Stack>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </Stack>
-                  </Box>
+                  <CourseRating courseId={courseId} />
                 </TabPanel>
               </>
             )}
@@ -1030,146 +734,6 @@ const ContentDetail = ({ content }: { content: ContentItem }) => {
           )}
         </CardContent>
       </Card>
-    </Box>
-  );
-};
-
-// Component GradeOverview
-const GradeOverview = () => {
-  // Mock data điểm số
-  const mockGrades: GradeItem[] = [
-    {
-      id: 1,
-      title: "Kiểm tra: React Hooks",
-      type: "quiz",
-      score: 85,
-      maxScore: 100,
-      completedAt: "2024-03-10",
-      weight: 10,
-    },
-    {
-      id: 2,
-      title: "Bài tập: Todo App",
-      type: "assignment",
-      score: 90,
-      maxScore: 100,
-      completedAt: "2024-03-12",
-      weight: 20,
-      feedback: "Hoàn thành tốt các yêu cầu cơ bản. Cần cải thiện phần UI/UX.",
-    },
-    {
-      id: 3,
-      title: "Kiểm tra giữa kỳ",
-      type: "midterm",
-      score: 88,
-      maxScore: 100,
-      completedAt: "2024-03-15",
-      weight: 30,
-    },
-    {
-      id: 4,
-      title: "Kiểm tra cuối kỳ",
-      type: "final",
-      score: 92,
-      maxScore: 100,
-      completedAt: "2024-03-20",
-      weight: 40,
-    },
-  ];
-
-  // Tính điểm trung bình có trọng số
-  const calculateFinalGrade = (grades: GradeItem[]) => {
-    const totalWeight = grades.reduce(
-      (sum, grade) => sum + (grade.weight || 0),
-      0
-    );
-    const weightedSum = grades.reduce(
-      (sum, grade) =>
-        sum + (grade.score * (grade.weight || 0)) / grade.maxScore,
-      0
-    );
-    return ((weightedSum / totalWeight) * 100).toFixed(1);
-  };
-
-  return (
-    <Box>
-      {/* Tổng quan điểm */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Grid container spacing={3} alignItems="center">
-            <Grid item xs={12} md={6}>
-              <Typography variant="h6" gutterBottom>
-                Điểm tổng kết
-              </Typography>
-              <Typography variant="h3" color="primary">
-                {calculateFinalGrade(mockGrades)}%
-              </Typography>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Stack spacing={1}>
-                <Typography variant="body2" color="text.secondary">
-                  • Kiểm tra:{" "}
-                  {mockGrades.filter((g) => g.type === "quiz").length} bài
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  • Bài tập:{" "}
-                  {mockGrades.filter((g) => g.type === "assignment").length} bài
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  • Đã hoàn thành: {mockGrades.length} / {mockGrades.length} bài
-                  đánh giá
-                </Typography>
-              </Stack>
-            </Grid>
-          </Grid>
-        </CardContent>
-      </Card>
-
-      {/* Chi tiết điểm */}
-      <Typography variant="h6" gutterBottom>
-        Chi tiết điểm số
-      </Typography>
-      <Stack spacing={2}>
-        {mockGrades.map((grade) => (
-          <Card key={grade.id} variant="outlined">
-            <CardContent>
-              <Grid container spacing={2} alignItems="center">
-                <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle1">{grade.title}</Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Hoàn thành:{" "}
-                    {new Date(grade.completedAt).toLocaleDateString()}
-                  </Typography>
-                </Grid>
-                <Grid item xs={12} sm={3}>
-                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Typography variant="h6" color="primary">
-                      {grade.score}/{grade.maxScore}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      ({grade.weight}%)
-                    </Typography>
-                  </Box>
-                </Grid>
-                <Grid item xs={12} sm={3}>
-                  <LinearProgress
-                    variant="determinate"
-                    value={(grade.score / grade.maxScore) * 100}
-                    sx={{ height: 8, borderRadius: 1 }}
-                  />
-                </Grid>
-                {grade.feedback && (
-                  <Grid item xs={12}>
-                    <Typography variant="body2" color="text.secondary">
-                      Nhận xét: {grade.feedback}
-                    </Typography>
-                  </Grid>
-                )}
-              </Grid>
-            </CardContent>
-          </Card>
-        ))}
-      </Stack>
     </Box>
   );
 };
