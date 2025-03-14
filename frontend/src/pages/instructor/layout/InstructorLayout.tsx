@@ -8,12 +8,10 @@ import {
   ListItemIcon,
   ListItemText,
   IconButton,
-  Typography,
   useTheme,
   useMediaQuery,
   AppBar,
   Toolbar,
-  Stack,
   Tooltip,
 } from "@mui/material";
 import {
@@ -29,7 +27,7 @@ import {
   CalendarMonth,
 } from "@mui/icons-material";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
-import Logo from "../../assets/logo.png";
+import Logo from "../../../assets/logo.png";
 
 const DRAWER_WIDTH = 280;
 const COLLAPSED_DRAWER_WIDTH = 70;

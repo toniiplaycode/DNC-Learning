@@ -8,7 +8,6 @@ import {
   Menu,
   MenuItem,
   Avatar,
-  Badge,
   InputBase,
   Dialog,
   styled,
@@ -25,16 +24,11 @@ import {
 } from "@mui/material";
 import {
   Search,
-  Notifications,
   KeyboardArrowDown,
   School,
   Assignment,
   Close,
   Menu as MenuIcon,
-  ChevronRight,
-  Forum,
-  Article,
-  Person,
   ExitToApp,
   School as SchoolIcon,
   Person as PersonIcon,
@@ -44,7 +38,7 @@ import {
 } from "@mui/icons-material";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import NotificationCenter from "../notification/NotificationCenter";
+import NotificationCenter from "../../../components/student/notification/NotificationCenter";
 
 const categories = [
   { name: "Lập trình", path: "/courses/programming" },

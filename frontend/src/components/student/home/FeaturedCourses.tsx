@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Typography, Grid, Button } from "@mui/material";
-import CardCourse from "../common/CardCourse";
+import CardCourse from "../../../components/common/CardCourse";
 import { useNavigate } from "react-router-dom";
 
 const mockCourses = [

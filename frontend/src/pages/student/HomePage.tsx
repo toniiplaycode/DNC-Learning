@@ -1,8 +1,8 @@
 import { Container, Typography, Grid, Button, Box, Stack } from "@mui/material";
 
-import FeaturedCourses from "../components/home/FeaturedCourses";
-import FeaturedInstructors from "../components/home/FeaturedInstructors";
-import FeaturedForumDiscussions from "../components/home/FeaturedForumDiscussions";
+import FeaturedCourses from "../../components/student/home/FeaturedCourses";
+import FeaturedInstructors from "../../components/student/home/FeaturedInstructors";
+import FeaturedForumDiscussions from "../../components/student/home/FeaturedForumDiscussions";
 
 const HomePage = () => {
   return (

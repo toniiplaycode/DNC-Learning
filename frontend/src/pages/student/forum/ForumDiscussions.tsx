@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Box,
   Container,
@@ -17,7 +17,7 @@ import {
   Chip,
 } from "@mui/material";
 import { Search } from "@mui/icons-material";
-import ForumDiscussionCard from "../../components/forum/ForumDiscussionCard";
+import ForumDiscussionCard from "../../../components/student/forum/ForumDiscussionCard";
 
 // Cập nhật interface
 interface ForumTopic {

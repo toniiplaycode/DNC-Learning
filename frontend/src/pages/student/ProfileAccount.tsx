@@ -46,9 +46,9 @@ import {
   ContactPhone as ContactPhoneIcon,
   Assessment as AssessmentIcon,
 } from "@mui/icons-material";
-import CustomContainer from "../components/common/CustomContainer";
-import CertificateDetail from "../components/profile/CertificateDetail";
-import AvatarUpload from "../components/common/AvatarUpload";
+import CustomContainer from "../../components/common/CustomContainer";
+import CertificateDetail from "../../components/student/profile/CertificateDetail";
+import AvatarUpload from "../../components/common/AvatarUpload";
 
 // Cập nhật mock data theo cấu trúc CSDL
 const mockUserData = {

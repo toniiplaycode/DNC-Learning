@@ -1,20 +1,18 @@
 import { Routes, Route } from "react-router-dom";
-import MainLayout from "./components/layout/MainLayout";
-import HomePage from "./pages/HomePage";
-import EnrolledCourses from "./pages/EnrolledCourses";
-import CourseDetail from "./pages/CourseDetail";
-import ProfileAccount from "./pages/ProfileAccount";
-import Login from "./pages/auth/Login";
-import Register from "./pages/auth/Register";
+import HomePage from "./pages/student/HomePage";
+import EnrolledCourses from "./pages/student/EnrolledCourses";
+import CourseDetail from "./pages/student/CourseDetail";
+import ProfileAccount from "./pages/student/ProfileAccount";
+import Login from "./pages/student/auth/Login";
+import Register from "./pages/student/auth/Register";
 import InstructorProfile from "./pages/instructor/InstructorProfile";
-import Courses from "./pages/Courses";
+import Courses from "./pages/student/Courses";
 import Instructors from "./pages/instructor/Instructors";
-import ForumDiscussions from "./pages/forum/ForumDiscussions";
-import ForumDiscussionDetail from "./pages/forum/ForumDiscussionDetail";
-import CourseContent from "./pages/course/CourseContent";
-import PurchaseCourse from "./pages/PurchaseCourse";
+import ForumDiscussions from "./pages/student/forum/ForumDiscussions";
+import ForumDiscussionDetail from "./pages/student/forum/ForumDiscussionDetail";
+import CourseContent from "./pages/student/course/CourseContent";
+import PurchaseCourse from "./pages/student/PurchaseCourse";
 import InstructorDashboard from "./pages/instructor/InstructorDashboard";
-import InstructorLayout from "./components/layout/InstructorLayout";
 import InstructorCourses from "./pages/instructor/InstructorCourses";
 import InstructorCourseView from "./pages/instructor/InstructorCourseView";
 import InstructorStudents from "./pages/instructor/InstructorStudents";
@@ -24,6 +22,8 @@ import InstructorChats from "./pages/instructor/InstructorChats";
 import InstructorNotifications from "./pages/instructor/InstructorNotifications";
 import InstructorSchedules from "./pages/instructor/InstructorSchedules";
 import InstructorSettings from "./pages/instructor/InstructorSettings";
+import MainLayout from "./pages/student/layout/MainLayout";
+import InstructorLayout from "./pages/instructor/layout/InstructorLayout";
 
 const App = () => {
   return (

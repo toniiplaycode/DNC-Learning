@@ -36,7 +36,7 @@ import {
   LibraryBooks,
 } from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
-import CustomContainer from "../components/common/CustomContainer";
+import CustomContainer from "../../components/common/CustomContainer";
 
 interface Lesson {
   id: number;

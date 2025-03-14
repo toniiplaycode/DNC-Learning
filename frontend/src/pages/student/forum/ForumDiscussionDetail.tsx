@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Box,
   Container,
@@ -8,7 +8,6 @@ import {
   Avatar,
   Stack,
   Chip,
-  Divider,
   TextField,
   Button,
   IconButton,
@@ -20,8 +19,7 @@ import {
   Visibility,
   Share,
 } from "@mui/icons-material";
-import { useParams } from "react-router-dom";
-import ScrollOnTop from "../../components/common/ScrollOnTop";
+import ScrollOnTop from "../../../components/common/ScrollOnTop";
 
 interface Reply {
   id: number;
@@ -87,7 +85,6 @@ const mockReplies: Reply[] = Array(5)
   }));
 
 const ForumDiscussionDetail = () => {
-  const { id } = useParams();
   const [liked, setLiked] = useState(mockDiscussionDetail.isLiked);
   const [replyContent, setReplyContent] = useState("");
   const [replies, setReplies] = useState<Reply[]>(mockReplies);

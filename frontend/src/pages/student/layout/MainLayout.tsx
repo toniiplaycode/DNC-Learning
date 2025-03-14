@@ -2,7 +2,7 @@ import { Box } from "@mui/material";
 import { Outlet } from "react-router-dom";
 import Header from "./Header";
 import Footer from "./Footer";
-import ChatBox from "../chat/ChatBox";
+import ChatBox from "../../../components/student/chat/ChatBox";
 
 const MainLayout = () => {
   return (

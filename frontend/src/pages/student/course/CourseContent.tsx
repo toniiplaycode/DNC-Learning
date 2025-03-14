@@ -13,13 +13,13 @@ import {
   CardContent,
 } from "@mui/material";
 import { ArrowBack } from "@mui/icons-material";
-import ContentDiscussion from "../../components/course/ContentDiscussion";
 import { useParams, useNavigate } from "react-router-dom";
-import ContentDocuments from "../../components/course/ContentDocuments";
-import CourseRating from "../../components/course/CourseRating";
-import GradeOverview from "../../components/course/GradeOverview";
-import CourseStructure from "../../components/course/CourseStructure";
-import ContentDetail from "../../components/course/ContentDetail";
+import ContentDiscussion from "../../../components/course/ContentDiscussion";
+import ContentDocuments from "../../../components/course/ContentDocuments";
+import CourseRating from "../../../components/course/CourseRating";
+import GradeOverview from "../../../components/course/GradeOverview";
+import CourseStructure from "../../../components/course/CourseStructure";
+import ContentDetail from "../../../components/course/ContentDetail";
 interface TabPanelProps {
   children?: React.ReactNode;
   value: number;

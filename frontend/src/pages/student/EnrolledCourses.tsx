@@ -1,7 +1,7 @@
 import React from "react";
 import { Box, Typography, Grid } from "@mui/material";
-import CustomContainer from "../components/common/CustomContainer";
-import CardCourse from "../components/common/CardCourse";
+import CustomContainer from "../../components/common/CustomContainer";
+import CardCourse from "../../components/common/CardCourse";
 
 // Mock data - sau này sẽ được thay thế bằng dữ liệu thật từ API
 const mockEnrolledCourses = [

@@ -6,8 +6,6 @@ import {
   Box,
   Typography,
   IconButton,
-  Grid,
-  Divider,
   Button,
 } from "@mui/material";
 import {
@@ -17,7 +15,7 @@ import {
   VerifiedUser as VerifiedUserIcon,
 } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
-import "../../styles/fonts.css";
+import "../../../styles/fonts.css";
 
 interface CertificateDetailProps {
   open: boolean;

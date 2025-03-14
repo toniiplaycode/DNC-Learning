@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import {
   Box,
   Container,
@@ -14,11 +14,10 @@ import {
   Pagination,
   Stack,
   Slider,
-  Chip,
   InputAdornment,
 } from "@mui/material";
 import { Search } from "@mui/icons-material";
-import CardCourse from "../components/common/CardCourse";
+import CardCourse from "../../components/common/CardCourse";
 
 // Thêm hàm format rating
 const formatRating = (rating: number): number => {
