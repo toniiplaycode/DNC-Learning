@@ -17,7 +17,6 @@ import {
   IconButton,
 } from "@mui/material";
 import {
-  Description,
   PictureAsPdf,
   Image,
   Code,

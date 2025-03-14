@@ -12,10 +12,6 @@ import {
   Divider,
 } from "@mui/material";
 
-interface CourseRatingProps {
-  courseId: number | string;
-}
-
 interface ReviewItem {
   id: number;
   userName: string;
@@ -25,40 +21,22 @@ interface ReviewItem {
   date: string;
 }
 
-const CourseRating: React.FC<CourseRatingProps> = ({ courseId }) => {
+interface Reviews {
+  id: number;
+  userName: string;
+  userAvatar: string;
+  rating: number;
+  content: string;
+  date: string;
+}
+
+interface CourseRatingProps {
+  Reviews: Reviews[];
+}
+
+const CourseRating: React.FC<CourseRatingProps> = ({ Reviews }) => {
   const [rating, setRating] = useState<number | null>(0);
   const [reviewText, setReviewText] = useState("");
-
-  // Mock data - sẽ được thay thế bằng API call trong tương lai
-  const mockReviews: ReviewItem[] = [
-    {
-      id: 1,
-      userName: "Nguyễn Văn A",
-      userAvatar: "/src/assets/avatar.png",
-      rating: 5,
-      content:
-        "Khóa học rất chi tiết và dễ hiểu. Giảng viên giải thích rõ ràng và có nhiều ví dụ thực tế.",
-      date: "2023-08-15",
-    },
-    {
-      id: 2,
-      userName: "Trần Thị B",
-      userAvatar: "/src/assets/avatar.png",
-      rating: 4,
-      content:
-        "Nội dung hay, nhưng một số phần hơi khó hiểu. Hy vọng sẽ có thêm ví dụ trong các phần nâng cao.",
-      date: "2023-08-10",
-    },
-    {
-      id: 3,
-      userName: "Lê Văn C",
-      userAvatar: "/src/assets/avatar.png",
-      rating: 5,
-      content:
-        "Tuyệt vời! Đã học được rất nhiều điều mới và áp dụng ngay vào dự án của mình.",
-      date: "2023-07-22",
-    },
-  ];
 
   const handleSubmitReview = () => {
     // Xử lý gửi đánh giá
@@ -124,7 +102,7 @@ const CourseRating: React.FC<CourseRatingProps> = ({ courseId }) => {
       </Typography>
 
       <Stack spacing={2}>
-        {mockReviews.map((review) => (
+        {Reviews.map((review: ReviewItem) => (
           <Card key={review.id} variant="outlined">
             <CardContent>
               <Stack direction="row" spacing={2} alignItems="flex-start">

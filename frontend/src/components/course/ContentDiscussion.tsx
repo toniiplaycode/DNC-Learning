@@ -11,64 +11,28 @@ import {
   IconButton,
   Menu,
   MenuItem,
-  Divider,
 } from "@mui/material";
-import { MoreVert, ThumbUp, ThumbUpOutlined, Reply } from "@mui/icons-material";
+import { MoreVert, Reply } from "@mui/icons-material";
 
-interface Comment {
+// Create a custom comment interface
+interface CommentData {
   id: number;
   user: {
     id: number;
     name: string;
     avatar: string;
-    role: "student" | "instructor";
+    role: string;
   };
   content: string;
   createdAt: string;
-  replies?: Comment[];
+  replies?: CommentData[];
 }
-
-interface ContentDiscussionProps {
-  contentId: number;
-  contentTitle: string;
-}
-
-const mockComments: Comment[] = [
-  {
-    id: 1,
-    user: {
-      id: 1,
-      name: "John Doe",
-      avatar: "/src/assets/avatar.png",
-      role: "student",
-    },
-    content: "Làm thế nào để xử lý re-render tối ưu trong React?",
-    createdAt: "2 giờ trước",
-    replies: [
-      {
-        id: 2,
-        user: {
-          id: 2,
-          name: "Instructor Alex",
-          avatar: "/src/assets/avatar.png",
-          role: "instructor",
-        },
-        content: `Để tối ưu re-render trong React, bạn có thể:
-        1. Sử dụng React.memo() cho component
-        2. Tối ưu useCallback và useMemo
-        3. Tránh inline function trong props
-        4. Phân chia component hợp lý`,
-        createdAt: "1 giờ trước",
-      },
-    ],
-  },
-];
 
 const CommentItem = ({
   comment,
   isReply = false,
 }: {
-  comment: Comment;
+  comment: CommentData;
   isReply?: boolean;
 }) => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -142,10 +106,11 @@ const CommentItem = ({
   );
 };
 
-const ContentDiscussion: React.FC<ContentDiscussionProps> = ({
-  contentId,
-  contentTitle,
-}) => {
+interface ContentDiscussionProps {
+  comments: CommentData[];
+}
+
+const ContentDiscussion: React.FC<ContentDiscussionProps> = ({ comments }) => {
   const [newComment, setNewComment] = useState("");
 
   const handleSubmitComment = () => {
@@ -184,7 +149,7 @@ const ContentDiscussion: React.FC<ContentDiscussionProps> = ({
 
       {/* Comments list */}
       <Stack spacing={2}>
-        {mockComments.map((comment) => (
+        {comments.map((comment) => (
           <Box key={comment.id}>
             <CommentItem comment={comment} />
             {comment.replies?.map((reply) => (

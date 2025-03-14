@@ -5,45 +5,21 @@ import {
   Grid,
   Card,
   Typography,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
   LinearProgress,
   Stack,
   Button,
   Tabs,
   Tab,
   CardContent,
-  Rating,
-  TextField,
-  Avatar,
 } from "@mui/material";
-import {
-  PlayCircle,
-  Description,
-  Assignment,
-  Quiz,
-  VideoCall,
-  MenuBook,
-  Link as LinkIcon,
-  CheckCircle,
-  Lock,
-  CircleOutlined,
-  CheckCircleOutline,
-  ArrowBack,
-  ExpandMore,
-  ExpandLess,
-} from "@mui/icons-material";
+import { ArrowBack } from "@mui/icons-material";
 import ContentDiscussion from "../../components/course/ContentDiscussion";
 import { useParams, useNavigate } from "react-router-dom";
-import QuizContent from "../../components/course/QuizContent";
-import AssignmentContent from "../../components/course/AssignmentContent";
 import ContentDocuments from "../../components/course/ContentDocuments";
 import CourseRating from "../../components/course/CourseRating";
 import GradeOverview from "../../components/course/GradeOverview";
 import CourseStructure from "../../components/course/CourseStructure";
-
+import ContentDetail from "../../components/course/ContentDetail";
 interface TabPanelProps {
   children?: React.ReactNode;
   value: number;
@@ -80,56 +56,6 @@ interface ContentItem {
   objectives?: string[];
   prerequisites?: string[];
   keywords?: string[];
-}
-
-interface Section {
-  id: number;
-  title: string;
-  progress: number;
-  contents: ContentItem[];
-  assessment?: {
-    id: number;
-    title: string;
-    type: "quiz";
-    questions: number;
-    duration: string;
-    passingScore: number;
-    maxAttempts: number;
-    locked: boolean;
-  };
-  materials: {
-    id: number;
-    title: string;
-    type: "pdf" | "doc" | "link";
-    url: string;
-  }[];
-}
-
-interface GradeItem {
-  id: number;
-  title: string;
-  type: "quiz" | "assignment" | "midterm" | "final";
-  score: number;
-  maxScore: number;
-  completedAt: string;
-  weight?: number; // Trọng số điểm
-  feedback?: string;
-}
-
-interface Review {
-  id: number;
-  user: {
-    name: string;
-    avatar: string;
-  };
-  rating: number;
-  comment: string;
-  createdAt: string;
-  isInstructor: boolean;
-  reply?: {
-    comment: string;
-    createdAt: string;
-  };
 }
 
 const mockCourseData = {
@@ -309,30 +235,6 @@ const CourseContent = () => {
     getFirstContent(mockCourseData.sections)
   );
   const [activeTab, setActiveTab] = useState(0);
-  const [expandedSections, setExpandedSections] = useState<number[]>([1]);
-  const [rating, setRating] = useState<number | null>(0);
-  const [comment, setComment] = useState("");
-
-  const getContentIcon = (type: string) => {
-    switch (type) {
-      case "video":
-        return <PlayCircle color="primary" />;
-      case "slide":
-        return <Description color="info" />;
-      case "meet":
-        return <VideoCall color="success" />;
-      case "quiz":
-        return <Quiz color="warning" />;
-      case "assignment":
-        return <Assignment color="error" />;
-      case "document":
-        return <MenuBook />;
-      case "link":
-        return <LinkIcon />;
-      default:
-        return <Description />;
-    }
-  };
 
   const handleContentClick = (content: ContentItem) => {
     if (!content.locked) {
@@ -340,41 +242,34 @@ const CourseContent = () => {
     }
   };
 
-  const handleSectionToggle = (sectionId: number) => {
-    setExpandedSections((prev) =>
-      prev.includes(sectionId)
-        ? prev.filter((id) => id !== sectionId)
-        : [...prev, sectionId]
-    );
-  };
-
-  // Mock data đánh giá
-  const mockReviews: Review[] = [
+  const mockComments = [
     {
       id: 1,
       user: {
-        name: "Nguyễn Văn A",
+        id: 1,
+        name: "John Doe",
         avatar: "/src/assets/avatar.png",
+        role: "student",
       },
-      rating: 5,
-      comment: "Khóa học rất hay và chi tiết. Giảng viên nhiệt tình hỗ trợ.",
-      createdAt: "2024-03-15",
-      isInstructor: false,
-      reply: {
-        comment: "Cảm ơn bạn đã đánh giá. Chúc bạn học tập tốt!",
-        createdAt: "2024-03-15",
-      },
-    },
-    {
-      id: 2,
-      user: {
-        name: "Trần Thị B",
-        avatar: "/src/assets/avatar.png",
-      },
-      rating: 4,
-      comment: "Nội dung dễ hiểu, có nhiều bài tập thực hành.",
-      createdAt: "2024-03-14",
-      isInstructor: false,
+      content: "Làm thế nào để xử lý re-render tối ưu trong React?",
+      createdAt: "2 giờ trước",
+      replies: [
+        {
+          id: 2,
+          user: {
+            id: 2,
+            name: "Instructor Alex",
+            avatar: "/src/assets/avatar.png",
+            role: "instructor",
+          },
+          content: `Để tối ưu re-render trong React, bạn có thể:
+        1. Sử dụng React.memo() cho component
+        2. Tối ưu useCallback và useMemo
+        3. Tránh inline function trong props
+        4. Phân chia component hợp lý`,
+          createdAt: "1 giờ trước",
+        },
+      ],
     },
   ];
 
@@ -407,6 +302,83 @@ const CourseContent = () => {
       fileType: "pdf",
       fileSize: "4.8 MB",
       downloadUrl: "https://example.com/references.pdf",
+    },
+  ];
+
+  // Mock data
+  const mockGrades = [
+    {
+      id: 1,
+      title: "Quiz 1: React Hooks Basics",
+      type: "quiz",
+      score: 8,
+      maxScore: 10,
+      weight: 10,
+      completedAt: "2023-08-15",
+    },
+    {
+      id: 2,
+      title: "Assignment 1: Todo App",
+      type: "assignment",
+      score: 85,
+      maxScore: 100,
+      weight: 15,
+      completedAt: "2023-08-20",
+      feedback:
+        "Good work on component structure. Could improve on state management.",
+    },
+    {
+      id: 3,
+      title: "Midterm Exam",
+      type: "midterm",
+      score: 75,
+      maxScore: 100,
+      weight: 30,
+      completedAt: "2023-09-05",
+      feedback:
+        "Strong understanding of core concepts, but needs improvement in advanced topics.",
+    },
+    {
+      id: 4,
+      title: "Assignment 2: E-commerce App",
+      type: "assignment",
+      score: 92,
+      maxScore: 100,
+      weight: 15,
+      completedAt: "2023-09-25",
+      feedback:
+        "Excellent work! Very clean code and good performance optimization.",
+    },
+  ];
+
+  // Mock data - sẽ được thay thế bằng API call trong tương lai
+  const mockReviews = [
+    {
+      id: 1,
+      userName: "Nguyễn Văn A",
+      userAvatar: "/src/assets/avatar.png",
+      rating: 5,
+      content:
+        "Khóa học rất chi tiết và dễ hiểu. Giảng viên giải thích rõ ràng và có nhiều ví dụ thực tế.",
+      date: "2023-08-15",
+    },
+    {
+      id: 2,
+      userName: "Trần Thị B",
+      userAvatar: "/src/assets/avatar.png",
+      rating: 4,
+      content:
+        "Nội dung hay, nhưng một số phần hơi khó hiểu. Hy vọng sẽ có thêm ví dụ trong các phần nâng cao.",
+      date: "2023-08-10",
+    },
+    {
+      id: 3,
+      userName: "Lê Văn C",
+      userAvatar: "/src/assets/avatar.png",
+      rating: 5,
+      content:
+        "Tuyệt vời! Đã học được rất nhiều điều mới và áp dụng ngay vào dự án của mình.",
+      date: "2023-07-22",
     },
   ];
 
@@ -503,10 +475,7 @@ const CourseContent = () => {
 
                 <TabPanel value={activeTab} index={1}>
                   {selectedContent && (
-                    <ContentDiscussion
-                      contentId={selectedContent.id}
-                      contentTitle={selectedContent.title}
-                    />
+                    <ContentDiscussion comments={mockComments} />
                   )}
                 </TabPanel>
 
@@ -517,11 +486,11 @@ const CourseContent = () => {
                 </TabPanel>
 
                 <TabPanel value={activeTab} index={3}>
-                  <GradeOverview />
+                  <GradeOverview grades={mockGrades} />
                 </TabPanel>
 
                 <TabPanel value={activeTab} index={4}>
-                  <CourseRating courseId={courseId} />
+                  <CourseRating Reviews={mockReviews} />
                 </TabPanel>
               </>
             )}
@@ -529,212 +498,6 @@ const CourseContent = () => {
         </Grid>
       </Grid>
     </Container>
-  );
-};
-
-// Thêm nhiều câu hỏi mẫu hơn
-const mockQuestions = [
-  {
-    id: 1,
-    content: "useState hook được sử dụng để làm gì?",
-    options: [
-      "Quản lý side effects",
-      "Quản lý state trong functional component",
-      "Tối ưu performance",
-      "Xử lý routing",
-    ],
-    correctAnswer: 1,
-    explanation:
-      "useState là hook cơ bản để quản lý state trong functional component.",
-  },
-  {
-    id: 2,
-    content: "useEffect hook được gọi khi nào?",
-    options: [
-      "Chỉ khi component mount",
-      "Sau mỗi lần render",
-      "Khi dependencies thay đổi",
-      "Tất cả các trường hợp trên",
-    ],
-    correctAnswer: 3,
-    explanation:
-      "useEffect có thể được gọi trong cả 3 trường hợp tùy vào cách sử dụng dependencies.",
-  },
-  {
-    id: 3,
-    content: "useMemo hook dùng để làm gì?",
-    options: [
-      "Tối ưu performance bằng cách cache giá trị",
-      "Quản lý state",
-      "Xử lý side effects",
-      "Tạo ref",
-    ],
-    correctAnswer: 0,
-    explanation:
-      "useMemo giúp tối ưu performance bằng cách cache giá trị tính toán.",
-  },
-  {
-    id: 4,
-    content: "useCallback hook khác gì với useMemo?",
-    options: [
-      "useCallback cache function, useMemo cache value",
-      "useCallback cache value, useMemo cache function",
-      "Không có sự khác biệt",
-      "Không thể so sánh",
-    ],
-    correctAnswer: 0,
-    explanation:
-      "useCallback được sử dụng để cache function references, trong khi useMemo cache giá trị tính toán.",
-  },
-  {
-    id: 5,
-    content: "Custom hooks trong React là gì?",
-    options: [
-      "Các hooks có sẵn của React",
-      "Function bắt đầu bằng use và có thể tái sử dụng logic",
-      "Class components",
-      "Thư viện bên thứ 3",
-    ],
-    correctAnswer: 1,
-    explanation:
-      "Custom hooks là các function bắt đầu bằng use và cho phép tái sử dụng logic giữa các components.",
-  },
-];
-
-// Cập nhật ContentDetail component
-const ContentDetail = ({ content }: { content: ContentItem }) => {
-  return (
-    <Box>
-      {/* Main content area */}
-      {content.type === "video" && (
-        <Box sx={{ mb: 4 }}>
-          <Box sx={{ aspectRatio: "16/9", bgcolor: "black", mb: 2 }}>
-            {/* Video player component */}
-          </Box>
-        </Box>
-      )}
-
-      {content.type === "meet" && (
-        <Box sx={{ mb: 4 }}>
-          <Stack spacing={2}>
-            <Typography>Link meeting: {content.url}</Typography>
-            <Button
-              variant="contained"
-              startIcon={<VideoCall />}
-              onClick={() => window.open(content.url)}
-            >
-              Tham gia buổi học
-            </Button>
-          </Stack>
-        </Box>
-      )}
-
-      {content.type === "quiz" && (
-        <Box sx={{ mb: 4 }}>
-          <QuizContent
-            quizData={{
-              id: content.id,
-              title: content.title,
-              description: content.description,
-              timeLimit: 30,
-              passingScore: content.passingScore || 70,
-              maxAttempts: content.maxAttempts || 2,
-              questions: mockQuestions,
-            }}
-            onComplete={(score) => {
-              console.log("Quiz completed with score:", score);
-              // Thêm logic cập nhật trạng thái hoàn thành
-            }}
-          />
-        </Box>
-      )}
-
-      {content.type === "assignment" && (
-        <Box sx={{ mb: 4 }}>
-          <AssignmentContent
-            assignmentData={{
-              id: content.id,
-              title: content.title,
-              description: content.description,
-              dueDate: "23:59 15/03/2024",
-              maxFileSize: 10,
-              allowedFileTypes: [
-                ".pdf",
-                ".doc",
-                ".docx",
-                ".zip",
-                ".rar",
-                ".js",
-                ".ts",
-                ".tsx",
-              ],
-              maxFiles: 5,
-            }}
-            onSubmit={(files, note) => {
-              console.log("Files:", files);
-              console.log("Note:", note);
-              // Thêm logic xử lý submit
-            }}
-          />
-        </Box>
-      )}
-
-      {/* Content description */}
-      <Card sx={{ mt: 3, boxShadow: 0 }}>
-        <CardContent>
-          <Typography variant="h6" gutterBottom>
-            {content.title}
-          </Typography>
-
-          <Typography
-            variant="body1"
-            sx={{
-              whiteSpace: "pre-line",
-              mb: 3,
-              color: "text.secondary",
-            }}
-          >
-            {content.description}
-          </Typography>
-
-          {content.objectives && (
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle1" gutterBottom>
-                Mục tiêu bài học:
-              </Typography>
-              <List dense>
-                {content.objectives.map((obj, index) => (
-                  <ListItem key={index}>
-                    <ListItemIcon>
-                      <CheckCircleOutline color="success" />
-                    </ListItemIcon>
-                    <ListItemText primary={obj} />
-                  </ListItem>
-                ))}
-              </List>
-            </Box>
-          )}
-
-          {content.prerequisites && (
-            <Box sx={{ mb: 3 }}>
-              <Typography variant="subtitle1" gutterBottom>
-                Yêu cầu trước khi học:
-              </Typography>
-              <List dense>
-                {content.prerequisites.map((req, index) => (
-                  <ListItem key={index}>
-                    <ListItemIcon>
-                      <CircleOutlined sx={{ fontSize: 8 }} />
-                    </ListItemIcon>
-                    <ListItemText primary={req} />
-                  </ListItem>
-                ))}
-              </List>
-            </Box>
-          )}
-        </CardContent>
-      </Card>
-    </Box>
   );
 };
 

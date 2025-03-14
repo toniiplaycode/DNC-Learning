@@ -15,62 +15,18 @@ interface GradeItem {
   type: "quiz" | "assignment" | "midterm" | "final";
   score: number;
   maxScore: number;
-  weight: number;
-  completedAt: string;
-  feedback?: string;
 }
 
-const GradeOverview: React.FC = () => {
-  // Mock data
-  const mockGrades: GradeItem[] = [
-    {
-      id: 1,
-      title: "Quiz 1: React Hooks Basics",
-      type: "quiz",
-      score: 8,
-      maxScore: 10,
-      weight: 10,
-      completedAt: "2023-08-15",
-    },
-    {
-      id: 2,
-      title: "Assignment 1: Todo App",
-      type: "assignment",
-      score: 85,
-      maxScore: 100,
-      weight: 15,
-      completedAt: "2023-08-20",
-      feedback:
-        "Good work on component structure. Could improve on state management.",
-    },
-    {
-      id: 3,
-      title: "Midterm Exam",
-      type: "midterm",
-      score: 75,
-      maxScore: 100,
-      weight: 30,
-      completedAt: "2023-09-05",
-      feedback:
-        "Strong understanding of core concepts, but needs improvement in advanced topics.",
-    },
-    {
-      id: 4,
-      title: "Assignment 2: E-commerce App",
-      type: "assignment",
-      score: 92,
-      maxScore: 100,
-      weight: 15,
-      completedAt: "2023-09-25",
-      feedback:
-        "Excellent work! Very clean code and good performance optimization.",
-    },
-  ];
+interface GradeOverviewProps {
+  grades: GradeItem[];
+}
 
+const GradeOverview: React.FC<GradeOverviewProps> = ({ grades }) => {
   // Calculate overall grade
-  const totalWeight = mockGrades.reduce((acc, grade) => acc + grade.weight, 0);
-  const weightedScore = mockGrades.reduce(
-    (acc, grade) => acc + (grade.score / grade.maxScore) * grade.weight,
+  const totalWeight = grades.reduce((acc, grade) => acc + grade.weight, 0);
+  const weightedScore = grades.reduce(
+    (acc: number, grade: GradeItem) =>
+      acc + (grade.score / grade.maxScore) * grade.weight,
     0
   );
   const overallPercentage =
@@ -111,7 +67,7 @@ const GradeOverview: React.FC = () => {
         Chi tiết điểm số
       </Typography>
       <Stack spacing={2}>
-        {mockGrades.map((grade) => (
+        {grades.map((grade) => (
           <Card key={grade.id} variant="outlined">
             <CardContent>
               <Grid container spacing={2} alignItems="center">
