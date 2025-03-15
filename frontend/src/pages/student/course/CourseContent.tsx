@@ -14,12 +14,12 @@ import {
 } from "@mui/material";
 import { ArrowBack } from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
-import ContentDiscussion from "../../../components/course/ContentDiscussion";
-import ContentDocuments from "../../../components/course/ContentDocuments";
-import CourseRating from "../../../components/course/CourseRating";
-import GradeOverview from "../../../components/course/GradeOverview";
-import CourseStructure from "../../../components/course/CourseStructure";
-import ContentDetail from "../../../components/course/ContentDetail";
+import ContentDiscussion from "../../../components/common/course/ContentDiscussion";
+import ContentDocuments from "../../../components/common/course/ContentDocuments";
+import CourseRating from "../../../components/common/course/CourseRating";
+import GradeOverview from "../../../components/common/course/GradeOverview";
+import CourseStructure from "../../../components/common/course/CourseStructure";
+import ContentDetail from "../../../components/common/course/ContentDetail";
 interface TabPanelProps {
   children?: React.ReactNode;
   value: number;
@@ -234,13 +234,14 @@ const CourseContent = () => {
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(
     getFirstContent(mockCourseData.sections)
   );
-  const [activeTab, setActiveTab] = useState(0);
 
   const handleContentClick = (content: ContentItem) => {
     if (!content.locked) {
       setSelectedContent(content);
     }
   };
+
+  const [activeTab, setActiveTab] = useState(0);
 
   const mockComments = [
     {
