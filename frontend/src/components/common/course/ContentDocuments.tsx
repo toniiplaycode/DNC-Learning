@@ -15,6 +15,7 @@ import {
   DialogContent,
   DialogActions,
   IconButton,
+  DialogContentText,
 } from "@mui/material";
 import {
   PictureAsPdf,
@@ -25,6 +26,7 @@ import {
   Download,
   Close,
   FileOpen,
+  Delete,
 } from "@mui/icons-material";
 
 interface Document {
@@ -38,13 +40,21 @@ interface Document {
 
 interface ContentDocumentsProps {
   documents: Document[];
+  isInstructor?: boolean;
+  onDeleteDocument?: (documentId: number) => void;
 }
 
-const ContentDocuments: React.FC<ContentDocumentsProps> = ({ documents }) => {
+const ContentDocuments: React.FC<ContentDocumentsProps> = ({
+  documents,
+  isInstructor = false,
+  onDeleteDocument,
+}) => {
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(
     null
   );
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState<number | null>(null);
 
   const getFileIcon = (fileType: string) => {
     switch (fileType) {
@@ -68,6 +78,20 @@ const ContentDocuments: React.FC<ContentDocumentsProps> = ({ documents }) => {
 
   const handleDownload = (url: string) => {
     window.open(url, "_blank");
+  };
+
+  const handleDeleteClick = (e: React.MouseEvent, docId: number) => {
+    e.stopPropagation();
+    setDocumentToDelete(docId);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (documentToDelete !== null && onDeleteDocument) {
+      onDeleteDocument(documentToDelete);
+    }
+    setDeleteDialogOpen(false);
+    setDocumentToDelete(null);
   };
 
   const renderPreview = (doc: Document) => {
@@ -115,23 +139,35 @@ const ContentDocuments: React.FC<ContentDocumentsProps> = ({ documents }) => {
 
   return (
     <Box>
-      <Typography variant="h6" gutterBottom>
-        Tài liệu học tập
-      </Typography>
-
       <List sx={{ bgcolor: "background.paper" }}>
         {documents.map((doc) => (
           <ListItem
             key={doc.id}
             disablePadding
             secondaryAction={
-              <Button
-                size="small"
-                startIcon={<Download />}
-                onClick={() => handleDownload(doc.downloadUrl)}
-              >
-                Tải xuống
-              </Button>
+              <Stack direction="row" spacing={1}>
+                <Button
+                  size="small"
+                  startIcon={<Download />}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDownload(doc.downloadUrl);
+                  }}
+                >
+                  Tải xuống
+                </Button>
+                {isInstructor && (
+                  <IconButton
+                    edge="end"
+                    aria-label="delete"
+                    onClick={(e) => handleDeleteClick(e, doc.id)}
+                    color="error"
+                    size="small"
+                  >
+                    <Delete />
+                  </IconButton>
+                )}
+              </Stack>
             }
           >
             <ListItemButton onClick={() => handlePreview(doc)}>
@@ -199,6 +235,26 @@ const ContentDocuments: React.FC<ContentDocumentsProps> = ({ documents }) => {
             </DialogActions>
           </>
         )}
+      </Dialog>
+
+      {/* Dialog xác nhận xóa */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+      >
+        <DialogTitle>Xác nhận xóa tài liệu</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Bạn có chắc chắn muốn xóa tài liệu này? Hành động này không thể hoàn
+            tác.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Hủy</Button>
+          <Button onClick={handleConfirmDelete} color="error">
+            Xóa
+          </Button>
+        </DialogActions>
       </Dialog>
     </Box>
   );

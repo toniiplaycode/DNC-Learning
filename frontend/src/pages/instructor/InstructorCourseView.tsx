@@ -11,24 +11,9 @@ import {
   Chip,
   Avatar,
   Button,
-  IconButton,
   Divider,
   List,
   LinearProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  FormHelperText,
-  Alert,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
 } from "@mui/material";
 import {
   People,
@@ -42,16 +27,19 @@ import {
   MenuBook,
   Link as LinkIcon,
   Add,
-  Close,
-  CloudUpload,
-  InsertDriveFile,
-  Edit,
 } from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
 import ContentDiscussion from "../../components/common/course/ContentDiscussion";
 import ContentDocuments from "../../components/common/course/ContentDocuments";
 import ContentDetail from "../../components/common/course/ContentDetail";
 import CourseStructure from "../../components/instructor/course-view/CourseStructure";
+import DialogAddEditLesson from "../../components/instructor/course-view/DialogAddEditLesson";
+import DialogAddEditDocument from "../../components/instructor/course-view/DialogAddEditDocument";
+import DialogAddEditQuiz from "../../components/instructor/course-view/DialogAddEditQuiz";
+import DialogAddEditAssignment from "../../components/instructor/course-view/DialogAddEditAssignment";
+import DialogAddEditSection from "../../components/instructor/course-view/DialogAddEditSection";
+import DialogSetting from "../../components/instructor/course-view/DialogSetting";
+import CourseQuizAssignment from "../../components/instructor/course-view/CourseQuizAssignment";
 
 // Định nghĩa interface cho ContentItem
 interface ContentItem {
@@ -208,7 +196,7 @@ const mockCourseData = {
       progress: 30,
       contents: [
         {
-          id: 4,
+          id: 6,
           type: "video",
           title: "Components và Props",
           duration: "15:00",
@@ -217,7 +205,7 @@ const mockCourseData = {
           locked: false,
         },
         {
-          id: 5,
+          id: 7,
           type: "assignment",
           title: "Bài tập Components",
           url: "https://example.com/assignment1",
@@ -321,6 +309,51 @@ const mockComments = [
   },
 ];
 
+// Thêm mock data cho quizzes và assignments
+const mockQuizzes = [
+  {
+    id: 1,
+    title: "Kiểm tra kiến thức React cơ bản",
+    description: "Bài kiểm tra nhanh về các kiến thức React đã học",
+    duration: 30,
+    maxAttempts: 2,
+    passingScore: 70,
+    sectionId: 1,
+    totalQuestions: 15,
+  },
+  {
+    id: 2,
+    title: "Kiểm tra TypeScript",
+    description: "Đánh giá kiến thức về TypeScript và cách sử dụng với React",
+    duration: 45,
+    maxAttempts: 3,
+    passingScore: 75,
+    sectionId: 2,
+    totalQuestions: 20,
+  },
+];
+
+const mockAssignments = [
+  {
+    id: 1,
+    title: "Xây dựng ứng dụng Todo List",
+    description: "Sử dụng React và TypeScript để xây dựng ứng dụng Todo List",
+    dueDate: "2024-05-15",
+    maxScore: 100,
+    sectionId: 3,
+    totalSubmissions: 12,
+  },
+  {
+    id: 2,
+    title: "Tạo form với validation",
+    description: "Xây dựng form đăng ký với validation sử dụng React Hook Form",
+    dueDate: "2024-05-20",
+    maxScore: 100,
+    sectionId: 4,
+    totalSubmissions: 8,
+  },
+];
+
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
@@ -354,17 +387,9 @@ const InstructorCourseView = () => {
     mockCourseData.sections.map((section) => section.id)
   );
 
-  // Cập nhật kiểu dữ liệu của selectedContent
-  const [selectedContent, setSelectedContent] = useState<{
-    sectionId: number;
-    content: ContentItem;
-  } | null>(
-    mockCourseData.sections[0]?.contents[0]
-      ? {
-          sectionId: mockCourseData.sections[0].id,
-          content: mockCourseData.sections[0].contents[0],
-        }
-      : null
+  // Khởi tạo selectedContent với nội dung đầu tiên
+  const [selectedContent, setSelectedContent] = useState<ContentItem | null>(
+    getFirstContent(mockCourseData.sections)
   );
 
   // Thêm state quản lý modal
@@ -374,6 +399,7 @@ const InstructorCourseView = () => {
   const [openAddQuizModal, setOpenAddQuizModal] = useState(false);
   const [openAddAssignmentModal, setOpenAddAssignmentModal] = useState(false);
   const [currentSectionId, setCurrentSectionId] = useState<number | null>(null);
+  const [contentToEdit, setContentToEdit] = useState<ContentItem | null>(null);
 
   // Form state cho modal thêm/sửa nội dung
   const [contentForm, setContentForm] = useState({
@@ -401,22 +427,46 @@ const InstructorCourseView = () => {
     section: "",
   });
 
-  // Thêm state cho modal quản lý section
-  const [openSectionModal, setOpenSectionModal] = useState(false);
-  const [isEditSection, setIsEditSection] = useState(false);
-  const [sectionForm, setSectionForm] = useState({
-    id: 0,
-    title: "",
-    description: "",
-    position: 0,
+  // Thêm state quản lý section modals
+  const [openAddSectionModal, setOpenAddSectionModal] = useState(false);
+  const [openEditSectionModal, setOpenEditSectionModal] = useState(false);
+  const [sectionToEdit, setSectionToEdit] = useState<any>(null);
+
+  // State quản lý document modals
+  const [openEditDocumentModal, setOpenEditDocumentModal] = useState(false);
+  const [documentToEdit, setDocumentToEdit] = useState<any>(null);
+
+  // State quản lý quiz modals
+  const [openEditQuizModal, setOpenEditQuizModal] = useState(false);
+  const [quizToEdit, setQuizToEdit] = useState<any>(null);
+
+  // Thêm state quản lý modals bài tập
+  const [openEditAssignmentModal, setOpenEditAssignmentModal] = useState(false);
+  const [assignmentToEdit, setAssignmentToEdit] = useState<any>(null);
+
+  // Thêm state cho modal cài đặt
+  const [openSettingsModal, setOpenSettingsModal] = useState(false);
+  const [courseSettings, setCourseSettings] = useState({
+    isPublished: mockCourseData.status === "published",
+    visibility: "public",
+    allowPreview: true,
+    requireEnrollment: true,
+    price: mockCourseData.price || 0,
+    salePrice: 0,
+    enrollmentLimit: 0,
+    passingScore: 70,
+    certificateEnabled: true,
+    discountCodes: [],
   });
 
-  // Cập nhật hàm handleContentClick để lưu cả sectionId
-  const handleContentClick = (sectionId: number, content: ContentItem) => {
-    setSelectedContent({
-      sectionId,
-      content,
-    });
+  const handleContentClick = (content: ContentItem) => {
+    setSelectedContent(content);
+
+    // Kích hoạt tab "Nội dung" (giả sử tab nội dung có index là 0)
+    setTabValue(0);
+
+    // Hoặc nếu tab được quản lý bằng tên
+    // setActiveTab("content");
   };
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -522,114 +572,261 @@ const InstructorCourseView = () => {
     }
   };
 
-  // Hàm mở modal với reset file
+  // Hàm mở modal thêm nội dung mới
   const handleOpenAddContentModal = (sectionId: number) => {
-    // Tìm section được chọn
-    const section = mockCourseData.sections.find((s) => s.id === sectionId);
-    if (!section) return;
-
-    // Tính vị trí mặc định (cuối section)
-    const defaultPosition = section.contents ? section.contents.length : 0;
-
-    setContentForm({
-      title: "",
-      type: "video",
-      description: "",
-      duration: "",
-      url: "",
-      sectionId: sectionId,
-      position: defaultPosition,
-    });
+    setCurrentSectionId(sectionId);
     setOpenAddContentModal(true);
   };
 
-  // Cập nhật hàm mở modal sửa
+  // Hàm mở modal sửa nội dung
   const handleOpenEditContentModal = (
     content: ContentItem,
     sectionId: number
   ) => {
-    setContentForm({
-      title: content.title,
-      type: content.type,
-      description: content.description,
-      duration: content.duration || "",
-      url: content.url,
-      sectionId: sectionId,
-      position:
-        mockCourseData.sections
-          .find((s) => s.id === sectionId)
-          ?.contents.findIndex((c) => c.id === content.id) || 0,
-    });
+    setContentToEdit(content);
+    setCurrentSectionId(sectionId);
     setOpenEditContentModal(true);
   };
 
-  // Hàm xử lý submit với file
-  const handleContentFormSubmit = (isEdit: boolean) => {
-    // Nếu đang tải file thì tải lên trước
-    if (selectedFile && !isUploading && uploadProgress === 0) {
-      simulateFileUpload();
-      return;
-    }
+  // Xử lý khi submit form thêm mới
+  const handleAddContent = (contentData: any) => {
+    console.log("Thêm nội dung mới:", contentData);
+    // Thực hiện thêm nội dung vào state hoặc gọi API
 
-    // Nếu đang tải lên thì không cho submit
-    if (isUploading) return;
-
-    // Xử lý lưu dữ liệu
-    console.log("Form submitted:", contentForm);
-    console.log("File uploaded:", selectedFile);
-
-    // Đóng modal tương ứng
-    if (isEdit) {
-      setOpenEditContentModal(false);
-    } else {
-      setOpenAddContentModal(false);
-    }
-
-    resetFileUpload();
+    // Đóng modal
+    setOpenAddContentModal(false);
+    setCurrentSectionId(null);
   };
 
-  // Hàm mở modal thêm section mới
-  const handleAddSection = () => {
-    setIsEditSection(false);
-    setSectionForm({
-      id: 0,
-      title: "",
-      description: "",
-      position: mockCourseData.sections.length,
+  // Xử lý khi submit form sửa
+  const handleUpdateContent = (contentData: any) => {
+    console.log("Cập nhật nội dung:", contentData);
+    // Thực hiện cập nhật nội dung trong state hoặc gọi API
+
+    // Đóng modal
+    setOpenEditContentModal(false);
+    setContentToEdit(null);
+    setCurrentSectionId(null);
+  };
+
+  // Hàm mở modal thêm section
+  const handleOpenAddSectionModal = () => {
+    setOpenAddSectionModal(true);
+  };
+
+  // Hàm mở modal sửa section
+  const handleOpenEditSectionModal = (section: any) => {
+    setSectionToEdit(section);
+    setOpenEditSectionModal(true);
+  };
+
+  // Xử lý khi thêm section mới
+  const handleAddSection = (sectionData: any) => {
+    console.log("Thêm phần học mới:", sectionData);
+    // Thực hiện thêm phần học vào state hoặc gọi API
+
+    // Đóng modal
+    setOpenAddSectionModal(false);
+  };
+
+  // Xử lý khi cập nhật section
+  const handleUpdateSection = (sectionData: any) => {
+    console.log("Cập nhật phần học:", sectionData);
+    // Thực hiện cập nhật phần học trong state hoặc gọi API
+
+    // Đóng modal
+    setOpenEditSectionModal(false);
+    setSectionToEdit(null);
+  };
+
+  // Hàm mở modal thêm document
+  const handleOpenAddDocumentModal = (sectionId?: number) => {
+    setCurrentSectionId(sectionId || null);
+    setOpenAddDocumentModal(true);
+  };
+
+  // Hàm mở modal sửa document
+  const handleOpenEditDocumentModal = (document: any, sectionId?: number) => {
+    setDocumentToEdit(document);
+    setCurrentSectionId(sectionId || null);
+    setOpenEditDocumentModal(true);
+  };
+
+  // Xử lý khi thêm document mới
+  const handleAddDocument = (documentData: any) => {
+    console.log("Thêm tài liệu mới:", documentData);
+    // Thực hiện thêm tài liệu vào state hoặc gọi API
+
+    // Đóng modal
+    setOpenAddDocumentModal(false);
+    setCurrentSectionId(null);
+  };
+
+  // Xử lý khi cập nhật document
+  const handleUpdateDocument = (documentData: any) => {
+    console.log("Cập nhật tài liệu:", documentData);
+    // Thực hiện cập nhật tài liệu trong state hoặc gọi API
+
+    // Đóng modal
+    setOpenEditDocumentModal(false);
+    setDocumentToEdit(null);
+    setCurrentSectionId(null);
+  };
+
+  // Hàm mở modal thêm quiz
+  const handleOpenAddQuizModal = (sectionId?: number) => {
+    setCurrentSectionId(sectionId || null);
+    setOpenAddQuizModal(true);
+  };
+
+  // Hàm mở modal sửa quiz
+  const handleOpenEditQuizModal = (quiz: any, sectionId?: number) => {
+    setQuizToEdit(quiz);
+    setCurrentSectionId(sectionId || null);
+    setOpenEditQuizModal(true);
+  };
+
+  // Xử lý khi thêm quiz mới
+  const handleAddQuiz = (quizData: any) => {
+    console.log("Thêm quiz mới:", quizData);
+    // Thực hiện thêm quiz vào state hoặc gọi API
+
+    // Đóng modal
+    setOpenAddQuizModal(false);
+    setCurrentSectionId(null);
+  };
+
+  // Xử lý khi cập nhật quiz
+  const handleUpdateQuiz = (quizData: any) => {
+    console.log("Cập nhật quiz:", quizData);
+    // Thực hiện cập nhật quiz trong state hoặc gọi API
+
+    // Đóng modal
+    setOpenEditQuizModal(false);
+    setQuizToEdit(null);
+    setCurrentSectionId(null);
+  };
+
+  // Hàm mở modal thêm assignment
+  const handleOpenAddAssignmentModal = (sectionId?: number) => {
+    setCurrentSectionId(sectionId || null);
+    setOpenAddAssignmentModal(true);
+  };
+
+  // Hàm mở modal sửa assignment
+  const handleOpenEditAssignmentModal = (
+    assignment: any,
+    sectionId?: number
+  ) => {
+    setAssignmentToEdit(assignment);
+    setCurrentSectionId(sectionId || null);
+    setOpenEditAssignmentModal(true);
+  };
+
+  // Xử lý khi thêm assignment mới
+  const handleAddAssignment = (assignmentData: any) => {
+    console.log("Thêm bài tập mới:", assignmentData);
+    // Thực hiện thêm bài tập vào state hoặc gọi API
+
+    // Đóng modal
+    setOpenAddAssignmentModal(false);
+    setCurrentSectionId(null);
+  };
+
+  // Xử lý khi cập nhật assignment
+  const handleUpdateAssignment = (assignmentData: any) => {
+    console.log("Cập nhật bài tập:", assignmentData);
+    // Thực hiện cập nhật bài tập trong state hoặc gọi API
+
+    // Đóng modal
+    setOpenEditAssignmentModal(false);
+    setAssignmentToEdit(null);
+    setCurrentSectionId(null);
+  };
+
+  // Hàm xử lý lưu cài đặt
+  const handleSaveSettings = (settings: any) => {
+    console.log("Lưu cài đặt khóa học:", settings);
+    // Cập nhật cài đặt vào state hoặc gọi API
+    setCourseSettings(settings);
+
+    // Đóng dialog
+    setOpenSettingsModal(false);
+  };
+
+  // Thêm hàm xử lý xóa section
+  const handleDeleteSection = (sectionId: number) => {
+    console.log("Xóa section:", sectionId);
+    // Cập nhật state để xóa section
+    const updatedSections = mockCourseData.sections.filter(
+      (section) => section.id !== sectionId
+    );
+    setMockCourseData({
+      ...mockCourseData,
+      sections: updatedSections,
     });
-    setOpenSectionModal(true);
+
+    // Nếu section bị xóa đang được chọn, reset selected content
+    if (selectedContent && selectedContent.sectionId === sectionId) {
+      setSelectedContent(null);
+    }
+
+    // Cũng cần loại bỏ sectionId khỏi danh sách các section đang mở
+    setExpandedSections(expandedSections.filter((id) => id !== sectionId));
   };
 
-  // Hàm mở modal chỉnh sửa section
-  const handleEditSection = (sectionId: number) => {
-    const section = mockCourseData.sections.find((s) => s.id === sectionId);
-    if (section) {
-      // Tìm vị trí hiện tại của section
-      const position = mockCourseData.sections.findIndex(
-        (s) => s.id === sectionId
-      );
+  // Thêm hàm xử lý xóa content
+  const handleDeleteContent = (contentId: number, sectionId: number) => {
+    console.log("Xóa content:", contentId, "từ section:", sectionId);
 
-      setIsEditSection(true);
-      setSectionForm({
-        id: section.id,
-        title: section.title,
-        description: section.description || "",
-        position: position,
+    // Tìm section chứa content
+    const sectionIndex = mockCourseData.sections.findIndex(
+      (section) => section.id === sectionId
+    );
+
+    if (sectionIndex !== -1) {
+      // Copy sections để tránh mutate state trực tiếp
+      const updatedSections = [...mockCourseData.sections];
+
+      // Lọc ra các content không bị xóa
+      updatedSections[sectionIndex].contents = updatedSections[
+        sectionIndex
+      ].contents.filter((content) => content.id !== contentId);
+
+      // Cập nhật state
+      setMockCourseData({
+        ...mockCourseData,
+        sections: updatedSections,
       });
-      setOpenSectionModal(true);
+
+      // Nếu content bị xóa đang được chọn, reset selected content
+      if (selectedContent && selectedContent.id === contentId) {
+        setSelectedContent(null);
+      }
     }
   };
 
-  // Hàm xử lý submit form section
-  const handleSectionFormSubmit = () => {
-    if (isEditSection) {
-      console.log("Cập nhật section:", sectionForm);
-      // Xử lý cập nhật section trên server
-    } else {
-      console.log("Thêm section mới:", sectionForm);
-      // Xử lý thêm section mới trên server
-    }
-    setOpenSectionModal(false);
+  // Thêm hàm xử lý xóa tài liệu
+  const handleDeleteDocument = (documentId: number) => {
+    console.log("Xóa tài liệu:", documentId);
+    // Lọc ra các tài liệu không bị xóa
+    const updatedDocuments = mockDocuments.filter(
+      (doc) => doc.id !== documentId
+    );
+
+    // Cập nhật state (giả sử bạn sẽ chuyển mockDocuments thành state)
+    // setMockDocuments(updatedDocuments);
+  };
+
+  // Thêm hàm xử lý xóa quiz và assignment
+  const handleDeleteQuiz = (quizId: number) => {
+    console.log("Xóa quiz:", quizId);
+    // Logic xóa quiz
+  };
+
+  const handleDeleteAssignment = (assignmentId: number) => {
+    console.log("Xóa assignment:", assignmentId);
+    // Logic xóa assignment
   };
 
   return (
@@ -708,7 +905,7 @@ const InstructorCourseView = () => {
                   variant="contained"
                   startIcon={<Settings />}
                   fullWidth
-                  onClick={() => navigate(`/instructor/courses/${id}/settings`)}
+                  onClick={() => setOpenSettingsModal(true)}
                 >
                   Cài đặt khóa học
                 </Button>
@@ -718,6 +915,14 @@ const InstructorCourseView = () => {
         </CardContent>
       </Card>
 
+      <DialogSetting
+        open={openSettingsModal}
+        onClose={() => setOpenSettingsModal(false)}
+        onSave={handleSaveSettings}
+        courseId={mockCourseData.id}
+        initialSettings={courseSettings}
+      />
+
       {/* Course Content */}
       <Grid container spacing={3}>
         {/* Left sidebar - Course Structure */}
@@ -725,20 +930,22 @@ const InstructorCourseView = () => {
           <CourseStructure
             sections={mockCourseData.sections}
             handleContentClick={handleContentClick}
-            handleAddSection={handleAddSection}
+            handleAddSection={handleOpenAddSectionModal}
             handleSectionToggle={handleSectionToggle}
             expandedSections={expandedSections}
-            handleEditSection={handleEditSection}
+            handleEditSection={handleOpenEditSectionModal}
             selectedContent={selectedContent}
             getContentIcon={getContentIcon}
             handleOpenEditContentModal={handleOpenEditContentModal}
             handleOpenAddContentModal={handleOpenAddContentModal}
+            onDeleteContent={handleDeleteContent}
+            onDeleteSection={handleDeleteSection}
           />
         </Grid>
 
         {/* Main Content */}
         <Grid item xs={12} md={9}>
-          <Card style={{ padding: "20px" }}>
+          <Card style={{ padding: "30x" }}>
             <Box sx={{ borderBottom: 1, borderColor: "divider", px: 2 }}>
               <Tabs value={tabValue} onChange={handleTabChange}>
                 <Tab label="Nội dung" />
@@ -751,7 +958,9 @@ const InstructorCourseView = () => {
 
             <TabPanel value={tabValue} index={0}>
               {selectedContent && (
-                <ContentDetail content={selectedContent.content} />
+                <>
+                  <ContentDetail content={selectedContent} />
+                </>
               )}
             </TabPanel>
 
@@ -825,7 +1034,11 @@ const InstructorCourseView = () => {
                   Thêm tài liệu
                 </Button>
               </Box>
-              <ContentDocuments documents={mockDocuments} />
+              <ContentDocuments
+                documents={mockDocuments}
+                isInstructor={true}
+                onDeleteDocument={handleDeleteDocument}
+              />
             </TabPanel>
 
             <TabPanel value={tabValue} index={3}>
@@ -859,853 +1072,119 @@ const InstructorCourseView = () => {
                   </Button>
                 </Stack>
               </Box>
-              <Typography>Quản lý bài tập và quiz của khóa học</Typography>
+              <CourseQuizAssignment
+                quizzes={mockQuizzes}
+                assignments={mockAssignments}
+                onEditQuiz={handleOpenEditQuizModal}
+                onDeleteQuiz={handleDeleteQuiz}
+                onEditAssignment={handleOpenEditAssignmentModal}
+                onDeleteAssignment={handleDeleteAssignment}
+                isInstructor={true}
+              />
             </TabPanel>
           </Card>
         </Grid>
       </Grid>
 
       {/* Thêm các Modal */}
-      {/* Modal Thêm nội dung mới */}
-      <Dialog
+      {/* Modal Thêm lesson mới */}
+      <DialogAddEditLesson
         open={openAddContentModal}
-        onClose={() => {
-          setOpenAddContentModal(false);
-          resetFileUpload();
-        }}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Typography variant="h6">Thêm nội dung mới</Typography>
-            <IconButton onClick={() => setOpenAddContentModal(false)}>
-              <Close />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={3} sx={{ mt: 1 }}>
-            {/* Chọn phần học */}
-            <FormControl fullWidth required>
-              <InputLabel>Phần học</InputLabel>
-              <Select
-                value={contentForm.sectionId}
-                onChange={(e) =>
-                  setContentForm({
-                    ...contentForm,
-                    sectionId: Number(e.target.value),
-                    // Reset position khi đổi section
-                    position:
-                      mockCourseData.sections.find(
-                        (s) => s.id === Number(e.target.value)
-                      )?.contents?.length || 0,
-                  })
-                }
-                label="Phần học"
-              >
-                {mockCourseData.sections.map((section) => (
-                  <MenuItem key={section.id} value={section.id}>
-                    {section.title}
-                  </MenuItem>
-                ))}
-              </Select>
-              <FormHelperText>Chọn phần học cho nội dung này</FormHelperText>
-            </FormControl>
+        onClose={() => setOpenAddContentModal(false)}
+        onSubmit={handleAddContent}
+        initialSectionId={currentSectionId || undefined}
+        sections={mockCourseData.sections}
+        editMode={false}
+      />
 
-            {/* Vị trí trong phần học */}
-            <FormControl fullWidth>
-              <InputLabel>Vị trí hiển thị</InputLabel>
-              <Select
-                value={contentForm.position}
-                onChange={(e) =>
-                  setContentForm({
-                    ...contentForm,
-                    position: Number(e.target.value),
-                  })
-                }
-                label="Vị trí hiển thị"
-              >
-                {/* Tạo danh sách vị trí có thể chọn */}
-                {contentForm.sectionId > 0 &&
-                  Array.from(
-                    {
-                      length:
-                        // Nếu đang sửa và section không đổi thì là contents.length
-                        // Nếu thêm mới hoặc đã đổi section thì là contents.length + 1
-                        openEditContentModal &&
-                        contentForm.sectionId === selectedContent?.sectionId
-                          ? mockCourseData.sections.find(
-                              (s) => s.id === contentForm.sectionId
-                            )?.contents.length || 0
-                          : (mockCourseData.sections.find(
-                              (s) => s.id === contentForm.sectionId
-                            )?.contents.length || 0) + 1,
-                    },
-                    (_, i) => {
-                      const section = mockCourseData.sections.find(
-                        (s) => s.id === contentForm.sectionId
-                      );
-                      const contents = section?.contents || [];
-
-                      return (
-                        <MenuItem key={i} value={i}>
-                          {i === 0
-                            ? "Đầu tiên trong phần này"
-                            : i === contents.length
-                            ? "Cuối cùng trong phần này"
-                            : `Sau "${contents[i - 1]?.title || ""}"`}
-                        </MenuItem>
-                      );
-                    }
-                  )}
-              </Select>
-              <FormHelperText>
-                Chọn vị trí hiển thị của nội dung trong phần học
-              </FormHelperText>
-            </FormControl>
-
-            {/* Các trường khác giữ nguyên */}
-            <TextField
-              label="Tiêu đề nội dung"
-              fullWidth
-              value={contentForm.title}
-              onChange={(e) =>
-                setContentForm({ ...contentForm, title: e.target.value })
-              }
-              required
-            />
-
-            <FormControl fullWidth>
-              <InputLabel>Loại nội dung</InputLabel>
-              <Select
-                value={contentForm.type}
-                onChange={(e) =>
-                  setContentForm({
-                    ...contentForm,
-                    type: e.target.value as ContentItem["type"],
-                  })
-                }
-                label="Loại nội dung"
-              >
-                <MenuItem value="video">Video</MenuItem>
-                <MenuItem value="slide">Slide</MenuItem>
-                <MenuItem value="document">Tài liệu</MenuItem>
-                <MenuItem value="assignment">Bài tập</MenuItem>
-                <MenuItem value="quiz">Quiz</MenuItem>
-                <MenuItem value="meet">Buổi học trực tuyến</MenuItem>
-                <MenuItem value="link">Đường dẫn</MenuItem>
-              </Select>
-            </FormControl>
-
-            <TextField
-              label="Mô tả"
-              fullWidth
-              multiline
-              rows={4}
-              value={contentForm.description}
-              onChange={(e) =>
-                setContentForm({ ...contentForm, description: e.target.value })
-              }
-            />
-
-            <TextField
-              label="Thời lượng (hh:mm:ss)"
-              fullWidth
-              value={contentForm.duration}
-              onChange={(e) =>
-                setContentForm({ ...contentForm, duration: e.target.value })
-              }
-              placeholder="VD: 10:30"
-            />
-
-            {/* Phần file upload cho video/document */}
-            {(contentForm.type === "video" ||
-              contentForm.type === "document" ||
-              contentForm.type === "slide") && (
-              <Box>
-                <Typography variant="subtitle2" gutterBottom>
-                  Tải lên{" "}
-                  {contentForm.type === "video"
-                    ? "video"
-                    : contentForm.type === "slide"
-                    ? "slide"
-                    : "tài liệu"}
-                </Typography>
-
-                {uploadError && (
-                  <Alert severity="error" sx={{ mb: 2 }}>
-                    {uploadError}
-                  </Alert>
-                )}
-
-                <Box
-                  sx={{
-                    border: "1px dashed grey",
-                    borderRadius: 1,
-                    p: 3,
-                    textAlign: "center",
-                    mb: 2,
-                    bgcolor: "background.paper",
-                  }}
-                >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    style={{ display: "none" }}
-                    onChange={handleFileSelect}
-                    accept={
-                      contentForm.type === "video"
-                        ? "video/*"
-                        : contentForm.type === "slide"
-                        ? ".ppt,.pptx,.pdf"
-                        : ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar"
-                    }
-                  />
-
-                  {!selectedFile ? (
-                    <Button
-                      variant="outlined"
-                      startIcon={<CloudUpload />}
-                      onClick={() => fileInputRef.current?.click()}
-                    >
-                      Chọn{" "}
-                      {contentForm.type === "video"
-                        ? "video"
-                        : contentForm.type === "slide"
-                        ? "slide"
-                        : "tài liệu"}
-                    </Button>
-                  ) : (
-                    <Stack spacing={2}>{/* Hiển thị file đã chọn */}</Stack>
-                  )}
-                </Box>
-              </Box>
-            )}
-
-            {/* URL trực tiếp (nếu không tải lên) */}
-            <TextField
-              label={`URL ${
-                contentForm.type === "video"
-                  ? "video"
-                  : contentForm.type === "slide"
-                  ? "slide"
-                  : contentForm.type === "document"
-                  ? "tài liệu"
-                  : contentForm.type === "link"
-                  ? "đường dẫn"
-                  : "nội dung"
-              }`}
-              fullWidth
-              value={contentForm.url}
-              onChange={(e) =>
-                setContentForm({ ...contentForm, url: e.target.value })
-              }
-              placeholder="https://example.com/content"
-              helperText={
-                contentForm.type === "video" ||
-                contentForm.type === "document" ||
-                contentForm.type === "slide"
-                  ? "Có thể để trống nếu bạn tải file lên trực tiếp"
-                  : "Nhập URL đến nội dung"
-              }
-              required={
-                !selectedFile ||
-                !(
-                  contentForm.type === "video" ||
-                  contentForm.type === "document" ||
-                  contentForm.type === "slide"
-                )
-              }
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => {
-              setOpenAddContentModal(false);
-              resetFileUpload();
-            }}
-          >
-            Hủy
-          </Button>
-          <Button
-            variant="contained"
-            onClick={() => {
-              // Xử lý tải lên file nếu có
-              if (
-                selectedFile &&
-                !isUploading &&
-                (contentForm.type === "video" ||
-                  contentForm.type === "document" ||
-                  contentForm.type === "slide")
-              ) {
-                simulateFileUpload();
-              } else {
-                // Nếu không có file hoặc đã tải lên xong
-                console.log("Content form submitted:", contentForm);
-                setOpenAddContentModal(false);
-                resetFileUpload();
-              }
-            }}
-            disabled={
-              !contentForm.title ||
-              (!contentForm.url &&
-                !selectedFile &&
-                (contentForm.type === "video" ||
-                  contentForm.type === "document" ||
-                  contentForm.type === "slide")) ||
-              isUploading
-            }
-          >
-            {isUploading ? "Đang tải lên..." : "Thêm nội dung"}
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Modal Sửa nội dung */}
-      <Dialog
+      {/* Modal Sửa lesson */}
+      <DialogAddEditLesson
         open={openEditContentModal}
         onClose={() => setOpenEditContentModal(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Typography variant="h6">Chỉnh sửa nội dung</Typography>
-            <IconButton onClick={() => setOpenEditContentModal(false)}>
-              <Close />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={3} sx={{ mt: 1 }}>
-            {/* Chọn phần học */}
-            <FormControl fullWidth required>
-              <InputLabel>Phần học</InputLabel>
-              <Select
-                value={contentForm.sectionId}
-                onChange={(e) =>
-                  setContentForm({
-                    ...contentForm,
-                    sectionId: Number(e.target.value),
-                    // Reset position khi đổi section
-                    position:
-                      mockCourseData.sections.find(
-                        (s) => s.id === Number(e.target.value)
-                      )?.contents?.length || 0,
-                  })
-                }
-                label="Phần học"
-              >
-                {mockCourseData.sections.map((section) => (
-                  <MenuItem key={section.id} value={section.id}>
-                    {section.title}
-                  </MenuItem>
-                ))}
-              </Select>
-              <FormHelperText>Chọn phần học cho nội dung này</FormHelperText>
-            </FormControl>
-
-            {/* Vị trí trong phần học */}
-            <FormControl fullWidth>
-              <InputLabel>Vị trí hiển thị</InputLabel>
-              <Select
-                value={contentForm.position}
-                onChange={(e) =>
-                  setContentForm({
-                    ...contentForm,
-                    position: Number(e.target.value),
-                  })
-                }
-                label="Vị trí hiển thị"
-              >
-                {/* Tạo danh sách vị trí có thể chọn */}
-                {contentForm.sectionId > 0 &&
-                  Array.from(
-                    {
-                      length:
-                        // Nếu đang sửa và section không đổi thì là contents.length
-                        // Nếu thêm mới hoặc đã đổi section thì là contents.length + 1
-                        openEditContentModal &&
-                        contentForm.sectionId === selectedContent?.sectionId
-                          ? mockCourseData.sections.find(
-                              (s) => s.id === contentForm.sectionId
-                            )?.contents.length || 0
-                          : (mockCourseData.sections.find(
-                              (s) => s.id === contentForm.sectionId
-                            )?.contents.length || 0) + 1,
-                    },
-                    (_, i) => {
-                      const section = mockCourseData.sections.find(
-                        (s) => s.id === contentForm.sectionId
-                      );
-                      const contents = section?.contents || [];
-
-                      return (
-                        <MenuItem key={i} value={i}>
-                          {i === 0
-                            ? "Đầu tiên trong phần này"
-                            : i === contents.length
-                            ? "Cuối cùng trong phần này"
-                            : `Sau "${contents[i - 1]?.title || ""}"`}
-                        </MenuItem>
-                      );
-                    }
-                  )}
-              </Select>
-              <FormHelperText>
-                Chọn vị trí hiển thị của nội dung trong phần học
-              </FormHelperText>
-            </FormControl>
-
-            {/* Các trường khác giữ nguyên */}
-            <TextField
-              label="Tiêu đề nội dung"
-              fullWidth
-              value={contentForm.title}
-              onChange={(e) =>
-                setContentForm({ ...contentForm, title: e.target.value })
-              }
-              required
-            />
-
-            <FormControl fullWidth>
-              <InputLabel>Loại nội dung</InputLabel>
-              <Select
-                value={contentForm.type}
-                onChange={(e) =>
-                  setContentForm({
-                    ...contentForm,
-                    type: e.target.value as ContentItem["type"],
-                  })
-                }
-                label="Loại nội dung"
-              >
-                <MenuItem value="video">Video</MenuItem>
-                <MenuItem value="slide">Slide</MenuItem>
-                <MenuItem value="document">Tài liệu</MenuItem>
-                <MenuItem value="assignment">Bài tập</MenuItem>
-                <MenuItem value="quiz">Quiz</MenuItem>
-                <MenuItem value="meet">Meet</MenuItem>
-                <MenuItem value="link">Đường dẫn</MenuItem>
-              </Select>
-            </FormControl>
-
-            <TextField
-              label="Mô tả"
-              fullWidth
-              multiline
-              rows={4}
-              value={contentForm.description}
-              onChange={(e) =>
-                setContentForm({ ...contentForm, description: e.target.value })
-              }
-            />
-
-            <TextField
-              label="Thời lượng (hh:mm:ss)"
-              fullWidth
-              value={contentForm.duration}
-              onChange={(e) =>
-                setContentForm({ ...contentForm, duration: e.target.value })
-              }
-              placeholder="VD: 10:30"
-            />
-
-            <TextField
-              label="URL"
-              fullWidth
-              value={contentForm.url}
-              onChange={(e) =>
-                setContentForm({ ...contentForm, url: e.target.value })
-              }
-              placeholder="https://example.com/content"
-              required
-            />
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenEditContentModal(false)}>Hủy</Button>
-          <Button
-            variant="contained"
-            onClick={() => {
-              // Xử lý tải lên file nếu có
-              if (
-                selectedFile &&
-                !isUploading &&
-                (contentForm.type === "video" ||
-                  contentForm.type === "document" ||
-                  contentForm.type === "slide")
-              ) {
-                simulateFileUpload();
-              } else {
-                // Nếu không có file hoặc đã tải lên xong
-                console.log("Content form updated:", contentForm);
-                setOpenEditContentModal(false);
-                resetFileUpload();
-              }
-            }}
-            disabled={
-              !contentForm.title ||
-              (!contentForm.url &&
-                !selectedFile &&
-                (contentForm.type === "video" ||
-                  contentForm.type === "document" ||
-                  contentForm.type === "slide")) ||
-              isUploading
-            }
-          >
-            {isUploading ? "Đang tải lên..." : "Cập nhật nội dung"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+        onSubmit={handleUpdateContent}
+        contentToEdit={contentToEdit || undefined}
+        sections={mockCourseData.sections}
+        editMode={true}
+      />
 
       {/* Modal Thêm tài liệu */}
-      <Dialog
+      <DialogAddEditDocument
         open={openAddDocumentModal}
-        onClose={() => {
-          setOpenAddDocumentModal(false);
-          resetFileUpload();
-        }}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Typography variant="h6">Thêm tài liệu mới</Typography>
-            <IconButton onClick={() => setOpenAddDocumentModal(false)}>
-              <Close />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={3} sx={{ mt: 1 }}>
-            <TextField
-              label="Tiêu đề tài liệu"
-              fullWidth
-              value={documentForm.title}
-              onChange={(e) =>
-                setDocumentForm({ ...documentForm, title: e.target.value })
-              }
-              required
-            />
+        onClose={() => setOpenAddDocumentModal(false)}
+        onSubmit={handleAddDocument}
+        initialSectionId={currentSectionId || undefined}
+        sections={mockCourseData.sections}
+        editMode={false}
+      />
 
-            <TextField
-              label="Mô tả"
-              fullWidth
-              multiline
-              rows={3}
-              value={documentForm.description}
-              onChange={(e) =>
-                setDocumentForm({
-                  ...documentForm,
-                  description: e.target.value,
-                })
-              }
-            />
-
-            <FormControl fullWidth>
-              <InputLabel>Phần học</InputLabel>
-              <Select
-                value={documentForm.section}
-                onChange={(e) =>
-                  setDocumentForm({ ...documentForm, section: e.target.value })
-                }
-                label="Phần học"
-              >
-                <MenuItem value="">Chung cho toàn khóa học</MenuItem>
-                {mockCourseData.sections.map((section) => (
-                  <MenuItem key={section.id} value={section.id.toString()}>
-                    {section.title}
-                  </MenuItem>
-                ))}
-              </Select>
-              <FormHelperText>
-                Chọn phần học áp dụng cho tài liệu này
-              </FormHelperText>
-            </FormControl>
-
-            {/* Phần tải lên file tài liệu */}
-            <Box>
-              <Typography variant="subtitle2" gutterBottom>
-                Tài liệu
-              </Typography>
-
-              {uploadError && (
-                <Alert severity="error" sx={{ mb: 2 }}>
-                  {uploadError}
-                </Alert>
-              )}
-
-              <Box
-                sx={{
-                  border: "1px dashed grey",
-                  borderRadius: 1,
-                  p: 3,
-                  textAlign: "center",
-                  mb: 2,
-                  bgcolor: "background.paper",
-                }}
-              >
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  style={{ display: "none" }}
-                  onChange={handleFileSelect}
-                  accept=".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.zip,.rar"
-                />
-
-                {!selectedFile ? (
-                  <Button
-                    variant="outlined"
-                    startIcon={<CloudUpload />}
-                    onClick={() => fileInputRef.current?.click()}
-                  >
-                    Chọn tài liệu
-                  </Button>
-                ) : (
-                  <Stack spacing={2}>
-                    <Stack direction="row" alignItems="center" spacing={2}>
-                      <InsertDriveFile />
-                      <Box sx={{ flexGrow: 1 }}>
-                        <Typography variant="body2" noWrap>
-                          {selectedFile.name}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {(selectedFile.size / (1024 * 1024)).toFixed(2)} MB
-                        </Typography>
-                      </Box>
-                      <IconButton size="small" onClick={resetFileUpload}>
-                        <Close fontSize="small" />
-                      </IconButton>
-                    </Stack>
-
-                    {isUploading && (
-                      <Box sx={{ width: "100%" }}>
-                        <LinearProgress
-                          variant="determinate"
-                          value={uploadProgress}
-                        />
-                        <Typography
-                          variant="caption"
-                          align="center"
-                          display="block"
-                          sx={{ mt: 1 }}
-                        >
-                          Đang tải lên: {uploadProgress}%
-                        </Typography>
-                      </Box>
-                    )}
-                  </Stack>
-                )}
-              </Box>
-
-              <Typography variant="caption" color="text.secondary">
-                Hỗ trợ định dạng: PDF, DOC, DOCX, XLS, XLSX, PPT, PPTX, ZIP,
-                RAR. Kích thước tối đa: 50MB
-              </Typography>
-            </Box>
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button
-            onClick={() => {
-              setOpenAddDocumentModal(false);
-              resetFileUpload();
-            }}
-          >
-            Hủy
-          </Button>
-          <Button
-            variant="contained"
-            onClick={() => {
-              if (selectedFile && !isUploading && uploadProgress === 0) {
-                simulateFileUpload();
-              } else if (!isUploading) {
-                console.log("Document form submitted:", documentForm);
-                console.log("Document file:", selectedFile);
-                setOpenAddDocumentModal(false);
-                resetFileUpload();
-              }
-            }}
-            disabled={!documentForm.title || !selectedFile || isUploading}
-          >
-            {isUploading ? "Đang tải lên..." : "Thêm tài liệu"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Modal sửa tài liệu */}
+      <DialogAddEditDocument
+        open={openEditDocumentModal}
+        onClose={() => setOpenEditDocumentModal(false)}
+        onSubmit={handleUpdateDocument}
+        documentToEdit={documentToEdit || undefined}
+        sections={mockCourseData.sections}
+        editMode={true}
+      />
 
       {/* Modal Thêm quiz */}
-      <Dialog
+      <DialogAddEditQuiz
         open={openAddQuizModal}
         onClose={() => setOpenAddQuizModal(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Typography variant="h6">Thêm quiz mới</Typography>
-            <IconButton onClick={() => setOpenAddQuizModal(false)}>
-              <Close />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent dividers>{/* Form thêm quiz */}</DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenAddQuizModal(false)}>Hủy</Button>
-          <Button variant="contained">Thêm</Button>
-        </DialogActions>
-      </Dialog>
+        onSubmit={handleAddQuiz}
+        initialSectionId={currentSectionId || undefined}
+        sections={mockCourseData.sections}
+        editMode={false}
+      />
+
+      {/* Modal sửa quiz */}
+      <DialogAddEditQuiz
+        open={openEditQuizModal}
+        onClose={() => setOpenEditQuizModal(false)}
+        onSubmit={handleUpdateQuiz}
+        quizToEdit={quizToEdit || undefined}
+        sections={mockCourseData.sections}
+        editMode={true}
+      />
 
       {/* Modal Thêm bài tập */}
-      <Dialog
+      <DialogAddEditAssignment
         open={openAddAssignmentModal}
         onClose={() => setOpenAddAssignmentModal(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Typography variant="h6">Thêm bài tập mới</Typography>
-            <IconButton onClick={() => setOpenAddAssignmentModal(false)}>
-              <Close />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent dividers>{/* Form thêm bài tập */}</DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenAddAssignmentModal(false)}>Hủy</Button>
-          <Button variant="contained">Thêm</Button>
-        </DialogActions>
-      </Dialog>
+        onSubmit={handleAddAssignment}
+        initialSectionId={currentSectionId || undefined}
+        sections={mockCourseData.sections}
+        editMode={false}
+      />
 
-      {/* Modal thêm/chỉnh sửa Section */}
-      <Dialog
-        open={openSectionModal}
-        onClose={() => setOpenSectionModal(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box
-            sx={{
-              display: "flex",
-              justifyContent: "space-between",
-              alignItems: "center",
-            }}
-          >
-            <Typography variant="h6">
-              {isEditSection ? "Chỉnh sửa phần học" : "Thêm phần học mới"}
-            </Typography>
-            <IconButton onClick={() => setOpenSectionModal(false)}>
-              <Close />
-            </IconButton>
-          </Box>
-        </DialogTitle>
-        <DialogContent dividers>
-          <Stack spacing={3} sx={{ mt: 1 }}>
-            <TextField
-              label="Tiêu đề phần học"
-              fullWidth
-              value={sectionForm.title}
-              onChange={(e) =>
-                setSectionForm({ ...sectionForm, title: e.target.value })
-              }
-              required
-            />
+      {/* Modal sửa bài tập */}
+      <DialogAddEditAssignment
+        open={openEditAssignmentModal}
+        onClose={() => setOpenEditAssignmentModal(false)}
+        onSubmit={handleUpdateAssignment}
+        assignmentToEdit={assignmentToEdit || undefined}
+        sections={mockCourseData.sections}
+        editMode={true}
+      />
 
-            <TextField
-              label="Mô tả phần học"
-              fullWidth
-              multiline
-              rows={3}
-              value={sectionForm.description}
-              onChange={(e) =>
-                setSectionForm({ ...sectionForm, description: e.target.value })
-              }
-            />
+      {/* Modal thêm section */}
+      <DialogAddEditSection
+        open={openAddSectionModal}
+        onClose={() => setOpenAddSectionModal(false)}
+        onSubmit={handleAddSection}
+        sections={mockCourseData.sections}
+        editMode={false}
+      />
 
-            {/* Phần chọn vị trí áp dụng cho cả thêm và sửa */}
-            <FormControl fullWidth>
-              <InputLabel>Vị trí hiển thị</InputLabel>
-              <Select
-                value={sectionForm.position}
-                onChange={(e) =>
-                  setSectionForm({
-                    ...sectionForm,
-                    position: Number(e.target.value),
-                  })
-                }
-                label="Vị trí hiển thị"
-              >
-                {/* Tạo danh sách vị trí có thể chọn */}
-                {Array.from(
-                  {
-                    length: isEditSection
-                      ? mockCourseData.sections.length
-                      : mockCourseData.sections.length + 1,
-                  },
-                  (_, i) => (
-                    <MenuItem key={i} value={i}>
-                      {i === 0
-                        ? "Đầu tiên"
-                        : i === mockCourseData.sections.length
-                        ? "Cuối cùng"
-                        : `Sau "${
-                            mockCourseData.sections[i - 1]?.title || ""
-                          }"`}
-                    </MenuItem>
-                  )
-                )}
-              </Select>
-              <FormHelperText>
-                Chọn vị trí hiển thị của phần học trong khóa học
-              </FormHelperText>
-            </FormControl>
-          </Stack>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenSectionModal(false)}>Hủy</Button>
-          <Button
-            variant="contained"
-            onClick={handleSectionFormSubmit}
-            disabled={!sectionForm.title}
-          >
-            {isEditSection ? "Cập nhật" : "Thêm phần học"}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Modal sửa section */}
+      <DialogAddEditSection
+        open={openEditSectionModal}
+        onClose={() => setOpenEditSectionModal(false)}
+        onSubmit={handleUpdateSection}
+        sectionToEdit={sectionToEdit || undefined}
+        sections={mockCourseData.sections}
+        editMode={true}
+      />
     </Box>
   );
 };
