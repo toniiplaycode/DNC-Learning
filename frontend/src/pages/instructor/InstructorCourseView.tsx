@@ -258,28 +258,6 @@ const mockDocuments = [
   },
 ];
 
-// Mock data for students
-const mockStudents = [
-  {
-    id: 1,
-    name: "Nguyễn Văn A",
-    avatar: "/src/assets/avatar.png",
-    progress: 75,
-    lastActive: "2024-03-20",
-    completedLessons: 12,
-    totalLessons: 24,
-  },
-  {
-    id: 2,
-    name: "Trần Thị B",
-    avatar: "/src/assets/avatar.png",
-    progress: 45,
-    lastActive: "2024-03-18",
-    completedLessons: 8,
-    totalLessons: 24,
-  },
-];
-
 // Mock data for comments
 const mockComments = [
   {
@@ -949,7 +927,6 @@ const InstructorCourseView = () => {
             <Box sx={{ borderBottom: 1, borderColor: "divider", px: 2 }}>
               <Tabs value={tabValue} onChange={handleTabChange}>
                 <Tab label="Nội dung" />
-                <Tab label="Học viên" />
                 <Tab label="Tài liệu" />
                 <Tab label="Thảo luận" />
                 <Tab label="Bài tập/Quiz" />
@@ -965,58 +942,6 @@ const InstructorCourseView = () => {
             </TabPanel>
 
             <TabPanel value={tabValue} index={1}>
-              <Typography variant="h6" gutterBottom>
-                Danh sách học viên ({mockStudents.length})
-              </Typography>
-              <List>
-                {mockStudents.map((student) => (
-                  <Card key={student.id} sx={{ mb: 2 }}>
-                    <CardContent>
-                      <Grid container spacing={2} alignItems="center">
-                        <Grid item xs={12} sm={6}>
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 2,
-                            }}
-                          >
-                            <Avatar src={student.avatar} />
-                            <Box>
-                              <Typography variant="subtitle1">
-                                {student.name}
-                              </Typography>
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                              >
-                                Hoạt động gần nhất: {student.lastActive}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Box>
-                            <Typography variant="body2" gutterBottom>
-                              Tiến độ: {student.progress}% (
-                              {student.completedLessons}/{student.totalLessons}{" "}
-                              bài học)
-                            </Typography>
-                            <LinearProgress
-                              variant="determinate"
-                              value={student.progress}
-                              sx={{ height: 8, borderRadius: 1 }}
-                            />
-                          </Box>
-                        </Grid>
-                      </Grid>
-                    </CardContent>
-                  </Card>
-                ))}
-              </List>
-            </TabPanel>
-
-            <TabPanel value={tabValue} index={2}>
               <Box
                 sx={{
                   display: "flex",
@@ -1041,11 +966,11 @@ const InstructorCourseView = () => {
               />
             </TabPanel>
 
-            <TabPanel value={tabValue} index={3}>
+            <TabPanel value={tabValue} index={2}>
               <ContentDiscussion comments={mockComments} />
             </TabPanel>
 
-            <TabPanel value={tabValue} index={4}>
+            <TabPanel value={tabValue} index={3}>
               <Box
                 sx={{
                   display: "flex",

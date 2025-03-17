@@ -17,6 +17,7 @@ import {
   MenuItem,
   Grid,
   Chip,
+  TextFieldProps,
 } from "@mui/material";
 import {
   Add,
@@ -114,8 +115,12 @@ const InstructorSchedules = () => {
           <Card sx={{ p: 2 }}>
             <DatePicker
               value={selectedDate}
-              onChange={(newDate) => newDate && setSelectedDate(newDate)}
-              renderInput={(params) => <TextField {...params} />}
+              onChange={(newDate: Date | null) =>
+                newDate && setSelectedDate(newDate)
+              }
+              renderInput={(params: TextFieldProps) => (
+                <TextField {...params} />
+              )}
               views={["day"]}
               sx={{
                 width: "100%",

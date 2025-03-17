@@ -25,6 +25,7 @@ import {
   Message,
   Notifications,
   CalendarMonth,
+  Quiz,
 } from "@mui/icons-material";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import Logo from "../../../assets/logo.png";
@@ -38,6 +39,7 @@ const menuItems = [
   { text: "Khóa học", icon: <LibraryBooks />, path: "/instructor/courses" },
   { text: "Học viên", icon: <People />, path: "/instructor/students" },
   { text: "Bài tập", icon: <Assignment />, path: "/instructor/assignments" },
+  { text: "Kiểm tra", icon: <Quiz />, path: "/instructor/quiz" },
   { text: "Thống kê", icon: <Assessment />, path: "/instructor/analytics" },
   { text: "Tin nhắn", icon: <Message />, path: "/instructor/chats" },
   {

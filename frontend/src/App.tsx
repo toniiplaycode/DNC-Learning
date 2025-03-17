@@ -24,6 +24,7 @@ import InstructorSchedules from "./pages/instructor/InstructorSchedules";
 import InstructorSettings from "./pages/instructor/InstructorSettings";
 import MainLayout from "./pages/student/layout/MainLayout";
 import InstructorLayout from "./pages/instructor/layout/InstructorLayout";
+import InstructorQuizs from "./pages/instructor/InstructorQuizs";
 
 const App = () => {
   return (
@@ -58,6 +59,7 @@ const App = () => {
           path="/instructor/assignments"
           element={<InstructorAssignments />}
         />
+        <Route path="/instructor/quiz" element={<InstructorQuizs />} />
         <Route path="/instructor/analytics" element={<InstructorAnalytics />} />
         <Route path="/instructor/chats" element={<InstructorChats />} />
         <Route

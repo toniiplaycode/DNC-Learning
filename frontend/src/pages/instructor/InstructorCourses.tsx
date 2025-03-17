@@ -245,13 +245,7 @@ const InstructorCourses = () => {
           }
         >
           <Visibility sx={{ mr: 1 }} fontSize="small" />
-          Xem khóa học
-        </MenuItem>
-        <MenuItem
-          onClick={() => selectedCourse && handleEditCourse(selectedCourse)}
-        >
-          <Edit sx={{ mr: 1 }} fontSize="small" />
-          Chỉnh sửa
+          Xem và chỉnh sửa khóa học
         </MenuItem>
         <MenuItem onClick={handleMenuClose} sx={{ color: "error.main" }}>
           <Delete sx={{ mr: 1 }} fontSize="small" />
