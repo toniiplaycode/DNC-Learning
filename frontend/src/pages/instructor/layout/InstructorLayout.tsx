@@ -26,6 +26,8 @@ import {
   Notifications,
   CalendarMonth,
   Quiz,
+  Forum,
+  Comment,
 } from "@mui/icons-material";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import Logo from "../../../assets/logo.png";
@@ -46,6 +48,21 @@ const menuItems = [
     text: "Lịch trình",
     icon: <CalendarMonth />,
     path: "/instructor/schedules",
+  },
+  {
+    text: "Công việc",
+    icon: <Assignment />,
+    path: "/instructor/tasks",
+  },
+  {
+    text: "Diễn đàn",
+    icon: <Forum />,
+    path: "/instructor/forum",
+  },
+  {
+    text: "Đánh giá",
+    icon: <Comment />,
+    path: "/instructor/reviews",
   },
   {
     text: "Thông báo",

@@ -923,7 +923,7 @@ const InstructorCourseView = () => {
 
         {/* Main Content */}
         <Grid item xs={12} md={9}>
-          <Card style={{ padding: "30x" }}>
+          <Card style={{ padding: "20px" }}>
             <Box sx={{ borderBottom: 1, borderColor: "divider", px: 2 }}>
               <Tabs value={tabValue} onChange={handleTabChange}>
                 <Tab label="Nội dung" />

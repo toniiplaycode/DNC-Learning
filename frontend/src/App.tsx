@@ -9,7 +9,7 @@ import InstructorProfile from "./pages/instructor/InstructorProfile";
 import Courses from "./pages/student/Courses";
 import Instructors from "./pages/instructor/Instructors";
 import ForumDiscussions from "./pages/student/forum/ForumDiscussions";
-import ForumDiscussionDetail from "./pages/student/forum/ForumDiscussionDetail";
+import ForumDiscussionDetail from "./components/common/ForumDiscussionDetail";
 import CourseContent from "./pages/student/course/CourseContent";
 import PurchaseCourse from "./pages/student/PurchaseCourse";
 import InstructorDashboard from "./pages/instructor/InstructorDashboard";
@@ -25,6 +25,9 @@ import InstructorSettings from "./pages/instructor/InstructorSettings";
 import MainLayout from "./pages/student/layout/MainLayout";
 import InstructorLayout from "./pages/instructor/layout/InstructorLayout";
 import InstructorQuizs from "./pages/instructor/InstructorQuizs";
+import InstructorTasks from "./pages/instructor/InstructorTasks";
+import InstructorForum from "./pages/instructor/InstructorForum";
+import InstructorReviews from "./pages/instructor/InstructorReviews";
 
 const App = () => {
   return (
@@ -62,12 +65,15 @@ const App = () => {
         <Route path="/instructor/quiz" element={<InstructorQuizs />} />
         <Route path="/instructor/analytics" element={<InstructorAnalytics />} />
         <Route path="/instructor/chats" element={<InstructorChats />} />
+        <Route path="/instructor/schedules" element={<InstructorSchedules />} />
+        <Route path="/instructor/tasks" element={<InstructorTasks />} />
+        <Route path="/instructor/forum" element={<InstructorForum />} />
         <Route
           path="/instructor/notifications"
           element={<InstructorNotifications />}
         />
-        <Route path="/instructor/schedules" element={<InstructorSchedules />} />
         <Route path="/instructor/settings" element={<InstructorSettings />} />
+        <Route path="/instructor/reviews" element={<InstructorReviews />} />
       </Route>
     </Routes>
   );

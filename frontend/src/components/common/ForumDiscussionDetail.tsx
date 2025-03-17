@@ -19,7 +19,7 @@ import {
   Visibility,
   Share,
 } from "@mui/icons-material";
-import ScrollOnTop from "../../../components/common/ScrollOnTop";
+import ScrollOnTop from "./ScrollOnTop";
 
 interface Reply {
   id: number;
@@ -84,7 +84,15 @@ const mockReplies: Reply[] = Array(5)
     isLiked: Math.random() > 0.5,
   }));
 
-const ForumDiscussionDetail = () => {
+interface ForumDiscussionDetailProps {
+  discussion?: any;
+  isInstructorView?: boolean;
+}
+
+const ForumDiscussionDetail = ({
+  discussion,
+  isInstructorView,
+}: ForumDiscussionDetailProps) => {
   const [liked, setLiked] = useState(mockDiscussionDetail.isLiked);
   const [replyContent, setReplyContent] = useState("");
   const [replies, setReplies] = useState<Reply[]>(mockReplies);
@@ -269,6 +277,32 @@ const ForumDiscussionDetail = () => {
           </Card>
         ))}
       </Stack>
+
+      {isInstructorView && (
+        <Box sx={{ mt: 2, p: 2, bgcolor: "background.paper", borderRadius: 1 }}>
+          <Typography variant="subtitle2" gutterBottom>
+            Thông tin quản trị
+          </Typography>
+          <Stack direction="row" spacing={2}>
+            <Chip
+              label={`${discussion.views} lượt xem`}
+              variant="outlined"
+              size="small"
+            />
+            <Chip
+              label={`${discussion.likes} lượt thích`}
+              variant="outlined"
+              size="small"
+            />
+            <Chip
+              label={discussion.isPinned ? "Đã ghim" : "Chưa ghim"}
+              color={discussion.isPinned ? "primary" : "default"}
+              variant="outlined"
+              size="small"
+            />
+          </Stack>
+        </Box>
+      )}
     </Container>
   );
 };

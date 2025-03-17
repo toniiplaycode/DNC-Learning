@@ -103,6 +103,18 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [fileUploadError, setFileUploadError] = useState<string | null>(null);
 
+  // Thêm vào state form
+  const [lessonForm, setLessonForm] = useState({
+    title: "",
+    description: "",
+    content: "",
+    duration: 0,
+    videoUrl: "",
+    isFree: false,
+    sectionId: 0,
+    position: 0, // Thêm trường position để lưu vị trí
+  });
+
   // Cập nhật form khi có dữ liệu ban đầu
   useEffect(() => {
     if (open) {
@@ -160,6 +172,59 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
 
       // Reset upload state
       resetFileUpload();
+    }
+  }, [open, editMode, contentToEdit, initialSectionId, sections]);
+
+  // Trong useEffect khi mở dialog, cần cập nhật position
+  useEffect(() => {
+    if (open) {
+      if (editMode && contentToEdit) {
+        // Tìm section và position khi edit
+        let sectionId = contentToEdit.sectionId || 0;
+        let position = 0;
+
+        // Nếu không có sectionId trong contentToEdit, tìm từ sections
+        if (!sectionId) {
+          for (const section of sections) {
+            const lessonIndex = section.lessons?.findIndex(
+              (l: any) => l.id === contentToEdit.id
+            );
+            if (lessonIndex !== -1) {
+              sectionId = section.id;
+              position = lessonIndex; // Lưu vị trí hiện tại của bài học
+              break;
+            }
+          }
+        }
+
+        setLessonForm({
+          title: contentToEdit.title || "",
+          description: contentToEdit.description || "",
+          content: contentToEdit.content || "",
+          duration: Number(contentToEdit.duration) || 0,
+          videoUrl: contentToEdit.url || "",
+          isFree: contentToEdit.isFree || false,
+          sectionId: sectionId,
+          position: position, // Cập nhật position khi edit
+        });
+      } else {
+        // Khi thêm mới
+        const selectedSection = sections.find(
+          (section) => section.id === initialSectionId
+        );
+        const lessonsCount = selectedSection?.lessons?.length || 0;
+
+        setLessonForm({
+          title: "",
+          description: "",
+          content: "",
+          duration: 0,
+          videoUrl: "",
+          isFree: false,
+          sectionId: initialSectionId || 0,
+          position: lessonsCount, // Mặc định thêm vào cuối danh sách
+        });
+      }
     }
   }, [open, editMode, contentToEdit, initialSectionId, sections]);
 
@@ -241,8 +306,17 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
           : {}),
       };
 
-      // Gọi callback onSubmit từ prop
-      onSubmit(submittedData);
+      // Tạo một object kết quả để gửi về
+      const lessonData = {
+        ...lessonForm,
+        // Đảm bảo dữ liệu đúng định dạng
+        duration: Number(lessonForm.duration),
+        sectionId: Number(lessonForm.sectionId),
+        position: Number(lessonForm.position), // Đảm bảo gửi position
+      };
+
+      // Gọi hàm callback onSubmit được truyền vào từ component cha
+      onSubmit(lessonData);
 
       // Reset form và đóng modal
       if (!editMode) {
@@ -536,6 +610,47 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
               )
             }
           />
+
+          {/* Thêm phần chọn vị trí ở đây, ngay trước nút checkbox Free Lesson */}
+          <FormControl fullWidth>
+            <InputLabel>Vị trí bài học</InputLabel>
+            <Select
+              value={lessonForm.position}
+              onChange={(e) =>
+                setLessonForm({
+                  ...lessonForm,
+                  position: Number(e.target.value),
+                })
+              }
+              label="Vị trí bài học"
+            >
+              {/* Tìm section hiện tại */}
+              {(() => {
+                const currentSection = sections.find(
+                  (s) => s.id === lessonForm.sectionId
+                );
+                const lessonsCount = currentSection?.lessons?.length || 0;
+                const totalPositions = editMode
+                  ? lessonsCount
+                  : lessonsCount + 1;
+
+                return Array.from({ length: totalPositions }, (_, i) => (
+                  <MenuItem key={i} value={i}>
+                    {i === 0
+                      ? "Đầu tiên trong phần"
+                      : i === lessonsCount
+                      ? "Cuối cùng trong phần"
+                      : `Sau "${
+                          currentSection?.lessons?.[i - 1]?.title || ""
+                        }"`}
+                  </MenuItem>
+                ));
+              })()}
+            </Select>
+            <FormHelperText>
+              Chọn vị trí hiển thị của bài học trong phần học
+            </FormHelperText>
+          </FormControl>
         </Stack>
       </DialogContent>
       <DialogActions>
