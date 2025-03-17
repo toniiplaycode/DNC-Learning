@@ -18,12 +18,27 @@ import {
   Divider,
   List,
   ListItem,
-  Checkbox,
   Radio,
   RadioGroup,
   FormControlLabel,
+  Card,
+  CardContent,
+  Badge,
+  Accordion,
+  AccordionSummary,
+  AccordionDetails,
+  Tooltip,
+  Chip,
 } from "@mui/material";
-import { Close, Add, Delete } from "@mui/icons-material";
+import {
+  Close,
+  Add,
+  Delete,
+  Edit,
+  ExpandMore,
+  CheckCircle,
+  DragIndicator,
+} from "@mui/icons-material";
 
 // Định nghĩa kiểu QuizItem
 interface QuizItem {
@@ -58,6 +73,63 @@ interface DialogAddEditQuizProps {
   editMode: boolean;
 }
 
+// Mock data cho quiz
+const mockQuizData: QuizItem[] = [
+  {
+    id: 1,
+    title: "Kiểm tra kiến thức React cơ bản",
+    description: "Bài kiểm tra đánh giá kiến thức về React hooks và lifecycle",
+    maxAttempts: 2,
+    passingScore: 70,
+    timeLimit: 30,
+    sectionId: 1,
+    questions: [
+      {
+        id: 1,
+        question: "useState hook được sử dụng để làm gì?",
+        options: [
+          "Quản lý side effects",
+          "Quản lý state trong functional component",
+          "Tối ưu performance",
+          "Xử lý routing",
+        ],
+        correctAnswer: 1,
+        explanation:
+          "useState là hook cơ bản để quản lý state trong functional component.",
+        points: 10,
+      },
+      {
+        id: 2,
+        question: "useEffect hook được gọi khi nào?",
+        options: [
+          "Chỉ khi component mount",
+          "Sau mỗi lần render",
+          "Khi dependencies thay đổi",
+          "Tất cả các trường hợp trên",
+        ],
+        correctAnswer: 3,
+        explanation:
+          "useEffect có thể được gọi trong cả 3 trường hợp tùy vào cách sử dụng dependencies.",
+        points: 10,
+      },
+      {
+        id: 3,
+        question: "useMemo hook dùng để làm gì?",
+        options: [
+          "Tối ưu performance bằng cách cache giá trị",
+          "Quản lý state",
+          "Xử lý side effects",
+          "Tạo ref",
+        ],
+        correctAnswer: 0,
+        explanation:
+          "useMemo giúp tối ưu performance bằng cách cache giá trị tính toán.",
+        points: 10,
+      },
+    ],
+  },
+];
+
 const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
   open,
   onClose,
@@ -91,9 +163,14 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
     number | null
   >(null);
 
-  // Cập nhật form khi mở modal và có dữ liệu ban đầu
+  // Thêm state để lưu quiz mẫu được chọn
+  const [selectedMockQuiz, setSelectedMockQuiz] = useState<number>(0);
+
+  // Cập nhật useEffect để hiển thị mock data trong cả hai trường hợp
   useEffect(() => {
     if (open) {
+      const sampleQuiz = mockQuizData[0]; // Quiz mẫu
+
       if (editMode && quizToEdit) {
         // Tìm section của quiz khi edit
         let sectionId = quizToEdit.sectionId || 0;
@@ -111,6 +188,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
           }
         }
 
+        // Cập nhật form với dữ liệu của quiz đang edit
         setQuizForm({
           title: quizToEdit.title || "",
           description: quizToEdit.description || "",
@@ -120,35 +198,27 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
           timeLimit: quizToEdit.timeLimit || 30,
         });
 
-        // Load câu hỏi nếu có
+        // Load câu hỏi từ quiz đang edit
+        // Nếu không có câu hỏi, tự động tải từ quiz mẫu
         if (quizToEdit.questions && quizToEdit.questions.length > 0) {
           setQuestions([...quizToEdit.questions]);
         } else {
-          setQuestions([]);
+          setQuestions(sampleQuiz.questions || []);
         }
       } else {
-        // Khi thêm mới
+        // Khi thêm mới, tự động tải quiz mẫu
         setQuizForm({
-          title: "",
-          description: "",
+          title: sampleQuiz.title || "",
+          description: sampleQuiz.description || "",
           sectionId: initialSectionId || 0,
-          maxAttempts: 3,
-          passingScore: 70,
-          timeLimit: 30,
+          maxAttempts: sampleQuiz.maxAttempts || 3,
+          passingScore: sampleQuiz.passingScore || 70,
+          timeLimit: sampleQuiz.timeLimit || 30,
         });
-        setQuestions([]);
-      }
 
-      // Reset câu hỏi hiện tại
-      setCurrentQuestion({
-        id: Date.now(),
-        question: "",
-        options: ["", "", "", ""],
-        correctAnswer: 0,
-        explanation: "",
-        points: 1,
-      });
-      setEditingQuestionIndex(null);
+        // Tự động tải câu hỏi từ quiz mẫu
+        setQuestions(sampleQuiz.questions || []);
+      }
     }
   }, [open, editMode, quizToEdit, initialSectionId, sections]);
 
@@ -239,6 +309,32 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
     const newQuestions = [...questions];
     newQuestions.splice(index, 1);
     setQuestions(newQuestions);
+  };
+
+  // Sau handleEditQuestion, thêm hàm này:
+  const handlePreviewQuestion = (questionId: number) => {
+    const question = questions.find((q) => q.id === questionId);
+    if (question) {
+      setCurrentQuestion(question);
+      setEditingQuestionIndex(questions.findIndex((q) => q.id === questionId));
+    }
+  };
+
+  // Áp dụng quiz mẫu được chọn vào form
+  const applyMockQuiz = (quizId: number) => {
+    const sampleQuiz = mockQuizData.find((q) => q.id === quizId);
+    if (!sampleQuiz) return;
+
+    setQuizForm({
+      ...quizForm,
+      title: sampleQuiz.title,
+      description: sampleQuiz.description,
+      maxAttempts: sampleQuiz.maxAttempts || 3,
+      passingScore: sampleQuiz.passingScore || 70,
+      timeLimit: sampleQuiz.timeLimit || 30,
+    });
+
+    setQuestions(sampleQuiz.questions || []);
   };
 
   // Xử lý submit form
@@ -370,92 +466,203 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
 
           <Divider sx={{ my: 2 }} />
 
-          {/* Danh sách câu hỏi */}
-          <Typography variant="h6">Câu hỏi ({questions.length})</Typography>
+          {/* Hiển thị danh sách câu hỏi đã thêm */}
+          <Box>
+            <Box
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                mb: 2,
+              }}
+            >
+              <Typography variant="h6">Câu hỏi ({questions.length})</Typography>
+              <Button
+                variant="outlined"
+                startIcon={<Add />}
+                onClick={() => {
+                  setCurrentQuestion({
+                    id: Date.now(),
+                    question: "",
+                    options: ["", "", "", ""],
+                    correctAnswer: 0,
+                    explanation: "",
+                    points: 1,
+                  });
+                  setEditingQuestionIndex(null);
+                }}
+              >
+                Thêm câu hỏi
+              </Button>
+            </Box>
 
-          {questions.length > 0 && (
-            <List sx={{ bgcolor: "background.paper", borderRadius: 1 }}>
-              {questions.map((q, index) => (
-                <ListItem
-                  key={q.id}
-                  sx={{
-                    border: 1,
-                    borderColor: "divider",
-                    borderRadius: 1,
-                    mb: 1,
-                    flexDirection: "column",
-                    alignItems: "flex-start",
-                  }}
-                >
-                  <Box
+            {questions.length > 0 ? (
+              <List
+                sx={{
+                  bgcolor: "background.paper",
+                  borderRadius: 1,
+                  border: "1px solid",
+                  borderColor: "divider",
+                  maxHeight: "300px",
+                  overflow: "auto",
+                }}
+              >
+                {questions.map((question, index) => (
+                  <ListItem
+                    key={question.id}
+                    divider={index < questions.length - 1}
                     sx={{
-                      width: "100%",
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
+                      p: 0,
+                      bgcolor:
+                        editingQuestionIndex === index
+                          ? "action.selected"
+                          : "inherit",
                     }}
                   >
-                    <Typography variant="subtitle1">
-                      Câu {index + 1}: {q.question}
-                    </Typography>
-                    <Box>
-                      <IconButton
-                        size="small"
-                        onClick={() => editQuestion(index)}
+                    <Accordion sx={{ width: "100%", boxShadow: "none" }}>
+                      <AccordionSummary
+                        expandIcon={<ExpandMore />}
+                        sx={{ px: 2 }}
                       >
-                        <Add />
-                      </IconButton>
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => deleteQuestion(index)}
-                      >
-                        <Delete />
-                      </IconButton>
-                    </Box>
-                  </Box>
-                  <List sx={{ width: "100%" }}>
-                    {q.options.map((option, optIndex) => (
-                      <ListItem key={optIndex} sx={{ pl: 2 }}>
-                        {optIndex === q.correctAnswer ? (
-                          <Radio checked readOnly />
-                        ) : (
-                          <Radio disabled />
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            width: "100%",
+                          }}
+                        >
+                          <DragIndicator
+                            sx={{ color: "text.disabled", mr: 1 }}
+                          />
+                          <Badge
+                            badgeContent={index + 1}
+                            color="primary"
+                            sx={{ mr: 2 }}
+                          >
+                            <Box sx={{ width: 24, height: 24 }} />
+                          </Badge>
+                          <Typography
+                            sx={{
+                              flexGrow: 1,
+                              overflow: "hidden",
+                              textOverflow: "ellipsis",
+                              whiteSpace: "nowrap",
+                            }}
+                          >
+                            {question.question}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            sx={{ mr: 2 }}
+                          >
+                            {question.points} điểm
+                          </Typography>
+                          <Box>
+                            <Tooltip title="Chỉnh sửa">
+                              <IconButton
+                                size="small"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handlePreviewQuestion(question.id);
+                                }}
+                              >
+                                <Edit fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Xóa">
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  deleteQuestion(index);
+                                }}
+                              >
+                                <Delete fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        </Box>
+                      </AccordionSummary>
+                      <AccordionDetails sx={{ px: 2, pb: 2, pt: 0 }}>
+                        <List dense>
+                          {question.options.map((option, optIndex) => (
+                            <ListItem key={optIndex} sx={{ pl: 6 }}>
+                              <FormControlLabel
+                                value={optIndex}
+                                control={
+                                  <Radio
+                                    checked={
+                                      optIndex === question.correctAnswer
+                                    }
+                                    size="small"
+                                    readOnly
+                                  />
+                                }
+                                label={option}
+                              />
+                              {optIndex === question.correctAnswer && (
+                                <CheckCircle
+                                  fontSize="small"
+                                  color="success"
+                                  sx={{ ml: 1 }}
+                                />
+                              )}
+                            </ListItem>
+                          ))}
+                        </List>
+                        {question.explanation && (
+                          <Box sx={{ pl: 6, mt: 1 }}>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              <strong>Giải thích:</strong>{" "}
+                              {question.explanation}
+                            </Typography>
+                          </Box>
                         )}
-                        <Typography>{option}</Typography>
-                      </ListItem>
-                    ))}
-                  </List>
-                  {q.explanation && (
-                    <Typography
-                      variant="body2"
-                      color="text.secondary"
-                      sx={{ pl: 2, mt: 1 }}
-                    >
-                      <strong>Giải thích:</strong> {q.explanation}
-                    </Typography>
-                  )}
-                </ListItem>
-              ))}
-            </List>
-          )}
+                      </AccordionDetails>
+                    </Accordion>
+                  </ListItem>
+                ))}
+              </List>
+            ) : (
+              <Box
+                sx={{
+                  p: 3,
+                  textAlign: "center",
+                  border: "1px dashed",
+                  borderColor: "divider",
+                  borderRadius: 1,
+                }}
+              >
+                <Typography color="text.secondary">
+                  Chưa có câu hỏi nào. Hãy thêm câu hỏi cho bài kiểm tra.
+                </Typography>
+              </Box>
+            )}
+          </Box>
+
+          <Divider>
+            <Typography variant="caption" color="text.secondary">
+              {editingQuestionIndex !== null
+                ? "Chỉnh sửa câu hỏi"
+                : "Thêm câu hỏi mới"}
+            </Typography>
+          </Divider>
 
           {/* Form thêm/sửa câu hỏi */}
           <Box
             sx={{
-              bgcolor: "background.paper",
-              p: 2,
-              border: 1,
+              p: 3,
+              border: "1px solid",
               borderColor: "divider",
-              borderRadius: 1,
+              borderRadius: 2,
+              bgcolor: "background.paper",
             }}
           >
-            <Typography variant="subtitle1" gutterBottom>
-              {editingQuestionIndex !== null
-                ? `Đang sửa câu hỏi ${editingQuestionIndex + 1}`
-                : "Thêm câu hỏi mới"}
-            </Typography>
-
             <Stack spacing={2}>
               <TextField
                 label="Câu hỏi"
