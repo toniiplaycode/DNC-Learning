@@ -28,6 +28,12 @@ import InstructorQuizs from "./pages/instructor/InstructorQuizs";
 import InstructorTasks from "./pages/instructor/InstructorTasks";
 import InstructorForum from "./pages/instructor/InstructorForum";
 import InstructorReviews from "./pages/instructor/InstructorReviews";
+import AdminLayout from "./pages/admin/layout/AdminLayout";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import AdminCourses from "./pages/admin/AdminCourses";
+import AdminLogin from "./pages/admin/AdminLogin";
+import InstructorLogin from "./pages/instructor/InstructorLogin";
+import AdminInstructors from "./pages/admin/AdminInstructors";
 
 const App = () => {
   return (
@@ -52,6 +58,7 @@ const App = () => {
       {/* Instructor routes */}
       <Route element={<InstructorLayout />}>
         <Route path="/instructor" element={<InstructorDashboard />} />
+        <Route path="/instructor/login" element={<InstructorLogin />} />
         <Route path="/instructor/courses" element={<InstructorCourses />} />
         <Route
           path="/instructor/courses/:id"
@@ -74,6 +81,14 @@ const App = () => {
         />
         <Route path="/instructor/settings" element={<InstructorSettings />} />
         <Route path="/instructor/reviews" element={<InstructorReviews />} />
+      </Route>
+
+      {/* Admin routes */}
+      <Route element={<AdminLayout />}>
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin/courses" element={<AdminCourses />} />
+        <Route path="/admin/instructors" element={<AdminInstructors />} />
       </Route>
     </Routes>
   );

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Box,
   Drawer,
@@ -13,6 +13,13 @@ import {
   AppBar,
   Toolbar,
   Tooltip,
+  Typography,
+  Divider,
+  Avatar,
+  Menu,
+  MenuItem,
+  Alert,
+  Button,
 } from "@mui/material";
 import {
   Menu as MenuIcon,
@@ -79,6 +86,32 @@ const InstructorLayout = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const navigate = useNavigate();
   const location = useLocation();
+
+  // Thêm state kiểm tra xem có phải admin đang impersonate không
+  const [adminImpersonating, setAdminImpersonating] = useState(false);
+  const [impersonatedInstructorName, setImpersonatedInstructorName] =
+    useState("");
+
+  useEffect(() => {
+    // Kiểm tra xem có phải admin đang impersonate không
+    const isImpersonating =
+      localStorage.getItem("adminImpersonating") === "true";
+    setAdminImpersonating(isImpersonating);
+
+    if (isImpersonating) {
+      setImpersonatedInstructorName(
+        localStorage.getItem("impersonatedInstructorName") || ""
+      );
+    }
+  }, []);
+
+  // Thêm hàm để kết thúc impersonation
+  const handleEndImpersonation = () => {
+    localStorage.removeItem("adminImpersonating");
+    localStorage.removeItem("impersonatedInstructorId");
+    localStorage.removeItem("impersonatedInstructorName");
+    navigate("/admin/instructors");
+  };
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
@@ -298,6 +331,33 @@ const InstructorLayout = () => {
           transition: `all ${TRANSITION_DURATION} ease`,
         }}
       >
+        {/* Hiển thị thông báo khi admin đang impersonate */}
+        {adminImpersonating && (
+          <Alert
+            severity="warning"
+            sx={{
+              borderRadius: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+            }}
+          >
+            <span>
+              <strong>Chế độ xem giảng viên:</strong> Bạn đang xem với tư cách
+              là giảng viên "{impersonatedInstructorName}"
+            </span>
+            <Button
+              variant="outlined"
+              size="small"
+              color="inherit"
+              onClick={handleEndImpersonation}
+              sx={{ ml: 2 }}
+            >
+              Quay lại trang quản trị
+            </Button>
+          </Alert>
+        )}
+
         <Outlet />
       </Box>
     </Box>

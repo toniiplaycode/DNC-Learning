@@ -32,14 +32,14 @@ import { useParams, useNavigate } from "react-router-dom";
 import ContentDiscussion from "../../components/common/course/ContentDiscussion";
 import ContentDocuments from "../../components/common/course/ContentDocuments";
 import ContentDetail from "../../components/common/course/ContentDetail";
-import CourseStructure from "../../components/instructor/course-view/CourseStructure";
-import DialogAddEditLesson from "../../components/instructor/course-view/DialogAddEditLesson";
-import DialogAddEditDocument from "../../components/instructor/course-view/DialogAddEditDocument";
-import DialogAddEditQuiz from "../../components/instructor/course-view/DialogAddEditQuiz";
-import DialogAddEditAssignment from "../../components/instructor/course-view/DialogAddEditAssignment";
-import DialogAddEditSection from "../../components/instructor/course-view/DialogAddEditSection";
-import DialogSetting from "../../components/instructor/course-view/DialogSetting";
-import CourseQuizAssignment from "../../components/instructor/course-view/CourseQuizAssignment";
+import CourseStructure from "../../components/instructor/course/CourseStructure";
+import DialogAddEditLesson from "../../components/instructor/course/DialogAddEditLesson";
+import DialogAddEditDocument from "../../components/instructor/course/DialogAddEditDocument";
+import DialogAddEditQuiz from "../../components/instructor/course/DialogAddEditQuiz";
+import DialogAddEditAssignment from "../../components/instructor/course/DialogAddEditAssignment";
+import DialogAddEditSection from "../../components/instructor/course/DialogAddEditSection";
+import DialogSetting from "../../components/instructor/course/DialogSetting";
+import CourseQuizAssignment from "../../components/instructor/course/CourseQuizAssignment";
 
 // Định nghĩa interface cho ContentItem
 interface ContentItem {
