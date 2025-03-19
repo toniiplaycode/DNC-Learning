@@ -35,6 +35,7 @@ import {
   Forum as ForumIcon,
   Article as ArticleIcon,
   LocalLibrary as CourseIcon,
+  Quiz,
 } from "@mui/icons-material";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -374,7 +375,7 @@ const Header = () => {
                       <Box>
                         <Typography variant="body1">{category.name}</Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {category.count || "100+"} khóa học
+                          100+ khóa học
                         </Typography>
                       </Box>
                     </Stack>
@@ -438,7 +439,24 @@ const Header = () => {
               zIndex: 1,
             }}
           >
-            {/* Desktop Search */}
+            {/* Nút Làm kiểm tra */}
+            {isLogin && (
+              <Button
+                variant="contained"
+                color="secondary"
+                startIcon={<Quiz />}
+                onClick={() => navigate("/assessment")}
+                sx={{
+                  display: { xs: "none", md: "flex" },
+                  mr: 1,
+                  fontWeight: "bold",
+                }}
+              >
+                Làm kiểm tra
+              </Button>
+            )}
+
+            {/* Search Button */}
             <Box
               sx={{
                 display: { xs: "none", lg: "flex" },

@@ -43,7 +43,7 @@ import {
   LockOpen,
   Lock,
 } from "@mui/icons-material";
-import DialogDetailCourse from "../../components/common/admin/course/DialogDetailCourse";
+import DialogDetailCourse from "../../components/admin/course/DialogDetailCourse";
 
 // Mock data
 const mockCourses = Array(15)

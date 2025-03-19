@@ -51,8 +51,8 @@ import {
   Dashboard,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
-import DialogInstructorDetail from "../../components/common/admin/instructor/DialogInstructorDetail";
-import DialogAddInstructor from "../../components/common/admin/instructor/DialogAddInstructor";
+import DialogInstructorDetail from "../../components/admin/instructor/DialogInstructorDetail";
+import DialogAddInstructor from "../../components/admin/instructor/DialogAddInstructor";
 
 // Mock data for instructors
 const mockInstructors = Array(20)
