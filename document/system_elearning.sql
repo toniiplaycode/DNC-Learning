@@ -18,6 +18,140 @@ USE `system_elearning`;
 /*!40111 SET @OLD_SQL_NOTES=@@SQL_NOTES, SQL_NOTES=0 */;
 
 --
+-- Table structure for table `academic_class_courses`
+--
+
+DROP TABLE IF EXISTS `academic_class_courses`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `academic_class_courses` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `class_id` bigint NOT NULL,
+  `course_id` bigint NOT NULL,
+  `instructor_id` bigint NOT NULL COMMENT 'Instructor sở hữu khóa học',
+  `start_date` date DEFAULT NULL,
+  `end_date` date DEFAULT NULL,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `class_course_instructor` (`class_id`,`course_id`,`instructor_id`),
+  KEY `course_id` (`course_id`),
+  KEY `instructor_id` (`instructor_id`),
+  CONSTRAINT `academic_class_courses_class_fk` FOREIGN KEY (`class_id`) REFERENCES `academic_classes` (`id`),
+  CONSTRAINT `academic_class_courses_course_fk` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`),
+  CONSTRAINT `academic_class_courses_instructor_fk` FOREIGN KEY (`instructor_id`) REFERENCES `user_instructors` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `academic_class_courses`
+--
+
+LOCK TABLES `academic_class_courses` WRITE;
+/*!40000 ALTER TABLE `academic_class_courses` DISABLE KEYS */;
+/*!40000 ALTER TABLE `academic_class_courses` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `academic_class_instructors`
+--
+
+DROP TABLE IF EXISTS `academic_class_instructors`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `academic_class_instructors` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `class_id` bigint NOT NULL,
+  `instructor_id` bigint NOT NULL COMMENT 'ID của user_instructors',
+  `role` enum('main','assistant') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'main' COMMENT 'Vai trò trong lớp',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `class_instructor` (`class_id`,`instructor_id`),
+  KEY `instructor_id` (`instructor_id`),
+  CONSTRAINT `academic_class_instructors_class_fk` FOREIGN KEY (`class_id`) REFERENCES `academic_classes` (`id`),
+  CONSTRAINT `academic_class_instructors_instructor_fk` FOREIGN KEY (`instructor_id`) REFERENCES `user_instructors` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `academic_class_instructors`
+--
+
+LOCK TABLES `academic_class_instructors` WRITE;
+/*!40000 ALTER TABLE `academic_class_instructors` DISABLE KEYS */;
+/*!40000 ALTER TABLE `academic_class_instructors` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `academic_classes`
+--
+
+DROP TABLE IF EXISTS `academic_classes`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `academic_classes` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `class_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Mã lớp',
+  `class_name` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `semester` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Học kỳ (VD: 20231)',
+  `status` enum('active','completed','cancelled') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'active',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `class_code_semester` (`class_code`,`semester`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `academic_classes`
+--
+
+LOCK TABLES `academic_classes` WRITE;
+/*!40000 ALTER TABLE `academic_classes` DISABLE KEYS */;
+/*!40000 ALTER TABLE `academic_classes` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
+-- Table structure for table `academic_grades`
+--
+
+DROP TABLE IF EXISTS `academic_grades`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `academic_grades` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `student_id` bigint NOT NULL COMMENT 'ID từ user_students_academic',
+  `academic_class_id` bigint NOT NULL,
+  `assessment_type` enum('quiz','assignment') COLLATE utf8mb4_unicode_ci NOT NULL,
+  `assessment_id` bigint NOT NULL COMMENT 'ID của quiz hoặc assignment',
+  `score` decimal(5,2) DEFAULT NULL,
+  `max_score` decimal(5,2) NOT NULL,
+  `completed_at` timestamp NULL DEFAULT NULL,
+  `graded_by` bigint DEFAULT NULL COMMENT 'ID của instructor chấm điểm',
+  `comments` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `unique_grade` (`student_id`,`assessment_type`,`assessment_id`),
+  KEY `academic_class_id` (`academic_class_id`),
+  KEY `graded_by` (`graded_by`),
+  CONSTRAINT `academic_grades_class_fk` FOREIGN KEY (`academic_class_id`) REFERENCES `academic_classes` (`id`),
+  CONSTRAINT `academic_grades_grader_fk` FOREIGN KEY (`graded_by`) REFERENCES `user_instructors` (`id`),
+  CONSTRAINT `academic_grades_student_fk` FOREIGN KEY (`student_id`) REFERENCES `user_students_academic` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `academic_grades`
+--
+
+LOCK TABLES `academic_grades` WRITE;
+/*!40000 ALTER TABLE `academic_grades` DISABLE KEYS */;
+/*!40000 ALTER TABLE `academic_grades` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `achievements`
 --
 
@@ -98,10 +232,16 @@ CREATE TABLE `assignments` (
   `due_date` timestamp NULL DEFAULT NULL,
   `max_score` int DEFAULT NULL,
   `file_requirements` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
+  `assignment_type` enum('practice','homework','midterm','final','project') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'practice',
+  `academic_class_id` bigint DEFAULT NULL COMMENT 'Lớp học nếu là bài tập học thuật',
+  `start_time` datetime DEFAULT NULL,
+  `end_time` datetime DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `lesson_id` (`lesson_id`),
+  KEY `assignments_academic_class_fk` (`academic_class_id`),
+  CONSTRAINT `assignments_academic_class_fk` FOREIGN KEY (`academic_class_id`) REFERENCES `academic_classes` (`id`),
   CONSTRAINT `assignments_ibfk_1` FOREIGN KEY (`lesson_id`) REFERENCES `course_lessons` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -133,7 +273,7 @@ CREATE TABLE `categories` (
   PRIMARY KEY (`id`),
   KEY `parent_id` (`parent_id`),
   CONSTRAINT `categories_ibfk_1` FOREIGN KEY (`parent_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -142,6 +282,7 @@ CREATE TABLE `categories` (
 
 LOCK TABLES `categories` WRITE;
 /*!40000 ALTER TABLE `categories` DISABLE KEYS */;
+INSERT INTO `categories` VALUES (1,'Web Development','All courses related to web development',NULL,'active','2025-03-08 07:57:20','2025-03-08 07:57:20'),(2,'Frontend','Courses about frontend technologies (HTML, CSS, JS, ...)',1,'active','2025-03-08 07:57:20','2025-03-08 07:57:20'),(3,'Backend','Courses about backend technologies (Node.js, PHP, ...)',1,'active','2025-03-08 07:57:20','2025-03-08 07:57:20'),(4,'ReactJS','React library and ecosystem',2,'active','2025-03-08 07:57:20','2025-03-08 07:57:20'),(5,'NodeJS','Node.js runtime environment and frameworks',3,'active','2025-03-08 07:57:20','2025-03-08 07:57:20'),(6,'Programming Languages','All about various programming languages',NULL,'active','2025-03-08 07:57:20','2025-03-08 07:57:20'),(7,'Python','Python language for web, data science, automation, etc.',6,'active','2025-03-08 07:57:20','2025-03-08 07:57:20'),(8,'Java','Java language for enterprise solutions, Android, etc.',6,'active','2025-03-08 07:57:20','2025-03-08 07:57:20'),(9,'Databases','Courses on relational, NoSQL databases',NULL,'active','2025-03-08 07:57:20','2025-03-08 07:57:20'),(10,'MySQL','MySQL relational database management system',9,'active','2025-03-08 07:57:20','2025-03-08 07:57:20');
 /*!40000 ALTER TABLE `categories` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -511,7 +652,7 @@ CREATE TABLE `courses` (
   KEY `idx_slug` (`slug`),
   CONSTRAINT `courses_ibfk_1` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`),
   CONSTRAINT `courses_ibfk_2` FOREIGN KEY (`instructor_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -520,6 +661,7 @@ CREATE TABLE `courses` (
 
 LOCK TABLES `courses` WRITE;
 /*!40000 ALTER TABLE `courses` DISABLE KEYS */;
+INSERT INTO `courses` VALUES (1,'ReactJS','react-for-beginners','Introduction to React fundamentals',4,7,19.99,10,'beginner','published','react.png','2025-04-01',NULL,100,'2025-03-08 08:00:41','2025-03-10 02:05:19'),(2,'Advanced NodeJS','advanced-nodejs','Deep dive into NodeJS and its ecosystem',5,6,29.99,15,'advanced','published','node.png','2025-05-01',NULL,50,'2025-03-08 08:00:41','2025-03-08 08:00:41'),(3,'Fullstack Web Development','fullstack-web-dev','Learn both frontend and backend skills',1,7,49.99,30,'intermediate','draft','fullstack.png','2025-06-01',NULL,200,'2025-03-08 08:00:41','2025-03-08 08:00:41'),(4,'Python for Data Science','python-for-data-science','Python fundamentals for data analysis and machine learning',7,6,39.99,20,'intermediate','published','python.png','2025-04-15',NULL,150,'2025-03-08 08:00:41','2025-03-08 08:00:41'),(5,'Java Fundamentals','java-fundamentals','Basic to intermediate Java programming',8,7,24.99,25,'beginner','published','java.png','2025-04-20',NULL,100,'2025-03-08 08:00:41','2025-03-08 08:00:41'),(6,'MySQL Essentials','mysql-essentials','Relational database design and SQL with MySQL',10,7,14.99,12,'beginner','published','mysql.png','2025-05-10',NULL,80,'2025-03-08 08:00:41','2025-03-08 08:00:41'),(7,'Frontend Mastery','frontend-mastery','In-depth coverage of modern frontend tools and techniques',2,5,59.99,40,'advanced','published','frontend.png','2025-06-01',NULL,120,'2025-03-08 08:00:41','2025-03-08 08:00:41'),(8,'Backend with Express','backend-with-express','Building scalable backend services using Express.js',3,6,34.99,18,'intermediate','published','express.png','2025-07-01',NULL,100,'2025-03-08 08:00:41','2025-03-08 08:00:41'),(9,'DevOps with Docker','devops-with-docker','Containerization and DevOps practices with Docker',9,6,44.99,15,'intermediate','draft','docker.png','2025-06-15',NULL,60,'2025-03-08 08:00:41','2025-03-08 08:00:41'),(10,'Mobile Apps with React Native','mobile-apps-react-native','Develop cross-platform mobile apps using React Native',4,5,49.99,25,'advanced','published','react-native.png','2025-08-01',NULL,100,'2025-03-08 08:00:41','2025-03-08 08:00:41');
 /*!40000 ALTER TABLE `courses` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -602,14 +744,14 @@ DROP TABLE IF EXISTS `forum_likes`;
 CREATE TABLE `forum_likes` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `user_id` bigint NOT NULL,
-  `topic_id` bigint NOT NULL COMMENT 'ID của bài viết được like',
+  `topic_id` bigint NOT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   UNIQUE KEY `unique_user_topic_like` (`user_id`,`topic_id`),
   KEY `topic_id` (`topic_id`),
-  CONSTRAINT `forum_likes_topic_fk` FOREIGN KEY (`topic_id`) REFERENCES `forum_topics` (`id`) ON DELETE CASCADE,
-  CONSTRAINT `forum_likes_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+  CONSTRAINT `forum_likes_topic_fk` FOREIGN KEY (`topic_id`) REFERENCES `forum_topics` (`id`),
+  CONSTRAINT `forum_likes_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -1001,10 +1143,16 @@ CREATE TABLE `quizzes` (
   `time_limit` int DEFAULT NULL COMMENT 'Time limit in minutes',
   `passing_score` int DEFAULT NULL,
   `attempts_allowed` int DEFAULT '1',
+  `quiz_type` enum('practice','homework','midterm','final') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'practice',
+  `academic_class_id` bigint DEFAULT NULL COMMENT 'Lớp học nếu là bài kiểm tra học thuật',
+  `start_time` datetime DEFAULT NULL COMMENT 'Thời gian bắt đầu làm bài',
+  `end_time` datetime DEFAULT NULL COMMENT 'Thời gian kết thúc',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `lesson_id` (`lesson_id`),
+  KEY `quizzes_academic_class_fk` (`academic_class_id`),
+  CONSTRAINT `quizzes_academic_class_fk` FOREIGN KEY (`academic_class_id`) REFERENCES `academic_classes` (`id`),
   CONSTRAINT `quizzes_ibfk_1` FOREIGN KEY (`lesson_id`) REFERENCES `course_lessons` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -1263,6 +1411,42 @@ LOCK TABLES `user_students` WRITE;
 UNLOCK TABLES;
 
 --
+-- Table structure for table `user_students_academic`
+--
+
+DROP TABLE IF EXISTS `user_students_academic`;
+/*!40101 SET @saved_cs_client     = @@character_set_client */;
+/*!50503 SET character_set_client = utf8mb4 */;
+CREATE TABLE `user_students_academic` (
+  `id` bigint NOT NULL AUTO_INCREMENT,
+  `user_id` bigint NOT NULL,
+  `academic_class_id` bigint NOT NULL COMMENT 'Lớp học thuật',
+  `student_code` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Mã sinh viên',
+  `full_name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `academic_year` varchar(20) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL COMMENT 'Khóa học (K65, K66...)',
+  `major` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'Chuyên ngành',
+  `status` enum('studying','graduated','suspended','dropped') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'studying',
+  `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
+  `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `student_code` (`student_code`),
+  UNIQUE KEY `user_id` (`user_id`),
+  KEY `academic_class_id` (`academic_class_id`),
+  CONSTRAINT `user_students_academic_class_fk` FOREIGN KEY (`academic_class_id`) REFERENCES `academic_classes` (`id`),
+  CONSTRAINT `user_students_academic_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+/*!40101 SET character_set_client = @saved_cs_client */;
+
+--
+-- Dumping data for table `user_students_academic`
+--
+
+LOCK TABLES `user_students_academic` WRITE;
+/*!40000 ALTER TABLE `user_students_academic` DISABLE KEYS */;
+/*!40000 ALTER TABLE `user_students_academic` ENABLE KEYS */;
+UNLOCK TABLES;
+
+--
 -- Table structure for table `users`
 --
 
@@ -1274,7 +1458,7 @@ CREATE TABLE `users` (
   `username` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `phone` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `password_hash` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `role` enum('student','instructor','admin') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `status` enum('active','inactive','banned') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'active',
   `avatar_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -1283,13 +1467,11 @@ CREATE TABLE `users` (
   `social_login_provider` varchar(50) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `social_login_id` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `last_login` timestamp NULL DEFAULT NULL,
+  `refresh_token` text COLLATE utf8mb4_unicode_ci,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  UNIQUE KEY `username` (`username`),
-  UNIQUE KEY `email` (`email`),
-  UNIQUE KEY `phone` (`phone`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=35 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1298,6 +1480,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
+INSERT INTO `users` VALUES (1,'thanhtoan','toan@gmail.com','0775844074','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','student','active','img',0,'12425',NULL,NULL,NULL,'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJ0b2FuQGdtYWlsLmNvbSIsImlhdCI6MTc0MTU2OTQyOSwiZXhwIjoxNzQyMTc0MjI5fQ.iEwc6p8R4iP9Ojnea3OmswSynlRQ15CF9yY_8zyC_Ko','2025-03-08 02:48:23','2025-03-10 01:17:09'),(3,'alice','alice@example.com','0123456789','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','student','active','avatar1.png',0,NULL,NULL,NULL,'2025-03-08 03:00:00',NULL,'2025-03-08 07:53:05','2025-03-10 00:44:42'),(4,'bob','bob@example.com','0123456788','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','student','active','avatar2.png',0,NULL,NULL,NULL,'2025-03-08 03:00:00',NULL,'2025-03-08 07:53:05','2025-03-10 00:44:42'),(5,'charlie','charlie@example.com','0123456787','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','instructor','inactive','avatar3.png',0,NULL,NULL,NULL,'2025-03-08 03:00:00',NULL,'2025-03-08 07:53:05','2025-03-10 01:18:06'),(6,'david','david@example.com','0123456786','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','student','active','avatar4.png',1,'secretKey',NULL,NULL,'2025-03-08 03:00:00',NULL,'2025-03-08 07:53:05','2025-03-10 00:44:42'),(7,'eve','eve@example.com','0123456785','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','instructor','active','avatar5.png',0,NULL,NULL,NULL,'2025-03-08 03:00:00','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3IiwiZW1haWwiOiJldmVAZXhhbXBsZS5jb20iLCJpYXQiOjE3NDE1NzMyNjUsImV4cCI6MTc0MjE3ODA2NX0.DAlBA_C4M2X9Fo9hzr7BRQSLSZwkXSL5sCsGZBDx7O0','2025-03-08 07:53:05','2025-03-10 02:21:05'),(8,'frank','frank@example.com','0123456784','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','instructor','active','avatar6.png',0,NULL,'google',NULL,'2025-03-08 03:00:00',NULL,'2025-03-08 07:53:05','2025-03-10 00:44:42'),(9,'grace','grace@example.com','0123456783','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','instructor','active','avatar7.png',0,NULL,'facebook',NULL,'2025-03-08 03:00:00',NULL,'2025-03-08 07:53:05','2025-03-10 00:44:42'),(10,'helen','helen@example.com','0123456782','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','admin','active','avatar8.png',0,NULL,NULL,NULL,'2025-03-08 03:00:00',NULL,'2025-03-08 07:53:05','2025-03-10 00:44:42'),(11,'ivan','ivan@example.com','0123456781','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','admin','inactive','avatar9.png',1,'2FAsecret',NULL,NULL,'2025-03-08 03:00:00',NULL,'2025-03-08 07:53:05','2025-03-10 00:44:42'),(34,'toan','aaaa@gmail.com','0775844074','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','student','active','img',0,'12425',NULL,NULL,NULL,'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzNCIsImVtYWlsIjoiYWFhYUBnbWFpbC5jb20iLCJpYXQiOjE3NDE1NjYyNTQsImV4cCI6MTc0MjE3MTA1NH0.b02sZZuVEckT6uy61mxwRGPIxDQMKhGw88L2kFqfZx4','2025-03-09 02:39:34','2025-03-10 00:44:42');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -1310,4 +1493,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-03-06 20:00:42
+-- Dump completed on 2025-03-19 14:26:00
