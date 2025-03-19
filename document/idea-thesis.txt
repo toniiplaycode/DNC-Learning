@@ -11,3 +11,18 @@ Chứng chỉ uy tín: Chứng chỉ hoàn thành khóa học do trường cấp
 Tương tác với giảng viên: Hỗ trợ học tập qua diễn đàn, Q&A, hoặc các buổi học trực tuyến định kỳ.
 Hệ thống đánh giá và phản hồi: Giúp người học theo dõi tiến độ và cải thiện chất lượng học tập.
 Với mô hình này, hệ thống không chỉ giúp trường đại học mở rộng ảnh hưởng của mình mà còn tạo điều kiện cho nhiều người có cơ hội tiếp cận giáo dục chất lượng.
+
+
+Không cần thêm các tính năng phức tạp của LMS như:
+❌ Quản lý chương trình đào tạo
+❌ Quản lý tín chỉ
+❌ Đăng ký học phần
+❌ Quản lý thời khóa biểu
+❌ Quản lý điểm rèn luyện
+❌ Quản lý học phí
+❌ Quản lý văn bằng
+CSDL hiện tại đã phù hợp với mục tiêu:
+✅ Tập trung vào course marketplace
+✅ Hỗ trợ cơ bản cho sinh viên trường
+✅ Tận dụng các chức năng sẵn có
+✅ Không phức tạp hóa hệ thống
