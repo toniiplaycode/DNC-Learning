@@ -25,7 +25,7 @@ import {
   School,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
-import CustomContainer from "../../components/common/CustomContainer";
+import CustomContainer from "../../../components/common/CustomContainer";
 
 // Mock data cho các bài kiểm tra
 const mockAssessments = [
@@ -126,10 +126,6 @@ const Assessment = () => {
 
     return false;
   });
-
-  const handleStartAssessment = (id: number, type: string) => {
-    navigate(`/assessment/${type}/${id}`);
-  };
 
   // Function to render difficulty chip
   const renderDifficultyChip = (difficulty: string) => {
@@ -271,7 +267,9 @@ const Assessment = () => {
                     fullWidth
                     variant="outlined"
                     onClick={() =>
-                      handleStartAssessment(assessment.id, assessment.type)
+                      navigate(
+                        `/assessment/${assessment.type}/${assessment.id}/result`
+                      )
                     }
                   >
                     Xem kết quả
@@ -281,7 +279,9 @@ const Assessment = () => {
                     fullWidth
                     variant="contained"
                     onClick={() =>
-                      handleStartAssessment(assessment.id, assessment.type)
+                      navigate(
+                        `/assessment/${assessment.type}/${assessment.id}`
+                      )
                     }
                   >
                     Bắt đầu làm

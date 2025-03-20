@@ -36,6 +36,7 @@ import {
   LinearProgress,
   Menu,
   Tooltip,
+  Grid,
 } from "@mui/material";
 import {
   Search,
@@ -52,6 +53,8 @@ import {
   LocationOn,
   Grade,
   Assignment,
+  SortByAlpha,
+  AccessTime,
 } from "@mui/icons-material";
 
 // Add these interfaces near the top of the file
@@ -95,6 +98,14 @@ interface Student {
   courses: any[]; // Có thể tạo interface riêng nếu cần
   payments: any[]; // Có thể tạo interface riêng nếu cần
   grades?: CourseGrade[]; // Thêm dấu ? để đánh dấu optional
+  type: string; // Added type field
+  completedCourses: number;
+  certificates: number;
+  studentId?: string;
+  faculty?: string;
+  major?: string;
+  academicYear?: string;
+  year?: number;
 }
 
 // Mock data
@@ -191,6 +202,9 @@ const mockStudents = [
         finalGrade: 87.5,
       },
     ],
+    type: "student",
+    completedCourses: 1,
+    certificates: 1,
   },
   {
     id: 2,
@@ -206,8 +220,228 @@ const mockStudents = [
     joinDate: "2024-01-14",
     courses: [],
     payments: [],
+    type: "student",
+    completedCourses: 0,
+    certificates: 0,
   },
-  // Thêm mock data khác...
+  {
+    id: 3,
+    name: "Phạm Văn C",
+    email: "phamvanc@university.edu.vn",
+    phone: "0903456789",
+    avatar: "/src/assets/logo.png",
+    enrolledCourses: 4,
+    totalSpent: 1000000,
+    lastActive: "5 giờ trước",
+    status: "active",
+    joinDate: "2024-01-15",
+    courses: [
+      {
+        id: 1,
+        name: "React & TypeScript Masterclass",
+        progress: 75,
+        enrollDate: "2024-01-20",
+        completedLessons: 36,
+        totalLessons: 48,
+      },
+      {
+        id: 2,
+        name: "Node.js Advanced Concepts",
+        progress: 30,
+        enrollDate: "2024-02-15",
+        completedLessons: 12,
+        totalLessons: 40,
+      },
+    ],
+    payments: [
+      {
+        id: 1,
+        courseId: 1,
+        courseName: "React & TypeScript Masterclass",
+        amount: 899000,
+        date: "2024-01-20",
+      },
+      {
+        id: 2,
+        courseId: 2,
+        courseName: "Node.js Advanced Concepts",
+        amount: 699000,
+        date: "2024-02-15",
+      },
+    ],
+    grades: [
+      {
+        courseId: 1,
+        courseName: "React & TypeScript Masterclass",
+        assignments: [
+          {
+            id: 1,
+            name: "Assignment 1: React Hooks",
+            score: 85,
+            maxScore: 100,
+            submittedDate: "2024-02-01",
+          },
+          {
+            id: 2,
+            name: "Assignment 2: TypeScript Basics",
+            score: 90,
+            maxScore: 100,
+            submittedDate: "2024-02-15",
+          },
+          {
+            id: 3,
+            name: "Mid-term Project",
+            score: 88,
+            maxScore: 100,
+            submittedDate: "2024-03-01",
+          },
+        ],
+        quizzes: [
+          {
+            id: 1,
+            name: "Quiz 1: React Fundamentals",
+            score: 8,
+            maxScore: 10,
+            submittedDate: "2024-01-25",
+          },
+          {
+            id: 2,
+            name: "Quiz 2: TypeScript Types",
+            score: 9,
+            maxScore: 10,
+            submittedDate: "2024-02-10",
+          },
+        ],
+        finalGrade: 87.5,
+      },
+    ],
+    type: "student_academic",
+    completedCourses: 2,
+    certificates: 2,
+    studentId: "SV001",
+    faculty: "Công nghệ thông tin",
+    major: "Khoa học máy tính",
+    academicYear: "2021-2025",
+    year: 3,
+  },
+  {
+    id: 4,
+    name: "Lê Thị D",
+    email: "lethid@university.edu.vn",
+    phone: "0904567890",
+    avatar: "/src/assets/logo.png",
+    enrolledCourses: 5,
+    totalSpent: 1000000,
+    lastActive: "12 giờ trước",
+    status: "active",
+    joinDate: "2024-01-15",
+    courses: [
+      {
+        id: 1,
+        name: "React & TypeScript Masterclass",
+        progress: 75,
+        enrollDate: "2024-01-20",
+        completedLessons: 36,
+        totalLessons: 48,
+      },
+      {
+        id: 2,
+        name: "Node.js Advanced Concepts",
+        progress: 30,
+        enrollDate: "2024-02-15",
+        completedLessons: 12,
+        totalLessons: 40,
+      },
+    ],
+    payments: [
+      {
+        id: 1,
+        courseId: 1,
+        courseName: "React & TypeScript Masterclass",
+        amount: 899000,
+        date: "2024-01-20",
+      },
+      {
+        id: 2,
+        courseId: 2,
+        courseName: "Node.js Advanced Concepts",
+        amount: 699000,
+        date: "2024-02-15",
+      },
+    ],
+    grades: [
+      {
+        courseId: 1,
+        courseName: "React & TypeScript Masterclass",
+        assignments: [
+          {
+            id: 1,
+            name: "Assignment 1: React Hooks",
+            score: 85,
+            maxScore: 100,
+            submittedDate: "2024-02-01",
+          },
+          {
+            id: 2,
+            name: "Assignment 2: TypeScript Basics",
+            score: 90,
+            maxScore: 100,
+            submittedDate: "2024-02-15",
+          },
+          {
+            id: 3,
+            name: "Mid-term Project",
+            score: 88,
+            maxScore: 100,
+            submittedDate: "2024-03-01",
+          },
+        ],
+        quizzes: [
+          {
+            id: 1,
+            name: "Quiz 1: React Fundamentals",
+            score: 8,
+            maxScore: 10,
+            submittedDate: "2024-01-25",
+          },
+          {
+            id: 2,
+            name: "Quiz 2: TypeScript Types",
+            score: 9,
+            maxScore: 10,
+            submittedDate: "2024-02-10",
+          },
+        ],
+        finalGrade: 87.5,
+      },
+    ],
+    type: "student_academic",
+    completedCourses: 4,
+    certificates: 3,
+    studentId: "SV002",
+    faculty: "Công nghệ thông tin",
+    major: "Kỹ thuật phần mềm",
+    academicYear: "2020-2024",
+    year: 4,
+  },
+];
+
+// Mock data cho các khoa
+const faculties = [
+  "Tất cả",
+  "Công nghệ thông tin",
+  "Kỹ thuật điện tử",
+  "Quản trị kinh doanh",
+  "Ngoại ngữ",
+];
+
+// Mock data cho các ngành học
+const majors = [
+  "Tất cả",
+  "Khoa học máy tính",
+  "Kỹ thuật phần mềm",
+  "Hệ thống thông tin",
+  "An toàn thông tin",
 ];
 
 interface TabPanelProps {
@@ -240,6 +474,10 @@ const InstructorStudents = () => {
   const [tabValue, setTabValue] = useState(0);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
+  const [studentType, setStudentType] = useState("all");
+  const [sortBy, setSortBy] = useState("name");
+  const [filterFaculty, setFilterFaculty] = useState("Tất cả");
+  const [filterMajor, setFilterMajor] = useState("Tất cả");
 
   const handleStatusFilterChange = (event: any) => {
     setStatusFilter(event.target.value);
@@ -272,14 +510,34 @@ const InstructorStudents = () => {
     }
   };
 
-  const filteredStudents = mockStudents.filter((student) => {
-    const matchesSearch = student.name
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    const matchesStatus =
-      statusFilter === "all" || student.status === statusFilter;
-    return matchesSearch && matchesStatus;
-  });
+  const filteredStudents = mockStudents
+    .filter((student) => {
+      if (studentType === "all") return true;
+      return student.type === studentType;
+    })
+    .filter((student) => {
+      if (student.type === "student_academic") {
+        if (filterFaculty !== "Tất cả" && student.faculty !== filterFaculty)
+          return false;
+        if (filterMajor !== "Tất cả" && student.major !== filterMajor)
+          return false;
+      }
+
+      return (
+        student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        student.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        (student.type === "student_academic" &&
+          student.studentId?.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+    })
+    .sort((a, b) => {
+      if (sortBy === "name") return a.name.localeCompare(b.name);
+      if (sortBy === "lastActive") {
+        return a.lastActive.localeCompare(b.lastActive);
+      }
+      if (sortBy === "progress") return b.progress - a.progress;
+      return 0;
+    });
 
   const handleOpenDialog = (student: any) => {
     setSelectedStudent(student);
@@ -307,14 +565,24 @@ const InstructorStudents = () => {
     // Refresh data or update UI
   };
 
+  const handleMenuOpen = (
+    event: React.MouseEvent<HTMLElement>,
+    student: any
+  ) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedStudent(student);
+  };
+
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
   return (
     <Box sx={{ p: 3 }}>
-      {/* Header */}
       <Typography variant="h5" gutterBottom fontWeight="bold">
         Quản lý học viên
       </Typography>
 
-      {/* Filters */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Stack
@@ -353,7 +621,85 @@ const InstructorStudents = () => {
         </CardContent>
       </Card>
 
-      {/* Students Table */}
+      <Tabs
+        value={studentType}
+        onChange={(_, newValue) => setStudentType(newValue)}
+        sx={{ mb: 3 }}
+      >
+        <Tab label="Tất cả học viên" value="all" />
+        <Tab label="Học viên bên ngoài" value="student" />
+        <Tab label="Sinh viên trường" value="student_academic" />
+      </Tabs>
+
+      <Grid container spacing={3} sx={{ mb: 3 }}>
+        {(studentType === "all" || studentType === "student_academic") && (
+          <>
+            <Grid item xs={12} md={3}>
+              <FormControl fullWidth>
+                <InputLabel>Khoa</InputLabel>
+                <Select
+                  value={filterFaculty}
+                  label="Khoa"
+                  onChange={(e) => setFilterFaculty(e.target.value)}
+                >
+                  {faculties.map((faculty) => (
+                    <MenuItem key={faculty} value={faculty}>
+                      {faculty}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <FormControl fullWidth>
+                <InputLabel>Ngành học</InputLabel>
+                <Select
+                  value={filterMajor}
+                  label="Ngành học"
+                  onChange={(e) => setFilterMajor(e.target.value)}
+                >
+                  {majors.map((major) => (
+                    <MenuItem key={major} value={major}>
+                      {major}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+          </>
+        )}
+
+        <Grid item xs={12}>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Typography variant="body2">Sắp xếp theo:</Typography>
+            <Button
+              variant={sortBy === "name" ? "contained" : "outlined"}
+              size="small"
+              startIcon={<SortByAlpha />}
+              onClick={() => setSortBy("name")}
+            >
+              Tên
+            </Button>
+            <Button
+              variant={sortBy === "lastActive" ? "contained" : "outlined"}
+              size="small"
+              startIcon={<AccessTime />}
+              onClick={() => setSortBy("lastActive")}
+            >
+              Hoạt động gần đây
+            </Button>
+            <Button
+              variant={sortBy === "progress" ? "contained" : "outlined"}
+              size="small"
+              startIcon={<Assignment />}
+              onClick={() => setSortBy("progress")}
+            >
+              Tiến độ
+            </Button>
+          </Stack>
+        </Grid>
+      </Grid>
+
       <Card>
         <TableContainer>
           <Table>
@@ -418,7 +764,6 @@ const InstructorStudents = () => {
           </Table>
         </TableContainer>
 
-        {/* Pagination */}
         <Box sx={{ p: 2, display: "flex", justifyContent: "center" }}>
           <Pagination
             count={Math.ceil(filteredStudents.length / rowsPerPage)}
@@ -429,7 +774,6 @@ const InstructorStudents = () => {
         </Box>
       </Card>
 
-      {/* Student Detail Dialog */}
       <Dialog
         open={dialogOpen}
         onClose={handleCloseDialog}
@@ -576,7 +920,6 @@ const InstructorStudents = () => {
                       {courseGrade.courseName}
                     </Typography>
 
-                    {/* Điểm tổng kết */}
                     <Box
                       sx={{
                         mb: 3,
@@ -591,7 +934,6 @@ const InstructorStudents = () => {
                       </Typography>
                     </Box>
 
-                    {/* Assignments */}
                     <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
                       <Assignment sx={{ mr: 1, verticalAlign: "bottom" }} />
                       Bài tập
@@ -625,7 +967,6 @@ const InstructorStudents = () => {
                       </Table>
                     </TableContainer>
 
-                    {/* Quizzes */}
                     <Typography variant="subtitle2" gutterBottom sx={{ mt: 3 }}>
                       <Grade sx={{ mr: 1, verticalAlign: "bottom" }} />
                       Quiz
@@ -657,7 +998,6 @@ const InstructorStudents = () => {
                       </Table>
                     </TableContainer>
 
-                    {/* Progress Bar */}
                     <Box sx={{ mt: 2 }}>
                       <LinearProgress
                         variant="determinate"
@@ -719,7 +1059,6 @@ const InstructorStudents = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Suspend Confirmation Dialog */}
       <Dialog
         open={suspendDialogOpen}
         onClose={() => setSuspendDialogOpen(false)}
@@ -738,6 +1077,29 @@ const InstructorStudents = () => {
           </Button>
         </DialogActions>
       </Dialog>
+
+      <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={handleMenuClose}
+      >
+        <MenuItem onClick={handleOpenDialog}>
+          <Person sx={{ mr: 1 }} fontSize="small" />
+          Xem thông tin chi tiết
+        </MenuItem>
+        <MenuItem onClick={handleMenuClose}>
+          <Mail sx={{ mr: 1 }} fontSize="small" />
+          Gửi tin nhắn
+        </MenuItem>
+        <MenuItem onClick={handleMenuClose}>
+          <Assignment sx={{ mr: 1 }} fontSize="small" />
+          Xem bài tập
+        </MenuItem>
+        <MenuItem onClick={handleMenuClose}>
+          <Grade sx={{ mr: 1 }} fontSize="small" />
+          Xem điểm số
+        </MenuItem>
+      </Menu>
     </Box>
   );
 };

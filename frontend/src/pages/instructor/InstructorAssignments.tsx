@@ -34,6 +34,9 @@ import {
   ListItemButton,
   DialogContentText,
   Paper,
+  Tabs,
+  Tab,
+  Grid,
 } from "@mui/material";
 import {
   Search,
@@ -47,6 +50,10 @@ import {
   Close,
   OpenInNew,
   RateReview,
+  School,
+  Person,
+  Class,
+  FilterAlt,
 } from "@mui/icons-material";
 
 // Mock data
@@ -63,6 +70,7 @@ const mockAssignments = [
         studentId: 1,
         studentName: "Nguyễn Văn A",
         studentAvatar: "/src/assets/logo.png",
+        studentType: "student", // Học viên bên ngoài
         submittedDate: "2024-03-18",
         fileUrl: "path/to/file.pdf",
         status: "submitted", // submitted, graded, late
@@ -97,21 +105,109 @@ const mockAssignments = [
         studentId: 2,
         studentName: "Trần Thị B",
         studentAvatar: "/src/assets/logo.png",
+        studentType: "student", // Học viên bên ngoài
         submittedDate: "2024-03-21",
         fileUrl: "path/to/file.pdf",
         status: "late",
         score: null,
         feedback: "",
+        files: [
+          {
+            id: 1,
+            name: "react-hooks-assignment-b.pdf",
+            type: "pdf",
+            size: "1.9 MB",
+            url: "path/to/file-b.pdf",
+          },
+        ],
+      },
+      // Sinh viên trường học
+      {
+        id: 3,
+        studentId: 3,
+        studentCode: "SV001", // Mã số sinh viên
+        studentName: "Phạm Văn C",
+        studentAvatar: "/src/assets/logo.png",
+        studentType: "student_academic", // Sinh viên trường
+        className: "CNTT-K44A", // Lớp học
+        faculty: "Công nghệ thông tin", // Khoa
+        submittedDate: "2024-03-19",
+        fileUrl: "path/to/file.pdf",
+        status: "submitted",
+        score: null,
+        feedback: "",
+        files: [
+          {
+            id: 1,
+            name: "assignment1-pham-van-c.pdf",
+            type: "pdf",
+            size: "2.1 MB",
+            url: "path/to/file-c.pdf",
+          },
+          {
+            id: 2,
+            name: "source-code-c.zip",
+            type: "zip",
+            size: "1.5 MB",
+            url: "path/to/file-c.zip",
+          },
+        ],
+      },
+      {
+        id: 4,
+        studentId: 4,
+        studentCode: "SV002", // Mã số sinh viên
+        studentName: "Lê Thị D",
+        studentAvatar: "/src/assets/logo.png",
+        studentType: "student_academic", // Sinh viên trường
+        className: "CNTT-K44B", // Lớp học
+        faculty: "Công nghệ thông tin", // Khoa
+        submittedDate: "2024-03-17",
+        fileUrl: "path/to/file.pdf",
+        status: "graded", // Đã chấm điểm
+        score: 85,
+        feedback: "Bài làm tốt, nhưng cần cải thiện phần UI/UX",
+        files: [
+          {
+            id: 1,
+            name: "assignment1-le-thi-d.pdf",
+            type: "pdf",
+            size: "2.0 MB",
+            url: "path/to/file-d.pdf",
+          },
+        ],
       },
     ],
   },
-  // Add more assignments...
+  // Thêm bài tập khác nếu cần
+];
+
+// Danh sách lớp học
+const mockClasses = [
+  "Tất cả",
+  "CNTT-K44A",
+  "CNTT-K44B",
+  "CNTT-K45A",
+  "KHMT-K44A",
+  "KTPM-K44A",
+];
+
+// Danh sách khoa
+const mockFaculties = [
+  "Tất cả",
+  "Công nghệ thông tin",
+  "Kỹ thuật điện tử",
+  "Kinh tế",
 ];
 
 const InstructorAssignments = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [courseFilter, setCourseFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [studentTypeFilter, setStudentTypeFilter] = useState("all"); // all, student, student_academic
+  const [classFilter, setClassFilter] = useState("Tất cả");
+  const [facultyFilter, setFacultyFilter] = useState("Tất cả");
+
   const [page, setPage] = useState(1);
   const [gradeDialogOpen, setGradeDialogOpen] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState<any>(null);
@@ -121,6 +217,7 @@ const InstructorAssignments = () => {
   const [selectedFiles, setSelectedFiles] = useState<any[]>([]);
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
+  const [tabValue, setTabValue] = useState(0);
 
   const handleGrade = (submission: any) => {
     setSelectedSubmission(submission);
@@ -132,13 +229,10 @@ const InstructorAssignments = () => {
   const handleSubmitGrade = () => {
     // TODO: Implement grade submission logic
     setGradeDialogOpen(false);
-    setSelectedSubmission(null);
-    setScore("");
-    setFeedback("");
   };
 
-  const handleViewFiles = (submission: any) => {
-    setSelectedFiles(submission.files);
+  const handleViewFiles = (files: any[]) => {
+    setSelectedFiles(files);
     setFilesDialogOpen(true);
   };
 
@@ -147,261 +241,535 @@ const InstructorAssignments = () => {
     setPreviewDialogOpen(true);
   };
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "submitted":
-        return "info";
-      case "graded":
-        return "success";
-      case "late":
-        return "warning";
-      default:
-        return "default";
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case "submitted":
-        return "Đã nộp";
-      case "graded":
-        return "Đã chấm";
-      case "late":
-        return "Nộp muộn";
-      default:
-        return status;
-    }
-  };
-
-  const getFileIcon = (type: string) => {
-    switch (type) {
+  const getFileIcon = (fileType: string) => {
+    switch (fileType) {
       case "pdf":
         return <PictureAsPdf color="error" />;
-      case "zip":
-        return <Code color="primary" />;
+      case "doc":
+      case "docx":
+        return <Description color="primary" />;
       case "image":
-        return <Description color="success" />;
+      case "png":
+      case "jpg":
+      case "jpeg":
+        return <Description color="info" />;
+      case "zip":
+        return <Description color="warning" />;
       default:
         return <InsertDriveFile />;
     }
   };
 
   const renderPreview = (file: any) => {
-    switch (file.type) {
-      case "pdf":
+    if (file.type === "pdf") {
+      return (
+        <iframe
+          src={file.url}
+          width="100%"
+          height="500px"
+          title={file.name}
+          style={{ border: "none" }}
+        />
+      );
+    } else if (
+      file.type === "image" ||
+      file.type === "png" ||
+      file.type === "jpg" ||
+      file.type === "jpeg"
+    ) {
+      return (
+        <img
+          src={file.url}
+          alt={file.name}
+          style={{ maxWidth: "100%", maxHeight: "500px" }}
+        />
+      );
+    } else {
+      return (
+        <Typography align="center" color="text.secondary">
+          Không thể hiển thị xem trước cho loại file này
+        </Typography>
+      );
+    }
+  };
+
+  const getStatusChip = (status: string, score: number | null) => {
+    switch (status) {
+      case "submitted":
+        return <Chip label="Đã nộp" color="primary" size="small" />;
+      case "graded":
         return (
-          <iframe
-            src={file.url}
-            width="100%"
-            height="500px"
-            style={{ border: "none" }}
-            title={file.name}
-          />
+          <Chip label={`Đã chấm: ${score}/100`} color="success" size="small" />
         );
-      case "image":
-        return (
-          <img
-            src={file.url}
-            alt={file.name}
-            style={{
-              maxWidth: "100%",
-              maxHeight: "500px",
-              objectFit: "contain",
-            }}
-          />
-        );
+      case "late":
+        return <Chip label="Nộp muộn" color="warning" size="small" />;
       default:
+        return <Chip label="Chưa nộp" color="default" size="small" />;
+    }
+  };
+
+  // Lọc submissions dựa trên các filter
+  const getFilteredSubmissions = () => {
+    let assignmentSubmissions: any[] = [];
+
+    // Gộp tất cả các submission từ tất cả các bài tập
+    mockAssignments.forEach((assignment) => {
+      if (
+        courseFilter === "all" ||
+        courseFilter === assignment.courseId.toString()
+      ) {
+        assignment.submissions.forEach((submission) => {
+          assignmentSubmissions.push({
+            ...submission,
+            assignmentTitle: assignment.title,
+            courseName: assignment.courseName,
+            dueDate: assignment.dueDate,
+          });
+        });
+      }
+    });
+
+    // Áp dụng các bộ lọc
+    return assignmentSubmissions.filter((submission) => {
+      // Lọc theo trạng thái
+      if (statusFilter !== "all" && submission.status !== statusFilter) {
+        return false;
+      }
+
+      // Lọc theo loại học viên
+      if (
+        studentTypeFilter !== "all" &&
+        submission.studentType !== studentTypeFilter
+      ) {
+        return false;
+      }
+
+      // Lọc theo lớp (chỉ áp dụng cho sinh viên trường)
+      if (
+        submission.studentType === "student_academic" &&
+        classFilter !== "Tất cả" &&
+        submission.className !== classFilter
+      ) {
+        return false;
+      }
+
+      // Lọc theo khoa (chỉ áp dụng cho sinh viên trường)
+      if (
+        submission.studentType === "student_academic" &&
+        facultyFilter !== "Tất cả" &&
+        submission.faculty !== facultyFilter
+      ) {
+        return false;
+      }
+
+      // Lọc theo từ khóa tìm kiếm
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
         return (
-          <DialogContentText align="center">
-            Không thể xem trước file này. Vui lòng tải xuống để xem.
-          </DialogContentText>
+          submission.studentName.toLowerCase().includes(query) ||
+          (submission.studentCode &&
+            submission.studentCode.toLowerCase().includes(query)) ||
+          submission.assignmentTitle.toLowerCase().includes(query)
         );
+      }
+
+      return true;
+    });
+  };
+
+  const filteredSubmissions = getFilteredSubmissions();
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
+    if (newValue === 0) {
+      setStudentTypeFilter("all");
+    } else if (newValue === 1) {
+      setStudentTypeFilter("student");
+    } else {
+      setStudentTypeFilter("student_academic");
     }
   };
 
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h5" gutterBottom fontWeight="bold">
-        Quản lý bài tập
+        Quản lý học viên
       </Typography>
 
       {/* Filters */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={2}
-            alignItems={{ sm: "center" }}
-          >
-            <TextField
-              size="small"
-              placeholder="Tìm kiếm bài tập..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              sx={{ flex: 1 }}
-              InputProps={{
-                startAdornment: (
-                  <InputAdornment position="start">
-                    <Search />
-                  </InputAdornment>
-                ),
-              }}
-            />
+          <Grid container spacing={2} alignItems="center">
+            <Grid item xs={12} md={4}>
+              <TextField
+                fullWidth
+                placeholder="Tìm kiếm theo tên học viên, mã sinh viên hoặc tên bài tập..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Search />
+                    </InputAdornment>
+                  ),
+                }}
+                size="small"
+                variant="outlined"
+              />
+            </Grid>
 
-            <FormControl size="small" sx={{ minWidth: 200 }}>
-              <InputLabel>Khóa học</InputLabel>
-              <Select
-                value={courseFilter}
-                label="Khóa học"
-                onChange={(e) => setCourseFilter(e.target.value)}
+            <Grid item xs={12} md={8}>
+              <Stack
+                direction={{ xs: "column", md: "row" }}
+                spacing={2}
+                alignItems={{ md: "center" }}
               >
-                <MenuItem value="all">Tất cả khóa học</MenuItem>
-                <MenuItem value="1">React & TypeScript Masterclass</MenuItem>
-                {/* Add more courses */}
-              </Select>
-            </FormControl>
+                <FormControl size="small" sx={{ minWidth: 150 }}>
+                  <InputLabel>Khóa học</InputLabel>
+                  <Select
+                    value={courseFilter}
+                    onChange={(e) => setCourseFilter(e.target.value)}
+                    label="Khóa học"
+                  >
+                    <MenuItem value="all">Tất cả khóa học</MenuItem>
+                    {mockAssignments.map((assignment) => (
+                      <MenuItem
+                        key={assignment.courseId}
+                        value={assignment.courseId.toString()}
+                      >
+                        {assignment.courseName}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
 
-            <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel>Trạng thái</InputLabel>
-              <Select
-                value={statusFilter}
-                label="Trạng thái"
-                onChange={(e) => setStatusFilter(e.target.value)}
-              >
-                <MenuItem value="all">Tất cả</MenuItem>
-                <MenuItem value="submitted">Đã nộp</MenuItem>
-                <MenuItem value="graded">Đã chấm</MenuItem>
-                <MenuItem value="late">Nộp muộn</MenuItem>
-              </Select>
-            </FormControl>
-          </Stack>
+                <FormControl size="small" sx={{ minWidth: 130 }}>
+                  <InputLabel>Trạng thái</InputLabel>
+                  <Select
+                    value={statusFilter}
+                    onChange={(e) => setStatusFilter(e.target.value)}
+                    label="Trạng thái"
+                  >
+                    <MenuItem value="all">Tất cả</MenuItem>
+                    <MenuItem value="submitted">Đã nộp</MenuItem>
+                    <MenuItem value="graded">Đã chấm</MenuItem>
+                    <MenuItem value="late">Nộp muộn</MenuItem>
+                  </Select>
+                </FormControl>
+
+                {studentTypeFilter === "student_academic" && (
+                  <>
+                    <FormControl size="small" sx={{ minWidth: 130 }}>
+                      <InputLabel>Lớp</InputLabel>
+                      <Select
+                        value={classFilter}
+                        onChange={(e) =>
+                          setClassFilter(e.target.value as string)
+                        }
+                        label="Lớp"
+                      >
+                        {mockClasses.map((className) => (
+                          <MenuItem key={className} value={className}>
+                            {className}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+
+                    <FormControl size="small" sx={{ minWidth: 150 }}>
+                      <InputLabel>Khoa</InputLabel>
+                      <Select
+                        value={facultyFilter}
+                        onChange={(e) =>
+                          setFacultyFilter(e.target.value as string)
+                        }
+                        label="Khoa"
+                      >
+                        {mockFaculties.map((faculty) => (
+                          <MenuItem key={faculty} value={faculty}>
+                            {faculty}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  </>
+                )}
+              </Stack>
+            </Grid>
+          </Grid>
         </CardContent>
       </Card>
 
-      {/* Assignments List */}
-      {mockAssignments.map((assignment) => (
-        <Card key={assignment.id} sx={{ mb: 3 }}>
-          <CardContent>
-            <Stack
-              direction="row"
-              alignItems="center"
-              justifyContent="space-between"
-              sx={{ mb: 2 }}
-            >
-              <Box>
-                <Typography variant="h6" gutterBottom>
-                  {assignment.title}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {assignment.courseName}
-                </Typography>
-              </Box>
-              <Typography variant="body2" color="text.secondary">
-                Hạn nộp:{" "}
-                {new Date(assignment.dueDate).toLocaleDateString("vi-VN")}
-              </Typography>
-            </Stack>
+      {/* Tabs to switch between student types */}
+      <Box sx={{ mb: 3 }}>
+        <Tabs
+          value={tabValue}
+          onChange={handleTabChange}
+          indicatorColor="primary"
+          textColor="primary"
+        >
+          <Tab
+            icon={<FilterAlt fontSize="small" />}
+            iconPosition="start"
+            label="Tất cả học viên"
+          />
+          <Tab
+            icon={<Person fontSize="small" />}
+            iconPosition="start"
+            label="Học viên bên ngoài"
+          />
+          <Tab
+            icon={<School fontSize="small" />}
+            iconPosition="start"
+            label="Sinh viên trường"
+          />
+        </Tabs>
+      </Box>
 
-            <TableContainer>
-              <Table size="small">
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Học viên</TableCell>
-                    <TableCell>Ngày nộp</TableCell>
-                    <TableCell>Trạng thái</TableCell>
-                    <TableCell align="center">Điểm</TableCell>
-                    <TableCell align="right">Thao tác</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {assignment.submissions.map((submission) => (
-                    <TableRow key={submission.id}>
-                      <TableCell>
-                        <Stack direction="row" alignItems="center" spacing={2}>
-                          <Avatar src={submission.studentAvatar} />
-                          <Typography variant="body2">
-                            {submission.studentName}
-                          </Typography>
-                        </Stack>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(submission.submittedDate).toLocaleDateString(
-                          "vi-VN"
-                        )}
-                      </TableCell>
-                      <TableCell>
+      {/* Result count */}
+      <Typography variant="body2" sx={{ mb: 2 }}>
+        Hiển thị {filteredSubmissions.length} kết quả
+      </Typography>
+
+      {/* Assignments table */}
+      <TableContainer component={Paper} sx={{ mb: 3 }}>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Học viên</TableCell>
+              {studentTypeFilter === "student_academic" && (
+                <>
+                  <TableCell>Mã SV</TableCell>
+                  <TableCell>Lớp</TableCell>
+                </>
+              )}
+              <TableCell>Bài tập</TableCell>
+              <TableCell>Khóa học</TableCell>
+              <TableCell>Ngày nộp</TableCell>
+              <TableCell>Trạng thái</TableCell>
+              <TableCell>Thao tác</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {filteredSubmissions.length > 0 ? (
+              filteredSubmissions.map((submission) => (
+                <TableRow key={submission.id}>
+                  <TableCell>
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Avatar
+                        src={submission.studentAvatar}
+                        sx={{ width: 24, height: 24 }}
+                      />
+                      <Typography variant="body2">
+                        {submission.studentName}
+                      </Typography>
+                      <Tooltip
+                        title={
+                          submission.studentType === "student_academic"
+                            ? "Sinh viên trường"
+                            : "Học viên bên ngoài"
+                        }
+                      >
                         <Chip
+                          icon={
+                            submission.studentType === "student_academic" ? (
+                              <School fontSize="small" />
+                            ) : (
+                              <Person fontSize="small" />
+                            )
+                          }
+                          label={
+                            submission.studentType === "student_academic"
+                              ? "SV"
+                              : "HV"
+                          }
                           size="small"
-                          color={getStatusColor(submission.status)}
-                          label={getStatusLabel(submission.status)}
+                          color={
+                            submission.studentType === "student_academic"
+                              ? "secondary"
+                              : "primary"
+                          }
+                          variant="outlined"
                         />
-                      </TableCell>
-                      <TableCell align="center">
-                        {submission.score !== null ? submission.score : "-"}
-                      </TableCell>
-                      <TableCell align="right">
-                        <Stack
-                          direction="row"
-                          spacing={1}
-                          justifyContent="flex-end"
-                        >
-                          <Tooltip title="Xem bài nộp">
-                            <IconButton
-                              size="small"
-                              onClick={() => handleViewFiles(submission)}
-                            >
-                              <Description />
-                            </IconButton>
-                          </Tooltip>
-                          <Tooltip title="Chấm điểm">
-                            <IconButton
-                              size="small"
-                              color="primary"
-                              onClick={() => handleGrade(submission)}
-                            >
-                              <RateReview />
-                            </IconButton>
-                          </Tooltip>
-                        </Stack>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </CardContent>
-        </Card>
-      ))}
+                      </Tooltip>
+                    </Stack>
+                  </TableCell>
 
-      {/* Grade Dialog */}
+                  {studentTypeFilter === "student_academic" && (
+                    <>
+                      <TableCell>{submission.studentCode || "-"}</TableCell>
+                      <TableCell>{submission.className || "-"}</TableCell>
+                    </>
+                  )}
+
+                  <TableCell>{submission.assignmentTitle}</TableCell>
+                  <TableCell>{submission.courseName}</TableCell>
+                  <TableCell>{submission.submittedDate}</TableCell>
+                  <TableCell>
+                    {getStatusChip(submission.status, submission.score)}
+                  </TableCell>
+                  <TableCell>
+                    <Stack direction="row" spacing={1}>
+                      <Tooltip title="Xem files">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleViewFiles(submission.files)}
+                        >
+                          <Description fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Chấm điểm">
+                        <IconButton
+                          size="small"
+                          onClick={() => handleGrade(submission)}
+                        >
+                          <RateReview fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell
+                  colSpan={studentTypeFilter === "student_academic" ? 8 : 6}
+                  align="center"
+                >
+                  Không tìm thấy bài nộp nào
+                </TableCell>
+              </TableRow>
+            )}
+          </TableBody>
+        </Table>
+      </TableContainer>
+
+      {filteredSubmissions.length > 0 && (
+        <Box display="flex" justifyContent="center">
+          <Pagination
+            count={Math.ceil(filteredSubmissions.length / 10)}
+            page={page}
+            onChange={(e, value) => setPage(value)}
+            color="primary"
+          />
+        </Box>
+      )}
+
+      {/* Grading Dialog */}
       <Dialog
         open={gradeDialogOpen}
         onClose={() => setGradeDialogOpen(false)}
-        maxWidth="sm"
+        maxWidth="md"
         fullWidth
       >
-        <DialogTitle>
-          Chấm điểm cho {selectedSubmission?.studentName}
-        </DialogTitle>
+        <DialogTitle>Chấm điểm bài tập</DialogTitle>
         <DialogContent>
-          <Stack spacing={3} sx={{ mt: 2 }}>
-            <TextField
-              label="Điểm số"
-              type="number"
-              value={score}
-              onChange={(e) => setScore(Number(e.target.value))}
-              inputProps={{ min: 0, max: 100 }}
-              fullWidth
-            />
-            <TextField
-              label="Nhận xét"
-              multiline
-              rows={4}
-              value={feedback}
-              onChange={(e) => setFeedback(e.target.value)}
-              fullWidth
-            />
-          </Stack>
+          {selectedSubmission && (
+            <>
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="h6">
+                  {selectedSubmission.assignmentTitle}
+                </Typography>
+                <Typography variant="body2" gutterBottom>
+                  {selectedSubmission.courseName}
+                </Typography>
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  alignItems="center"
+                  sx={{ mt: 1 }}
+                >
+                  <Avatar
+                    src={selectedSubmission.studentAvatar}
+                    sx={{ width: 32, height: 32 }}
+                  />
+                  <Typography>
+                    {selectedSubmission.studentName}
+                    {selectedSubmission.studentType === "student_academic" && (
+                      <Typography
+                        component="span"
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ ml: 1 }}
+                      >
+                        ({selectedSubmission.studentCode} -{" "}
+                        {selectedSubmission.className})
+                      </Typography>
+                    )}
+                  </Typography>
+                </Stack>
+                <Typography variant="body2" color="text.secondary">
+                  Nộp lúc: {selectedSubmission.submittedDate}
+                </Typography>
+              </Box>
+
+              <Typography variant="subtitle1" gutterBottom>
+                Files đã nộp:
+              </Typography>
+              <List dense>
+                {selectedSubmission.files.map((file: any) => (
+                  <ListItem key={file.id} disablePadding>
+                    <ListItemButton
+                      onClick={() => handlePreviewFile(file)}
+                      sx={{ borderRadius: 1 }}
+                    >
+                      <ListItemIcon>{getFileIcon(file.type)}</ListItemIcon>
+                      <ListItemText
+                        primary={file.name}
+                        secondary={file.size}
+                        primaryTypographyProps={{
+                          variant: "body2",
+                        }}
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                ))}
+              </List>
+
+              <Box sx={{ mt: 3 }}>
+                <Typography variant="subtitle1" gutterBottom>
+                  Chấm điểm:
+                </Typography>
+                <Grid container spacing={2}>
+                  <Grid item xs={12} sm={4}>
+                    <TextField
+                      label="Điểm (0-100)"
+                      type="number"
+                      value={score}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value);
+                        if (isNaN(val)) {
+                          setScore("");
+                        } else {
+                          setScore(Math.min(Math.max(val, 0), 100));
+                        }
+                      }}
+                      fullWidth
+                      variant="outlined"
+                      InputProps={{
+                        inputProps: {
+                          min: 0,
+                          max: 100,
+                        },
+                      }}
+                    />
+                  </Grid>
+                  <Grid item xs={12} sm={8}>
+                    <TextField
+                      label="Phản hồi"
+                      value={feedback}
+                      onChange={(e) => setFeedback(e.target.value)}
+                      fullWidth
+                      variant="outlined"
+                      multiline
+                      rows={4}
+                      placeholder="Nhập nhận xét, đánh giá..."
+                    />
+                  </Grid>
+                </Grid>
+              </Box>
+            </>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setGradeDialogOpen(false)}>Hủy</Button>
