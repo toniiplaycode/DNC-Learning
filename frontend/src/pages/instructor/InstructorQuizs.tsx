@@ -35,6 +35,10 @@ import {
   Divider,
   Grid,
   LinearProgress,
+  Menu,
+  Tooltip,
+  ListItemIcon,
+  Badge,
 } from "@mui/material";
 import {
   Search,
@@ -47,6 +51,14 @@ import {
   Person,
   ArrowBack,
   Quiz,
+  Add,
+  MoreVert,
+  FilterList,
+  Edit,
+  Delete,
+  HourglassEmpty,
+  School,
+  MenuBook,
 } from "@mui/icons-material";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -56,34 +68,154 @@ const mockQuizzes = [
     id: 1,
     title: "Kiểm tra React cơ bản",
     course: "React & TypeScript Masterclass",
+    courseId: 1,
     totalQuestions: 15,
     totalPoints: 100,
     passingScore: 70,
     dateCreated: "2024-03-15",
     attempts: 45,
     averageScore: 78.5,
+    submissions: [
+      {
+        id: 101,
+        studentId: 1,
+        studentName: "Nguyễn Văn A",
+        avatar: "/src/assets/avatar.png",
+        status: "passed",
+        score: 85,
+        submittedDate: "2024-03-16T10:30:00",
+        timeSpent: 25,
+        studentType: "student",
+        answers: [
+          { question: 1, answer: 2, correct: true },
+          { question: 2, answer: 3, correct: true },
+          { question: 3, answer: 0, correct: false },
+          // thêm các câu trả lời khác
+        ],
+      },
+      {
+        id: 102,
+        studentId: 5,
+        studentName: "Trần Thị B",
+        studentCode: "SV001",
+        className: "CNTT-K44A",
+        faculty: "Công nghệ thông tin",
+        avatar: "/src/assets/avatar.png",
+        status: "failed",
+        score: 60,
+        submittedDate: "2024-03-16T11:15:00",
+        timeSpent: 28,
+        studentType: "student_academic",
+        answers: [
+          { question: 1, answer: 2, correct: true },
+          { question: 2, answer: 1, correct: true },
+          { question: 3, answer: 2, correct: true },
+          // ...more answers
+        ],
+      },
+    ],
   },
   {
     id: 2,
     title: "Đánh giá kiến thức TypeScript",
     course: "React & TypeScript Masterclass",
+    courseId: 1,
     totalQuestions: 20,
     totalPoints: 100,
     passingScore: 75,
     dateCreated: "2024-03-18",
     attempts: 38,
     averageScore: 82.3,
+    submissions: [
+      {
+        id: 201,
+        studentId: 2,
+        studentName: "Lê Thị C",
+        avatar: "/src/assets/avatar.png",
+        status: "passed",
+        score: 90,
+        submittedDate: "2024-03-19T14:20:00",
+        timeSpent: 22,
+        studentType: "student",
+        answers: [
+          { question: 1, answer: 2, correct: true },
+          { question: 2, answer: 1, correct: true },
+          { question: 3, answer: 2, correct: true },
+          // ...more answers
+        ],
+      },
+      {
+        id: 202,
+        studentId: 6,
+        studentName: "Phạm Văn D",
+        studentCode: "SV002",
+        className: "CNTT-K44B",
+        faculty: "Công nghệ thông tin",
+        avatar: "/src/assets/avatar.png",
+        status: "passed",
+        score: 85,
+        submittedDate: "2024-03-19T15:30:00",
+        timeSpent: 26,
+        studentType: "student_academic",
+        answers: [
+          { question: 1, answer: 2, correct: true },
+          { question: 2, answer: 1, correct: true },
+          { question: 3, answer: 2, correct: true },
+          // ...more answers
+        ],
+      },
+    ],
   },
   {
     id: 3,
     title: "Kiểm tra Node.js cơ bản",
     course: "Node.js Advanced Concepts",
+    courseId: 2,
     totalQuestions: 25,
     totalPoints: 100,
     passingScore: 70,
     dateCreated: "2024-03-10",
     attempts: 22,
     averageScore: 75.8,
+    submissions: [
+      {
+        id: 301,
+        studentId: 3,
+        studentName: "Nguyễn Thị E",
+        avatar: "/src/assets/avatar.png",
+        status: "failed",
+        score: 65,
+        submittedDate: "2024-03-12T09:15:00",
+        timeSpent: 30,
+        studentType: "student",
+        answers: [
+          { question: 1, answer: 1, correct: false },
+          { question: 2, answer: 1, correct: true },
+          { question: 3, answer: 1, correct: false },
+          // ...more answers
+        ],
+      },
+      {
+        id: 302,
+        studentId: 7,
+        studentName: "Hoàng Văn F",
+        studentCode: "SV003",
+        className: "KHMT-K44A",
+        faculty: "Khoa học máy tính",
+        avatar: "/src/assets/avatar.png",
+        status: "passed",
+        score: 78,
+        submittedDate: "2024-03-12T10:25:00",
+        timeSpent: 28,
+        studentType: "student_academic",
+        answers: [
+          { question: 1, answer: 2, correct: true },
+          { question: 2, answer: 1, correct: true },
+          { question: 3, answer: 2, correct: true },
+          // ...more answers
+        ],
+      },
+    ],
   },
 ];
 
@@ -97,6 +229,7 @@ const mockStudentAttempts = [
     timeTaken: 18, // in minutes
     submittedDate: "2024-03-18 14:25",
     status: "passed",
+    studentType: "student",
     answers: [
       { question: 1, answer: 2, correct: true },
       { question: 2, answer: 1, correct: true },
@@ -108,11 +241,15 @@ const mockStudentAttempts = [
     id: 2,
     studentId: 2,
     studentName: "Trần Thị B",
+    studentCode: "SV001",
+    className: "CNTT-K44A",
+    faculty: "Công nghệ thông tin",
     avatar: "/src/assets/avatar.png",
-    score: 92,
-    timeTaken: 15,
-    submittedDate: "2024-03-18 15:40",
+    score: 72,
+    timeTaken: 25,
+    submittedDate: "2024-03-18 15:10",
     status: "passed",
+    studentType: "student_academic",
     answers: [
       { question: 1, answer: 2, correct: true },
       { question: 2, answer: 1, correct: true },
@@ -129,6 +266,7 @@ const mockStudentAttempts = [
     timeTaken: 25,
     submittedDate: "2024-03-18 16:10",
     status: "failed",
+    studentType: "student",
     answers: [
       { question: 1, answer: 1, correct: false },
       { question: 2, answer: 1, correct: true },
@@ -145,6 +283,7 @@ const mockStudentAttempts = [
     timeTaken: 22,
     submittedDate: "2024-03-19 09:45",
     status: "passed",
+    studentType: "student",
     answers: [
       { question: 1, answer: 2, correct: true },
       { question: 2, answer: 0, correct: false },
@@ -161,6 +300,7 @@ const mockStudentAttempts = [
     timeTaken: 17,
     submittedDate: "2024-03-19 10:30",
     status: "passed",
+    studentType: "student",
     answers: [
       { question: 1, answer: 2, correct: true },
       { question: 2, answer: 1, correct: true },
@@ -207,15 +347,64 @@ const mockQuestions = [
   },
 ];
 
+// Danh sách lớp học
+const mockClasses = [
+  "Tất cả",
+  "CNTT-K44A",
+  "CNTT-K44B",
+  "CNTT-K45A",
+  "KHMT-K44A",
+  "KTPM-K44A",
+];
+
+// Danh sách khoa
+const mockFaculties = [
+  "Tất cả",
+  "Công nghệ thông tin",
+  "Khoa học máy tính",
+  "Kỹ thuật phần mềm",
+];
+
+// Thêm interface để định nghĩa kiểu dữ liệu
+interface QuizAttempt {
+  id: number;
+  studentId: number;
+  studentName: string;
+  avatar: string;
+  score: number;
+  timeTaken: number;
+  submittedDate: string;
+  status: string;
+  studentType: string;
+  studentCode?: string;
+  className?: string;
+  faculty?: string;
+  answers: Array<{
+    question: number;
+    answer: number;
+    correct: boolean;
+  }>;
+  quizId?: number;
+  quizTitle?: string;
+  courseName?: string;
+  timeSpent?: number;
+}
+
 const InstructorQuizs = () => {
   const navigate = useNavigate();
   const [selectedQuiz, setSelectedQuiz] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCourse, setFilterCourse] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
+  const [studentTypeFilter, setStudentTypeFilter] = useState("all");
+  const [classFilter, setClassFilter] = useState("Tất cả");
+  const [facultyFilter, setFacultyFilter] = useState("Tất cả");
   const [tabValue, setTabValue] = useState(0);
   const [openAttemptDetails, setOpenAttemptDetails] = useState(false);
-  const [selectedAttempt, setSelectedAttempt] = useState(null);
+  const [selectedAttempt, setSelectedAttempt] = useState<QuizAttempt | null>(
+    null
+  );
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
   // Danh sách khóa học từ mock data
   const courses = [...new Set(mockQuizzes.map((quiz) => quiz.course))];
@@ -231,7 +420,7 @@ const InstructorQuizs = () => {
   };
 
   // Xử lý xem chi tiết bài làm
-  const handleViewAttempt = (attempt) => {
+  const handleViewAttempt = (attempt: QuizAttempt) => {
     setSelectedAttempt(attempt);
     setOpenAttemptDetails(true);
   };
@@ -327,6 +516,73 @@ const InstructorQuizs = () => {
     );
   };
 
+  // Tổng hợp tất cả các bài nộp từ các bài kiểm tra
+  const getAllSubmissions = () => {
+    const allSubmissions: any[] = [];
+
+    mockQuizzes.forEach((quiz) => {
+      if (filterCourse === "all" || filterCourse === quiz.courseId.toString()) {
+        quiz.submissions.forEach((submission) => {
+          allSubmissions.push({
+            ...submission,
+            quizId: quiz.id,
+            quizTitle: quiz.title,
+            courseName: quiz.course,
+          });
+        });
+      }
+    });
+
+    return allSubmissions;
+  };
+
+  // Lọc các bài nộp theo bộ lọc
+  const filteredSubmissions = getAllSubmissions().filter((submission) => {
+    // Lọc theo từ khóa tìm kiếm
+    if (
+      searchQuery &&
+      !submission.studentName
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase()) &&
+      !submission.quizTitle.toLowerCase().includes(searchQuery.toLowerCase())
+    ) {
+      return false;
+    }
+
+    // Lọc theo trạng thái
+    if (filterStatus !== "all" && submission.status !== filterStatus) {
+      return false;
+    }
+
+    // Lọc theo loại học viên
+    if (
+      studentTypeFilter !== "all" &&
+      submission.studentType !== studentTypeFilter
+    ) {
+      return false;
+    }
+
+    // Lọc theo lớp (chỉ áp dụng cho sinh viên trường)
+    if (
+      submission.studentType === "student_academic" &&
+      classFilter !== "Tất cả" &&
+      submission.className !== classFilter
+    ) {
+      return false;
+    }
+
+    // Lọc theo khoa (chỉ áp dụng cho sinh viên trường)
+    if (
+      submission.studentType === "student_academic" &&
+      facultyFilter !== "Tất cả" &&
+      submission.faculty !== facultyFilter
+    ) {
+      return false;
+    }
+
+    return true;
+  });
+
   // Render danh sách quiz
   if (!selectedQuiz) {
     return (
@@ -370,7 +626,55 @@ const InstructorQuizs = () => {
                   ))}
                 </Select>
               </FormControl>
+              <FormControl size="small" sx={{ minWidth: 200 }}>
+                <InputLabel>Loại học viên</InputLabel>
+                <Select
+                  value={studentTypeFilter}
+                  label="Loại học viên"
+                  onChange={(e) =>
+                    setStudentTypeFilter(e.target.value as string)
+                  }
+                >
+                  <MenuItem value="all">Tất cả</MenuItem>
+                  <MenuItem value="student">Học viên bên ngoài</MenuItem>
+                  <MenuItem value="student_academic">Sinh viên trường</MenuItem>
+                </Select>
+              </FormControl>
             </Stack>
+
+            {/* Bộ lọc thêm cho sinh viên trường */}
+            {studentTypeFilter === "student_academic" && (
+              <>
+                <FormControl size="small" sx={{ minWidth: 150 }}>
+                  <InputLabel>Lớp</InputLabel>
+                  <Select
+                    value={classFilter}
+                    label="Lớp"
+                    onChange={(e) => setClassFilter(e.target.value as string)}
+                  >
+                    {mockClasses.map((cls) => (
+                      <MenuItem key={cls} value={cls}>
+                        {cls}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+                <FormControl size="small" sx={{ minWidth: 200 }}>
+                  <InputLabel>Khoa</InputLabel>
+                  <Select
+                    value={facultyFilter}
+                    label="Khoa"
+                    onChange={(e) => setFacultyFilter(e.target.value as string)}
+                  >
+                    {mockFaculties.map((faculty) => (
+                      <MenuItem key={faculty} value={faculty}>
+                        {faculty}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              </>
+            )}
 
             <TableContainer component={Paper} variant="outlined">
               <Table>
@@ -531,74 +835,104 @@ const InstructorQuizs = () => {
                 </FormControl>
               </Stack>
 
-              <TableContainer component={Paper} variant="outlined">
+              <TableContainer component={Paper}>
                 <Table>
                   <TableHead>
                     <TableRow>
                       <TableCell>Học viên</TableCell>
-                      <TableCell align="center">Điểm số</TableCell>
-                      <TableCell align="center">Trạng thái</TableCell>
-                      <TableCell align="center">Thời gian làm</TableCell>
-                      <TableCell align="center">Ngày nộp</TableCell>
-                      <TableCell align="center">Thao tác</TableCell>
+                      {studentTypeFilter === "student_academic" && (
+                        <>
+                          <TableCell>Mã SV</TableCell>
+                          <TableCell>Lớp</TableCell>
+                        </>
+                      )}
+                      <TableCell>Bài kiểm tra</TableCell>
+                      <TableCell>Khóa học</TableCell>
+                      <TableCell>Thời gian làm</TableCell>
+                      <TableCell>Thời gian nộp</TableCell>
+                      <TableCell>Kết quả</TableCell>
+                      <TableCell align="right">Thao tác</TableCell>
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {getFilteredAttempts().map((attempt) => (
-                      <TableRow key={attempt.id}>
-                        <TableCell>
-                          <Box sx={{ display: "flex", alignItems: "center" }}>
-                            <Avatar
-                              src={attempt.avatar}
-                              sx={{ mr: 2, width: 32, height: 32 }}
-                            />
-                            <Typography variant="body2">
-                              {attempt.studentName}
-                            </Typography>
-                          </Box>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Typography
-                            variant="body2"
-                            color={
-                              attempt.score >= selectedQuiz.passingScore
-                                ? "success.main"
-                                : "error.main"
-                            }
-                            fontWeight="bold"
-                          >
-                            {attempt.score}/100
-                          </Typography>
-                        </TableCell>
-                        <TableCell align="center">
-                          <Chip
-                            label={
-                              attempt.status === "passed" ? "Đạt" : "Không đạt"
-                            }
-                            color={
-                              attempt.status === "passed" ? "success" : "error"
-                            }
-                            size="small"
-                          />
-                        </TableCell>
-                        <TableCell align="center">
-                          {attempt.timeTaken} phút
-                        </TableCell>
-                        <TableCell align="center">
-                          {new Date(attempt.submittedDate).toLocaleString(
-                            "vi-VN"
+                    {filteredSubmissions.length > 0 ? (
+                      filteredSubmissions.map((submission) => (
+                        <TableRow key={submission.id}>
+                          <TableCell>
+                            <Stack
+                              direction="row"
+                              spacing={1}
+                              alignItems="center"
+                            >
+                              <Avatar
+                                src={submission.avatar}
+                                sx={{ width: 30, height: 30 }}
+                              />
+                              <Typography variant="body2">
+                                {submission.studentName}
+                                {submission.studentType ===
+                                  "student_academic" && (
+                                  <Chip
+                                    size="small"
+                                    icon={<School fontSize="small" />}
+                                    label="SV"
+                                    color="primary"
+                                    variant="outlined"
+                                    sx={{ ml: 1 }}
+                                  />
+                                )}
+                              </Typography>
+                            </Stack>
+                          </TableCell>
+                          {studentTypeFilter === "student_academic" && (
+                            <>
+                              <TableCell>
+                                {submission.studentCode || "-"}
+                              </TableCell>
+                              <TableCell>
+                                {submission.className || "-"}
+                              </TableCell>
+                            </>
                           )}
-                        </TableCell>
-                        <TableCell align="center">
-                          <IconButton
-                            color="primary"
-                            onClick={() => handleViewAttempt(attempt)}
-                          >
-                            <Visibility />
-                          </IconButton>
+                          <TableCell>{submission.quizTitle}</TableCell>
+                          <TableCell>{submission.courseName}</TableCell>
+                          <TableCell>{submission.timeSpent} phút</TableCell>
+                          <TableCell>{submission.submittedDate}</TableCell>
+                          <TableCell>
+                            <Typography
+                              variant="body2"
+                              color={
+                                submission.status === "passed"
+                                  ? "success.main"
+                                  : "error.main"
+                              }
+                              fontWeight="bold"
+                            >
+                              {submission.score}/100
+                            </Typography>
+                          </TableCell>
+                          <TableCell align="right">
+                            <IconButton
+                              color="primary"
+                              onClick={() => handleViewAttempt(submission)}
+                            >
+                              <Visibility />
+                            </IconButton>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell
+                          colSpan={
+                            studentTypeFilter === "student_academic" ? 9 : 7
+                          }
+                          align="center"
+                        >
+                          Không tìm thấy dữ liệu
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )}
                   </TableBody>
                 </Table>
               </TableContainer>
@@ -759,10 +1093,10 @@ const InstructorQuizs = () => {
 
                 <List>
                   {mockQuestions.map((question, index) => {
-                    const answer = selectedAttempt.answers.find(
+                    const answer = selectedAttempt?.answers?.find(
                       (a) => a.question === question.id
                     );
-                    const isCorrect = answer?.correct;
+                    const isCorrect = answer?.correct || false;
 
                     return (
                       <React.Fragment key={question.id}>
