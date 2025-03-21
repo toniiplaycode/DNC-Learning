@@ -55,6 +55,8 @@ import {
   Assignment,
   SortByAlpha,
   AccessTime,
+  MenuBook,
+  Close,
 } from "@mui/icons-material";
 
 // Add these interfaces near the top of the file
@@ -106,6 +108,7 @@ interface Student {
   major?: string;
   academicYear?: string;
   year?: number;
+  className?: string;
 }
 
 // Mock data
@@ -444,6 +447,7 @@ const majors = [
   "An toàn thông tin",
 ];
 
+// Tab Panel component
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
@@ -452,14 +456,17 @@ interface TabPanelProps {
 
 const TabPanel = (props: TabPanelProps) => {
   const { children, value, index, ...other } = props;
+
   return (
     <div
       role="tabpanel"
       hidden={value !== index}
-      id={`student-tabpanel-${index}`}
+      id={`simple-tabpanel-${index}`}
+      aria-labelledby={`simple-tab-${index}`}
       {...other}
+      style={{ padding: "16px 0" }}
     >
-      {value === index && <Box sx={{ py: 2 }}>{children}</Box>}
+      {value === index && <Box>{children}</Box>}
     </div>
   );
 };
@@ -474,10 +481,14 @@ const InstructorStudents = () => {
   const [tabValue, setTabValue] = useState(0);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
-  const [studentType, setStudentType] = useState("all");
+  const [studentType, setStudentType] = useState<
+    "student" | "student_academic"
+  >("student");
   const [sortBy, setSortBy] = useState("name");
   const [filterFaculty, setFilterFaculty] = useState("Tất cả");
   const [filterMajor, setFilterMajor] = useState("Tất cả");
+  const [classFilter, setClassFilter] = useState("all");
+  const [facultyFilter, setFacultyFilter] = useState("all");
 
   const handleStatusFilterChange = (event: any) => {
     setStatusFilter(event.target.value);
@@ -577,6 +588,22 @@ const InstructorStudents = () => {
     setAnchorEl(null);
   };
 
+  const handleStudentTypeChange = (event: any) => {
+    setStudentType(event.target.value as "student" | "student_academic");
+    setPage(1);
+  };
+
+  const paginatedStudents = filteredStudents.slice(
+    (page - 1) * rowsPerPage,
+    page * rowsPerPage
+  );
+
+  // Thêm hàm xử lý sự kiện click vào sinh viên
+  const handleRowClick = (student: any) => {
+    setSelectedStudent(student);
+    setDialogOpen(true);
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h5" gutterBottom fontWeight="bold">
@@ -589,6 +616,7 @@ const InstructorStudents = () => {
             direction={{ xs: "column", sm: "row" }}
             spacing={2}
             alignItems={{ sm: "center" }}
+            flexWrap="wrap"
           >
             <TextField
               size="small"
@@ -612,452 +640,200 @@ const InstructorStudents = () => {
                 label="Trạng thái"
                 onChange={handleStatusFilterChange}
               >
-                <MenuItem value="all">Tất cả</MenuItem>
+                <MenuItem value="all">Tất cả trạng thái</MenuItem>
                 <MenuItem value="active">Đang hoạt động</MenuItem>
                 <MenuItem value="inactive">Không hoạt động</MenuItem>
               </Select>
             </FormControl>
-          </Stack>
-        </CardContent>
-      </Card>
 
-      <Tabs
-        value={studentType}
-        onChange={(_, newValue) => setStudentType(newValue)}
-        sx={{ mb: 3 }}
-      >
-        <Tab label="Tất cả học viên" value="all" />
-        <Tab label="Học viên bên ngoài" value="student" />
-        <Tab label="Sinh viên trường" value="student_academic" />
-      </Tabs>
+            <FormControl size="small" sx={{ minWidth: 200 }}>
+              <InputLabel>Loại học viên</InputLabel>
+              <Select
+                value={studentType}
+                label="Loại học viên"
+                onChange={handleStudentTypeChange}
+              >
+                <MenuItem value="student">Học viên</MenuItem>
+                <MenuItem value="student_academic">Sinh viên trường</MenuItem>
+              </Select>
+            </FormControl>
 
-      <Grid container spacing={3} sx={{ mb: 3 }}>
-        {(studentType === "all" || studentType === "student_academic") && (
-          <>
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth>
+            <FormControl size="small" sx={{ minWidth: 200 }}>
+              <InputLabel>Sắp xếp theo</InputLabel>
+              <Select
+                value={sortBy}
+                label="Sắp xếp theo"
+                onChange={(e) => setSortBy(e.target.value)}
+              >
+                <MenuItem value="name">Tên</MenuItem>
+                <MenuItem value="joinDate">Ngày tham gia</MenuItem>
+                <MenuItem value="enrolledCourses">Số khóa học</MenuItem>
+                {studentType !== "student_academic" && (
+                  <MenuItem value="totalSpent">Chi tiêu</MenuItem>
+                )}
+              </Select>
+            </FormControl>
+
+            {studentType === "student_academic" && (
+              <FormControl size="small" sx={{ minWidth: 200 }}>
+                <InputLabel>Lớp</InputLabel>
+                <Select
+                  value={classFilter}
+                  label="Lớp"
+                  onChange={(e) => setClassFilter(e.target.value as string)}
+                >
+                  <MenuItem value="all">Tất cả lớp</MenuItem>
+                </Select>
+              </FormControl>
+            )}
+
+            {studentType === "student_academic" && (
+              <FormControl size="small" sx={{ minWidth: 200 }}>
                 <InputLabel>Khoa</InputLabel>
                 <Select
-                  value={filterFaculty}
+                  value={facultyFilter}
                   label="Khoa"
-                  onChange={(e) => setFilterFaculty(e.target.value)}
+                  onChange={(e) => setFacultyFilter(e.target.value as string)}
                 >
-                  {faculties.map((faculty) => (
-                    <MenuItem key={faculty} value={faculty}>
-                      {faculty}
-                    </MenuItem>
-                  ))}
+                  <MenuItem value="all">Tất cả khoa</MenuItem>
                 </Select>
               </FormControl>
-            </Grid>
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth>
-                <InputLabel>Ngành học</InputLabel>
-                <Select
-                  value={filterMajor}
-                  label="Ngành học"
-                  onChange={(e) => setFilterMajor(e.target.value)}
-                >
-                  {majors.map((major) => (
-                    <MenuItem key={major} value={major}>
-                      {major}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-          </>
-        )}
-
-        <Grid item xs={12}>
-          <Stack direction="row" spacing={1} alignItems="center">
-            <Typography variant="body2">Sắp xếp theo:</Typography>
-            <Button
-              variant={sortBy === "name" ? "contained" : "outlined"}
-              size="small"
-              startIcon={<SortByAlpha />}
-              onClick={() => setSortBy("name")}
-            >
-              Tên
-            </Button>
-            <Button
-              variant={sortBy === "lastActive" ? "contained" : "outlined"}
-              size="small"
-              startIcon={<AccessTime />}
-              onClick={() => setSortBy("lastActive")}
-            >
-              Hoạt động gần đây
-            </Button>
-            <Button
-              variant={sortBy === "progress" ? "contained" : "outlined"}
-              size="small"
-              startIcon={<Assignment />}
-              onClick={() => setSortBy("progress")}
-            >
-              Tiến độ
-            </Button>
+            )}
           </Stack>
-        </Grid>
-      </Grid>
 
-      <Card>
-        <TableContainer>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Học viên</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell align="center">Khóa học</TableCell>
-                <TableCell align="right">Tổng chi tiêu</TableCell>
-                <TableCell>Hoạt động cuối</TableCell>
-                <TableCell>Trạng thái</TableCell>
-                <TableCell align="right">Thao tác</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {filteredStudents
-                .slice((page - 1) * rowsPerPage, page * rowsPerPage)
-                .map((student) => (
-                  <TableRow
-                    key={student.id}
-                    hover
-                    onClick={() => handleOpenDialog(student)}
-                    sx={{ cursor: "pointer" }}
-                  >
-                    <TableCell>
-                      <Stack direction="row" alignItems="center" spacing={2}>
-                        <Avatar src={student.avatar} />
-                        <Typography variant="body2">{student.name}</Typography>
-                      </Stack>
-                    </TableCell>
-                    <TableCell>{student.email}</TableCell>
-                    <TableCell align="center">
-                      {student.enrolledCourses}
-                    </TableCell>
-                    <TableCell align="right">
-                      {student.totalSpent.toLocaleString("vi-VN")}đ
-                    </TableCell>
-                    <TableCell>
-                      {new Date(student.lastActive).toLocaleDateString("vi-VN")}
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        size="small"
-                        color={getStatusColor(student.status)}
-                        label={getStatusLabel(student.status)}
-                      />
-                    </TableCell>
-                    <TableCell align="right">
-                      <IconButton size="small">
-                        <Mail />
-                      </IconButton>
-                      <IconButton size="small" color="error">
-                        <Block />
-                      </IconButton>
-                      <IconButton size="small">
-                        <MoreVert />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
-
-        <Box sx={{ p: 2, display: "flex", justifyContent: "center" }}>
-          <Pagination
-            count={Math.ceil(filteredStudents.length / rowsPerPage)}
-            page={page}
-            onChange={handlePageChange}
-            color="primary"
-          />
-        </Box>
-      </Card>
-
-      <Dialog
-        open={dialogOpen}
-        onClose={handleCloseDialog}
-        maxWidth="md"
-        fullWidth
-      >
-        <DialogTitle>
-          <Stack
-            direction="row"
-            alignItems="center"
-            justifyContent="space-between"
-          >
-            <Stack direction="row" alignItems="center" spacing={2}>
-              <Avatar
-                src={selectedStudent?.avatar}
-                sx={{ width: 56, height: 56 }}
-              />
-              <Box>
-                <Typography variant="h6">{selectedStudent?.name}</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Tham gia từ:{" "}
-                  {selectedStudent &&
-                    new Date(selectedStudent.joinDate).toLocaleDateString(
-                      "vi-VN"
-                    )}
-                </Typography>
-              </Box>
-            </Stack>
-            <Tooltip title="Đình chỉ học">
-              <Button
-                variant="outlined"
-                color="error"
-                startIcon={<Block />}
-                onClick={handleSuspend}
-              >
-                Đình chỉ
-              </Button>
-            </Tooltip>
-          </Stack>
-        </DialogTitle>
-        <DialogContent dividers>
-          <Tabs
-            value={tabValue}
-            onChange={handleTabChange}
-            variant="scrollable"
-            scrollButtons="auto"
-          >
-            <Tab label="Thông tin cá nhân" />
-            <Tab label="Khóa học" />
-            <Tab label="Điểm số" />
-            <Tab label="Lịch sử thanh toán" />
-          </Tabs>
-
-          <TabPanel value={tabValue} index={0}>
-            <List>
-              <ListItem>
-                <ListItemIcon>
-                  <Email />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Email"
-                  secondary={selectedStudent?.email}
-                />
-              </ListItem>
-              <ListItem>
-                <ListItemIcon>
-                  <Phone />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Số điện thoại"
-                  secondary={selectedStudent?.phone}
-                />
-              </ListItem>
-              <ListItem>
-                <ListItemIcon>
-                  <LocationOn />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Địa chỉ"
-                  secondary={selectedStudent?.address}
-                />
-              </ListItem>
-              <ListItem>
-                <ListItemIcon>
-                  <School />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Số khóa học đã đăng ký"
-                  secondary={selectedStudent?.enrolledCourses}
-                />
-              </ListItem>
-              <ListItem>
-                <ListItemIcon>
-                  <Payment />
-                </ListItemIcon>
-                <ListItemText
-                  primary="Tổng chi tiêu"
-                  secondary={`${selectedStudent?.totalSpent.toLocaleString(
-                    "vi-VN"
-                  )}đ`}
-                />
-              </ListItem>
-            </List>
-          </TabPanel>
-
-          <TabPanel value={tabValue} index={1}>
-            {selectedStudent?.courses.map((course: any) => (
-              <Card key={course.id} sx={{ mb: 2 }}>
-                <CardContent>
-                  <Typography variant="subtitle1" gutterBottom>
-                    {course.name}
-                  </Typography>
-                  <Stack spacing={1}>
-                    <Typography variant="body2" color="text.secondary">
-                      Ngày đăng ký:{" "}
-                      {new Date(course.enrollDate).toLocaleDateString("vi-VN")}
-                    </Typography>
-                    <Box>
-                      <Typography variant="body2" gutterBottom>
-                        Tiến độ học tập: {course.progress}%
-                      </Typography>
-                      <LinearProgress
-                        variant="determinate"
-                        value={course.progress}
-                        sx={{ height: 6, borderRadius: 1 }}
-                      />
-                    </Box>
-                    <Typography variant="body2">
-                      Hoàn thành {course.completedLessons}/{course.totalLessons}{" "}
-                      bài học
-                    </Typography>
-                  </Stack>
-                </CardContent>
-              </Card>
-            ))}
-          </TabPanel>
-
-          <TabPanel value={tabValue} index={2}>
-            {selectedStudent?.grades?.length ? (
-              selectedStudent.grades.map((courseGrade: CourseGrade) => (
-                <Card key={courseGrade.courseId} sx={{ mb: 3 }}>
-                  <CardContent>
-                    <Typography variant="h6" gutterBottom>
-                      {courseGrade.courseName}
-                    </Typography>
-
-                    <Box
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Học viên</TableCell>
+                  {studentType === "student_academic" && (
+                    <>
+                      <TableCell>Mã SV</TableCell>
+                      <TableCell>Lớp</TableCell>
+                      <TableCell>Khoa</TableCell>
+                    </>
+                  )}
+                  <TableCell>Email</TableCell>
+                  <TableCell>Khóa học</TableCell>
+                  <TableCell>Ngày tham gia</TableCell>
+                  {studentType !== "student_academic" && (
+                    <TableCell>Tổng chi tiêu</TableCell>
+                  )}
+                  <TableCell>Trạng thái</TableCell>
+                  <TableCell align="right">Thao tác</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {paginatedStudents.length > 0 ? (
+                  paginatedStudents.map((student) => (
+                    <TableRow
+                      key={student.id}
+                      onClick={() => handleRowClick(student)}
                       sx={{
-                        mb: 3,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
+                        cursor: "pointer",
+                        "&:hover": { bgcolor: "action.hover" },
                       }}
                     >
-                      <Grade color="primary" />
-                      <Typography variant="subtitle1">
-                        Điểm tổng kết: {courseGrade.finalGrade}/100
-                      </Typography>
-                    </Box>
-
-                    <Typography variant="subtitle2" gutterBottom sx={{ mt: 2 }}>
-                      <Assignment sx={{ mr: 1, verticalAlign: "bottom" }} />
-                      Bài tập
-                    </Typography>
-                    <TableContainer>
-                      <Table size="small">
-                        <TableHead>
-                          <TableRow>
-                            <TableCell>Tên bài tập</TableCell>
-                            <TableCell align="center">Điểm</TableCell>
-                            <TableCell align="right">Ngày nộp</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {courseGrade.assignments.map(
-                            (assignment: Assignment) => (
-                              <TableRow key={assignment.id}>
-                                <TableCell>{assignment.name}</TableCell>
-                                <TableCell align="center">
-                                  {assignment.score}/{assignment.maxScore}
-                                </TableCell>
-                                <TableCell align="right">
-                                  {new Date(
-                                    assignment.submittedDate
-                                  ).toLocaleDateString("vi-VN")}
-                                </TableCell>
-                              </TableRow>
-                            )
-                          )}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-
-                    <Typography variant="subtitle2" gutterBottom sx={{ mt: 3 }}>
-                      <Grade sx={{ mr: 1, verticalAlign: "bottom" }} />
-                      Quiz
-                    </Typography>
-                    <TableContainer>
-                      <Table size="small">
-                        <TableHead>
-                          <TableRow>
-                            <TableCell>Tên quiz</TableCell>
-                            <TableCell align="center">Điểm</TableCell>
-                            <TableCell align="right">Ngày làm</TableCell>
-                          </TableRow>
-                        </TableHead>
-                        <TableBody>
-                          {courseGrade.quizzes.map((quiz: Quiz) => (
-                            <TableRow key={quiz.id}>
-                              <TableCell>{quiz.name}</TableCell>
-                              <TableCell align="center">
-                                {quiz.score}/{quiz.maxScore}
-                              </TableCell>
-                              <TableCell align="right">
-                                {new Date(
-                                  quiz.submittedDate
-                                ).toLocaleDateString("vi-VN")}
-                              </TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </TableContainer>
-
-                    <Box sx={{ mt: 2 }}>
-                      <LinearProgress
-                        variant="determinate"
-                        value={(courseGrade.finalGrade / 100) * 100}
-                        sx={{
-                          height: 8,
-                          borderRadius: 1,
-                          bgcolor: "grey.200",
-                          "& .MuiLinearProgress-bar": {
-                            bgcolor:
-                              courseGrade.finalGrade >= 80
-                                ? "success.main"
-                                : courseGrade.finalGrade >= 60
-                                ? "warning.main"
-                                : "error.main",
-                          },
-                        }}
-                      />
-                    </Box>
-                  </CardContent>
-                </Card>
-              ))
-            ) : (
-              <Typography color="text.secondary" align="center" sx={{ py: 3 }}>
-                Chưa có thông tin điểm
-              </Typography>
-            )}
-          </TabPanel>
-
-          <TabPanel value={tabValue} index={3}>
-            <TableContainer>
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Khóa học</TableCell>
-                    <TableCell align="right">Số tiền</TableCell>
-                    <TableCell>Ngày thanh toán</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {selectedStudent?.payments.map((payment: any) => (
-                    <TableRow key={payment.id}>
-                      <TableCell>{payment.courseName}</TableCell>
-                      <TableCell align="right">
-                        {payment.amount.toLocaleString("vi-VN")}đ
-                      </TableCell>
                       <TableCell>
-                        {new Date(payment.date).toLocaleDateString("vi-VN")}
+                        <Stack direction="row" spacing={2} alignItems="center">
+                          <Avatar src={student.avatar}>
+                            {student.name ? student.name.charAt(0) : ""}
+                          </Avatar>
+                          <Box>
+                            <Typography variant="body1">
+                              {student.name}
+                            </Typography>
+                            {student.type === "student_academic" && (
+                              <Chip
+                                icon={<School fontSize="small" />}
+                                label="SV"
+                                size="small"
+                                color="primary"
+                                variant="outlined"
+                                sx={{ mr: 1 }}
+                              />
+                            )}
+                            {student.type === "student" && (
+                              <Chip
+                                icon={<MenuBook fontSize="small" />}
+                                label="HV"
+                                size="small"
+                                color="secondary"
+                                variant="outlined"
+                                sx={{ mr: 1 }}
+                              />
+                            )}
+                          </Box>
+                        </Stack>
+                      </TableCell>
+                      {student.type === "student_academic" && (
+                        <>
+                          <TableCell>{student.studentId || "-"}</TableCell>
+                          <TableCell>{student.className || "-"}</TableCell>
+                          <TableCell>{student.faculty || "-"}</TableCell>
+                        </>
+                      )}
+                      <TableCell>{student.email}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={student.enrolledCourses}
+                          size="small"
+                          color="primary"
+                        />
+                      </TableCell>
+                      <TableCell>{student.joinDate}</TableCell>
+                      {studentType !== "student_academic" && (
+                        <TableCell>
+                          {student.totalSpent?.toLocaleString() || "-"}đ
+                        </TableCell>
+                      )}
+                      <TableCell>
+                        <Chip
+                          label={
+                            student.status === "active"
+                              ? "Đang hoạt động"
+                              : "Không hoạt động"
+                          }
+                          color={
+                            student.status === "active" ? "success" : "default"
+                          }
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell align="right">
+                        <IconButton
+                          size="small"
+                          onClick={(event) => handleMenuOpen(event, student)}
+                        >
+                          <MoreVert />
+                        </IconButton>
                       </TableCell>
                     </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
-          </TabPanel>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Đóng</Button>
-        </DialogActions>
-      </Dialog>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={studentType === "student_academic" ? 9 : 8}
+                      align="center"
+                    >
+                      Không tìm thấy học viên nào
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          <Box sx={{ p: 2, display: "flex", justifyContent: "center" }}>
+            <Pagination
+              count={Math.ceil(filteredStudents.length / rowsPerPage)}
+              page={page}
+              onChange={handlePageChange}
+              color="primary"
+            />
+          </Box>
+        </CardContent>
+      </Card>
 
       <Dialog
         open={suspendDialogOpen}
@@ -1085,21 +861,378 @@ const InstructorStudents = () => {
       >
         <MenuItem onClick={handleOpenDialog}>
           <Person sx={{ mr: 1 }} fontSize="small" />
-          Xem thông tin chi tiết
-        </MenuItem>
-        <MenuItem onClick={handleMenuClose}>
-          <Mail sx={{ mr: 1 }} fontSize="small" />
-          Gửi tin nhắn
-        </MenuItem>
-        <MenuItem onClick={handleMenuClose}>
-          <Assignment sx={{ mr: 1 }} fontSize="small" />
-          Xem bài tập
-        </MenuItem>
-        <MenuItem onClick={handleMenuClose}>
-          <Grade sx={{ mr: 1 }} fontSize="small" />
-          Xem điểm số
+          Xem thông tin
         </MenuItem>
       </Menu>
+
+      <Dialog
+        open={dialogOpen}
+        onClose={handleCloseDialog}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+          >
+            <Typography variant="h6">Chi tiết học viên</Typography>
+            <IconButton onClick={handleCloseDialog}>
+              <Close />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
+        <DialogContent dividers>
+          {selectedStudent && (
+            <Box>
+              <Stack
+                direction="row"
+                spacing={3}
+                alignItems="flex-start"
+                sx={{ mb: 3 }}
+              >
+                <Avatar
+                  src={selectedStudent.avatar}
+                  sx={{ width: 56, height: 56 }}
+                >
+                  {selectedStudent.name ? selectedStudent.name.charAt(0) : ""}
+                </Avatar>
+                <Box>
+                  <Typography variant="h5">{selectedStudent.name}</Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {selectedStudent.email}
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    {selectedStudent.phone || "Chưa cập nhật số điện thoại"}
+                  </Typography>
+                </Box>
+              </Stack>
+
+              <Tabs
+                value={tabValue}
+                onChange={handleTabChange}
+                variant="scrollable"
+                scrollButtons="auto"
+              >
+                <Tab label="Thông tin cá nhân" />
+                <Tab label="Khóa học" />
+                <Tab label="Điểm số" />
+                <Tab label="Lịch sử thanh toán" />
+              </Tabs>
+
+              <TabPanel value={tabValue} index={0}>
+                <List>
+                  <ListItem>
+                    <ListItemIcon>
+                      <Email />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Email"
+                      secondary={selectedStudent?.email}
+                    />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      <Phone />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Số điện thoại"
+                      secondary={selectedStudent?.phone || "-"}
+                    />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      <LocationOn />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Địa chỉ"
+                      secondary={selectedStudent?.address || "-"}
+                    />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      <School />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Số khóa học đã đăng ký"
+                      secondary={selectedStudent?.enrolledCourses || 0}
+                    />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      <Payment />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Tổng chi tiêu"
+                      secondary={
+                        selectedStudent?.totalSpent !== undefined
+                          ? `${selectedStudent.totalSpent.toLocaleString(
+                              "vi-VN"
+                            )}đ`
+                          : "-"
+                      }
+                    />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      <CalendarToday />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Hoạt động gần đây"
+                      secondary={
+                        selectedStudent?.lastActive
+                          ? new Date(
+                              selectedStudent.lastActive
+                            ).toLocaleDateString("vi-VN")
+                          : "-"
+                      }
+                    />
+                  </ListItem>
+                  {selectedStudent?.type === "student_academic" && (
+                    <>
+                      <ListItem>
+                        <ListItemIcon>
+                          <School />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Mã sinh viên"
+                          secondary={selectedStudent?.studentId || "-"}
+                        />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemIcon>
+                          <School />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Lớp"
+                          secondary={selectedStudent?.className || "-"}
+                        />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemIcon>
+                          <School />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Khoa"
+                          secondary={selectedStudent?.faculty || "-"}
+                        />
+                      </ListItem>
+                    </>
+                  )}
+                </List>
+              </TabPanel>
+
+              <TabPanel value={tabValue} index={1}>
+                {selectedStudent?.courses?.length > 0 ? (
+                  selectedStudent.courses.map((course: any) => (
+                    <Card key={course.id} sx={{ mb: 2 }}>
+                      <CardContent>
+                        <Stack
+                          direction="row"
+                          spacing={2}
+                          alignItems="flex-start"
+                        >
+                          <Avatar src={course.image}>
+                            {course.name || course.title
+                              ? (course.name || course.title).charAt(0)
+                              : ""}
+                          </Avatar>
+                          <Stack spacing={1} sx={{ flex: 1 }}>
+                            <Typography variant="h6">
+                              {course.name || course.title}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              Ngày đăng ký:{" "}
+                              {new Date(course.enrollDate).toLocaleDateString(
+                                "vi-VN"
+                              )}
+                            </Typography>
+                            <Box>
+                              <LinearProgress
+                                variant="determinate"
+                                value={course.progress}
+                                sx={{ height: 6, borderRadius: 1 }}
+                              />
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ mt: 0.5, display: "block" }}
+                              >
+                                {course.progress}% hoàn thành
+                              </Typography>
+                            </Box>
+                            <Typography variant="body2">
+                              Hoàn thành {course.completedLessons}/
+                              {course.totalLessons} bài học
+                            </Typography>
+                          </Stack>
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : (
+                  <Typography
+                    color="text.secondary"
+                    align="center"
+                    sx={{ py: 3 }}
+                  >
+                    Chưa có khóa học nào
+                  </Typography>
+                )}
+              </TabPanel>
+
+              <TabPanel value={tabValue} index={2}>
+                {selectedStudent?.grades?.length > 0 ? (
+                  selectedStudent.grades.map((courseGrade: CourseGrade) => (
+                    <Card key={courseGrade.courseId} sx={{ mb: 2 }}>
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom>
+                          {courseGrade.courseName}
+                        </Typography>
+                        <Typography variant="body2" gutterBottom>
+                          Điểm tổng: {courseGrade.finalGrade}/100
+                        </Typography>
+
+                        <Typography variant="subtitle2" sx={{ mt: 2 }}>
+                          Bài tập
+                        </Typography>
+                        <TableContainer>
+                          <Table size="small">
+                            <TableHead>
+                              <TableRow>
+                                <TableCell>Tên bài tập</TableCell>
+                                <TableCell align="center">Điểm</TableCell>
+                                <TableCell align="right">Ngày nộp</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {courseGrade.assignments.map(
+                                (assignment: Assignment) => (
+                                  <TableRow key={assignment.id}>
+                                    <TableCell>{assignment.name}</TableCell>
+                                    <TableCell align="center">
+                                      {assignment.score}/{assignment.maxScore}
+                                    </TableCell>
+                                    <TableCell align="right">
+                                      {new Date(
+                                        assignment.submittedDate
+                                      ).toLocaleDateString("vi-VN")}
+                                    </TableCell>
+                                  </TableRow>
+                                )
+                              )}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+
+                        <Typography variant="subtitle2" sx={{ mt: 2 }}>
+                          Bài kiểm tra
+                        </Typography>
+                        <TableContainer>
+                          <Table size="small">
+                            <TableHead>
+                              <TableRow>
+                                <TableCell>Tên bài kiểm tra</TableCell>
+                                <TableCell align="center">Điểm</TableCell>
+                                <TableCell align="right">Ngày làm</TableCell>
+                              </TableRow>
+                            </TableHead>
+                            <TableBody>
+                              {courseGrade.quizzes?.map((quiz: Quiz) => (
+                                <TableRow key={quiz.id}>
+                                  <TableCell>{quiz.name}</TableCell>
+                                  <TableCell align="center">
+                                    {quiz.score}/{quiz.maxScore}
+                                  </TableCell>
+                                  <TableCell align="right">
+                                    {new Date(
+                                      quiz.submittedDate
+                                    ).toLocaleDateString("vi-VN")}
+                                  </TableCell>
+                                </TableRow>
+                              ))}
+                            </TableBody>
+                          </Table>
+                        </TableContainer>
+
+                        <Box sx={{ mt: 2 }}>
+                          <LinearProgress
+                            variant="determinate"
+                            value={(courseGrade.finalGrade / 100) * 100}
+                            sx={{
+                              height: 8,
+                              borderRadius: 1,
+                              bgcolor: "grey.200",
+                              "& .MuiLinearProgress-bar": {
+                                bgcolor:
+                                  courseGrade.finalGrade >= 80
+                                    ? "success.main"
+                                    : courseGrade.finalGrade >= 60
+                                    ? "warning.main"
+                                    : "error.main",
+                              },
+                            }}
+                          />
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  ))
+                ) : (
+                  <Typography
+                    color="text.secondary"
+                    align="center"
+                    sx={{ py: 3 }}
+                  >
+                    Chưa có thông tin điểm
+                  </Typography>
+                )}
+              </TabPanel>
+
+              <TabPanel value={tabValue} index={3}>
+                {selectedStudent?.payments?.length > 0 ? (
+                  <TableContainer>
+                    <Table>
+                      <TableHead>
+                        <TableRow>
+                          <TableCell>Khóa học</TableCell>
+                          <TableCell align="right">Số tiền</TableCell>
+                          <TableCell>Ngày thanh toán</TableCell>
+                        </TableRow>
+                      </TableHead>
+                      <TableBody>
+                        {selectedStudent.payments.map((payment: any) => (
+                          <TableRow key={payment.id}>
+                            <TableCell>{payment.courseName}</TableCell>
+                            <TableCell align="right">
+                              {payment.amount?.toLocaleString("vi-VN") || "-"}đ
+                            </TableCell>
+                            <TableCell>
+                              {payment.date
+                                ? new Date(payment.date).toLocaleDateString(
+                                    "vi-VN"
+                                  )
+                                : "-"}
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </TableContainer>
+                ) : (
+                  <Typography
+                    color="text.secondary"
+                    align="center"
+                    sx={{ py: 3 }}
+                  >
+                    Chưa có lịch sử thanh toán
+                  </Typography>
+                )}
+              </TabPanel>
+            </Box>
+          )}
+        </DialogContent>
+      </Dialog>
     </Box>
   );
 };
