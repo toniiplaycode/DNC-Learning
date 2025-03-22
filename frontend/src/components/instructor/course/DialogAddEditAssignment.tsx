@@ -46,6 +46,11 @@ interface DialogAddEditAssignmentProps {
   assignmentToEdit?: AssignmentItem;
   sections: any[];
   editMode: boolean;
+  additionalInfo?: {
+    targetType: string;
+    className: string;
+    faculty: string;
+  };
 }
 
 const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
@@ -56,6 +61,7 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
   assignmentToEdit,
   sections,
   editMode,
+  additionalInfo,
 }) => {
   // State cho form assignment
   const [assignmentForm, setAssignmentForm] = useState({
@@ -230,6 +236,31 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
 
       <DialogContent dividers>
         <Stack spacing={3} sx={{ pt: 1 }}>
+          {/* Hiển thị thông tin bổ sung khi tạo bài tập cho sinh viên trường */}
+          {additionalInfo && additionalInfo.targetType === "academic" && (
+            <Box sx={{ bgcolor: "grey.100", p: 2, borderRadius: 1 }}>
+              <Typography variant="subtitle1" gutterBottom>
+                Bài tập dành cho sinh viên trường
+              </Typography>
+              <Stack direction="row" spacing={2}>
+                <Typography variant="body2">
+                  <strong>Lớp:</strong> {additionalInfo.className}
+                </Typography>
+                <Typography variant="body2">
+                  <strong>Khoa:</strong> {additionalInfo.faculty}
+                </Typography>
+              </Stack>
+              <Typography
+                variant="caption"
+                color="text.secondary"
+                sx={{ mt: 1, display: "block" }}
+              >
+                Bài tập này sẽ được gán cho tất cả sinh viên thuộc lớp và khoa
+                đã chọn.
+              </Typography>
+            </Box>
+          )}
+
           {/* Tiêu đề bài tập */}
           <TextField
             label="Tiêu đề bài tập"

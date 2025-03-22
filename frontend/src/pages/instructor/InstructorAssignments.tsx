@@ -55,6 +55,7 @@ import {
   Class,
   FilterAlt,
 } from "@mui/icons-material";
+import DialogAddEditAssignment from "../../components/instructor/course/DialogAddEditAssignment";
 
 // Mock data
 const mockAssignments = [
@@ -218,6 +219,17 @@ const InstructorAssignments = () => {
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [tabValue, setTabValue] = useState(0);
+
+  // Thêm state và các hàm xử lý để mở dialog tạo bài tập
+  const [openAddAssignmentModal, setOpenAddAssignmentModal] = useState(false);
+  const [currentSectionId, setCurrentSectionId] = useState<number | null>(null);
+  const [mockCourseData, setMockCourseData] = useState({
+    sections: [
+      { id: 1, title: "Section 1", contents: [] },
+      { id: 2, title: "Section 2", contents: [] },
+      { id: 3, title: "Section 3", contents: [] },
+    ],
+  });
 
   const handleGrade = (submission: any) => {
     setSelectedSubmission(submission);
@@ -390,6 +402,22 @@ const InstructorAssignments = () => {
     }
   };
 
+  // Hàm xử lý khi nhấn nút tạo bài tập mới cho sinh viên
+  const handleOpenAddAssignmentModal = () => {
+    setOpenAddAssignmentModal(true);
+  };
+
+  // Hàm xử lý khi thêm bài tập mới
+  const handleAddAssignment = (assignmentData: any) => {
+    console.log("Thêm bài tập mới:", assignmentData);
+    console.log("Dành cho sinh viên thuộc lớp:", classFilter);
+    console.log("Thuộc khoa:", facultyFilter);
+
+    // Thực hiện thêm bài tập (gọi API)
+    alert(`Đã tạo bài tập "${assignmentData.title}" thành công!`);
+    setOpenAddAssignmentModal(false);
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h5" gutterBottom fontWeight="bold">
@@ -493,6 +521,16 @@ const InstructorAssignments = () => {
                       </Select>
                     </FormControl>
                   </>
+                )}
+
+                {studentTypeFilter === "student_academic" && (
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleOpenAddAssignmentModal}
+                  >
+                    Tạo bài tập mới
+                  </Button>
                 )}
               </Stack>
             </Grid>
@@ -899,6 +937,21 @@ const InstructorAssignments = () => {
           </Paper>
         </DialogContent>
       </Dialog>
+
+      {/* Modal Thêm bài tập */}
+      <DialogAddEditAssignment
+        open={openAddAssignmentModal}
+        onClose={() => setOpenAddAssignmentModal(false)}
+        onSubmit={handleAddAssignment}
+        initialSectionId={currentSectionId || undefined}
+        sections={mockCourseData.sections}
+        editMode={false}
+        additionalInfo={{
+          targetType: "academic",
+          className: classFilter !== "all" ? classFilter : "Tất cả các lớp",
+          faculty: facultyFilter !== "all" ? facultyFilter : "Tất cả các khoa",
+        }}
+      />
     </Box>
   );
 };
