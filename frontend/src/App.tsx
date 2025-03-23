@@ -18,7 +18,7 @@ import InstructorCourseView from "./pages/instructor/InstructorCourseView";
 import InstructorStudents from "./pages/instructor/InstructorStudents";
 import InstructorAssignments from "./pages/instructor/InstructorAssignments";
 import InstructorAnalytics from "./pages/instructor/InstructorAnalytics";
-import InstructorChats from "./pages/instructor/InstructorChats";
+import ChatCommon from "./components/common/ChatCommon";
 import InstructorNotifications from "./pages/instructor/InstructorNotifications";
 import InstructorSchedules from "./pages/instructor/InstructorSchedules";
 import InstructorSettings from "./pages/instructor/InstructorSettings";
@@ -39,6 +39,13 @@ import AssessmentQuiz from "./pages/student/assessment/AssessmentQuiz";
 import AssessmentAssignment from "./pages/student/assessment/AssessmentAssignment";
 import AssessmentQuizResult from "./pages/student/assessment/AssessmentQuizResult";
 import AssessmentAssignmentResult from "./pages/student/assessment/AssessmentAssignmentResult";
+import AdminStudents from "./pages/admin/AdminStudents";
+import AdminCategories from "./pages/admin/AdminCategories";
+import AdminPayments from "./pages/admin/AdminPayments";
+import AdminAssignments from "./pages/admin/AdminAssignments";
+import AdminAnalytics from "./pages/admin/AdminAnalytics";
+import AdminReviews from "./pages/admin/AdminReviews";
+import AdminSettings from "./pages/admin/AdminSettings";
 
 const App = () => {
   return (
@@ -90,7 +97,7 @@ const App = () => {
         />
         <Route path="/instructor/quiz" element={<InstructorQuizs />} />
         <Route path="/instructor/analytics" element={<InstructorAnalytics />} />
-        <Route path="/instructor/chats" element={<InstructorChats />} />
+        <Route path="/instructor/chats" element={<ChatCommon />} />
         <Route path="/instructor/schedules" element={<InstructorSchedules />} />
         <Route path="/instructor/tasks" element={<InstructorTasks />} />
         <Route path="/instructor/forum" element={<InstructorForum />} />
@@ -108,6 +115,14 @@ const App = () => {
         <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/admin/courses" element={<AdminCourses />} />
         <Route path="/admin/instructors" element={<AdminInstructors />} />
+        <Route path="/admin/students" element={<AdminStudents />} />
+        <Route path="/admin/chats" element={<ChatCommon />} />
+        <Route path="/admin/categories" element={<AdminCategories />} />
+        <Route path="/admin/payments" element={<AdminPayments />} />
+        <Route path="/admin/assignments" element={<AdminAssignments />} />
+        <Route path="/admin/analytics" element={<AdminAnalytics />} />
+        <Route path="/admin/reviews" element={<AdminReviews />} />
+        <Route path="/admin/settings" element={<AdminSettings />} />
       </Route>
     </Routes>
   );

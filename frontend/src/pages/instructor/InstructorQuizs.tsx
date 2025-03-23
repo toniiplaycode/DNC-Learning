@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Card,
@@ -61,6 +61,7 @@ import {
   MenuBook,
 } from "@mui/icons-material";
 import { useNavigate, useParams } from "react-router-dom";
+import DialogAddEditQuiz from "../../components/instructor/course/DialogAddEditQuiz";
 
 // Mock data
 const mockQuizzes = [
@@ -390,9 +391,22 @@ interface QuizAttempt {
   timeSpent?: number;
 }
 
+// Định nghĩa interface cho Quiz
+interface Quiz {
+  id: number;
+  title: string;
+  course: string;
+  courseId: number;
+  totalQuestions: number;
+  passingScore: number;
+  dateCreated: string;
+  // Thêm các thuộc tính khác của quiz
+  submissions: any[];
+}
+
 const InstructorQuizs = () => {
   const navigate = useNavigate();
-  const [selectedQuiz, setSelectedQuiz] = useState(null);
+  const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCourse, setFilterCourse] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
@@ -405,12 +419,21 @@ const InstructorQuizs = () => {
     null
   );
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [openAddQuizModal, setOpenAddQuizModal] = useState(false);
+  const [currentSectionId, setCurrentSectionId] = useState<number | null>(null);
+  const [mockCourseData, setMockCourseData] = useState({
+    sections: [
+      { id: 1, title: "Section 1", contents: [] },
+      { id: 2, title: "Section 2", contents: [] },
+      { id: 3, title: "Section 3", contents: [] },
+    ],
+  });
 
   // Danh sách khóa học từ mock data
   const courses = [...new Set(mockQuizzes.map((quiz) => quiz.course))];
 
   // Xử lý click vào quiz
-  const handleQuizClick = (quiz) => {
+  const handleQuizClick = (quiz: Quiz) => {
     setSelectedQuiz(quiz);
   };
 
@@ -437,8 +460,38 @@ const InstructorQuizs = () => {
     });
   };
 
+  // Thêm hàm xử lý thêm quiz
+  const handleAddQuiz = (quizData: any) => {
+    console.log("Thêm bài kiểm tra mới:", quizData);
+
+    // Xử lý thêm bài kiểm tra
+    // Đối với sinh viên trường, có thể lấy thông tin từ additionalInfo
+    if (quizData.additionalInfo) {
+      console.log(
+        "Bài kiểm tra dành cho sinh viên thuộc lớp:",
+        quizData.additionalInfo.className
+      );
+      console.log("Thuộc khoa:", quizData.additionalInfo.faculty);
+    }
+
+    // Giả lập thêm thành công
+    alert(`Đã tạo bài kiểm tra "${quizData.title}" thành công!`);
+    setOpenAddQuizModal(false);
+  };
+
+  // Thêm hàm xử lý mở dialog rõ ràng hơn
+  const handleOpenAddQuizModal = () => {
+    console.log("Opening quiz modal");
+    setOpenAddQuizModal(true);
+  };
+
+  // Thêm code debug để theo dõi trạng thái của dialog
+  useEffect(() => {
+    console.log("Quiz modal state:", openAddQuizModal);
+  }, [openAddQuizModal]);
+
   // Component hiển thị các thống kê
-  const QuizStatistics = ({ quiz }) => {
+  const QuizStatistics = ({ quiz }: { quiz: Quiz }) => {
     const passedStudents = mockStudentAttempts.filter(
       (attempt) => attempt.status === "passed"
     ).length;
@@ -644,7 +697,10 @@ const InstructorQuizs = () => {
 
             {/* Bộ lọc thêm cho sinh viên trường */}
             {studentTypeFilter === "student_academic" && (
-              <>
+              <Stack
+                direction="row"
+                sx={{ display: "flex", gap: 2, marginBottom: 2 }}
+              >
                 <FormControl size="small" sx={{ minWidth: 150 }}>
                   <InputLabel>Lớp</InputLabel>
                   <Select
@@ -673,7 +729,16 @@ const InstructorQuizs = () => {
                     ))}
                   </Select>
                 </FormControl>
-              </>
+
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={handleOpenAddQuizModal}
+                  startIcon={<Add />}
+                >
+                  Tạo bài kiểm tra mới
+                </Button>
+              </Stack>
             )}
 
             <TableContainer component={Paper} variant="outlined">
@@ -1179,6 +1244,39 @@ const InstructorQuizs = () => {
           </>
         )}
       </Dialog>
+
+      {/* Modal Thêm quiz */}
+      <DialogAddEditQuiz
+        open={openAddQuizModal}
+        onClose={() => {
+          console.log("Closing quiz modal");
+          setOpenAddQuizModal(false);
+        }}
+        onSubmit={handleAddQuiz}
+        initialSectionId={currentSectionId || undefined}
+        sections={mockCourseData.sections}
+        editMode={false}
+        additionalInfo={{
+          targetType: "academic",
+          className: classFilter !== "all" ? classFilter : "Tất cả các lớp",
+          faculty: facultyFilter !== "all" ? facultyFilter : "Tất cả các khoa",
+        }}
+      />
+
+      {/* Modal sửa quiz */}
+      {/* <DialogAddEditQuiz
+        open={openEditQuizModal}
+        onClose={() => setOpenEditQuizModal(false)}
+        onSubmit={handleUpdateQuiz}
+        quizToEdit={quizToEdit || undefined}
+        sections={mockCourseData.sections}
+        editMode={true}
+        additionalInfo={{
+          targetType: "academic",
+          className: classFilter !== "all" ? classFilter : "Tất cả các lớp",
+          faculty: facultyFilter !== "all" ? facultyFilter : "Tất cả các khoa",
+        }}
+      /> */}
     </Box>
   );
 };

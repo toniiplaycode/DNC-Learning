@@ -71,6 +71,11 @@ interface DialogAddEditQuizProps {
   quizToEdit?: QuizItem;
   sections: any[];
   editMode: boolean;
+  additionalInfo?: {
+    targetType: string;
+    className: string;
+    faculty: string;
+  };
 }
 
 // Mock data cho quiz
@@ -138,6 +143,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
   quizToEdit,
   sections,
   editMode,
+  additionalInfo,
 }) => {
   // State cho form quiz
   const [quizForm, setQuizForm] = useState({
@@ -378,6 +384,31 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
         </Stack>
       </DialogTitle>
       <DialogContent dividers>
+        {/* Hiển thị thông tin bổ sung khi tạo bài tập cho sinh viên trường */}
+        {additionalInfo && additionalInfo.targetType === "academic" && (
+          <Box sx={{ bgcolor: "grey.100", p: 2, borderRadius: 1 }}>
+            <Typography variant="subtitle1" gutterBottom>
+              Bài kiểm tra dành cho sinh viên trường
+            </Typography>
+            <Stack direction="row" spacing={2}>
+              <Typography variant="body2">
+                <strong>Lớp:</strong> {additionalInfo.className}
+              </Typography>
+              <Typography variant="body2">
+                <strong>Khoa:</strong> {additionalInfo.faculty}
+              </Typography>
+            </Stack>
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ mt: 1, display: "block" }}
+            >
+              Bài kiểm tra này sẽ được gán cho tất cả sinh viên thuộc lớp và
+              khoa đã chọn.
+            </Typography>
+          </Box>
+        )}
+
         <Stack spacing={3}>
           {/* Thông tin cơ bản */}
           <TextField

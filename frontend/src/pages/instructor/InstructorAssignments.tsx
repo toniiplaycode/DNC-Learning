@@ -421,7 +421,7 @@ const InstructorAssignments = () => {
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h5" gutterBottom fontWeight="bold">
-        Quản lý học viên
+        Quản lý bài tập
       </Typography>
 
       {/* Filters */}

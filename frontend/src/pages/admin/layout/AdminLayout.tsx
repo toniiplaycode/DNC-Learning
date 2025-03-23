@@ -63,10 +63,10 @@ const AdminLayout = () => {
     { text: "Khóa học", icon: <School />, path: "/admin/courses" },
     { text: "Giảng viên", icon: <People />, path: "/admin/instructors" },
     { text: "Học viên", icon: <People />, path: "/admin/students" },
-    { text: "Tin nhắn", icon: <Message />, path: "/admin/messages" },
+    { text: "Tin nhắn", icon: <Message />, path: "/admin/chats" },
     { text: "Danh mục", icon: <Category />, path: "/admin/categories" },
     { text: "Thanh toán", icon: <Receipt />, path: "/admin/payments" },
-    { text: "Lịch dạy", icon: <CalendarMonth />, path: "/admin/schedule" },
+    { text: "Lịch dạy", icon: <CalendarMonth />, path: "/admin/schedules" },
     { text: "Phân công", icon: <Assignment />, path: "/admin/assignments" },
     { text: "Thống kê", icon: <BarChart />, path: "/admin/analytics" },
     { text: "Đánh giá", icon: <Feedback />, path: "/admin/reviews" },
@@ -210,9 +210,7 @@ const AdminLayout = () => {
           mt: 8,
         }}
       >
-        <Container maxWidth="lg" sx={{ mt: 4, mb: 4 }}>
-          <Outlet />
-        </Container>
+        <Outlet />
       </Box>
     </Box>
   );
