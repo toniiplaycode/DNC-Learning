@@ -1,5 +1,4 @@
 import {
-  ConfigurableModuleBuilder,
   MiddlewareConsumer,
   Module,
   RequestMethod,
@@ -45,8 +44,8 @@ import { Document } from './entities/Document';
       database: process.env.DB_NAME,
       entities: [
         Course,
-        Category,
         User,
+        Category,
         CourseSection,
         CourseLesson,
         CourseDocument,

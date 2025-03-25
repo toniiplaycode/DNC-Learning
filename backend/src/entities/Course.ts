@@ -43,6 +43,7 @@ export class Course {
     type: 'enum',
     enum: ['beginner', 'intermediate', 'advanced'],
     nullable: true,
+    default: 'beginner',
   })
   level: 'beginner' | 'intermediate' | 'advanced';
 
@@ -65,10 +66,13 @@ export class Course {
   @Column({ nullable: true, name: 'enrollment_limit' })
   enrollmentLimit: number;
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn({ name: 'created_at', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn({
+    name: 'updated_at',
+    default: () => 'CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP',
+  })
   updatedAt: Date;
 
   @ManyToOne(() => Category)
