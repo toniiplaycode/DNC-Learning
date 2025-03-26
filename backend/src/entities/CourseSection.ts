@@ -10,7 +10,7 @@ import {
 } from 'typeorm';
 import { Course } from './Course';
 import { CourseLesson } from './CourseLesson';
-import { CourseDocument } from './CourseDocument';
+import { Document } from './Document';
 
 @Entity('course_sections')
 export class CourseSection {
@@ -42,6 +42,6 @@ export class CourseSection {
   @OneToMany(() => CourseLesson, (lesson) => lesson.section)
   lessons: CourseLesson[];
 
-  @OneToMany(() => CourseDocument, (document) => document.section)
-  documents: CourseDocument[];
+  @OneToMany(() => Document, (document) => document.courseSection)
+  documents: Document[];
 }

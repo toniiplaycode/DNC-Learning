@@ -356,14 +356,31 @@ const CourseDetail: React.FC = () => {
     }).format(price);
   };
 
+  const totalLessons =
+    currentCourse?.sections?.reduce((total, section) => {
+      return total + section.lessons.length;
+    }, 0) || 0;
+
+  const averageRating =
+    currentCourse?.reviews.reduce((total, review) => {
+      return total + review.rating;
+    }, 0) / (currentCourse?.reviews.length || 1) || 0;
+
   const InstructorInfo = () => (
-    <>
+    <Box
+      sx={{
+        cursor: "pointer",
+      }}
+      onClick={() => {
+        navigate(`/view-instructor/${currentCourse?.instructor?.id}`);
+      }}
+    >
       <Typography variant="h6" gutterBottom>
         Giảng viên
       </Typography>
       <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
         <Avatar
-          src={mockCourseData.instructor.avatar}
+          src={mockCourseData?.instructor?.user?.avatarUrl}
           sx={{ width: 64, height: 64, mr: 2 }}
         />
         <Box>
@@ -381,7 +398,7 @@ const CourseDetail: React.FC = () => {
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={4}>
           <Typography variant="h6" align="center">
-            {mockCourseData.instructor.rating}
+            N/A
           </Typography>
           <Typography variant="body2" align="center" color="text.secondary">
             Đánh giá
@@ -389,7 +406,7 @@ const CourseDetail: React.FC = () => {
         </Grid>
         <Grid item xs={4}>
           <Typography variant="h6" align="center">
-            {mockCourseData.instructor.students}
+            N/A
           </Typography>
           <Typography variant="body2" align="center" color="text.secondary">
             Học viên
@@ -397,14 +414,14 @@ const CourseDetail: React.FC = () => {
         </Grid>
         <Grid item xs={4}>
           <Typography variant="h6" align="center">
-            {mockCourseData.instructor.courses}
+            N/A
           </Typography>
           <Typography variant="body2" align="center" color="text.secondary">
             Khóa học
           </Typography>
         </Grid>
       </Grid>
-    </>
+    </Box>
   );
 
   return (
@@ -438,7 +455,7 @@ const CourseDetail: React.FC = () => {
             <Chip icon={<AccessTime />} label={"12 tuần"} variant="outlined" />
             <Chip
               icon={<PlayCircleOutline />}
-              label={`${mockCourseData.totalLessons} bài học`}
+              label={`${totalLessons} bài học`}
               variant="outlined"
             />
             <Chip
@@ -446,11 +463,7 @@ const CourseDetail: React.FC = () => {
               label={`${currentCourse?.enrollments?.length || 0} học viên`}
               variant="outlined"
             />
-            <Chip
-              icon={<Star />}
-              label={`${mockCourseData.rating}/5`}
-              variant="outlined"
-            />
+            <Chip icon={<Star />} label={averageRating} variant="outlined" />
           </Box>
 
           <Box>
@@ -653,34 +666,51 @@ const CourseDetail: React.FC = () => {
               </Card>
             </TabPanel>
 
-            {/* Materials Tab */}
+            {/* Documents Tab */}
             <TabPanel value={activeTab} index={1}>
               <Card>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
                     Tài liệu khóa học
                   </Typography>
+                  {currentCourse?.sections?.map((section, sectionIndex) => {
+                    // Kết hợp documents từ section và lessons có contentType="document"
+                    const documentLessons = section.lessons
+                      .filter(
+                        (lesson: any) => lesson.contentType === "document"
+                      )
+                      .map((lesson: any) => ({
+                        id: lesson.id,
+                        title: lesson.title,
+                        fileType: "pdf", // Giả định mặc định là PDF
+                        fileSize: 1024, // Giả định kích thước mặc định
+                        isLesson: true, // Đánh dấu đây là lesson
+                        isFree: lesson.isFree,
+                      }));
 
-                  {/* Group materials by section */}
-                  {Array.from(
-                    new Set(mockCourseData.materials.map((m) => m.section))
-                  ).map((section) => (
-                    <Box key={section} sx={{ mb: 3 }}>
-                      <Typography
-                        variant="subtitle1"
-                        color="text.secondary"
-                        gutterBottom
-                        sx={{ mt: 2 }}
-                      >
-                        {section}
-                      </Typography>
+                    const allDocuments = [
+                      ...section.documents,
+                      ...documentLessons,
+                    ];
 
-                      <List>
-                        {mockCourseData.materials
-                          .filter((m) => m.section === section)
-                          .map((material) => (
+                    return (
+                      <Box key={section.id}>
+                        <Typography
+                          variant="subtitle1"
+                          fontWeight="bold"
+                          color="text.primary"
+                          gutterBottom
+                          sx={{ mt: 2 }}
+                        >
+                          Phần {sectionIndex + 1}: {section.title}
+                        </Typography>
+
+                        <List>
+                          {allDocuments.map((item) => (
                             <ListItem
-                              key={material.id}
+                              key={`${item.isLesson ? "lesson" : "doc"}-${
+                                item.id
+                              }`}
                               sx={{
                                 bgcolor: "background.paper",
                                 borderRadius: 1,
@@ -690,58 +720,38 @@ const CourseDetail: React.FC = () => {
                               }}
                             >
                               <ListItemIcon>
-                                {material.type === "pdf" && (
-                                  <PictureAsPdf
-                                    color="error"
-                                    sx={{ fontSize: 24 }}
-                                  />
-                                )}
-                                {material.type === "slide" && (
-                                  <Slideshow
-                                    color="primary"
-                                    sx={{ fontSize: 24 }}
-                                  />
-                                )}
-                                {material.type === "code" && (
-                                  <Code color="success" sx={{ fontSize: 24 }} />
-                                )}
-                                {material.type === "link" && (
-                                  <Link color="info" sx={{ fontSize: 24 }} />
-                                )}
+                                <PictureAsPdf
+                                  color="error"
+                                  sx={{ fontSize: 24 }}
+                                />
                               </ListItemIcon>
                               <ListItemText
-                                primary={material.title}
+                                primary={item.title}
                                 secondary={
                                   <Stack
                                     direction="row"
                                     spacing={2}
                                     alignItems="center"
                                   >
-                                    <Typography
-                                      variant="body2"
-                                      color="text.secondary"
-                                    >
-                                      {material.size}
-                                    </Typography>
-                                    {material.type === "pdf" && (
-                                      <Chip
-                                        label="PDF"
-                                        size="small"
-                                        color="error"
-                                        variant="outlined"
-                                      />
+                                    {!item.isLesson && (
+                                      <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                      >
+                                        {`${(item.fileSize / 1024).toFixed(
+                                          2
+                                        )} MB`}
+                                      </Typography>
                                     )}
-                                    {material.type === "slide" && (
+                                    <Chip
+                                      label="PDF"
+                                      size="small"
+                                      color="error"
+                                      variant="outlined"
+                                    />
+                                    {item.isLesson && item.isFree && (
                                       <Chip
-                                        label="Slide"
-                                        size="small"
-                                        color="primary"
-                                        variant="outlined"
-                                      />
-                                    )}
-                                    {material.type === "code" && (
-                                      <Chip
-                                        label="Code"
+                                        label="Miễn phí"
                                         size="small"
                                         color="success"
                                         variant="outlined"
@@ -750,7 +760,7 @@ const CourseDetail: React.FC = () => {
                                   </Stack>
                                 }
                               />
-                              {!mockCourseData.isEnrolled && (
+                              {true && !item.isFree && (
                                 <Chip
                                   label="Khóa"
                                   size="small"
@@ -760,9 +770,10 @@ const CourseDetail: React.FC = () => {
                               )}
                             </ListItem>
                           ))}
-                      </List>
-                    </Box>
-                  ))}
+                        </List>
+                      </Box>
+                    );
+                  })}{" "}
                 </CardContent>
               </Card>
             </TabPanel>
@@ -836,29 +847,10 @@ const CourseDetail: React.FC = () => {
                     <Box
                       sx={{ display: "flex", alignItems: "baseline", mb: 1 }}
                     >
-                      <Typography variant="h4" fontWeight="bold" sx={{ mr: 2 }}>
-                        {formatPrice(mockCourseData.price)}
-                      </Typography>
-                      <Typography
-                        variant="body1"
-                        color="text.secondary"
-                        sx={{ textDecoration: "line-through" }}
-                      >
-                        {formatPrice(mockCourseData.originalPrice)}
+                      <Typography variant="h4" fontWeight="bold" sx={{ mt: 2 }}>
+                        {formatPrice(currentCourse?.price || 0)}
                       </Typography>
                     </Box>
-                    <Typography
-                      color="error"
-                      variant="subtitle1"
-                      fontWeight="bold"
-                    >
-                      {Math.round(
-                        (1 -
-                          mockCourseData.price / mockCourseData.originalPrice) *
-                          100
-                      )}
-                      % giảm giá
-                    </Typography>
                   </Box>
 
                   <Box sx={{ mb: 3 }}>
@@ -869,14 +861,12 @@ const CourseDetail: React.FC = () => {
                       <Box sx={{ display: "flex", gap: 1 }}>
                         <PlayCircleOutline />
                         <Typography variant="body2">
-                          {mockCourseData.totalLessons} bài học
+                          {totalLessons} bài học
                         </Typography>
                       </Box>
                       <Box sx={{ display: "flex", gap: 1 }}>
                         <AccessTime />
-                        <Typography variant="body2">
-                          {mockCourseData.duration} học tập
-                        </Typography>
+                        <Typography variant="body2">12 tuần học</Typography>
                       </Box>
                       <Box sx={{ display: "flex", gap: 1 }}>
                         <Assignment />

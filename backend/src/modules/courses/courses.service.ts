@@ -63,7 +63,6 @@ export class CoursesService {
           lessons: true,
           documents: true,
         },
-        documents: true,
         reviews: true,
         enrollments: true,
       },

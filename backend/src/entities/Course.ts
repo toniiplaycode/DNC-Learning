@@ -10,7 +10,6 @@ import {
 } from 'typeorm';
 import { Category } from './Category';
 import { CourseSection } from './CourseSection';
-import { CourseDocument } from './CourseDocument';
 import { UserInstructor } from './UserInstructor';
 import { Review } from './Review';
 import { Enrollment } from './Enrollment';
@@ -84,9 +83,6 @@ export class Course {
 
   @OneToMany(() => CourseSection, (section) => section.course)
   sections: CourseSection[];
-
-  @OneToMany(() => CourseDocument, (document) => document.course)
-  documents: CourseDocument[];
 
   @OneToMany(() => Review, (review) => review.course)
   reviews: Review[];

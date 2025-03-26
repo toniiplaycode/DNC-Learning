@@ -19,7 +19,6 @@ import { AuthMiddleware } from './common/middleware/auth.middleware';
 import { JwtModule } from '@nestjs/jwt';
 import { CourseSection } from './entities/CourseSection';
 import { CourseLesson } from './entities/CourseLesson';
-import { CourseDocument } from './entities/CourseDocument';
 import { Document } from './entities/Document';
 import { UserInstructor } from './entities/UserInstructor';
 import { Review } from './entities/Review';
@@ -52,7 +51,6 @@ import { Enrollment } from './entities/Enrollment';
         Category,
         CourseSection,
         CourseLesson,
-        CourseDocument,
         Document,
         UserInstructor,
         UserStudent,

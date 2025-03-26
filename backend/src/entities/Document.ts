@@ -8,6 +8,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { UserInstructor } from './UserInstructor';
+import { CourseSection } from './CourseSection';
 
 export enum DocumentStatus {
   ACTIVE = 'active',
@@ -19,6 +20,9 @@ export class Document {
   @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
+  @Column({ name: 'instructor_id' })
+  instructorId: number;
+
   @Column({ length: 255 })
   title: string;
 
@@ -28,7 +32,11 @@ export class Document {
   @Column({ name: 'file_url', length: 255 })
   fileUrl: string;
 
-  @Column({ name: 'file_type', length: 50 })
+  @Column({
+    name: 'file_type',
+    length: 50,
+    enum: ['pdf', 'slide', 'code', 'link', 'txt', 'docx'],
+  })
   fileType: string;
 
   @Column({ name: 'file_size', nullable: true })
@@ -40,9 +48,6 @@ export class Document {
     default: () => 'CURRENT_TIMESTAMP',
   })
   uploadDate: Date;
-
-  @Column({ name: 'author_id' })
-  authorId: number;
 
   @Column({ name: 'download_count', default: 0 })
   downloadCount: number;
@@ -61,6 +66,10 @@ export class Document {
   updatedAt: Date;
 
   @ManyToOne(() => UserInstructor)
-  @JoinColumn({ name: 'author_id' })
+  @JoinColumn({ name: 'instructor_id' })
   author: UserInstructor;
+
+  @ManyToOne(() => CourseSection)
+  @JoinColumn({ name: 'course_section_id' })
+  courseSection: CourseSection;
 }
