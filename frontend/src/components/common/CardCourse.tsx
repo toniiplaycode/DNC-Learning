@@ -112,7 +112,7 @@ const CardCourse: React.FC<CardCourseProps> = ({
 
         <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
           <Avatar
-            src={instructor.avatar}
+            src={instructor.avatar || "/src/assets/avatar.png"}
             sx={{ width: 24, height: 24, mr: 1 }}
           />
           <Typography variant="body2" color="text.secondary">

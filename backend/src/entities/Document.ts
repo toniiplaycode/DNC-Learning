@@ -7,7 +7,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { User } from './User';
+import { UserInstructor } from './UserInstructor';
 
 export enum DocumentStatus {
   ACTIVE = 'active',
@@ -60,7 +60,7 @@ export class Document {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => UserInstructor)
   @JoinColumn({ name: 'author_id' })
-  author: User;
+  author: UserInstructor;
 }

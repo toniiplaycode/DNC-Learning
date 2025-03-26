@@ -266,13 +266,10 @@ CREATE TABLE `categories` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `name` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
-  `parent_id` bigint DEFAULT NULL,
   `status` enum('active','inactive') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'active',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  PRIMARY KEY (`id`),
-  KEY `parent_id` (`parent_id`),
-  CONSTRAINT `categories_ibfk_1` FOREIGN KEY (`parent_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL
+  PRIMARY KEY (`id`)
 ) ENGINE=InnoDB AUTO_INCREMENT=11 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -282,7 +279,7 @@ CREATE TABLE `categories` (
 
 LOCK TABLES `categories` WRITE;
 /*!40000 ALTER TABLE `categories` DISABLE KEYS */;
-INSERT INTO `categories` VALUES (1,'Web Development','All courses related to web development',NULL,'active','2025-03-08 07:57:20','2025-03-08 07:57:20'),(2,'Frontend','Courses about frontend technologies (HTML, CSS, JS, ...)',1,'active','2025-03-08 07:57:20','2025-03-08 07:57:20'),(3,'Backend','Courses about backend technologies (Node.js, PHP, ...)',1,'active','2025-03-08 07:57:20','2025-03-08 07:57:20'),(4,'ReactJS','React library and ecosystem',2,'active','2025-03-08 07:57:20','2025-03-08 07:57:20'),(5,'NodeJS','Node.js runtime environment and frameworks',3,'active','2025-03-08 07:57:20','2025-03-08 07:57:20'),(6,'Programming Languages','All about various programming languages',NULL,'active','2025-03-08 07:57:20','2025-03-08 07:57:20'),(7,'Python','Python language for web, data science, automation, etc.',6,'active','2025-03-08 07:57:20','2025-03-08 07:57:20'),(8,'Java','Java language for enterprise solutions, Android, etc.',6,'active','2025-03-08 07:57:20','2025-03-08 07:57:20'),(9,'Databases','Courses on relational, NoSQL databases',NULL,'active','2025-03-08 07:57:20','2025-03-08 07:57:20'),(10,'MySQL','MySQL relational database management system',9,'active','2025-03-08 07:57:20','2025-03-08 07:57:20');
+INSERT INTO `categories` VALUES (1,'Quản trị khách sạn','Các khóa học về quản trị khánh sạn','active','2025-03-08 07:57:20','2025-03-25 03:03:12'),(2,'Công nghệ thông tin','Các khóa học về CNTT và phát triển phần mềm','active','2025-03-08 07:57:20','2025-03-25 03:03:12'),(3,'Mạng máy tính','Các khóa học về mạng, bảo mật và giao thức truyền thông','active','2025-03-08 07:57:20','2025-03-25 03:03:12'),(4,'Kinh tế','Các khóa học về kinh tế vi mô, vĩ mô và thị trường tài chính','active','2025-03-08 07:57:20','2025-03-25 03:03:12'),(5,'Quản trị kinh doanh','Các khóa học về quản lý, chiến lược và lãnh đạo tổ chức','active','2025-03-08 07:57:20','2025-03-25 03:03:12'),(6,'Trí tuệ nhân tạo','Học máy, deep learning và ứng dụng AI','active','2025-03-08 07:57:20','2025-03-25 03:03:12'),(7,'An toàn thông tin','Nguyên tắc bảo mật, mã hóa và hacking có đạo đức','active','2025-03-08 07:57:20','2025-03-25 03:03:12'),(8,'Khoa học dữ liệu','Dữ liệu lớn, phân tích dữ liệu và trí tuệ kinh doanh','active','2025-03-08 07:57:20','2025-03-25 03:03:12'),(9,'Tài chính','Ngân hàng, đầu tư và tài chính doanh nghiệp','active','2025-03-08 07:57:20','2025-03-25 03:03:12'),(10,'Marketing','Tiếp thị số, xây dựng thương hiệu và hành vi khách hàng','active','2025-03-08 07:57:20','2025-03-25 03:03:12');
 /*!40000 ALTER TABLE `categories` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -631,28 +628,23 @@ DROP TABLE IF EXISTS `courses`;
 CREATE TABLE `courses` (
   `id` bigint NOT NULL AUTO_INCREMENT,
   `title` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `slug` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `description` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
-  `category_id` bigint DEFAULT NULL,
-  `instructor_id` bigint DEFAULT NULL,
+  `category_id` bigint NOT NULL,
+  `instructor_id` bigint NOT NULL,
   `price` decimal(10,2) DEFAULT '0.00',
-  `duration` int DEFAULT NULL COMMENT 'Duration in minutes',
   `level` enum('beginner','intermediate','advanced') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `status` enum('draft','published','archived') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'draft',
   `thumbnail_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `start_date` date DEFAULT NULL,
   `end_date` date DEFAULT NULL,
-  `enrollment_limit` int DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `slug` (`slug`),
   KEY `category_id` (`category_id`),
-  KEY `instructor_id` (`instructor_id`),
-  KEY `idx_slug` (`slug`),
-  CONSTRAINT `courses_ibfk_1` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`),
-  CONSTRAINT `courses_ibfk_2` FOREIGN KEY (`instructor_id`) REFERENCES `users` (`id`)
-) ENGINE=InnoDB AUTO_INCREMENT=17 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+  KEY `courses_fk_2_idx` (`instructor_id`),
+  CONSTRAINT `courses_fk_1` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`),
+  CONSTRAINT `courses_fk_2` FOREIGN KEY (`instructor_id`) REFERENCES `user_instructors` (`id`)
+) ENGINE=InnoDB AUTO_INCREMENT=22 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -661,7 +653,6 @@ CREATE TABLE `courses` (
 
 LOCK TABLES `courses` WRITE;
 /*!40000 ALTER TABLE `courses` DISABLE KEYS */;
-INSERT INTO `courses` VALUES (1,'ReactJS','react-for-beginners','Introduction to React fundamentals',4,7,19.99,10,'beginner','published','react.png','2025-04-01',NULL,100,'2025-03-08 08:00:41','2025-03-10 02:05:19'),(2,'Advanced NodeJS','advanced-nodejs','Deep dive into NodeJS and its ecosystem',5,6,29.99,15,'advanced','published','node.png','2025-05-01',NULL,50,'2025-03-08 08:00:41','2025-03-08 08:00:41'),(3,'Fullstack Web Development','fullstack-web-dev','Learn both frontend and backend skills',1,7,49.99,30,'intermediate','draft','fullstack.png','2025-06-01',NULL,200,'2025-03-08 08:00:41','2025-03-08 08:00:41'),(4,'Python for Data Science','python-for-data-science','Python fundamentals for data analysis and machine learning',7,6,39.99,20,'intermediate','published','python.png','2025-04-15',NULL,150,'2025-03-08 08:00:41','2025-03-08 08:00:41'),(5,'Java Fundamentals','java-fundamentals','Basic to intermediate Java programming',8,7,24.99,25,'beginner','published','java.png','2025-04-20',NULL,100,'2025-03-08 08:00:41','2025-03-08 08:00:41'),(6,'MySQL Essentials','mysql-essentials','Relational database design and SQL with MySQL',10,7,14.99,12,'beginner','published','mysql.png','2025-05-10',NULL,80,'2025-03-08 08:00:41','2025-03-08 08:00:41'),(7,'Frontend Mastery','frontend-mastery','In-depth coverage of modern frontend tools and techniques',2,5,59.99,40,'advanced','published','frontend.png','2025-06-01',NULL,120,'2025-03-08 08:00:41','2025-03-08 08:00:41'),(8,'Backend with Express','backend-with-express','Building scalable backend services using Express.js',3,6,34.99,18,'intermediate','published','express.png','2025-07-01',NULL,100,'2025-03-08 08:00:41','2025-03-08 08:00:41'),(9,'DevOps with Docker','devops-with-docker','Containerization and DevOps practices with Docker',9,6,44.99,15,'intermediate','draft','docker.png','2025-06-15',NULL,60,'2025-03-08 08:00:41','2025-03-08 08:00:41'),(10,'Mobile Apps with React Native','mobile-apps-react-native','Develop cross-platform mobile apps using React Native',4,5,49.99,25,'advanced','published','react-native.png','2025-08-01',NULL,100,'2025-03-08 08:00:41','2025-03-08 08:00:41');
 /*!40000 ALTER TABLE `courses` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -687,7 +678,7 @@ CREATE TABLE `documents` (
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
   KEY `author_id` (`author_id`),
-  CONSTRAINT `documents_ibfk_1` FOREIGN KEY (`author_id`) REFERENCES `users` (`id`)
+  CONSTRAINT `documents_ibfk_1` FOREIGN KEY (`author_id`) REFERENCES `user_instructors` (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
@@ -1175,9 +1166,8 @@ DROP TABLE IF EXISTS `reviews`;
 /*!50503 SET character_set_client = utf8mb4 */;
 CREATE TABLE `reviews` (
   `id` bigint NOT NULL AUTO_INCREMENT,
-  `user_id` bigint NOT NULL COMMENT 'Người đánh giá',
+  `user_student_id` bigint NOT NULL,
   `review_type` enum('instructor','course') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `reference_id` bigint NOT NULL COMMENT 'ID của instructor hoặc course',
   `course_id` bigint NOT NULL COMMENT 'Khóa học liên quan',
   `rating` int NOT NULL,
   `review_text` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
@@ -1185,11 +1175,10 @@ CREATE TABLE `reviews` (
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `unique_user_review` (`user_id`,`review_type`,`reference_id`,`course_id`),
-  KEY `reference_id` (`reference_id`),
+  UNIQUE KEY `unique_user_review` (`user_student_id`,`review_type`,`course_id`),
   KEY `course_id` (`course_id`),
   CONSTRAINT `reviews_course_fk` FOREIGN KEY (`course_id`) REFERENCES `courses` (`id`),
-  CONSTRAINT `reviews_user_fk` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`),
+  CONSTRAINT `reviews_user_fk` FOREIGN KEY (`user_student_id`) REFERENCES `user_students` (`id`),
   CONSTRAINT `reviews_chk_1` CHECK ((`rating` between 1 and 5))
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
@@ -1355,7 +1344,7 @@ CREATE TABLE `user_instructors` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `user_id` (`user_id`),
   CONSTRAINT `user_instructors_ibfk_1` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+) ENGINE=InnoDB AUTO_INCREMENT=4 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
@@ -1364,6 +1353,7 @@ CREATE TABLE `user_instructors` (
 
 LOCK TABLES `user_instructors` WRITE;
 /*!40000 ALTER TABLE `user_instructors` DISABLE KEYS */;
+INSERT INTO `user_instructors` VALUES (1,5,'Quang Hiếu','Giảng viên cao cấp','Kỹ thuật phần mềm','Tiến sĩ Kỹ thuật phần mềm','10 năm kinh nghiệm giảng dạy','Chuyên gia trong kiến trúc phần mềm','Thiết kế phần mềm, Microservices, DevOps','Chứng chỉ AWS Architect',NULL,NULL,NULL,4.80,500,10,120,'verified',NULL,NULL,'2025-03-25 03:43:22','2025-03-25 03:43:22'),(2,7,'Trần Phong','Phó giáo sư','Trí tuệ nhân tạo','Tiến sĩ AI','8 năm nghiên cứu và giảng dạy','Tập trung vào AI và Machine Learning','Deep Learning, Xử lý ngôn ngữ tự nhiên, Khoa học dữ liệu','Chứng chỉ TensorFlow Developer',NULL,NULL,NULL,4.70,350,8,90,'verified',NULL,NULL,'2025-03-25 03:43:22','2025-03-25 03:43:22'),(3,8,'Lê Trang','Giảng viên','Khoa học dữ liệu','Thạc sĩ Khoa học dữ liệu','6 năm giảng dạy và nghiên cứu','Đam mê dữ liệu lớn và phân tích','Big Data, SQL, Python','Chứng chỉ Data Analyst',NULL,NULL,NULL,4.60,300,7,80,'verified',NULL,NULL,'2025-03-25 03:43:22','2025-03-25 03:43:22');
 /*!40000 ALTER TABLE `user_instructors` ENABLE KEYS */;
 UNLOCK TABLES;
 
@@ -1459,7 +1449,7 @@ CREATE TABLE `users` (
   `email` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
   `phone` varchar(15) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `password` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `role` enum('student','instructor','admin') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
+  `role` enum('student','instructor','admin','student_academic') COLLATE utf8mb4_unicode_ci NOT NULL,
   `status` enum('active','inactive','banned') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'active',
   `avatar_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `two_factor_enabled` tinyint(1) DEFAULT '0',
@@ -1480,7 +1470,7 @@ CREATE TABLE `users` (
 
 LOCK TABLES `users` WRITE;
 /*!40000 ALTER TABLE `users` DISABLE KEYS */;
-INSERT INTO `users` VALUES (1,'thanhtoan','toan@gmail.com','0775844074','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','student','active','img',0,'12425',NULL,NULL,NULL,'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJ0b2FuQGdtYWlsLmNvbSIsImlhdCI6MTc0MTU2OTQyOSwiZXhwIjoxNzQyMTc0MjI5fQ.iEwc6p8R4iP9Ojnea3OmswSynlRQ15CF9yY_8zyC_Ko','2025-03-08 02:48:23','2025-03-10 01:17:09'),(3,'alice','alice@example.com','0123456789','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','student','active','avatar1.png',0,NULL,NULL,NULL,'2025-03-08 03:00:00',NULL,'2025-03-08 07:53:05','2025-03-10 00:44:42'),(4,'bob','bob@example.com','0123456788','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','student','active','avatar2.png',0,NULL,NULL,NULL,'2025-03-08 03:00:00',NULL,'2025-03-08 07:53:05','2025-03-10 00:44:42'),(5,'charlie','charlie@example.com','0123456787','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','instructor','inactive','avatar3.png',0,NULL,NULL,NULL,'2025-03-08 03:00:00',NULL,'2025-03-08 07:53:05','2025-03-10 01:18:06'),(6,'david','david@example.com','0123456786','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','student','active','avatar4.png',1,'secretKey',NULL,NULL,'2025-03-08 03:00:00',NULL,'2025-03-08 07:53:05','2025-03-10 00:44:42'),(7,'eve','eve@example.com','0123456785','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','instructor','active','avatar5.png',0,NULL,NULL,NULL,'2025-03-08 03:00:00','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3IiwiZW1haWwiOiJldmVAZXhhbXBsZS5jb20iLCJpYXQiOjE3NDE1NzMyNjUsImV4cCI6MTc0MjE3ODA2NX0.DAlBA_C4M2X9Fo9hzr7BRQSLSZwkXSL5sCsGZBDx7O0','2025-03-08 07:53:05','2025-03-10 02:21:05'),(8,'frank','frank@example.com','0123456784','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','instructor','active','avatar6.png',0,NULL,'google',NULL,'2025-03-08 03:00:00',NULL,'2025-03-08 07:53:05','2025-03-10 00:44:42'),(9,'grace','grace@example.com','0123456783','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','instructor','active','avatar7.png',0,NULL,'facebook',NULL,'2025-03-08 03:00:00',NULL,'2025-03-08 07:53:05','2025-03-10 00:44:42'),(10,'helen','helen@example.com','0123456782','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','admin','active','avatar8.png',0,NULL,NULL,NULL,'2025-03-08 03:00:00',NULL,'2025-03-08 07:53:05','2025-03-10 00:44:42'),(11,'ivan','ivan@example.com','0123456781','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','admin','inactive','avatar9.png',1,'2FAsecret',NULL,NULL,'2025-03-08 03:00:00',NULL,'2025-03-08 07:53:05','2025-03-10 00:44:42'),(34,'toan','aaaa@gmail.com','0775844074','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','student','active','img',0,'12425',NULL,NULL,NULL,'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzNCIsImVtYWlsIjoiYWFhYUBnbWFpbC5jb20iLCJpYXQiOjE3NDE1NjYyNTQsImV4cCI6MTc0MjE3MTA1NH0.b02sZZuVEckT6uy61mxwRGPIxDQMKhGw88L2kFqfZx4','2025-03-09 02:39:34','2025-03-10 00:44:42');
+INSERT INTO `users` VALUES (1,'thanhtoan','toan@gmail.com','0775844074','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','student','active','img',0,'12425',NULL,NULL,NULL,'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxIiwiZW1haWwiOiJ0b2FuQGdtYWlsLmNvbSIsImlhdCI6MTc0MTU2OTQyOSwiZXhwIjoxNzQyMTc0MjI5fQ.iEwc6p8R4iP9Ojnea3OmswSynlRQ15CF9yY_8zyC_Ko','2025-03-08 02:48:23','2025-03-10 01:17:09'),(3,'linhchi','linhchi@edu.vn','0123456789','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','student','active','avatar1.png',0,NULL,NULL,NULL,'2025-03-08 03:00:00',NULL,'2025-03-08 07:53:05','2025-03-25 03:29:30'),(4,'hoangnam','hoangnam@edu.vn','0123456788','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','student','active','avatar2.png',0,NULL,NULL,NULL,'2025-03-08 03:00:00',NULL,'2025-03-08 07:53:05','2025-03-25 03:29:30'),(5,'minhphuc','minhphuc@edu.vn','0123456787','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','instructor','inactive','avatar3.png',0,NULL,NULL,NULL,'2025-03-08 03:00:00',NULL,'2025-03-08 07:53:05','2025-03-25 03:29:30'),(6,'quanghieu','quanghieu@edu.vn','0123456786','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','student','active','avatar4.png',1,'secretKey',NULL,NULL,'2025-03-08 03:00:00',NULL,'2025-03-08 07:53:05','2025-03-25 03:29:30'),(7,'nguyenthuy','nguyenthuy@edu.vn','0123456785','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','instructor','active','avatar5.png',0,NULL,NULL,NULL,'2025-03-08 03:00:00','eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI3IiwiZW1haWwiOiJldmVAZXhhbXBsZS5jb20iLCJpYXQiOjE3NDI4MDAxODYsImV4cCI6MTc0MzQwNDk4Nn0.xadiaJvzNhqN0Cr90CZCywkDhXcTGTirslaUWOB7Epg','2025-03-08 07:53:05','2025-03-25 03:29:30'),(8,'tranphong','tranphong@edu.vn','0123456784','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','instructor','active','avatar6.png',0,NULL,'google',NULL,'2025-03-08 03:00:00',NULL,'2025-03-08 07:53:05','2025-03-25 03:29:30'),(9,'letrang','letrang@edu.vn','0123456783','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','instructor','active','avatar7.png',0,NULL,'facebook',NULL,'2025-03-08 03:00:00',NULL,'2025-03-08 07:53:05','2025-03-25 03:29:30'),(10,'thuha','thuha@edu.vn','0123456782','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','admin','active','avatar8.png',0,NULL,NULL,NULL,'2025-03-08 03:00:00',NULL,'2025-03-08 07:53:05','2025-03-25 03:29:30'),(11,'hoanganh','hoanganh@edu.vn','0123456781','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','admin','inactive','avatar9.png',1,'2FAsecret',NULL,NULL,'2025-03-08 03:00:00',NULL,'2025-03-08 07:53:05','2025-03-25 03:29:30'),(12,'nguyentoan','nguyentoan@edu.vn','0775844074','$2b$10$nQjaU2vt7dxN1OG7.a/UTONJV3sZaJkUctjhazkEkgDGfKd5o2X1a','student','active','img',0,'12425',NULL,NULL,NULL,'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzNCIsImVtYWlsIjoiYWFhYUBnbWFpbC5jb20iLCJpYXQiOjE3NDE1NjYyNTQsImV4cCI6MTc0MjE3MTA1NH0.b02sZZuVEckT6uy61mxwRGPIxDQMKhGw88L2kFqfZx4','2025-03-09 02:39:34','2025-03-25 03:29:30');
 /*!40000 ALTER TABLE `users` ENABLE KEYS */;
 UNLOCK TABLES;
 /*!40103 SET TIME_ZONE=@OLD_TIME_ZONE */;
@@ -1493,4 +1483,4 @@ UNLOCK TABLES;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;
 /*!40111 SET SQL_NOTES=@OLD_SQL_NOTES */;
 
--- Dump completed on 2025-03-19 14:26:00
+-- Dump completed on 2025-03-25 10:45:34

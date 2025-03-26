@@ -4,7 +4,11 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToOne,
+  JoinColumn,
 } from 'typeorm';
+import { UserStudent } from './UserStudent';
+import { UserInstructor } from './UserInstructor';
 
 // Tạo enum cho role
 export enum UserRole {
@@ -77,4 +81,12 @@ export class User {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
+
+  @OneToOne(() => UserStudent)
+  @JoinColumn({ name: 'user_id' })
+  userStudent: UserStudent;
+
+  @OneToOne(() => UserInstructor)
+  @JoinColumn({ name: 'user_id' })
+  userInstructor: UserInstructor;
 }

@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Course } from 'src/entities/Course';
+import { UserInstructor } from 'src/entities/UserInstructor';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -14,87 +15,83 @@ export class CoursesService {
     return await this.courseRepository.find({
       relations: {
         category: true,
-        instructor: true,
+        instructor: {
+          user: true,
+        },
         sections: {
           lessons: true,
           documents: true,
         },
-        documents: true,
+        reviews: true,
+        enrollments: true,
       },
       select: {
         instructor: {
           id: true,
-          username: true,
-          email: true,
-          avatarUrl: true,
-          role: true,
+          fullName: true,
+          professionalTitle: true,
+          user: {
+            id: true,
+            username: true,
+            email: true,
+            avatarUrl: true,
+            role: true,
+          },
         },
         category: {
           id: true,
           name: true,
           description: true,
         },
-      },
-      order: {
-        createdAt: 'DESC',
-        sections: {
-          orderNumber: 'ASC',
-          lessons: {
-            orderNumber: 'ASC',
-          },
-          documents: {
-            orderNumber: 'ASC',
-          },
-        },
-        documents: {
-          orderNumber: 'ASC',
+        enrollments: {
+          userId: true,
         },
       },
     });
   }
 
-  async findOne(id: number): Promise<Course | null> {
+  async findOne(id: number): Promise<Course> {
     const course = await this.courseRepository.findOne({
       where: { id },
       relations: {
         category: true,
-        instructor: true,
+        instructor: {
+          user: true,
+          courses: true,
+        },
         sections: {
           lessons: true,
-          documents: {
-            document: true,
-          },
+          documents: true,
         },
-        documents: {
-          document: true,
-        },
+        documents: true,
+        reviews: true,
+        enrollments: true,
       },
       select: {
         instructor: {
           id: true,
-          username: true,
-          email: true,
-          avatarUrl: true,
-          role: true,
+          fullName: true,
+          professionalTitle: true,
+          bio: true,
+          specialization: true,
+          user: {
+            id: true,
+            username: true,
+            email: true,
+            avatarUrl: true,
+            role: true,
+          },
+          courses: {
+            id: true,
+          },
         },
         category: {
           id: true,
           name: true,
           description: true,
         },
-      },
-      order: {
-        sections: {
-          orderNumber: 'ASC',
-          lessons: {
-            orderNumber: 'ASC',
-          },
-          documents: {
-            orderNumber: 'ASC',
-          },
-        },
-        documents: {
-          orderNumber: 'ASC',
+        enrollments: {
+          userId: true,
         },
       },
     });

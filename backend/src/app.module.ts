@@ -21,6 +21,10 @@ import { CourseSection } from './entities/CourseSection';
 import { CourseLesson } from './entities/CourseLesson';
 import { CourseDocument } from './entities/CourseDocument';
 import { Document } from './entities/Document';
+import { UserInstructor } from './entities/UserInstructor';
+import { Review } from './entities/Review';
+import { UserStudent } from './entities/UserStudent';
+import { Enrollment } from './entities/Enrollment';
 
 @Module({
   imports: [
@@ -50,6 +54,10 @@ import { Document } from './entities/Document';
         CourseLesson,
         CourseDocument,
         Document,
+        UserInstructor,
+        UserStudent,
+        Review,
+        Enrollment,
       ],
       // synchronize: true, // tự động tạo bảng trong entity (chỉ dùng trong môi tường dev)
     }),

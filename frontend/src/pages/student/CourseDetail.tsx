@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Grid,
@@ -37,6 +37,10 @@ import {
 } from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
 import CustomContainer from "../../components/common/CustomContainer";
+import { useAppSelector } from "../../app/hooks";
+import { useAppDispatch } from "../../app/hooks";
+import { fetchCourseById } from "../../features/courses/coursesApiSlice";
+import { formatDate } from "date-fns";
 
 interface Lesson {
   id: number;
@@ -319,10 +323,23 @@ const TabPanel = (props: TabPanelProps) => {
 };
 
 const CourseDetail: React.FC = () => {
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const { courseId } = useParams();
+  const { id } = useParams<{ id: string }>();
+
+  useEffect(() => {
+    if (id) {
+      dispatch(fetchCourseById(parseInt(id)));
+    }
+  }, [dispatch, id]);
+
+  const { currentCourse, status, error } = useAppSelector(
+    (state) => state.courses
+  );
+
   const [expandedSections, setExpandedSections] = useState<number[]>([0]);
   const [activeTab, setActiveTab] = useState(0);
-  const navigate = useNavigate();
 
   const handleSectionToggle = (sectionId: number) => {
     setExpandedSections((prev) =>
@@ -351,10 +368,10 @@ const CourseDetail: React.FC = () => {
         />
         <Box>
           <Typography variant="subtitle1" fontWeight="bold">
-            {mockCourseData.instructor.name}
+            {currentCourse?.instructor?.fullName}
           </Typography>
           <Typography color="text.secondary">
-            {mockCourseData.instructor.title}
+            {currentCourse?.instructor?.professionalTitle}
           </Typography>
         </Box>
       </Box>
@@ -396,32 +413,29 @@ const CourseDetail: React.FC = () => {
         {/* Left Column */}
         <Grid item xs={12} md={8}>
           <Typography variant="h4" fontWeight="bold" gutterBottom>
-            {mockCourseData.title}
+            {currentCourse?.title}
           </Typography>
 
           <Box sx={{ mb: 2 }}>
             <Chip
-              label={mockCourseData.category}
+              label={currentCourse?.category?.name}
               color="primary"
               variant="outlined"
               size="small"
               sx={{ mr: 1 }}
             />
             <Typography variant="body2" color="text.secondary" component="span">
-              Cập nhật lần cuối: {mockCourseData.lastUpdated}
+              Cập nhật lần cuối:{" "}
+              {formatDate(currentCourse?.updatedAt || new Date(), "dd/MM/yyyy")}
             </Typography>
           </Box>
 
           <Typography color="text.secondary" paragraph>
-            {mockCourseData.description}
+            {currentCourse?.description}
           </Typography>
 
           <Box sx={{ display: "flex", gap: 2, alignItems: "center", mb: 3 }}>
-            <Chip
-              icon={<AccessTime />}
-              label={mockCourseData.duration}
-              variant="outlined"
-            />
+            <Chip icon={<AccessTime />} label={"12 tuần"} variant="outlined" />
             <Chip
               icon={<PlayCircleOutline />}
               label={`${mockCourseData.totalLessons} bài học`}
@@ -429,7 +443,7 @@ const CourseDetail: React.FC = () => {
             />
             <Chip
               icon={<Person />}
-              label={`${mockCourseData.enrollments} học viên`}
+              label={`${currentCourse?.enrollments?.length || 0} học viên`}
               variant="outlined"
             />
             <Chip
@@ -454,7 +468,7 @@ const CourseDetail: React.FC = () => {
               <Card>
                 <CardContent>
                   <List>
-                    {mockCourseData.sections.map((section, sectionIndex) => (
+                    {currentCourse?.sections?.map((section, sectionIndex) => (
                       <Box key={section.id}>
                         {/* Section Header - Clickable */}
                         <Box
@@ -520,14 +534,17 @@ const CourseDetail: React.FC = () => {
                               }}
                             >
                               <ListItemIcon sx={{ minWidth: 40 }}>
-                                {lesson.type === "video" && (
+                                {lesson.contentType === "video" && (
                                   <PlayCircleOutline color="primary" />
                                 )}
-                                {lesson.type === "assignment" && (
+                                {lesson.contentType === "assignment" && (
                                   <Assignment color="primary" />
                                 )}
-                                {lesson.type === "quiz" && (
+                                {lesson.contentType === "quiz" && (
                                   <Quiz color="primary" />
+                                )}
+                                {lesson.contentType === "document" && (
+                                  <PictureAsPdf color="primary" />
                                 )}
                               </ListItemIcon>
                               <ListItemText
@@ -556,12 +573,12 @@ const CourseDetail: React.FC = () => {
                                       variant="caption"
                                       color="text.secondary"
                                     >
-                                      {lesson.duration}
+                                      {lesson.duration || "N/A"} phút
                                     </Typography>
                                   </Box>
                                 }
                               />
-                              {!mockCourseData.isEnrolled && (
+                              {true && (
                                 <Chip
                                   label="Khóa"
                                   size="small"
@@ -571,74 +588,6 @@ const CourseDetail: React.FC = () => {
                               )}
                             </ListItem>
                           ))}
-
-                          {/* Render practice */}
-                          <ListItem
-                            sx={{
-                              bgcolor: "action.hover",
-                              borderRadius: 1,
-                              mt: 1,
-                              flexDirection: "column",
-                              alignItems: "flex-start",
-                            }}
-                          >
-                            <Box
-                              sx={{
-                                display: "flex",
-                                width: "100%",
-                                alignItems: "center",
-                                mb: section.practice.description ? 1 : 0,
-                              }}
-                            >
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  flex: 1,
-                                }}
-                              >
-                                <Assignment color="primary" sx={{ mr: 2 }} />
-                                <Typography variant="subtitle2">
-                                  {section.practice.title}
-                                </Typography>
-                              </Box>
-                              <Stack
-                                direction="row"
-                                spacing={2}
-                                alignItems="center"
-                              >
-                                <Chip
-                                  label={`${section.practice.points} điểm`}
-                                  size="small"
-                                  color="primary"
-                                  variant="outlined"
-                                />
-                                <Typography
-                                  variant="body2"
-                                  color="text.secondary"
-                                >
-                                  {section.practice.duration}
-                                </Typography>
-                                {!mockCourseData.isEnrolled && (
-                                  <Chip
-                                    label="Khóa"
-                                    size="small"
-                                    color="default"
-                                    variant="outlined"
-                                  />
-                                )}
-                              </Stack>
-                            </Box>
-                            {section.practice.description && (
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                                sx={{ pl: 5 }}
-                              >
-                                {section.practice.description}
-                              </Typography>
-                            )}
-                          </ListItem>
                         </List>
                       </Box>
                     ))}
@@ -653,7 +602,7 @@ const CourseDetail: React.FC = () => {
                     Bạn sẽ học được gì
                   </Typography>
                   <Grid container spacing={2}>
-                    {mockCourseData.whatYouWillLearn.map((item, index) => (
+                    {currentCourse?.learned?.split("\n").map((item, index) => (
                       <Grid item xs={12} sm={6} key={index}>
                         <Box sx={{ display: "flex", gap: 1 }}>
                           <CheckCircle color="success" sx={{ mt: 0.5 }} />
@@ -672,7 +621,7 @@ const CourseDetail: React.FC = () => {
                     Yêu cầu
                   </Typography>
                   <List>
-                    {mockCourseData.requirements.map((req, index) => (
+                    {currentCourse?.required?.split("\n").map((req, index) => (
                       <ListItem key={index} sx={{ px: 0 }}>
                         <ListItemIcon>
                           <CheckCircle color="primary" />

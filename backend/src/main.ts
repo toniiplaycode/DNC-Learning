@@ -20,6 +20,13 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(process.env.PORT ?? 3000);
+  // Cấu hình CORS
+  app.enableCors({
+    origin: 'http://localhost:5173', // Đổi thành URL của frontend
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+  });
+
+  await app.listen(3000);
 }
 bootstrap();

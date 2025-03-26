@@ -8,10 +8,12 @@ import {
   UpdateDateColumn,
   OneToMany,
 } from 'typeorm';
-import { User } from './User';
 import { Category } from './Category';
 import { CourseSection } from './CourseSection';
 import { CourseDocument } from './CourseDocument';
+import { UserInstructor } from './UserInstructor';
+import { Review } from './Review';
+import { Enrollment } from './Enrollment';
 
 @Entity('courses')
 export class Course {
@@ -20,9 +22,6 @@ export class Course {
 
   @Column({ length: 255 })
   title: string;
-
-  @Column({ length: 255, unique: true })
-  slug: string;
 
   @Column({ type: 'text', nullable: true })
   description: string;
@@ -35,9 +34,6 @@ export class Course {
 
   @Column({ type: 'decimal', precision: 10, scale: 2, default: 0 })
   price: number;
-
-  @Column({ nullable: true, comment: 'Duration in minutes' })
-  duration: number;
 
   @Column({
     type: 'enum',
@@ -57,14 +53,17 @@ export class Course {
   @Column({ length: 255, nullable: true, name: 'thumbnail_url' })
   thumbnailUrl: string;
 
+  @Column({ type: 'text', nullable: true })
+  required: string;
+
+  @Column({ type: 'text', nullable: true })
+  learned: string;
+
   @Column({ type: 'date', nullable: true, name: 'start_date' })
   startDate: Date;
 
   @Column({ type: 'date', nullable: true, name: 'end_date' })
   endDate: Date;
-
-  @Column({ nullable: true, name: 'enrollment_limit' })
-  enrollmentLimit: number;
 
   @CreateDateColumn({ name: 'created_at', default: () => 'CURRENT_TIMESTAMP' })
   createdAt: Date;
@@ -79,13 +78,19 @@ export class Course {
   @JoinColumn({ name: 'category_id' })
   category: Category;
 
-  @ManyToOne(() => User)
+  @ManyToOne(() => UserInstructor)
   @JoinColumn({ name: 'instructor_id' })
-  instructor: User;
+  instructor: UserInstructor;
 
   @OneToMany(() => CourseSection, (section) => section.course)
   sections: CourseSection[];
 
   @OneToMany(() => CourseDocument, (document) => document.course)
   documents: CourseDocument[];
+
+  @OneToMany(() => Review, (review) => review.course)
+  reviews: Review[];
+
+  @OneToMany(() => Enrollment, (enrollment) => enrollment.course)
+  enrollments: Enrollment[];
 }
