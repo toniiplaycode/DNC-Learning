@@ -38,7 +38,15 @@ import { useAppSelector } from "../../app/hooks";
 import { useAppDispatch } from "../../app/hooks";
 import { fetchCourseById } from "../../features/courses/coursesApiSlice";
 import { formatDate } from "date-fns";
-import { fetchInstructorById } from "../../features/instructors/instructorsApiSlice";
+import {
+  fetchInstructorById,
+  fetchInstructors,
+} from "../../features/instructors/instructorsApiSlice";
+import {
+  selectAllInstructors,
+  selectCurrentInstructor,
+} from "../../features/instructors/instructorsSelectors";
+import { useSelector } from "react-redux";
 
 interface Lesson {
   id: number;
@@ -324,6 +332,7 @@ const CourseDetail: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { courseId } = useParams();
+
   const { id } = useParams<{ id: string }>();
 
   useEffect(() => {
@@ -342,7 +351,7 @@ const CourseDetail: React.FC = () => {
     }
   }, [currentCourse, id]);
 
-  const { currentInstructor } = useAppSelector((state) => state.instructors);
+  const currentInstructor = useSelector(selectCurrentInstructor);
 
   const [expandedSections, setExpandedSections] = useState<number[]>([0]);
   const [activeTab, setActiveTab] = useState(0);
@@ -386,7 +395,7 @@ const CourseDetail: React.FC = () => {
       </Typography>
       <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
         <Avatar
-          src={mockCourseData?.instructor?.user?.avatarUrl}
+          src={currentInstructor?.user?.avatarUrl}
           sx={{ width: 64, height: 64, mr: 2 }}
         />
         <Box>
@@ -496,7 +505,7 @@ const CourseDetail: React.FC = () => {
                             display: "flex",
                             alignItems: "center",
                             bgcolor: "grey.50",
-                            p: 2,
+                            p: 1,
                             borderRadius: 1,
                             cursor: "pointer",
                             "&:hover": {

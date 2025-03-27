@@ -83,6 +83,12 @@ export class UserInstructorsService {
         where: { id },
         relations: {
           user: true,
+          courses: {
+            sections: {
+              lessons: true,
+            },
+            reviews: true,
+          },
         },
         select: {
           user: {

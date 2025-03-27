@@ -89,7 +89,7 @@ export class CoursesService {
           description: true,
         },
         enrollments: {
-          userId: true,
+          id: true,
         },
       },
     });
