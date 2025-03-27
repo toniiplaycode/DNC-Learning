@@ -7,6 +7,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  ManyToOne,
 } from 'typeorm';
 import { User } from './User';
 import { Course } from './Course';
@@ -22,7 +23,7 @@ export class UserInstructor {
   @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
-  @Column({ name: 'user_id' })
+  @Column({ name: 'user_id', nullable: true })
   userId: number;
 
   @Column({ name: 'full_name', length: 100 })
@@ -75,7 +76,7 @@ export class UserInstructor {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  @OneToOne(() => User)
+  @ManyToOne(() => User)
   @JoinColumn({ name: 'user_id' })
   user: User;
 

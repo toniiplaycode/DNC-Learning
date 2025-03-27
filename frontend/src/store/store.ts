@@ -1,12 +1,18 @@
 import { configureStore } from "@reduxjs/toolkit";
 import coursesReducer from "../features/courses/coursesSlice";
-// Import reducer khác nếu cần
+import instructorsReducer from "../features/instructors/instructorsSlice";
+// Import các reducer khác nếu có
 
 export const store = configureStore({
   reducer: {
     courses: coursesReducer,
-    // Thêm reducer khác nếu cần
+    instructors: instructorsReducer,
+    // Thêm các reducer khác nếu có
   },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: false,
+    }),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

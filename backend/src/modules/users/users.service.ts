@@ -20,6 +20,10 @@ export class UsersService {
     return this.userRepository.save(newUser);
   }
 
+  findById(id: number): Promise<User | null> {
+    return this.userRepository.findOneBy({ id });
+  }
+
   findByEmail(email: string): Promise<User | null> {
     return this.userRepository.findOne({ where: { email } });
   }

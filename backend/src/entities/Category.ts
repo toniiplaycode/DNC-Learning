@@ -20,9 +20,6 @@ export class Category {
   @Column({ type: 'text', nullable: true })
   description: string;
 
-  @Column({ name: 'parent_id', nullable: true })
-  parentId: number;
-
   @Column({
     type: 'enum',
     enum: ['active', 'inactive'],
@@ -35,13 +32,4 @@ export class Category {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
-
-  @ManyToOne(() => Category, (category) => category.children, {
-    onDelete: 'SET NULL',
-  })
-  @JoinColumn({ name: 'parent_id' })
-  parent: Category;
-
-  @OneToMany(() => Category, (category) => category.parent)
-  children: Category[];
 }

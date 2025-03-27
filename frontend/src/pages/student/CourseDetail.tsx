@@ -30,9 +30,6 @@ import {
   KeyboardArrowDown,
   KeyboardArrowUp,
   PictureAsPdf,
-  Slideshow,
-  Code,
-  Link,
   LibraryBooks,
 } from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
@@ -41,6 +38,7 @@ import { useAppSelector } from "../../app/hooks";
 import { useAppDispatch } from "../../app/hooks";
 import { fetchCourseById } from "../../features/courses/coursesApiSlice";
 import { formatDate } from "date-fns";
+import { fetchInstructorById } from "../../features/instructors/instructorsApiSlice";
 
 interface Lesson {
   id: number;
@@ -338,6 +336,14 @@ const CourseDetail: React.FC = () => {
     (state) => state.courses
   );
 
+  useEffect(() => {
+    if (currentCourse?.instructor?.id) {
+      dispatch(fetchInstructorById(currentCourse?.instructor?.id));
+    }
+  }, [currentCourse, id]);
+
+  const { currentInstructor } = useAppSelector((state) => state.instructors);
+
   const [expandedSections, setExpandedSections] = useState<number[]>([0]);
   const [activeTab, setActiveTab] = useState(0);
 
@@ -398,7 +404,7 @@ const CourseDetail: React.FC = () => {
       <Grid container spacing={2} sx={{ mb: 3 }}>
         <Grid item xs={4}>
           <Typography variant="h6" align="center">
-            N/A
+            {currentInstructor?.totalReviews}
           </Typography>
           <Typography variant="body2" align="center" color="text.secondary">
             Đánh giá
@@ -406,7 +412,7 @@ const CourseDetail: React.FC = () => {
         </Grid>
         <Grid item xs={4}>
           <Typography variant="h6" align="center">
-            N/A
+            {currentInstructor?.totalStudents}
           </Typography>
           <Typography variant="body2" align="center" color="text.secondary">
             Học viên
@@ -414,7 +420,7 @@ const CourseDetail: React.FC = () => {
         </Grid>
         <Grid item xs={4}>
           <Typography variant="h6" align="center">
-            N/A
+            {currentInstructor?.totalCourses}
           </Typography>
           <Typography variant="body2" align="center" color="text.secondary">
             Khóa học
