@@ -2,12 +2,11 @@ import {
   Entity,
   Column,
   PrimaryGeneratedColumn,
-  ManyToOne,
-  OneToMany,
-  JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
+import { Course } from './Course';
 
 @Entity('categories')
 export class Category {
@@ -32,4 +31,9 @@ export class Category {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
+
+  @OneToMany(() => Course, (course) => course.category)
+  courses: Course[];
+
+  courseCount?: number;
 }

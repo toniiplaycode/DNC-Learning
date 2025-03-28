@@ -84,6 +84,7 @@ export class UserInstructorsService {
         relations: {
           user: true,
           courses: {
+            category: true,
             sections: {
               lessons: true,
             },

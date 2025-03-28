@@ -46,9 +46,6 @@ const HomePage = () => {
                 >
                   Khám phá khóa học
                 </Button>
-                <Button variant="outlined" size="large">
-                  Đăng ký giảng dạy
-                </Button>
               </Stack>
 
               {/* Stats */}

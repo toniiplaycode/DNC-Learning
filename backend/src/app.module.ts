@@ -25,6 +25,7 @@ import { Review } from './entities/Review';
 import { UserStudent } from './entities/UserStudent';
 import { Enrollment } from './entities/Enrollment';
 import { UserInstructorsModule } from './modules/user-instructors/user-instructors.module';
+import { CategoriesModule } from './modules/categories/categories.module';
 
 @Module({
   imports: [
@@ -64,6 +65,7 @@ import { UserInstructorsModule } from './modules/user-instructors/user-instructo
     UsersModule,
     AuthModule,
     UserInstructorsModule,
+    CategoriesModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthMiddleware, InstructorMiddleware],

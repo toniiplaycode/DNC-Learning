@@ -34,7 +34,7 @@ import {
 import CardCourse from "../../components/common/CardCourse";
 import { useParams } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
-import { fetchInstructorById } from "../../features/instructors/instructorsApiSlice";
+import { fetchInstructorById } from "../../features/user_instructors/instructorsApiSlice";
 
 const InstructorProfile = () => {
   const dispatch = useAppDispatch();
@@ -95,7 +95,7 @@ const InstructorProfile = () => {
         ) || 0,
       price: parseFloat(course.price || "0"),
       image: course.thumbnailUrl || "/src/assets/logo.png",
-      category: "Khóa học",
+      category: course?.category?.name || "Khóa học",
     }));
   };
 
@@ -229,12 +229,12 @@ const InstructorProfile = () => {
               </Grid>
 
               {/* Stats Row */}
-              <Stack
-                direction={{ xs: "column", sm: "row" }}
-                spacing={4}
+              <Box
                 sx={{
-                  mt: 2,
-                  p: 2,
+                  py: 1,
+                  display: "flex",
+                  gap: 2,
+                  flexDirection: "row",
                 }}
               >
                 <Box
@@ -287,7 +287,7 @@ const InstructorProfile = () => {
                     Đánh giá
                   </Typography>
                 </Box>
-              </Stack>
+              </Box>
             </Box>
           </Grid>
         </Grid>

@@ -21,6 +21,8 @@ import {
   ListItemButton,
   ListItemIcon,
   Divider,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
 import {
   Search,
@@ -37,9 +39,12 @@ import {
   LocalLibrary as CourseIcon,
   Quiz,
 } from "@mui/icons-material";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import NotificationCenter from "../../../components/student/notification/NotificationCenter";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import { fetchCategories } from "../../../features/categories/categoriesApiSlice";
+import { selectActiveCategories } from "../../../features/categories/categoriesSelectors";
 
 const categories = [
   { name: "Lập trình", path: "/courses/programming" },
@@ -93,6 +98,10 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 }));
 
 const Header = () => {
+  const dispatch = useAppDispatch();
+  const categories = useAppSelector(selectActiveCategories);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const navigate = useNavigate();
   const [coursesAnchor, setCoursesAnchor] = useState<null | HTMLElement>(null);
   const [profileAnchor, setProfileAnchor] = useState<null | HTMLElement>(null);
@@ -103,6 +112,13 @@ const Header = () => {
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
+  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
+  const [mobileCategoriesOpen, setMobileCategoriesOpen] = useState(false);
+
+  // Lấy danh sách danh mục khi component được mount
+  useEffect(() => {
+    dispatch(fetchCategories());
+  }, [dispatch]);
 
   const handleCoursesClick = (event: React.MouseEvent<HTMLElement>) => {
     setCoursesAnchor(event.currentTarget);
@@ -165,6 +181,14 @@ const Header = () => {
 
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
+  };
+
+  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
+    setMenuAnchor(event.currentTarget);
+  };
+
+  const handleMenuClose = () => {
+    setMenuAnchor(null);
   };
 
   const mobileMenu = (
@@ -363,9 +387,9 @@ const Header = () => {
               >
                 {categories.map((category) => (
                   <MenuItem
-                    key={category.path}
+                    key={category.id}
                     onClick={() => {
-                      navigate(category.path);
+                      navigate(`/categories/${category.id}`);
                       handleClose();
                     }}
                     sx={{ py: 1.5 }}
@@ -375,7 +399,7 @@ const Header = () => {
                       <Box>
                         <Typography variant="body1">{category.name}</Typography>
                         <Typography variant="caption" color="text.secondary">
-                          100+ khóa học
+                          {category.courseCount} khóa học
                         </Typography>
                       </Box>
                     </Stack>

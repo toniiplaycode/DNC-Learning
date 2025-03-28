@@ -41,11 +41,11 @@ import { formatDate } from "date-fns";
 import {
   fetchInstructorById,
   fetchInstructors,
-} from "../../features/instructors/instructorsApiSlice";
+} from "../../features/user_instructors/instructorsApiSlice";
 import {
   selectAllInstructors,
   selectCurrentInstructor,
-} from "../../features/instructors/instructorsSelectors";
+} from "../../features/user_instructors/instructorsSelectors";
 import { useSelector } from "react-redux";
 
 interface Lesson {

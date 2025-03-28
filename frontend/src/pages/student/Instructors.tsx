@@ -25,8 +25,8 @@ import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import {
   selectAllInstructors,
   selectInstructorsStatus,
-} from "../../features/instructors/instructorsSelectors";
-import { fetchInstructors } from "../../features/instructors/instructorsApiSlice";
+} from "../../features/user_instructors/instructorsSelectors";
+import { fetchInstructors } from "../../features/user_instructors/instructorsApiSlice";
 
 const Instructors = () => {
   const dispatch = useAppDispatch();
