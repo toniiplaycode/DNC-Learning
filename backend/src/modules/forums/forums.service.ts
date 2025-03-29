@@ -114,6 +114,8 @@ export class ForumsService {
       .createQueryBuilder('forum')
       .leftJoinAndSelect('forum.user', 'user')
       .leftJoinAndSelect('forum.course', 'course')
+      .leftJoinAndSelect('forum.replies', 'replies')
+      .leftJoinAndSelect('replies.user', 'replyUser')
       .where('forum.id = :id', { id })
       .select([
         'forum',
@@ -122,6 +124,13 @@ export class ForumsService {
         'user.avatarUrl',
         'course.id',
         'course.title',
+        'replies.id',
+        'replies.content',
+        'replies.createdAt',
+        'replies.updatedAt',
+        'replyUser.id',
+        'replyUser.username',
+        'replyUser.avatarUrl',
       ])
       .getOne();
 

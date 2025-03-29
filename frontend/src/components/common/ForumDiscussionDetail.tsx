@@ -140,8 +140,7 @@ const ForumDiscussionDetail = ({
                 {mockDiscussionDetail.author.name}
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {mockDiscussionDetail.author.role} •{" "}
-                {mockDiscussionDetail.author.joinDate}
+                {mockDiscussionDetail.author.role}
               </Typography>
             </Box>
           </Stack>
@@ -249,30 +248,6 @@ const ForumDiscussionDetail = ({
               <Typography variant="body1" sx={{ mb: 2 }}>
                 {reply.content}
               </Typography>
-
-              <Stack direction="row" spacing={1} alignItems="center">
-                <IconButton
-                  onClick={() => {
-                    const updatedReplies = replies.map((r) =>
-                      r.id === reply.id
-                        ? {
-                            ...r,
-                            isLiked: !r.isLiked,
-                            likes: r.isLiked ? r.likes - 1 : r.likes + 1,
-                          }
-                        : r
-                    );
-                    setReplies(updatedReplies);
-                  }}
-                >
-                  {reply.isLiked ? (
-                    <ThumbUp color="primary" />
-                  ) : (
-                    <ThumbUpOutlined />
-                  )}
-                </IconButton>
-                <Typography>{reply.likes}</Typography>
-              </Stack>
             </CardContent>
           </Card>
         ))}
