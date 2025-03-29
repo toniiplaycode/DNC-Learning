@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Container,
@@ -15,263 +15,260 @@ import {
   Pagination,
   InputAdornment,
   Chip,
+  Button,
+  Avatar,
+  CardActionArea,
+  IconButton,
+  Tabs,
+  Tab,
+  CardMedia,
 } from "@mui/material";
-import { Search } from "@mui/icons-material";
-import ForumDiscussionCard from "../../../components/student/forum/ForumDiscussionCard";
-
-// Cập nhật interface
-interface ForumTopic {
-  id: number;
-  title: string;
-  category: string;
-  author: {
-    name: string;
-    avatar: string;
-  };
-  replies: number;
-  views: number;
-  lastActive: string;
-  image: string;
-  tags?: string[];
-  content?: string;
-}
-
-// Mock data
-const mockDiscussions: ForumTopic[] = Array(20)
-  .fill(null)
-  .map((_, index) => ({
-    id: index + 1,
-    title: `${
-      [
-        "Lập trình web với React và TypeScript",
-        "Kinh nghiệm học Machine Learning từ cơ bản",
-        "Chia sẻ lộ trình học Frontend Developer",
-        "Hỏi đáp về Microservices Architecture",
-      ][index % 4]
-    }`,
-    category: ["Lập trình", "AI/ML", "Frontend", "Backend"][index % 4],
-    author: {
-      name: `${
-        ["Alex Johnson", "Emma Watson", "John Smith", "Sarah Parker"][index % 4]
-      }`,
-      avatar: `/src/assets/avatar.png`,
-    },
-    replies: Math.floor(Math.random() * 100),
-    views: Math.floor(Math.random() * 5000) + 500,
-    lastActive: `${
-      ["2 giờ trước", "30 phút trước", "1 ngày trước", "1 tuần trước"][
-        index % 4
-      ]
-    }`,
-    image: "/src/assets/logo.png",
-    tags: [
-      "React",
-      "TypeScript",
-      "JavaScript",
-      "Frontend",
-      "Backend",
-      "DevOps",
-    ].slice(0, Math.floor(Math.random() * 3) + 2),
-    content:
-      "Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua...",
-  }));
-
-const categories = ["Tất cả", "Lập trình", "AI/ML", "Frontend", "Backend"];
-
-const sortOptions = [
-  { value: "newest", label: "Mới nhất" },
-  { value: "popular", label: "Phổ biến nhất" },
-  { value: "mostCommented", label: "Nhiều bình luận nhất" },
-];
+import {
+  Check,
+  FilterAlt,
+  Search,
+  ThumbUp,
+  Comment,
+  Add,
+} from "@mui/icons-material";
+import { useNavigate } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import { fetchForums } from "../../../features/forums/forumsApiSlice";
+import {
+  selectAllForums,
+  selectForumsStatus,
+} from "../../../features/forums/forumsSelectors";
+import CustomContainer from "../../../components/common/CustomContainer";
+import logo from "../../../assets/logo.png";
 
 const ForumDiscussions = () => {
-  const [page, setPage] = useState(1);
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const forums = useAppSelector(selectAllForums);
+  const status = useAppSelector(selectForumsStatus);
+
+  const [tabValue, setTabValue] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("Tất cả");
-  const [sortBy, setSortBy] = useState("newest");
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
-  const itemsPerPage = 6;
-
-  // Get all unique tags
-  const allTags = Array.from(
-    new Set(mockDiscussions.flatMap((discussion) => discussion.tags || []))
-  );
-
-  // Filter discussions
-  const filteredDiscussions = mockDiscussions.filter((discussion) => {
-    const matchesSearch = discussion.title
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    const matchesCategory =
-      selectedCategory === "Tất cả" || discussion.category === selectedCategory;
-    const matchesTags =
-      selectedTags.length === 0 ||
-      (discussion.tags &&
-        selectedTags.some((tag) => discussion.tags.includes(tag)));
-
-    return matchesSearch && matchesCategory && matchesTags;
-  });
-
-  // Sort discussions
-  const sortedDiscussions = [...filteredDiscussions].sort((a, b) => {
-    switch (sortBy) {
-      case "popular":
-        return b.views - a.views;
-      case "mostCommented":
-        return b.replies - a.replies;
-      default:
-        // Giả lập sort theo thời gian dựa vào lastActive
-        const timeMap: { [key: string]: number } = {
-          "30 phút trước": 4,
-          "2 giờ trước": 3,
-          "1 ngày trước": 2,
-          "1 tuần trước": 1,
-        };
-        return timeMap[b.lastActive] - timeMap[a.lastActive];
+  useEffect(() => {
+    if (status === "idle") {
+      dispatch(fetchForums());
     }
-  });
+  }, [dispatch, status]);
 
-  // Pagination
-  const totalPages = Math.ceil(sortedDiscussions.length / itemsPerPage);
-  const displayedDiscussions = sortedDiscussions.slice(
-    (page - 1) * itemsPerPage,
-    page * itemsPerPage
-  );
-
-  const handleTagToggle = (tag: string) => {
-    setSelectedTags((prev) =>
-      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
-    );
-    setPage(1);
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setTabValue(newValue);
   };
 
+  // Filter forums based on search query and active tab
+  const filteredForums = forums.filter((forum) => {
+    const matchesSearch =
+      forum.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      forum.description?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    if (tabValue === 0) return matchesSearch; // All forums
+    if (tabValue === 3) return matchesSearch && forum.isLiked; // Liked by you
+
+    return matchesSearch;
+  });
+
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" fontWeight="bold" gutterBottom>
-        Diễn đàn thảo luận
-      </Typography>
+    <CustomContainer>
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 3,
+        }}
+      >
+        <Typography variant="h4" fontWeight="bold">
+          Diễn đàn thảo luận
+        </Typography>
+      </Box>
+
+      <Box>
+        <TextField
+          fullWidth
+          placeholder="Tìm kiếm trong diễn đàn..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          variant="outlined"
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search />
+              </InputAdornment>
+            ),
+            endAdornment: (
+              <InputAdornment position="end">
+                <IconButton>
+                  <FilterAlt />
+                </IconButton>
+              </InputAdornment>
+            ),
+          }}
+        />
+      </Box>
+
+      <Box sx={{ mb: 3 }}>
+        <Tabs
+          value={tabValue}
+          onChange={handleTabChange}
+          variant="scrollable"
+          scrollButtons="auto"
+        >
+          <Tab label="Tất cả thảo luận" />
+          <Tab
+            label="Bạn đã thích"
+            icon={<ThumbUp fontSize="small" />}
+            iconPosition="start"
+          />
+        </Tabs>
+      </Box>
+
+      {status === "loading" && (
+        <Typography align="center">Đang tải dữ liệu...</Typography>
+      )}
+
+      {status === "failed" && (
+        <Typography align="center" color="error">
+          Đã xảy ra lỗi khi tải dữ liệu diễn đàn.
+        </Typography>
+      )}
+
+      {status === "succeeded" && filteredForums.length === 0 && (
+        <Box sx={{ textAlign: "center", py: 5 }}>
+          <Typography variant="h6" gutterBottom>
+            Không có thảo luận nào phù hợp với tìm kiếm của bạn
+          </Typography>
+          <Typography color="text.secondary">
+            Hãy thử tìm kiếm với từ khóa khác hoặc tạo một thảo luận mới
+          </Typography>
+        </Box>
+      )}
 
       <Grid container spacing={3}>
-        {/* Filters - Left Sidebar */}
-        <Grid
-          item
-          xs={12}
-          md={3}
-          sx={{
-            order: { xs: 1, md: 0 },
-            position: { xs: "static", md: "sticky" },
-            top: { md: 24 },
-            alignSelf: { md: "flex-start" },
-            height: { md: "fit-content" },
-          }}
-        >
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Bộ lọc tìm kiếm
-              </Typography>
-
-              <Stack spacing={3}>
-                <TextField
-                  fullWidth
-                  placeholder="Tìm kiếm thảo luận..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  InputProps={{
-                    startAdornment: (
-                      <InputAdornment position="start">
-                        <Search />
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-
-                <FormControl fullWidth>
-                  <InputLabel>Danh mục</InputLabel>
-                  <Select
-                    value={selectedCategory}
-                    label="Danh mục"
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                  >
-                    {categories.map((category) => (
-                      <MenuItem key={category} value={category}>
-                        {category}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                <FormControl fullWidth>
-                  <InputLabel>Sắp xếp theo</InputLabel>
-                  <Select
-                    value={sortBy}
-                    label="Sắp xếp theo"
-                    onChange={(e) => setSortBy(e.target.value)}
-                  >
-                    {sortOptions.map((option) => (
-                      <MenuItem key={option.value} value={option.value}>
-                        {option.label}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                <Box>
-                  <Typography gutterBottom>Tags</Typography>
-                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                    {allTags.map((tag) => (
-                      <Chip
-                        key={tag}
-                        label={tag}
-                        onClick={() => handleTagToggle(tag)}
-                        color={
-                          selectedTags.includes(tag) ? "primary" : "default"
-                        }
-                        sx={{ m: 0.5 }}
+        {filteredForums.map((forum) => (
+          <Grid item xs={12} key={forum.id}>
+            <Card
+              variant="outlined"
+              sx={{
+                borderRadius: 2,
+                ":hover": { boxShadow: 2 },
+              }}
+            >
+              <CardActionArea onClick={() => navigate(`/forum/${forum.id}`)}>
+                <CardContent sx={{ p: 3 }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} md={3}>
+                      <CardMedia
+                        component="img"
+                        image={forum.thumbnailUrl || logo}
+                        alt={forum.title}
+                        sx={{
+                          width: "100%",
+                          height: { xs: "100%", md: 200 },
+                          borderRadius: 1,
+                          objectFit: "cover",
+                          mb: 2,
+                        }}
                       />
-                    ))}
-                  </Box>
-                </Box>
-              </Stack>
+                    </Grid>
 
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="body2" color="text.secondary">
-                  Hiển thị {displayedDiscussions.length} trên tổng số{" "}
-                  {filteredDiscussions.length} thảo luận
-                </Typography>
-              </Box>
-            </CardContent>
-          </Card>
-        </Grid>
+                    <Grid item xs={12} md={9}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                          mb: 1,
+                        }}
+                      >
+                        <Chip
+                          label={
+                            forum.course?.title || `Khóa học ${forum.courseId}`
+                          }
+                          size="small"
+                          color="primary"
+                          variant="outlined"
+                        />
+                      </Box>
 
-        {/* Discussions List - Right Content */}
-        <Grid
-          item
-          xs={12}
-          md={9}
-          sx={{
-            order: { xs: 2, md: 1 },
-          }}
-        >
-          <Stack spacing={3}>
-            {displayedDiscussions.map((discussion) => (
-              <ForumDiscussionCard key={discussion.id} topic={discussion} />
-            ))}
-          </Stack>
+                      <Typography variant="h6" fontWeight="bold" gutterBottom>
+                        {forum.title}
+                      </Typography>
 
-          {/* Pagination */}
-          <Box sx={{ mt: 4, display: "flex", justifyContent: "center" }}>
-            <Pagination
-              count={totalPages}
-              page={page}
-              onChange={(e, value) => setPage(value)}
-              color="primary"
-            />
-          </Box>
-        </Grid>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{
+                          display: "-webkit-box",
+                          overflow: "hidden",
+                          WebkitBoxOrient: "vertical",
+                          WebkitLineClamp: 2,
+                        }}
+                      >
+                        {forum.description}
+                      </Typography>
+
+                      <Stack
+                        direction="row"
+                        spacing={3}
+                        sx={{ mt: 2 }}
+                        alignItems="center"
+                      >
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 1,
+                          }}
+                        >
+                          <Avatar
+                            src={forum.user?.avatarUrl}
+                            alt={forum.user?.username}
+                            sx={{ width: 24, height: 24 }}
+                          />
+                          <Typography variant="body2">
+                            {forum.user?.username || "Người dùng"}
+                          </Typography>
+                        </Box>
+                        <Typography variant="body2" color="text.secondary">
+                          {new Date(forum.createdAt).toLocaleDateString(
+                            "vi-VN",
+                            {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                            }
+                          )}
+                        </Typography>
+                      </Stack>
+
+                      <Stack direction="row" spacing={2} sx={{ mt: 3 }}>
+                        <Chip
+                          icon={<Comment fontSize="small" />}
+                          label={forum.replyCount || 0}
+                          size="small"
+                          variant="outlined"
+                        />
+                        <Chip
+                          icon={<ThumbUp fontSize="small" />}
+                          label={forum.likeCount || 0}
+                          size="small"
+                          variant="outlined"
+                        />
+                      </Stack>
+                    </Grid>
+                  </Grid>
+                </CardContent>
+              </CardActionArea>
+            </Card>
+          </Grid>
+        ))}
       </Grid>
-    </Container>
+    </CustomContainer>
   );
 };
 

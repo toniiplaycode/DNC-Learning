@@ -17,19 +17,26 @@ import {
   InputAdornment,
   Alert,
   Skeleton,
+  Button,
 } from "@mui/material";
-import { Search } from "@mui/icons-material";
+import { Search, SortByAlpha, FilterList } from "@mui/icons-material";
 import CardCourse from "../../components/common/CardCourse";
+import CustomContainer from "../../components/common/CustomContainer";
+import { useSearchParams } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { fetchCourses } from "../../features/courses/coursesApiSlice";
+import { selectActiveCategories } from "../../features/categories/categoriesSelectors";
+import { fetchCategories } from "../../features/categories/categoriesApiSlice";
 
 const Courses = () => {
   const dispatch = useAppDispatch();
   const { courses, status, error } = useAppSelector((state) => state.courses);
+  const categories = useAppSelector(selectActiveCategories);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("Tất cả");
+  const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [selectedLevel, setSelectedLevel] = useState("Tất cả");
   const [priceRange, setPriceRange] = useState<number[]>([0, 2000000]);
   const [sortBy, setSortBy] = useState("newest");
@@ -39,6 +46,17 @@ const Courses = () => {
       dispatch(fetchCourses());
     }
   }, [status, dispatch]);
+
+  useEffect(() => {
+    dispatch(fetchCategories());
+  }, [dispatch]);
+
+  useEffect(() => {
+    const categoryId = searchParams.get("category");
+    if (categoryId) {
+      setSelectedCategory(categoryId);
+    }
+  }, [searchParams]);
 
   // Trích xuất các danh mục thực tế từ dữ liệu
   const uniqueCategories = [
@@ -89,25 +107,26 @@ const Courses = () => {
 
   // Filter courses
   const filteredCourses = courses.filter((course) => {
-    const matchesSearch = course.title
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    const matchesCategory =
-      selectedCategory === "Tất cả" ||
-      course.category?.name === selectedCategory;
-    const matchesLevel =
-      selectedLevel === "Tất cả" || course.level === selectedLevel;
-    const matchesPrice =
-      course.price >= priceRange[0] && course.price <= priceRange[1];
-    const isPublished = course.status === "published";
+    // Lọc theo từ khóa tìm kiếm
+    const searchMatch =
+      searchQuery.trim() === "" ||
+      course.title.toLowerCase().includes(searchQuery.toLowerCase());
 
-    return (
-      matchesSearch &&
-      matchesCategory &&
-      matchesLevel &&
-      matchesPrice &&
-      isPublished
-    );
+    // Lọc theo danh mục - Cập nhật cách lọc
+    const categoryMatch =
+      selectedCategory === "" ||
+      course.categoryId?.toString() === selectedCategory ||
+      course.category?.id?.toString() === selectedCategory;
+
+    // Lọc theo cấp độ
+    const levelMatch =
+      selectedLevel === "Tất cả" || course.level === selectedLevel;
+
+    // Lọc theo khoảng giá
+    const priceMatch =
+      course.price >= priceRange[0] && course.price <= priceRange[1];
+
+    return searchMatch && categoryMatch && levelMatch && priceMatch;
   });
 
   // Sort courses
@@ -155,10 +174,25 @@ const Courses = () => {
     }).format(value);
   };
 
+  const handleCategoryChange = (e: React.ChangeEvent<{ value: unknown }>) => {
+    const value = e.target.value as string;
+    setSelectedCategory(value);
+    setSearchParams({ category: value });
+  };
+
+  const handleResetFilters = () => {
+    setSearchQuery("");
+    setSelectedCategory("");
+    setSelectedLevel("Tất cả");
+    setSortBy("newest");
+    setPriceRange([0, 2000000]);
+    setSearchParams({});
+  };
+
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" fontWeight="bold" gutterBottom>
-        Khóa học
+    <CustomContainer>
+      <Typography variant="h4" fontWeight="bold" py={2}>
+        Danh sách khóa học
       </Typography>
 
       {status === "loading" && (
@@ -204,9 +238,24 @@ const Courses = () => {
           >
             <Card>
               <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Bộ lọc tìm kiếm
-                </Typography>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    mb: 2,
+                  }}
+                >
+                  <Typography variant="h6" gutterBottom>
+                    Bộ lọc
+                  </Typography>
+                  <Button
+                    size="small"
+                    onClick={handleResetFilters}
+                    sx={{ mb: 1 }}
+                  >
+                    Đặt lại
+                  </Button>
+                </Box>
 
                 <Stack spacing={3}>
                   <TextField
@@ -228,11 +277,15 @@ const Courses = () => {
                     <Select
                       value={selectedCategory}
                       label="Danh mục"
-                      onChange={(e) => setSelectedCategory(e.target.value)}
+                      onChange={handleCategoryChange}
                     >
-                      {uniqueCategories.map((category) => (
-                        <MenuItem key={category} value={category}>
-                          {category}
+                      <MenuItem value="">Tất cả danh mục</MenuItem>
+                      {categories.map((category) => (
+                        <MenuItem
+                          key={category.id}
+                          value={category.id.toString()}
+                        >
+                          {category.name}
                         </MenuItem>
                       ))}
                     </Select>
@@ -350,7 +403,7 @@ const Courses = () => {
           </Grid>
         </Grid>
       )}
-    </Container>
+    </CustomContainer>
   );
 };
 

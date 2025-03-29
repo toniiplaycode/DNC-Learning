@@ -1,4 +1,4 @@
-import { People, TrendingUp } from "@mui/icons-material";
+import { Favorite, People } from "@mui/icons-material";
 import {
   Card,
   CardContent,
@@ -75,9 +75,9 @@ const ForumDiscussionCard = ({ topic }: { topic: any }) => {
                 </Typography>
               </Stack>
               <Stack direction="row" spacing={1} alignItems="center">
-                <TrendingUp fontSize="small" color="action" />
+                <Favorite fontSize="small" color="action" />
                 <Typography variant="body2" color="text.secondary">
-                  {topic.views} lượt xem
+                  {topic.likes} lượt thích
                 </Typography>
               </Stack>
               <Typography variant="body2" color="text.secondary">

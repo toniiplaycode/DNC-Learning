@@ -389,7 +389,7 @@ const Header = () => {
                   <MenuItem
                     key={category.id}
                     onClick={() => {
-                      navigate(`/categories/${category.id}`);
+                      navigate(`/courses?category=${category.id}`);
                       handleClose();
                     }}
                     sx={{ py: 1.5 }}

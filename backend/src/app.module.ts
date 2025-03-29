@@ -26,6 +26,10 @@ import { UserStudent } from './entities/UserStudent';
 import { Enrollment } from './entities/Enrollment';
 import { UserInstructorsModule } from './modules/user-instructors/user-instructors.module';
 import { CategoriesModule } from './modules/categories/categories.module';
+import { Forum } from './entities/Forum';
+import { ForumReply } from './entities/ForumReply';
+import { ForumLike } from './entities/ForumLike';
+import { ForumsModule } from './modules/forums/forums.module';
 
 @Module({
   imports: [
@@ -58,6 +62,9 @@ import { CategoriesModule } from './modules/categories/categories.module';
         UserStudent,
         Review,
         Enrollment,
+        Forum,
+        ForumReply,
+        ForumLike,
       ],
       // synchronize: true, // tự động tạo bảng trong entity (chỉ dùng trong môi tường dev)
     }),
@@ -66,6 +73,7 @@ import { CategoriesModule } from './modules/categories/categories.module';
     AuthModule,
     UserInstructorsModule,
     CategoriesModule,
+    ForumsModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthMiddleware, InstructorMiddleware],
