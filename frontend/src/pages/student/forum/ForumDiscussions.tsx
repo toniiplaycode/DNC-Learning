@@ -50,14 +50,35 @@ const ForumDiscussions = () => {
   const [tabValue, setTabValue] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
 
+  // Phân trang
+  const [page, setPage] = useState(1);
+  const itemsPerPage = 6;
+
   useEffect(() => {
     if (status === "idle") {
       dispatch(fetchForums());
     }
   }, [dispatch, status]);
 
+  useEffect(() => {
+    // Reset về trang 1 khi thay đổi bộ lọc hoặc tìm kiếm
+    setPage(1);
+  }, [tabValue, searchQuery]);
+
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
+  };
+
+  const handlePageChange = (
+    event: React.ChangeEvent<unknown>,
+    value: number
+  ) => {
+    setPage(value);
+    // Cuộn lên đầu danh sách khi chuyển trang
+    window.scrollTo({
+      top: document.getElementById("forums-list")?.offsetTop || 0,
+      behavior: "smooth",
+    });
   };
 
   // Filter forums based on search query and active tab
@@ -71,6 +92,14 @@ const ForumDiscussions = () => {
 
     return matchesSearch;
   });
+
+  // Tính toán các chỉ số để hiển thị cho trang hiện tại
+  const totalPages = Math.ceil(filteredForums.length / itemsPerPage);
+  const startIndex = (page - 1) * itemsPerPage;
+  const paginatedForums = filteredForums.slice(
+    startIndex,
+    startIndex + itemsPerPage
+  );
 
   return (
     <CustomContainer>
@@ -87,115 +116,94 @@ const ForumDiscussions = () => {
         </Typography>
       </Box>
 
-      <Box>
+      <Box sx={{ mb: 3 }}>
         <TextField
           fullWidth
-          placeholder="Tìm kiếm trong diễn đàn..."
+          placeholder="Tìm kiếm chủ đề..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          variant="outlined"
+          sx={{ mb: 2 }}
           InputProps={{
             startAdornment: (
               <InputAdornment position="start">
                 <Search />
               </InputAdornment>
             ),
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton>
-                  <FilterAlt />
-                </IconButton>
-              </InputAdornment>
-            ),
           }}
         />
-      </Box>
 
-      <Box sx={{ mb: 3 }}>
         <Tabs
           value={tabValue}
           onChange={handleTabChange}
           variant="scrollable"
           scrollButtons="auto"
+          sx={{ borderBottom: 1, borderColor: "divider" }}
         >
-          <Tab label="Tất cả thảo luận" />
-          <Tab
-            label="Bạn đã thích"
-            icon={<ThumbUp fontSize="small" />}
-            iconPosition="start"
-          />
+          <Tab label="Tất cả" />
+          <Tab label="Mới nhất" />
+          <Tab label="Phổ biến" />
+          <Tab label="Đã thích" />
         </Tabs>
       </Box>
 
-      {status === "loading" && (
-        <Typography align="center">Đang tải dữ liệu...</Typography>
-      )}
+      <Grid container spacing={3} id="forums-list">
+        {status === "loading" && (
+          <Grid item xs={12}>
+            <Typography textAlign="center">Đang tải dữ liệu...</Typography>
+          </Grid>
+        )}
 
-      {status === "failed" && (
-        <Typography align="center" color="error">
-          Đã xảy ra lỗi khi tải dữ liệu diễn đàn.
-        </Typography>
-      )}
+        {status === "failed" && (
+          <Grid item xs={12}>
+            <Typography textAlign="center" color="error">
+              Có lỗi xảy ra khi tải dữ liệu. Vui lòng thử lại sau.
+            </Typography>
+          </Grid>
+        )}
 
-      {status === "succeeded" && filteredForums.length === 0 && (
-        <Box sx={{ textAlign: "center", py: 5 }}>
-          <Typography variant="h6" gutterBottom>
-            Không có thảo luận nào phù hợp với tìm kiếm của bạn
-          </Typography>
-          <Typography color="text.secondary">
-            Hãy thử tìm kiếm với từ khóa khác hoặc tạo một thảo luận mới
-          </Typography>
-        </Box>
-      )}
+        {status === "succeeded" && paginatedForums.length === 0 && (
+          <Grid item xs={12}>
+            <Typography textAlign="center">
+              Không tìm thấy chủ đề thảo luận nào.
+            </Typography>
+          </Grid>
+        )}
 
-      <Grid container spacing={3}>
-        {filteredForums.map((forum) => (
-          <Grid item xs={12} key={forum.id}>
+        {paginatedForums.map((forum) => (
+          <Grid item xs={12} sm={6} md={4} key={forum.id}>
             <Card
-              variant="outlined"
+              onClick={() => navigate(`/forum/${forum.id}`)}
               sx={{
-                borderRadius: 2,
-                ":hover": { boxShadow: 2 },
+                height: "100%",
+                display: "flex",
+                flexDirection: "column",
+                transition: "transform 0.2s",
+                "&:hover": {
+                  transform: "translateY(-5px)",
+                  boxShadow: (theme) => theme.shadows[5],
+                },
               }}
             >
-              <CardActionArea onClick={() => navigate(`/forum/${forum.id}`)}>
-                <CardContent sx={{ p: 3 }}>
+              <CardActionArea>
+                <CardMedia
+                  component="img"
+                  height="100"
+                  image={forum.thumbnailUrl || logo}
+                  alt={forum.title}
+                  sx={{ objectFit: "cover" }}
+                />
+                <CardContent sx={{ flexGrow: 1 }}>
                   <Grid container spacing={2}>
-                    <Grid item xs={12} md={3}>
-                      <CardMedia
-                        component="img"
-                        image={forum.thumbnailUrl || logo}
-                        alt={forum.title}
+                    <Grid item xs={12}>
+                      <Typography
+                        variant="h6"
+                        gutterBottom
                         sx={{
-                          width: "100%",
-                          height: { xs: "100%", md: 200 },
-                          borderRadius: 1,
-                          objectFit: "cover",
-                          mb: 2,
-                        }}
-                      />
-                    </Grid>
-
-                    <Grid item xs={12} md={9}>
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1,
-                          mb: 1,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
                         }}
                       >
-                        <Chip
-                          label={
-                            forum.course?.title || `Khóa học ${forum.courseId}`
-                          }
-                          size="small"
-                          color="primary"
-                          variant="outlined"
-                        />
-                      </Box>
-
-                      <Typography variant="h6" fontWeight="bold" gutterBottom>
                         {forum.title}
                       </Typography>
 
@@ -268,6 +276,20 @@ const ForumDiscussions = () => {
           </Grid>
         ))}
       </Grid>
+
+      {/* Phân trang */}
+      {totalPages > 1 && (
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+          <Pagination
+            count={totalPages}
+            page={page}
+            onChange={handlePageChange}
+            color="primary"
+            showFirstButton
+            showLastButton
+          />
+        </Box>
+      )}
     </CustomContainer>
   );
 };
