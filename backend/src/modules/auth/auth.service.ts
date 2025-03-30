@@ -44,18 +44,19 @@ export class AuthService {
   }
 
   async verifyRefreshToken(refreshToken: string) {
-    const decoded = await this.jwtService.decode(refreshToken);
-    console.log(decoded);
-    if (decoded) {
-      const user = this.userService.verifyRefreshToken(
-        refreshToken,
-        decoded.sub,
-      );
-      if (user) {
+    try {
+      const decoded = await this.jwtService.decode(refreshToken);
+      if (decoded) {
+        const user = await this.userService.verifyRefreshToken(
+          refreshToken,
+          decoded.sub,
+        );
         return user;
       }
+      return false;
+    } catch (error) {
+      return false;
     }
-    return false;
   }
 
   async registerStudent(registerDto: RegisterStudentDto): Promise<any> {

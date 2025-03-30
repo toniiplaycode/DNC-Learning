@@ -12,6 +12,9 @@ export const api = axios.create({
   },
 });
 
+// Đảm bảo không gọi refresh token liên tục
+let isRefreshing = false;
+
 // Interceptor để thêm token vào header
 api.interceptors.request.use(
   (config) => {
@@ -32,13 +35,11 @@ api.interceptors.response.use(
     return response;
   },
   async (error) => {
-    const originalRequest = error.config;
-
-    // Nếu lỗi 401 (Unauthorized) và chưa thử refresh token
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-
+    if (error.response?.status === 401 && !isRefreshing) {
+      isRefreshing = true;
       try {
+        const originalRequest = error.config;
+
         // Thử refresh token
         await store.dispatch(refreshToken());
 
@@ -54,9 +55,10 @@ api.interceptors.response.use(
         // Nếu refresh token thất bại, chuyển hướng đến trang đăng nhập
         window.location.href = "/login";
         return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
       }
     }
-
     return Promise.reject(error);
   }
 );

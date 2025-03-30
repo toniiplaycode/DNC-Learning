@@ -1,26 +1,18 @@
 import { configureStore } from "@reduxjs/toolkit";
-import coursesReducer from "../features/courses/coursesSlice";
-import instructorsReducer from "../features/user_instructors/instructorsSlice";
-import categoriesReducer from "../features/categories/categoriesSlice";
-import forumsReducer from "../features/forums/forumsSlice";
 import authReducer from "../features/auth/authSlice";
+import coursesReducer from "../features/courses/coursesSlice";
+import categoriesReducer from "../features/categories/categoriesSlice";
 import enrollmentsReducer from "../features/enrollments/enrollmentsApiSlice";
-// Import các reducer khác nếu có
+// Import other reducers...
 
 export const store = configureStore({
   reducer: {
-    courses: coursesReducer,
-    instructors: instructorsReducer,
-    categories: categoriesReducer,
-    forums: forumsReducer,
     auth: authReducer,
+    courses: coursesReducer,
+    categories: categoriesReducer,
     enrollments: enrollmentsReducer,
-    // Thêm các reducer khác nếu có
+    // Add other reducers...
   },
-  middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware({
-      serializableCheck: false,
-    }),
 });
 
 export type RootState = ReturnType<typeof store.getState>;

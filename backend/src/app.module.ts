@@ -30,10 +30,13 @@ import { Forum } from './entities/Forum';
 import { ForumReply } from './entities/ForumReply';
 import { ForumLike } from './entities/ForumLike';
 import { ForumsModule } from './modules/forums/forums.module';
+import { EnrollmentsModule } from './modules/enrollments/enrollments.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
@@ -74,6 +77,7 @@ import { ForumsModule } from './modules/forums/forums.module';
     UserInstructorsModule,
     CategoriesModule,
     ForumsModule,
+    EnrollmentsModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthMiddleware, InstructorMiddleware],

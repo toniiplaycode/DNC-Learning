@@ -51,6 +51,9 @@ import CertificateDetail from "../../components/student/profile/CertificateDetai
 import AvatarUpload from "../../components/common/AvatarUpload";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { selectCurrentUser } from "../../features/auth/authSelectors";
+import { UserStudent } from "../../../../backend/src/entities/UserStudent";
+import { fetchUserEnrollments } from "../../features/enrollments/enrollmentsApiSlice";
+import { selectUserEnrollments } from "../../features/enrollments/enrollmentsSelectors";
 
 // Cập nhật mock data theo cấu trúc CSDL
 const mockUserData = {
@@ -210,6 +213,7 @@ const mockUserData = {
 const ProfileAccount: React.FC = () => {
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector(selectCurrentUser);
+  const userEnrollments = useAppSelector(selectUserEnrollments);
   const [user, setUser] = useState<any>(null);
   const [currentTab, setCurrentTab] = useState(0);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
@@ -237,6 +241,14 @@ const ProfileAccount: React.FC = () => {
       setUser(currentUser);
     }
   }, [currentUser]);
+
+  useEffect(() => {
+    if (user?.id) {
+      dispatch(fetchUserEnrollments(user.id));
+    }
+  }, [dispatch, user?.id]);
+
+  console.log("userEnrollments", userEnrollments);
 
   useEffect(() => {
     const userDataString = localStorage.getItem("user");
@@ -637,14 +649,15 @@ const ProfileAccount: React.FC = () => {
                   }}
                 >
                   <AvatarUpload
-                    currentAvatar={mockUserData.avatar_url}
+                    currentAvatar={user?.avatarUrl}
                     onAvatarChange={handleAvatarChange}
                   />
                   <Typography variant="h5" gutterBottom>
-                    {mockUserData.studentInfo.full_name}
+                    {user?.userStudent?.fullName ||
+                      user?.userStudentAcademy?.fullName}
                   </Typography>
                   <Typography variant="subtitle1" color="primary" gutterBottom>
-                    Mã học viên: {mockUserData.studentInfo.student_code}
+                    Mã học viên: {user?.userStudent?.id}
                   </Typography>
                   <Typography
                     variant="body2"
@@ -652,9 +665,7 @@ const ProfileAccount: React.FC = () => {
                     gutterBottom
                   >
                     Tham gia từ{" "}
-                    {new Date(mockUserData.created_at).toLocaleDateString(
-                      "vi-VN"
-                    )}
+                    {new Date(user?.createdAt).toLocaleDateString("vi-VN")}
                   </Typography>
                   <Button
                     variant="outlined"
@@ -669,8 +680,13 @@ const ProfileAccount: React.FC = () => {
                 <Divider sx={{ my: 2 }} />
 
                 {/* Learning Stats */}
-                <Grid container spacing={2} textAlign="center">
-                  <Grid item xs={4}>
+                <Grid
+                  container
+                  spacing={2}
+                  display="flex"
+                  justifyContent="center"
+                >
+                  <Grid item>
                     <Box
                       sx={{
                         display: "flex",
@@ -690,7 +706,7 @@ const ProfileAccount: React.FC = () => {
                       </Typography>
                     </Box>
                   </Grid>
-                  <Grid item xs={4}>
+                  <Grid item>
                     <Box
                       sx={{
                         display: "flex",
@@ -710,25 +726,6 @@ const ProfileAccount: React.FC = () => {
                       </Typography>
                     </Box>
                   </Grid>
-                  <Grid item xs={4}>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: "center",
-                      }}
-                    >
-                      <EmojiEventsIcon
-                        sx={{ fontSize: 32, mb: 1, color: "#FFD700" }}
-                      />
-                      <Typography variant="h6">
-                        {mockUserData.studentInfo.achievement_points}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Điểm thành tích
-                      </Typography>
-                    </Box>
-                  </Grid>
                 </Grid>
 
                 {/* Nút đổi mật khẩu */}
@@ -742,30 +739,6 @@ const ProfileAccount: React.FC = () => {
                     Đổi mật khẩu
                   </Button>
                 </Box>
-              </CardContent>
-            </Card>
-
-            {/* Achievements Card */}
-            <Card sx={{ mb: 3 }}>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Thành tích
-                </Typography>
-                <List>
-                  {mockUserData.achievements.map((achievement) => (
-                    <ListItem key={achievement.id}>
-                      <ListItemIcon>
-                        <Typography variant="h6">
-                          {achievement.badge_image_url}
-                        </Typography>
-                      </ListItemIcon>
-                      <ListItemText
-                        primary={achievement.name}
-                        secondary={achievement.description}
-                      />
-                    </ListItem>
-                  ))}
-                </List>
               </CardContent>
             </Card>
           </Grid>
