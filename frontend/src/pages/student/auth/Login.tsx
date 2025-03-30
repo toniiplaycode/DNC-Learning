@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Card,
@@ -11,54 +11,48 @@ import {
   IconButton,
   InputAdornment,
   Alert,
-  Tab,
-  Tabs,
+  CircularProgress,
 } from "@mui/material";
 import {
   Google as GoogleIcon,
   Visibility,
   VisibilityOff,
-  Email,
-  Phone,
 } from "@mui/icons-material";
 import { Link, useNavigate } from "react-router-dom";
-
-interface TabPanelProps {
-  children?: React.ReactNode;
-  index: number;
-  value: number;
-}
-
-const TabPanel = (props: TabPanelProps) => {
-  const { children, value, index, ...other } = props;
-  return (
-    <Box
-      role="tabpanel"
-      hidden={value !== index}
-      id={`login-tabpanel-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ pt: 2 }}>{children}</Box>}
-    </Box>
-  );
-};
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import { login } from "../../../features/auth/authApiSlice";
+import {
+  selectAuthStatus,
+  selectAuthError,
+  selectIsAuthenticated,
+} from "../../../features/auth/authSelectors";
 
 const Login = () => {
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState(0);
+  const dispatch = useAppDispatch();
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
+  const [formError, setFormError] = useState("");
+
+  // Get auth state from Redux store
+  const status = useAppSelector(selectAuthStatus);
+  const error = useAppSelector(selectAuthError);
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+
+  const isLoading = status === "loading";
 
   const [formData, setFormData] = useState({
     email: "",
-    phone: "",
     password: "",
   });
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
-    setError("");
-  };
+  // // Redirect to home if already authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/");
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -66,24 +60,40 @@ const Login = () => {
       ...prev,
       [name]: value,
     }));
-    setError("");
+    setFormError("");
   };
 
-  const handleEmailLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    // Xử lý đăng nhập bằng email
-    console.log("Email login:", formData.email, formData.password);
-  };
+  const handleEmailLogin = async () => {
+    // Validate input
+    if (!formData.email || !formData.password) {
+      setFormError("Vui lòng nhập đầy đủ thông tin đăng nhập");
+      return;
+    }
 
-  const handlePhoneLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    // Xử lý đăng nhập bằng số điện thoại
-    console.log("Phone login:", formData.phone, formData.password);
+    // Basic email validation
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setFormError("Vui lòng nhập email hợp lệ");
+      toast.error("Vui lòng nhập email hợp lệ");
+      return;
+    }
+
+    const result = await dispatch(
+      login({
+        email: formData.email,
+        password: formData.password,
+      })
+    );
+    console.log("result", result);
+
+    if (result.payload.error) {
+      toast.error("Sai email hoặc mật khẩu !");
+    }
   };
 
   const handleGoogleLogin = async () => {
-    // Xử lý đăng nhập bằng Google
-    console.log("Google login");
+    console.log("Google login - chức năng chưa được triển khai");
+    toast.info("Đăng nhập bằng Google chưa được triển khai");
   };
 
   return (
@@ -97,6 +107,7 @@ const Login = () => {
         py: 4,
       }}
     >
+      <ToastContainer position="top-right" autoClose={5000} />
       <Card sx={{ maxWidth: 480, width: "100%", mx: 2 }}>
         <CardContent sx={{ p: 4 }}>
           <Box sx={{ mb: 4, textAlign: "center" }}>
@@ -114,135 +125,59 @@ const Login = () => {
             </Alert>
           )}
 
-          <Tabs
-            value={activeTab}
-            onChange={handleTabChange}
-            variant="fullWidth"
-            sx={{ borderBottom: 1, borderColor: "divider" }}
-          >
-            <Tab
-              icon={<Email sx={{ fontSize: 20 }} />}
-              iconPosition="start"
+          <Stack spacing={3}>
+            <TextField
+              fullWidth
               label="Email"
+              name="email"
+              type="email"
+              value={formData.email}
+              onChange={handleInputChange}
+              required
             />
-            <Tab
-              icon={<Phone sx={{ fontSize: 20 }} />}
-              iconPosition="start"
-              label="Số điện thoại"
+            <TextField
+              fullWidth
+              label="Mật khẩu"
+              name="password"
+              type={showPassword ? "text" : "password"}
+              value={formData.password}
+              onChange={handleInputChange}
+              required
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => setShowPassword(!showPassword)}
+                      edge="end"
+                    >
+                      {showPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
             />
-          </Tabs>
-
-          {/* Email Login Form */}
-          <TabPanel value={activeTab} index={0}>
-            <form onSubmit={handleEmailLogin}>
-              <Stack spacing={3}>
-                <TextField
-                  fullWidth
-                  label="Email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  required
-                />
-                <TextField
-                  fullWidth
-                  label="Mật khẩu"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  required
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          onClick={() => setShowPassword(!showPassword)}
-                          edge="end"
-                        >
-                          {showPassword ? <VisibilityOff /> : <Visibility />}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-                <Box sx={{ textAlign: "right" }}>
-                  <Link
-                    to="/forgot-password"
-                    style={{ textDecoration: "none" }}
-                  >
-                    <Typography color="primary" variant="body2">
-                      Quên mật khẩu?
-                    </Typography>
-                  </Link>
-                </Box>
-                <Button
-                  fullWidth
-                  size="large"
-                  type="submit"
-                  variant="contained"
-                >
-                  Đăng nhập
-                </Button>
-              </Stack>
-            </form>
-          </TabPanel>
-
-          {/* Phone Login Form */}
-          <TabPanel value={activeTab} index={1}>
-            <form onSubmit={handlePhoneLogin}>
-              <Stack spacing={3}>
-                <TextField
-                  fullWidth
-                  label="Số điện thoại"
-                  name="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  required
-                />
-                <TextField
-                  fullWidth
-                  label="Mật khẩu"
-                  name="password"
-                  type={showPassword ? "text" : "password"}
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  required
-                  InputProps={{
-                    endAdornment: (
-                      <InputAdornment position="end">
-                        <IconButton
-                          onClick={() => setShowPassword(!showPassword)}
-                          edge="end"
-                        >
-                          {showPassword ? <VisibilityOff /> : <Visibility />}
-                        </IconButton>
-                      </InputAdornment>
-                    ),
-                  }}
-                />
-                <Box sx={{ textAlign: "right" }}>
-                  <Link
-                    to="/forgot-password"
-                    style={{ textDecoration: "none" }}
-                  >
-                    <Typography color="primary" variant="body2">
-                      Quên mật khẩu?
-                    </Typography>
-                  </Link>
-                </Box>
-                <Button
-                  fullWidth
-                  size="large"
-                  type="submit"
-                  variant="contained"
-                >
-                  Đăng nhập
-                </Button>
-              </Stack>
-            </form>
-          </TabPanel>
+            <Box sx={{ textAlign: "right" }}>
+              <Link to="/forgot-password" style={{ textDecoration: "none" }}>
+                <Typography color="primary" variant="body2">
+                  Quên mật khẩu?
+                </Typography>
+              </Link>
+            </Box>
+            <Button
+              fullWidth
+              size="large"
+              type="submit"
+              variant="contained"
+              disabled={isLoading}
+              onClick={handleEmailLogin}
+            >
+              {isLoading ? (
+                <CircularProgress size={24} color="inherit" />
+              ) : (
+                "Đăng nhập"
+              )}
+            </Button>
+          </Stack>
 
           <Box sx={{ my: 3 }}>
             <Divider>

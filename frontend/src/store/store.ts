@@ -3,6 +3,7 @@ import coursesReducer from "../features/courses/coursesSlice";
 import instructorsReducer from "../features/user_instructors/instructorsSlice";
 import categoriesReducer from "../features/categories/categoriesSlice";
 import forumsReducer from "../features/forums/forumsSlice";
+import authReducer from "../features/auth/authSlice";
 // Import các reducer khác nếu có
 
 export const store = configureStore({
@@ -11,6 +12,7 @@ export const store = configureStore({
     instructors: instructorsReducer,
     categories: categoriesReducer,
     forums: forumsReducer,
+    auth: authReducer,
     // Thêm các reducer khác nếu có
   },
   middleware: (getDefaultMiddleware) =>

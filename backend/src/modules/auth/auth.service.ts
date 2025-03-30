@@ -32,9 +32,14 @@ export class AuthService {
       expiresIn: process.env.JWT_REFRESH_TOKEN_EXPIRES_IN, // thời gian sống của refresh token
     });
     await this.userService.updateRefreshToken(user.id, refreshToken);
+    const userData = await this.userService.findByEmail(user.email);
+    if (!userData) {
+      throw new UnauthorizedException('User not found');
+    }
     return {
-      access_token: this.jwtService.sign(payload),
-      refresh_token: refreshToken,
+      accessToken: this.jwtService.sign(payload),
+      refreshToken: refreshToken,
+      user: userData,
     };
   }
 
@@ -102,15 +107,11 @@ export class AuthService {
         role: savedUser.role,
       };
 
+      const userData = await this.userService.findByEmail(savedUser.email);
+
       return {
         accessToken: this.jwtService.sign(payload),
-        user: {
-          id: savedUser.id,
-          username: savedUser.username,
-          email: savedUser.email,
-          role: savedUser.role,
-          fullName: registerDto.fullName,
-        },
+        user: userData,
       };
     } catch (error) {
       // Rollback transaction nếu có lỗi

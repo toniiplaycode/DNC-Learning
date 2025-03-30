@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Card,
@@ -11,10 +11,7 @@ import {
   IconButton,
   InputAdornment,
   Alert,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
+  CircularProgress,
 } from "@mui/material";
 import {
   Google as GoogleIcon,
@@ -22,20 +19,43 @@ import {
   VisibilityOff,
 } from "@mui/icons-material";
 import { Link, useNavigate } from "react-router-dom";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import { registerStudent } from "../../../features/auth/authApiSlice";
+import {
+  selectAuthStatus,
+  selectAuthError,
+  selectIsAuthenticated,
+} from "../../../features/auth/authSelectors";
 
 const Register = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const [showPassword, setShowPassword] = useState(false);
-  const [error, setError] = useState("");
+  const [formError, setFormError] = useState("");
+
+  // Lấy trạng thái từ Redux store
+  const status = useAppSelector(selectAuthStatus);
+  const error = useAppSelector(selectAuthError);
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
+
+  const isLoading = status === "loading";
 
   const [formData, setFormData] = useState({
+    username: "",
     fullName: "",
     email: "",
-    phone: "",
     password: "",
     confirmPassword: "",
-    gender: "",
   });
+
+  // Nếu đã đăng nhập, chuyển hướng đến trang chủ
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate("/");
+    }
+  }, [isAuthenticated, navigate]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -43,29 +63,65 @@ const Register = () => {
       ...prev,
       [name]: value,
     }));
-    setError("");
-  };
-
-  const handleSelectChange = (e: any) => {
-    setFormData((prev) => ({
-      ...prev,
-      gender: e.target.value,
-    }));
+    setFormError("");
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
-      setError("Mật khẩu xác nhận không khớp");
+
+    // Validate username
+    if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
+      setFormError("Tên đăng nhập chỉ được chứa chữ cái, số và dấu gạch dưới");
+      toast.error("Tên đăng nhập chỉ được chứa chữ cái, số và dấu gạch dưới");
       return;
     }
-    // Xử lý đăng ký
-    console.log("Register:", formData);
+
+    // Validate password length
+    if (formData.password.length < 6) {
+      setFormError("Mật khẩu phải có ít nhất 6 ký tự");
+      toast.error("Mật khẩu phải có ít nhất 6 ký tự");
+      return;
+    }
+
+    // Validate password confirmation
+    if (formData.password !== formData.confirmPassword) {
+      setFormError("Mật khẩu xác nhận không khớp");
+      toast.error("Mật khẩu xác nhận không khớp");
+      return;
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(formData.email)) {
+      setFormError("Email không đúng định dạng");
+      toast.error("Email không đúng định dạng");
+      return;
+    }
+
+    try {
+      // Dispatch action đăng ký
+      await dispatch(
+        registerStudent({
+          username: formData.username,
+          email: formData.email,
+          password: formData.password,
+          fullName: formData.fullName,
+        })
+      ).unwrap();
+
+      // Hiển thị thông báo thành công
+      toast.success("Đăng ký thành công! Vui lòng đăng nhập.");
+      // Nếu thành công, navigate sẽ được xử lý bởi useEffect
+    } catch (err) {
+      // Lỗi sẽ được xử lý bởi Redux và hiển thị từ selectAuthError
+      console.error("Registration failed:", err);
+      toast.error(error || "Đăng ký thất bại. Vui lòng thử lại.");
+    }
   };
 
   const handleGoogleRegister = async () => {
     // Xử lý đăng ký bằng Google
-    console.log("Google register");
+    console.log("Google register - chức năng chưa được triển khai");
   };
 
   return (
@@ -75,29 +131,48 @@ const Register = () => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        bgcolor: "grey.100",
-        py: 4,
+        padding: 2,
       }}
     >
-      <Card sx={{ maxWidth: 480, width: "100%", mx: 2 }}>
-        <CardContent sx={{ p: 4 }}>
-          <Box sx={{ mb: 4, textAlign: "center" }}>
-            <Typography variant="h5" fontWeight="bold" gutterBottom>
-              Đăng ký tài khoản
-            </Typography>
-            <Typography color="text.secondary">
-              Tạo tài khoản để bắt đầu học tập!
-            </Typography>
-          </Box>
+      <ToastContainer position="top-right" autoClose={5000} />
+      <Card sx={{ maxWidth: 480, width: "100%" }}>
+        <CardContent sx={{ padding: 4 }}>
+          <Typography
+            variant="h5"
+            fontWeight={"bold"}
+            component="h1"
+            align="center"
+            gutterBottom
+          >
+            Đăng ký tài khoản
+          </Typography>
+          <Typography
+            variant="body2"
+            align="center"
+            color="text.secondary"
+            sx={{ mb: 5 }}
+          >
+            Tạo tài khoản để bắt đầu học tập ngay hôm nay
+          </Typography>
 
-          {error && (
+          {/* Hiển thị thông báo lỗi từ form hoặc từ API */}
+          {(formError || error) && (
             <Alert severity="error" sx={{ mb: 3 }}>
-              {error}
+              {formError || error}
             </Alert>
           )}
 
           <form onSubmit={handleSubmit}>
             <Stack spacing={3}>
+              <TextField
+                fullWidth
+                label="Tên đăng nhập"
+                name="username"
+                value={formData.username}
+                onChange={handleInputChange}
+                required
+              />
+
               <TextField
                 fullWidth
                 label="Họ và tên"
@@ -116,30 +191,6 @@ const Register = () => {
                 onChange={handleInputChange}
                 required
               />
-
-              <TextField
-                fullWidth
-                label="Số điện thoại"
-                name="phone"
-                type="tel"
-                value={formData.phone}
-                onChange={handleInputChange}
-                required
-              />
-
-              <FormControl fullWidth>
-                <InputLabel>Giới tính</InputLabel>
-                <Select
-                  value={formData.gender}
-                  label="Giới tính"
-                  onChange={handleSelectChange}
-                  required
-                >
-                  <MenuItem value="male">Nam</MenuItem>
-                  <MenuItem value="female">Nữ</MenuItem>
-                  <MenuItem value="other">Khác</MenuItem>
-                </Select>
-              </FormControl>
 
               <TextField
                 fullWidth
@@ -173,8 +224,18 @@ const Register = () => {
                 required
               />
 
-              <Button fullWidth size="large" type="submit" variant="contained">
-                Đăng ký
+              <Button
+                fullWidth
+                size="large"
+                type="submit"
+                variant="contained"
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <CircularProgress size={24} color="inherit" />
+                ) : (
+                  "Đăng ký"
+                )}
               </Button>
             </Stack>
           </form>

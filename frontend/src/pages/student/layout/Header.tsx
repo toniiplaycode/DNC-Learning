@@ -22,7 +22,7 @@ import {
   ListItemIcon,
   Divider,
   useTheme,
-  useMediaQuery,
+  Collapse,
 } from "@mui/material";
 import {
   Search,
@@ -38,6 +38,10 @@ import {
   Article as ArticleIcon,
   LocalLibrary as CourseIcon,
   Quiz,
+  Settings as SettingsIcon,
+  ExpandLess,
+  ExpandMore,
+  Dashboard,
 } from "@mui/icons-material";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -45,15 +49,8 @@ import NotificationCenter from "../../../components/student/notification/Notific
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { fetchCategories } from "../../../features/categories/categoriesApiSlice";
 import { selectActiveCategories } from "../../../features/categories/categoriesSelectors";
-
-const categories = [
-  { name: "Lập trình", path: "/courses/programming" },
-  { name: "Ngoại ngữ", path: "/courses/languages" },
-  { name: "Marketing", path: "/courses/marketing" },
-  { name: "Thiết kế", path: "/courses/design" },
-  { name: "Kinh doanh", path: "/courses/business" },
-  { name: "Phát triển cá nhân", path: "/courses/personal-development" },
-];
+import { logout } from "../../../features/auth/authApiSlice";
+import { selectCurrentUser } from "../../../features/auth/authSelectors";
 
 // Styled components
 const SearchDialog = styled(Dialog)(({ theme }) => ({
@@ -100,25 +97,48 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 const Header = () => {
   const dispatch = useAppDispatch();
   const categories = useAppSelector(selectActiveCategories);
-  const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
+  const currentUser = useAppSelector(selectCurrentUser);
   const navigate = useNavigate();
   const [coursesAnchor, setCoursesAnchor] = useState<null | HTMLElement>(null);
   const [profileAnchor, setProfileAnchor] = useState<null | HTMLElement>(null);
-  const [notificationsAnchor, setNotificationsAnchor] =
-    useState<null | HTMLElement>(null);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isLogin, setIsLogin] = useState(true);
-  const [menuAnchor, setMenuAnchor] = useState<null | HTMLElement>(null);
-  const [mobileCategoriesOpen, setMobileCategoriesOpen] = useState(false);
+  const [isLogin, setIsLogin] = useState(false);
+  const [user, setUser] = useState(null);
+  const [mobileSubmenuOpen, setMobileSubmenuOpen] = useState(false);
 
   // Lấy danh sách danh mục khi component được mount
   useEffect(() => {
     dispatch(fetchCategories());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (currentUser) {
+      setUser(currentUser);
+      setIsLogin(true);
+    }
+  }, [currentUser]);
+
+  // Check for user in localStorage on component mount
+  useEffect(() => {
+    const userDataString = localStorage.getItem("user");
+    if (userDataString) {
+      try {
+        const userData = JSON.parse(userDataString);
+        setUser(userData);
+        setIsLogin(true);
+      } catch (error) {
+        localStorage.removeItem("user"); // Remove invalid data
+        setIsLogin(false);
+        setUser(null);
+      }
+    } else {
+      setIsLogin(false);
+      setUser(null);
+    }
+  }, []);
 
   const handleCoursesClick = (event: React.MouseEvent<HTMLElement>) => {
     setCoursesAnchor(event.currentTarget);
@@ -126,17 +146,11 @@ const Header = () => {
 
   const handleProfileClick = (event: React.MouseEvent<HTMLElement>) => {
     setProfileAnchor(event.currentTarget);
-    navigate("/profile");
-  };
-
-  const handleNotificationsClick = (event: React.MouseEvent<HTMLElement>) => {
-    setNotificationsAnchor(event.currentTarget);
   };
 
   const handleClose = () => {
     setCoursesAnchor(null);
     setProfileAnchor(null);
-    setNotificationsAnchor(null);
   };
 
   const handleSearchOpen = () => {
@@ -183,122 +197,21 @@ const Header = () => {
     setMobileOpen(!mobileOpen);
   };
 
-  const handleMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
-    setMenuAnchor(event.currentTarget);
+  // Handle logout function
+  const handleLogout = () => {
+    dispatch(logout());
+    setIsLogin(false);
+    setUser(null);
+    navigate("/login");
+    // Close any open menus
+    setProfileAnchor(null);
+    setMobileOpen(false);
   };
 
-  const handleMenuClose = () => {
-    setMenuAnchor(null);
+  // Toggle mobile submenu
+  const handleToggleMobileSubmenu = () => {
+    setMobileSubmenuOpen(!mobileSubmenuOpen);
   };
-
-  const mobileMenu = (
-    <Box sx={{ py: 2 }}>
-      {/* User Profile Section */}
-      {isLogin && (
-        <>
-          <Box sx={{ px: 2, mb: 2 }}>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Avatar src="/src/assets/avatar.png" />
-              <Box>
-                <Typography variant="subtitle1">Nguyễn Văn A</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Học viên
-                </Typography>
-              </Box>
-            </Stack>
-          </Box>
-          <Divider />
-        </>
-      )}
-
-      {/* Main Navigation */}
-      <List>
-        <ListItem disablePadding>
-          <ListItemButton onClick={() => navigate("/")}>
-            <ListItemIcon>
-              <SchoolIcon />
-            </ListItemIcon>
-            <ListItemText primary="Trang chủ" />
-          </ListItemButton>
-        </ListItem>
-
-        {isLogin && (
-          <ListItem disablePadding>
-            <ListItemButton onClick={() => navigate("/enrolled-courses")}>
-              <ListItemIcon>
-                <CourseIcon />
-              </ListItemIcon>
-              <ListItemText primary="Khóa học của tôi" />
-            </ListItemButton>
-          </ListItem>
-        )}
-
-        <ListItem disablePadding>
-          <ListItemButton onClick={() => navigate("/courses")}>
-            <ListItemIcon>
-              <School />
-            </ListItemIcon>
-            <ListItemText primary="Khóa học" />
-          </ListItemButton>
-        </ListItem>
-
-        <ListItem disablePadding>
-          <ListItemButton onClick={() => navigate("/list-instructors")}>
-            <ListItemIcon>
-              <PersonIcon />
-            </ListItemIcon>
-            <ListItemText primary="Giảng viên" />
-          </ListItemButton>
-        </ListItem>
-
-        <ListItem disablePadding>
-          <ListItemButton onClick={() => navigate("/forum")}>
-            <ListItemIcon>
-              <ForumIcon />
-            </ListItemIcon>
-            <ListItemText primary="Diễn đàn" />
-          </ListItemButton>
-        </ListItem>
-      </List>
-
-      {/* Auth Buttons */}
-      {!isLogin && (
-        <Box sx={{ p: 2 }}>
-          <Stack spacing={1}>
-            <Button
-              fullWidth
-              variant="contained"
-              onClick={() => navigate("/register")}
-            >
-              Đăng ký
-            </Button>
-            <Button
-              fullWidth
-              variant="outlined"
-              onClick={() => navigate("/login")}
-            >
-              Đăng nhập
-            </Button>
-          </Stack>
-        </Box>
-      )}
-
-      {/* Logout Button */}
-      {isLogin && (
-        <List>
-          <Divider />
-          <ListItem disablePadding>
-            <ListItemButton onClick={() => console.log("Logout")}>
-              <ListItemIcon>
-                <ExitToApp />
-              </ListItemIcon>
-              <ListItemText primary="Đăng xuất" />
-            </ListItemButton>
-          </ListItem>
-        </List>
-      )}
-    </Box>
-  );
 
   return (
     <AppBar
@@ -552,19 +465,53 @@ const Header = () => {
                 >
                   <Avatar
                     sx={{ width: 32, height: 32 }}
-                    src="/src/assets/avatar.png"
+                    src={user?.avatarUrl || "/src/assets/avatar.png"}
                   />
                   <Box sx={{ textAlign: "left" }}>
-                    <Typography variant="subtitle2">Nguyễn Văn A</Typography>
+                    <Typography variant="subtitle2">
+                      {user?.userStudent?.fullName || "User"}
+                    </Typography>
                     <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                      Học viên
+                      {user?.role === "student" ? "Học viên" : "Giảng viên"}
                     </Typography>
                   </Box>
                 </Button>
+                <Menu
+                  anchorEl={profileAnchor}
+                  open={Boolean(profileAnchor)}
+                  onClose={handleClose}
+                  PaperProps={{
+                    sx: { width: 220, mt: 1 },
+                  }}
+                >
+                  <MenuItem
+                    onClick={() => {
+                      navigate("/profile");
+                      handleClose();
+                    }}
+                  >
+                    <PersonIcon sx={{ mr: 1 }} />
+                    Trang cá nhân
+                  </MenuItem>
+                  <MenuItem
+                    onClick={() => {
+                      navigate("/settings");
+                      handleClose();
+                    }}
+                  >
+                    <SettingsIcon sx={{ mr: 1 }} />
+                    Cài đặt
+                  </MenuItem>
+                  <Divider />
+                  <MenuItem onClick={handleLogout}>
+                    <ExitToApp sx={{ mr: 1 }} />
+                    Đăng xuất
+                  </MenuItem>
+                </Menu>
               </Box>
             ) : (
               /* Login/Register Buttons */
-              <Box sx={{ display: "flex", gap: 1 }}>
+              <Box sx={{ display: { xs: "none", lg: "flex" }, gap: 2 }}>
                 <Button
                   variant="outlined"
                   onClick={() => navigate("/login")}
@@ -611,7 +558,229 @@ const Header = () => {
           "& .MuiDrawer-paper": { boxSizing: "border-box", width: 280 },
         }}
       >
-        {mobileMenu}
+        <Box sx={{ py: 0 }}>
+          {/* User Profile Section */}
+          <Box
+            sx={{
+              bgcolor: "primary.main",
+              display: "flex",
+              justifyContent: isLogin ? "space-between" : "flex-end",
+              alignItems: "center",
+              width: "100%",
+            }}
+          >
+            {isLogin && user && (
+              <Box sx={{ px: 2, py: 3, bgcolor: "primary.main" }}>
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Avatar
+                    src={user?.avatarUrl || "/src/assets/avatar.png"}
+                    sx={{ width: 50, height: 50 }}
+                  />
+                  <Box>
+                    <Typography
+                      variant="subtitle1"
+                      sx={{ color: "white", fontWeight: "bold" }}
+                    >
+                      {user?.userStudent?.fullName || "User"}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{ color: "white", opacity: 0.8 }}
+                    >
+                      {user?.role === "student" ? "Học viên" : "Giảng viên"}
+                    </Typography>
+                  </Box>
+                </Stack>
+              </Box>
+            )}
+            <IconButton
+              color="inherit"
+              onClick={handleDrawerToggle}
+              sx={{ p: 1 }}
+            >
+              <Close />
+            </IconButton>
+          </Box>
+
+          {/* Main Navigation */}
+          <List sx={{ pt: 0 }}>
+            {isLogin && (
+              <>
+                <ListItem disablePadding>
+                  <ListItemButton onClick={handleToggleMobileSubmenu}>
+                    <ListItemIcon>
+                      <Dashboard />
+                    </ListItemIcon>
+                    <ListItemText primary="Tài khoản của tôi" />
+                    {mobileSubmenuOpen ? <ExpandLess /> : <ExpandMore />}
+                  </ListItemButton>
+                </ListItem>
+
+                <Collapse in={mobileSubmenuOpen} timeout="auto" unmountOnExit>
+                  <List component="div" disablePadding>
+                    <ListItemButton
+                      sx={{ pl: 4 }}
+                      onClick={() => {
+                        navigate("/profile");
+                        handleDrawerToggle();
+                      }}
+                    >
+                      <ListItemIcon>
+                        <PersonIcon />
+                      </ListItemIcon>
+                      <ListItemText primary="Trang cá nhân" />
+                    </ListItemButton>
+
+                    <ListItemButton
+                      sx={{ pl: 4 }}
+                      onClick={() => {
+                        navigate("/settings");
+                        handleDrawerToggle();
+                      }}
+                    >
+                      <ListItemIcon>
+                        <SettingsIcon />
+                      </ListItemIcon>
+                      <ListItemText primary="Cài đặt" />
+                    </ListItemButton>
+                  </List>
+                </Collapse>
+              </>
+            )}
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  navigate("/");
+                  handleDrawerToggle();
+                }}
+              >
+                <ListItemIcon>
+                  <SchoolIcon />
+                </ListItemIcon>
+                <ListItemText primary="Trang chủ" />
+              </ListItemButton>
+            </ListItem>
+
+            {isLogin && (
+              <>
+                <ListItem disablePadding>
+                  <ListItemButton
+                    onClick={() => {
+                      navigate("/enrolled-courses");
+                      handleDrawerToggle();
+                    }}
+                  >
+                    <ListItemIcon>
+                      <CourseIcon />
+                    </ListItemIcon>
+                    <ListItemText primary="Khóa học của tôi" />
+                  </ListItemButton>
+                </ListItem>
+              </>
+            )}
+
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  navigate("/courses");
+                  handleDrawerToggle();
+                }}
+              >
+                <ListItemIcon>
+                  <School />
+                </ListItemIcon>
+                <ListItemText primary="Khóa học" />
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  navigate("/list-instructors");
+                  handleDrawerToggle();
+                }}
+              >
+                <ListItemIcon>
+                  <PersonIcon />
+                </ListItemIcon>
+                <ListItemText primary="Giảng viên" />
+              </ListItemButton>
+            </ListItem>
+
+            <ListItem disablePadding>
+              <ListItemButton
+                onClick={() => {
+                  navigate("/forum");
+                  handleDrawerToggle();
+                }}
+              >
+                <ListItemIcon>
+                  <ForumIcon />
+                </ListItemIcon>
+                <ListItemText primary="Diễn đàn" />
+              </ListItemButton>
+            </ListItem>
+
+            {isLogin && (
+              <ListItem disablePadding>
+                <ListItemButton
+                  onClick={() => {
+                    navigate("/assessment");
+                    handleDrawerToggle();
+                  }}
+                >
+                  <ListItemIcon>
+                    <Quiz />
+                  </ListItemIcon>
+                  <ListItemText primary="Làm kiểm tra" />
+                </ListItemButton>
+              </ListItem>
+            )}
+          </List>
+
+          {/* Auth Buttons */}
+          {!isLogin && (
+            <Box sx={{ p: 2, mt: 2 }}>
+              <Stack spacing={1}>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  onClick={() => {
+                    navigate("/register");
+                    handleDrawerToggle();
+                  }}
+                >
+                  Đăng ký
+                </Button>
+                <Button
+                  fullWidth
+                  variant="outlined"
+                  onClick={() => {
+                    navigate("/login");
+                    handleDrawerToggle();
+                  }}
+                >
+                  Đăng nhập
+                </Button>
+              </Stack>
+            </Box>
+          )}
+
+          {/* Logout Button */}
+          {isLogin && (
+            <Box sx={{ p: 2, mt: "auto" }}>
+              <Button
+                fullWidth
+                variant="outlined"
+                color="error"
+                startIcon={<ExitToApp />}
+                onClick={handleLogout}
+              >
+                Đăng xuất
+              </Button>
+            </Box>
+          )}
+        </Box>
       </Drawer>
 
       {/* Search Dialog */}

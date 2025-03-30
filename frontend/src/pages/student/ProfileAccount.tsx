@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Grid,
@@ -49,6 +49,8 @@ import {
 import CustomContainer from "../../components/common/CustomContainer";
 import CertificateDetail from "../../components/student/profile/CertificateDetail";
 import AvatarUpload from "../../components/common/AvatarUpload";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import { selectCurrentUser } from "../../features/auth/authSelectors";
 
 // Cập nhật mock data theo cấu trúc CSDL
 const mockUserData = {
@@ -206,6 +208,9 @@ const mockUserData = {
 };
 
 const ProfileAccount: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const currentUser = useAppSelector(selectCurrentUser);
+  const [user, setUser] = useState<any>(null);
   const [currentTab, setCurrentTab] = useState(0);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [editContactOpen, setEditContactOpen] = useState(false);
@@ -226,6 +231,29 @@ const ProfileAccount: React.FC = () => {
     learningGoals: mockUserData.studentInfo.learning_goals,
     preferredLanguage: mockUserData.studentInfo.preferred_language,
   });
+
+  useEffect(() => {
+    if (currentUser) {
+      setUser(currentUser);
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    const userDataString = localStorage.getItem("user");
+    if (userDataString) {
+      try {
+        const userData = JSON.parse(userDataString);
+        setUser(userData);
+      } catch (error) {
+        localStorage.removeItem("user"); // Remove invalid data
+        setUser(null);
+      }
+    } else {
+      setUser(null);
+    }
+  }, []);
+
+  console.log("currentUser", user);
 
   // Thêm state cho form mật khẩu
   const [formPassword, setFormPassword] = useState({

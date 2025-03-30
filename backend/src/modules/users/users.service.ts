@@ -11,7 +11,12 @@ export class UsersService {
     private userRepository: Repository<User>,
   ) {}
   findAll(): Promise<User[]> {
-    return this.userRepository.find();
+    return this.userRepository.find({
+      relations: {
+        userStudent: true,
+        userInstructor: true,
+      },
+    });
   }
   async create(userData: Partial<User>): Promise<User> {
     const hashedPassword = await bcrypt.hash(userData.password, 10);
@@ -20,12 +25,24 @@ export class UsersService {
     return this.userRepository.save(newUser);
   }
 
-  findById(id: number): Promise<User | null> {
-    return this.userRepository.findOneBy({ id });
+  async findById(id: number): Promise<User | null> {
+    return this.userRepository.findOne({
+      where: { id },
+      relations: {
+        userStudent: true,
+        userInstructor: true,
+      },
+    });
   }
 
   findByEmail(email: string): Promise<User | null> {
-    return this.userRepository.findOne({ where: { email } });
+    return this.userRepository.findOne({
+      where: { email },
+      relations: {
+        userStudent: true,
+        userInstructor: true,
+      },
+    });
   }
 
   async validateUser(email: string, password: string): Promise<User | null> {
