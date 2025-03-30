@@ -1,36 +1,22 @@
 import React, { useState, useEffect } from "react";
 import {
   Box,
-  Container,
   Grid,
   Card,
   CardContent,
   Typography,
   TextField,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
   Stack,
   Pagination,
   InputAdornment,
   Chip,
-  Button,
   Avatar,
   CardActionArea,
-  IconButton,
   Tabs,
   Tab,
   CardMedia,
 } from "@mui/material";
-import {
-  Check,
-  FilterAlt,
-  Search,
-  ThumbUp,
-  Comment,
-  Add,
-} from "@mui/icons-material";
+import { Search, ThumbUp, Comment } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { fetchForums } from "../../../features/forums/forumsApiSlice";
@@ -58,7 +44,7 @@ const ForumDiscussions = () => {
     if (status === "idle") {
       dispatch(fetchForums());
     }
-  }, [dispatch, status]);
+  }, [dispatch, status, navigate]);
 
   useEffect(() => {
     // Reset về trang 1 khi thay đổi bộ lọc hoặc tìm kiếm
@@ -187,7 +173,7 @@ const ForumDiscussions = () => {
               <CardActionArea>
                 <CardMedia
                   component="img"
-                  height="100"
+                  height="150"
                   image={forum.thumbnailUrl || logo}
                   alt={forum.title}
                   sx={{ objectFit: "cover" }}
@@ -207,18 +193,107 @@ const ForumDiscussions = () => {
                         {forum.title}
                       </Typography>
 
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
+                      <Box
                         sx={{
+                          "& h1, & h2, & h3, & h4, & h5, & h6": {
+                            fontSize: {
+                              h1: "1.2rem",
+                              h2: "1.1rem",
+                              h3: "1rem",
+                              h4: "0.95rem",
+                              h5: "0.9rem",
+                              h6: "0.85rem",
+                            },
+                            fontWeight: 600,
+                            mb: 1,
+                            color: "primary.main",
+                            lineHeight: 1.3,
+                          },
+                          "& p, & div": {
+                            mb: 1,
+                            lineHeight: 1.5,
+                            fontSize: "0.875rem",
+                          },
+                          "& ul, & ol": {
+                            pl: 2,
+                            mb: 1,
+                            listStyle: "none",
+                          },
+                          "& li": {
+                            mb: 0.5,
+                            fontSize: "0.875rem",
+                            color: "text.secondary",
+                            "&:before": {
+                              content: '"•"',
+                              color: "primary.main",
+                              display: "inline-block",
+                              width: "1em",
+                              marginLeft: "-1em",
+                            },
+                          },
+                          "& table": {
+                            width: "100%",
+                            borderCollapse: "collapse",
+                            mb: 1,
+                            fontSize: "0.875rem",
+                          },
+                          "& th, & td": {
+                            border: "1px solid",
+                            borderColor: "divider",
+                            p: 0.5,
+                            fontSize: "0.875rem",
+                          },
+                          "& a": {
+                            color: "primary.main",
+                            textDecoration: "none",
+                            "&:hover": {
+                              textDecoration: "underline",
+                            },
+                          },
+                          "& blockquote": {
+                            borderLeft: "2px solid",
+                            borderColor: "primary.main",
+                            pl: 1,
+                            py: 0.5,
+                            my: 1,
+                            fontSize: "0.875rem",
+                            bgcolor: "action.hover",
+                            fontStyle: "italic",
+                          },
+                          "& code, & pre": {
+                            fontFamily: "monospace",
+                            bgcolor: "action.hover",
+                            p: 0.5,
+                            borderRadius: 0.5,
+                            fontSize: "0.875rem",
+                          },
+                          "& img": {
+                            maxWidth: "100%",
+                            height: "auto",
+                            borderRadius: 1,
+                          },
+                          "& strong": {
+                            fontWeight: 600,
+                          },
+                          "& em": {
+                            fontStyle: "italic",
+                          },
+                          "& hr": {
+                            border: "none",
+                            borderTop: "1px solid",
+                            borderColor: "divider",
+                            my: 1,
+                          },
                           display: "-webkit-box",
                           overflow: "hidden",
                           WebkitBoxOrient: "vertical",
-                          WebkitLineClamp: 2,
+                          WebkitLineClamp: 3,
+                          fontSize: "0.875rem",
+                          color: "text.secondary",
+                          mb: 2,
                         }}
-                      >
-                        {forum.description}
-                      </Typography>
+                        dangerouslySetInnerHTML={{ __html: forum.description }}
+                      />
 
                       <Stack
                         direction="row"

@@ -6,12 +6,16 @@ import {
   Request,
   UnauthorizedException,
   UseGuards,
+  HttpCode,
+  HttpStatus,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
 import { LocalAuthGuard } from 'src/guards/local-auth.guard';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { User } from '../../entities/User';
+import { RegisterStudentDto } from './dto/register-student.dto';
+
 @Controller('auth')
 export class AuthController {
   constructor(
@@ -46,5 +50,11 @@ export class AuthController {
   @Get('profile')
   profile(@Request() req: any) {
     return req.user;
+  }
+
+  @Post('register/student')
+  @HttpCode(HttpStatus.CREATED)
+  async registerStudent(@Body() registerDto: RegisterStudentDto) {
+    return this.authService.registerStudent(registerDto);
   }
 }

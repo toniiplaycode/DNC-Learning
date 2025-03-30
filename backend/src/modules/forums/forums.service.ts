@@ -125,6 +125,7 @@ export class ForumsService {
         'course.id',
         'course.title',
         'replies.id',
+        'replies.replyId',
         'replies.content',
         'replies.createdAt',
         'replies.updatedAt',

@@ -5,8 +5,6 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToOne,
-  JoinColumn,
-  OneToMany,
 } from 'typeorm';
 import { UserStudent } from './UserStudent';
 import { UserInstructor } from './UserInstructor';
@@ -83,11 +81,9 @@ export class User {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  @OneToOne(() => UserStudent)
-  @JoinColumn({ name: 'user_id' })
+  @OneToOne(() => UserStudent, (userStudent) => userStudent.user)
   userStudent: UserStudent;
 
-  @OneToOne(() => UserInstructor)
-  @JoinColumn({ name: 'user_id' })
+  @OneToOne(() => UserInstructor, (userInstructor) => userInstructor.user)
   userInstructor: UserInstructor;
 }

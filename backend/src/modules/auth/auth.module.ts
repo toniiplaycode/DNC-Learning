@@ -6,7 +6,11 @@ import { JwtModule } from '@nestjs/jwt';
 import { PassportModule } from '@nestjs/passport';
 import { LocalStrategy } from 'src/passport/local.strategy';
 import { JwtStrategy } from 'src/passport/jwt.strategy';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { User } from '../../entities/User';
+import { UserStudent } from '../../entities/UserStudent';
+
 @Module({
   controllers: [AuthController],
   providers: [AuthService, LocalStrategy, JwtStrategy],
@@ -14,10 +18,18 @@ import { ConfigModule } from '@nestjs/config';
     ConfigModule.forRoot(),
     UsersModule,
     PassportModule, // module cung cấp các phương thức xác thực token
-    JwtModule.register({
-      secret: process.env.JWT_SECRET, // khóa bí mật để mã hóa và giải mã token
-      signOptions: { expiresIn: process.env.JWT_EXPIRES_IN || '1h' }, // thời gian hạn sử dụng token
+    TypeOrmModule.forFeature([User, UserStudent]),
+    JwtModule.registerAsync({
+      imports: [ConfigModule],
+      useFactory: async (configService: ConfigService) => ({
+        secret: configService.get<string>('JWT_SECRET'),
+        signOptions: {
+          expiresIn: configService.get<string>('JWT_EXPIRES_IN'),
+        },
+      }),
+      inject: [ConfigService],
     }),
   ],
+  exports: [AuthService],
 })
 export class AuthModule {}
