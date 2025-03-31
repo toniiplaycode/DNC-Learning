@@ -5,6 +5,8 @@ import categoriesReducer from "../features/categories/categoriesSlice";
 import forumsReducer from "../features/forums/forumsSlice";
 import authReducer from "../features/auth/authSlice";
 import enrollmentsReducer from "../features/enrollments/enrollmentsApiSlice";
+import certificatesReducer from "../features/certificates/certificatesApiSlice";
+
 // Import các reducer khác nếu có
 
 export const store = configureStore({
@@ -15,6 +17,7 @@ export const store = configureStore({
     forums: forumsReducer,
     auth: authReducer,
     enrollments: enrollmentsReducer,
+    certificates: certificatesReducer,
     // Thêm các reducer khác nếu có
   },
   middleware: (getDefaultMiddleware) =>

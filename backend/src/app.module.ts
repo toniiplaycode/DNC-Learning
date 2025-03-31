@@ -31,6 +31,13 @@ import { ForumReply } from './entities/ForumReply';
 import { ForumLike } from './entities/ForumLike';
 import { ForumsModule } from './modules/forums/forums.module';
 import { EnrollmentsModule } from './modules/enrollments/enrollments.module';
+import { Certificate } from './entities/Certificate';
+import { CertificatesModule } from './modules/certificates/certificates.module';
+import { UserGrade } from './entities/UserGrade';
+import { Assignment } from './entities/Assignment';
+import { Quiz } from './entities/Quiz';
+import { UserGradesModule } from './modules/user-grades/user-grades.module';
+import { AcademicClass } from './entities/AcademicClass';
 
 @Module({
   imports: [
@@ -68,6 +75,11 @@ import { EnrollmentsModule } from './modules/enrollments/enrollments.module';
         Forum,
         ForumReply,
         ForumLike,
+        Certificate,
+        UserGrade,
+        Assignment,
+        Quiz,
+        AcademicClass,
       ],
       // synchronize: true, // tự động tạo bảng trong entity (chỉ dùng trong môi tường dev)
     }),
@@ -78,6 +90,8 @@ import { EnrollmentsModule } from './modules/enrollments/enrollments.module';
     CategoriesModule,
     ForumsModule,
     EnrollmentsModule,
+    CertificatesModule,
+    UserGradesModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthMiddleware, InstructorMiddleware],

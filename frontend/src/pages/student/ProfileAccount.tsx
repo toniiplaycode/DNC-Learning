@@ -51,10 +51,10 @@ import CertificateDetail from "../../components/student/profile/CertificateDetai
 import AvatarUpload from "../../components/common/AvatarUpload";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { selectCurrentUser } from "../../features/auth/authSelectors";
-import { UserStudent } from "../../../../backend/src/entities/UserStudent";
 import { fetchUserEnrollments } from "../../features/enrollments/enrollmentsApiSlice";
 import { selectUserEnrollments } from "../../features/enrollments/enrollmentsSelectors";
-
+import { fetchUserCertificates } from "../../features/certificates/certificatesApiSlice";
+import { selectUserCertificates } from "../../features/certificates/certificatesSelectors";
 // Cập nhật mock data theo cấu trúc CSDL
 const mockUserData = {
   // Từ bảng users
@@ -214,6 +214,7 @@ const ProfileAccount: React.FC = () => {
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector(selectCurrentUser);
   const userEnrollments = useAppSelector(selectUserEnrollments);
+  const userCertificates = useAppSelector(selectUserCertificates);
   const [user, setUser] = useState<any>(null);
   const [currentTab, setCurrentTab] = useState(0);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
@@ -245,10 +246,9 @@ const ProfileAccount: React.FC = () => {
   useEffect(() => {
     if (user?.id) {
       dispatch(fetchUserEnrollments(user.id));
+      dispatch(fetchUserCertificates({ userId: user.id }));
     }
   }, [dispatch, user?.id]);
-
-  console.log("userEnrollments", userEnrollments);
 
   useEffect(() => {
     const userDataString = localStorage.getItem("user");
@@ -264,8 +264,6 @@ const ProfileAccount: React.FC = () => {
       setUser(null);
     }
   }, []);
-
-  console.log("currentUser", user);
 
   // Thêm state cho form mật khẩu
   const [formPassword, setFormPassword] = useState({
@@ -377,7 +375,7 @@ const ProfileAccount: React.FC = () => {
           <TextField
             fullWidth
             label="Mã học viên"
-            value={mockUserData.studentInfo.student_code}
+            value={user?.userStudent?.id}
             disabled
             sx={{
               "& .MuiInputBase-input.Mui-disabled": {
@@ -390,7 +388,7 @@ const ProfileAccount: React.FC = () => {
             fullWidth
             label="Họ và tên"
             name="fullName"
-            value={formData.fullName}
+            value={user?.userStudent?.fullName}
             onChange={handleFormChange}
           />
           <TextField
@@ -399,14 +397,14 @@ const ProfileAccount: React.FC = () => {
             name="bio"
             multiline
             rows={3}
-            value={formData.bio}
+            value={user?.userStudent?.bio}
             onChange={handleFormChange}
           />
           <FormControl fullWidth>
             <InputLabel>Giới tính</InputLabel>
             <Select
               name="gender"
-              value={formData.gender}
+              value={user?.userStudent?.gender}
               label="Giới tính"
               onChange={(e) => handleFormChange(e as any)}
             >
@@ -577,14 +575,14 @@ const ProfileAccount: React.FC = () => {
             fullWidth
             label="Nghề nghiệp"
             name="occupation"
-            value={formData.occupation}
+            value={user?.userStudent?.occupation}
             onChange={handleFormChange}
           />
           <TextField
             fullWidth
             label="Trình độ học vấn"
             name="education"
-            value={formData.education}
+            value={user?.userStudent?.educationLevel}
             onChange={handleFormChange}
           />
           <TextField
@@ -593,7 +591,7 @@ const ProfileAccount: React.FC = () => {
             name="interests"
             multiline
             rows={2}
-            value={formData.interests}
+            value={user?.userStudent?.interests}
             onChange={handleFormChange}
           />
           <TextField
@@ -602,7 +600,7 @@ const ProfileAccount: React.FC = () => {
             name="learningGoals"
             multiline
             rows={2}
-            value={formData.learningGoals}
+            value={user?.userStudent?.learningGoals}
             onChange={handleFormChange}
           />
           <TextField
@@ -610,7 +608,7 @@ const ProfileAccount: React.FC = () => {
             type="date"
             label="Ngày sinh"
             name="dateOfBirth"
-            value={formData.dateOfBirth}
+            value={user?.userStudent?.dateOfBirth}
             onChange={handleFormChange}
             InputLabelProps={{
               shrink: true,
@@ -699,7 +697,7 @@ const ProfileAccount: React.FC = () => {
                         sx={{ fontSize: 32, mb: 1 }}
                       />
                       <Typography variant="h6">
-                        {mockUserData.studentInfo.total_courses_enrolled}
+                        {userEnrollments?.length}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Khóa học
@@ -719,7 +717,11 @@ const ProfileAccount: React.FC = () => {
                         sx={{ fontSize: 32, mb: 1 }}
                       />
                       <Typography variant="h6">
-                        {mockUserData.studentInfo.total_courses_completed}
+                        {
+                          userEnrollments?.filter(
+                            (enrollment) => enrollment.status === "completed"
+                          )?.length
+                        }
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Đã hoàn thành
@@ -812,10 +814,10 @@ const ProfileAccount: React.FC = () => {
                       Khóa học đang học
                     </Typography>
                     <List>
-                      {mockUserData.currentCourses.map((course) => (
-                        <ListItem key={course.id}>
+                      {userEnrollments?.map((enrollment) => (
+                        <ListItem key={enrollment.id}>
                           <ListItemText
-                            primary={course.title}
+                            primary={enrollment?.course?.title}
                             secondary={
                               <Box sx={{ mt: 1 }}>
                                 <Box
@@ -828,7 +830,7 @@ const ProfileAccount: React.FC = () => {
                                   <Box sx={{ flexGrow: 1, mr: 1 }}>
                                     <LinearProgress
                                       variant="determinate"
-                                      value={course.progress}
+                                      value={enrollment?.progress}
                                       sx={{ height: 6, borderRadius: 1 }}
                                     />
                                   </Box>
@@ -836,7 +838,7 @@ const ProfileAccount: React.FC = () => {
                                     variant="body2"
                                     color="text.secondary"
                                   >
-                                    {course.progress}%
+                                    {enrollment?.progress}%
                                   </Typography>
                                 </Box>
                                 <Typography
@@ -845,7 +847,7 @@ const ProfileAccount: React.FC = () => {
                                 >
                                   Truy cập gần nhất:{" "}
                                   {new Date(
-                                    course.last_accessed
+                                    enrollment?.updatedAt
                                   ).toLocaleDateString("vi-VN")}
                                 </Typography>
                               </Box>
@@ -864,7 +866,7 @@ const ProfileAccount: React.FC = () => {
                       Chứng chỉ đã đạt được
                     </Typography>
                     <List>
-                      {mockUserData.certificates.map((cert) => (
+                      {userCertificates?.map((cert) => (
                         <ListItem
                           key={cert.id}
                           sx={{
@@ -881,14 +883,14 @@ const ProfileAccount: React.FC = () => {
                             <School color="primary" />
                           </ListItemIcon>
                           <ListItemText
-                            primary={cert.course_title}
+                            primary={cert?.course?.title}
                             secondary={
                               <>
                                 Cấp ngày:{" "}
-                                {new Date(cert.issue_date).toLocaleDateString(
+                                {new Date(cert?.createdAt).toLocaleDateString(
                                   "vi-VN"
                                 )}{" "}
-                                | Số chứng chỉ: {cert.certificate_number}
+                                | Số chứng chỉ: {cert?.certificateNumber}
                               </>
                             }
                           />
@@ -898,14 +900,9 @@ const ProfileAccount: React.FC = () => {
                             onClick={() =>
                               setSelectedCertificate({
                                 ...cert,
-                                student_name:
-                                  mockUserData.studentInfo.full_name,
-                                student_code:
-                                  mockUserData.studentInfo.student_code,
-                                grade: "Xuất sắc",
-                                instructor_name: "John Doe",
-                                instructor_title: "Senior Developer",
-                                certificate_url: "/path/to/certificate.jpg",
+                                student_name: user?.userStudent?.fullName,
+                                student_code: user?.userStudent?.id,
+                                certificate_url: cert?.certificateUrl,
                               })
                             }
                             sx={{ minWidth: 100 }}
@@ -939,7 +936,7 @@ const ProfileAccount: React.FC = () => {
                         color: "primary.main",
                       }}
                     >
-                      {mockUserData.studentInfo.student_code}
+                      {user?.userStudent?.id}
                     </Typography>
                   </Box>
 
@@ -952,7 +949,7 @@ const ProfileAccount: React.FC = () => {
                       Giới thiệu
                     </Typography>
                     <Typography variant="body1">
-                      {mockUserData.studentInfo.bio}
+                      {user?.userStudent?.bio}
                     </Typography>
                   </Box>
 
@@ -965,7 +962,7 @@ const ProfileAccount: React.FC = () => {
                       Mục tiêu học tập
                     </Typography>
                     <Typography variant="body1">
-                      {mockUserData.studentInfo.learning_goals}
+                      {user?.userStudent?.learningGoals}
                     </Typography>
                   </Box>
 
@@ -978,7 +975,7 @@ const ProfileAccount: React.FC = () => {
                       Sở thích
                     </Typography>
                     <Typography variant="body1">
-                      {mockUserData.studentInfo.interests}
+                      {user?.userStudent?.interests}
                     </Typography>
                   </Box>
 
@@ -990,7 +987,7 @@ const ProfileAccount: React.FC = () => {
                       <ListItemText
                         primary="Ngày sinh"
                         secondary={new Date(
-                          mockUserData.studentInfo.date_of_birth
+                          user?.userStudent?.dateOfBirth
                         ).toLocaleDateString("vi-VN")}
                       />
                     </ListItem>
@@ -1000,7 +997,7 @@ const ProfileAccount: React.FC = () => {
                       </ListItemIcon>
                       <ListItemText
                         primary="Nghề nghiệp"
-                        secondary={mockUserData.studentInfo.occupation}
+                        secondary={user?.userStudent?.occupation}
                       />
                     </ListItem>
                     <ListItem>
@@ -1009,7 +1006,7 @@ const ProfileAccount: React.FC = () => {
                       </ListItemIcon>
                       <ListItemText
                         primary="Trình độ học vấn"
-                        secondary={mockUserData.studentInfo.education_level}
+                        secondary={user?.userStudent?.educationLevel}
                       />
                     </ListItem>
                   </List>
@@ -1046,7 +1043,7 @@ const ProfileAccount: React.FC = () => {
                           }}
                         >
                           <Typography variant="body1">Email</Typography>
-                          {mockUserData.status === "active" && (
+                          {user?.status === "active" && (
                             <Chip
                               label="Đã xác thực"
                               size="small"
@@ -1058,9 +1055,7 @@ const ProfileAccount: React.FC = () => {
                       }
                       secondary={
                         <Box>
-                          <Typography variant="body2">
-                            {mockUserData.email}
-                          </Typography>
+                          <Typography variant="body2">{user?.email}</Typography>
                           <Typography variant="caption" color="text.secondary">
                             Email chính để nhận thông báo
                           </Typography>
@@ -1084,7 +1079,7 @@ const ProfileAccount: React.FC = () => {
                           }}
                         >
                           <Typography variant="body1">Số điện thoại</Typography>
-                          {mockUserData.status === "active" && (
+                          {user?.status === "active" && (
                             <Chip
                               label="Đã xác thực"
                               size="small"
@@ -1096,9 +1091,7 @@ const ProfileAccount: React.FC = () => {
                       }
                       secondary={
                         <Box>
-                          <Typography variant="body2">
-                            {mockUserData.phone}
-                          </Typography>
+                          <Typography variant="body2">{user?.phone}</Typography>
                           <Typography variant="caption" color="text.secondary">
                             Số điện thoại để liên hệ và xác thực
                           </Typography>
@@ -1117,15 +1110,15 @@ const ProfileAccount: React.FC = () => {
                       secondary={
                         <Box>
                           <Typography variant="body2">
-                            {mockUserData.studentInfo.address}
+                            {user?.userStudent?.address}
                           </Typography>
                           <Stack direction="row" spacing={1} mt={0.5}>
                             <Typography variant="body2">
-                              {mockUserData.studentInfo.city}
+                              {user?.userStudent?.city}
                             </Typography>
                             <Typography variant="body2">•</Typography>
                             <Typography variant="body2">
-                              {mockUserData.studentInfo.country}
+                              {user?.userStudent?.country}
                             </Typography>
                           </Stack>
                         </Box>
@@ -1143,7 +1136,7 @@ const ProfileAccount: React.FC = () => {
                       secondary={
                         <Box>
                           <Typography variant="body2">
-                            {mockUserData.studentInfo.preferred_language}
+                            {user?.userStudent?.preferredLanguage}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
                             Ngôn ngữ sử dụng trong khóa học và thông báo

@@ -11,6 +11,7 @@ import {
 } from 'typeorm';
 import { User } from './User';
 import { Course } from './Course';
+import { UserGrade } from './UserGrade';
 
 export enum VerificationStatus {
   PENDING = 'pending',
@@ -82,4 +83,7 @@ export class UserInstructor {
 
   @OneToMany(() => Course, (course) => course.instructor)
   courses: Course[];
+
+  @OneToMany(() => UserGrade, (userGrade) => userGrade.instructor)
+  userGrades: UserGrade[];
 }

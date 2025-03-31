@@ -5,9 +5,12 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToOne,
+  OneToMany,
 } from 'typeorm';
 import { UserStudent } from './UserStudent';
 import { UserInstructor } from './UserInstructor';
+import { Certificate } from './Certificate';
+import { UserGrade } from './UserGrade';
 
 // Tạo enum cho role
 export enum UserRole {
@@ -86,4 +89,10 @@ export class User {
 
   @OneToOne(() => UserInstructor, (userInstructor) => userInstructor.user)
   userInstructor: UserInstructor;
+
+  @OneToMany(() => Certificate, (certificate) => certificate.user)
+  certificates: Certificate[];
+
+  @OneToMany(() => UserGrade, (userGrade) => userGrade.user)
+  userGrades: UserGrade[];
 }

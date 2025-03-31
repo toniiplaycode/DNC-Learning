@@ -28,9 +28,6 @@ interface CertificateDetailProps {
     expiry_date?: string;
     student_name: string;
     student_code: string;
-    grade: string;
-    instructor_name: string;
-    instructor_title: string;
     certificate_url: string;
   };
 }
@@ -41,6 +38,8 @@ const CertificateDetail: React.FC<CertificateDetailProps> = ({
   certificate,
 }) => {
   const theme = useTheme();
+
+  console.log("certificate", certificate);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -243,7 +242,7 @@ const CertificateDetail: React.FC<CertificateDetailProps> = ({
                   margin: "0 auto",
                 }}
               >
-                {certificate.course_title}
+                {certificate?.course?.title}
               </Typography>
 
               <Box
@@ -256,18 +255,10 @@ const CertificateDetail: React.FC<CertificateDetailProps> = ({
               >
                 <Box sx={{ textAlign: "center" }}>
                   <Typography variant="subtitle2" color="text.secondary">
-                    Grade
-                  </Typography>
-                  <Typography variant="h6" color="primary.main">
-                    {certificate.grade}
-                  </Typography>
-                </Box>
-                <Box sx={{ textAlign: "center" }}>
-                  <Typography variant="subtitle2" color="text.secondary">
                     Issue Date
                   </Typography>
                   <Typography variant="h6" color="primary.main">
-                    {new Date(certificate.issue_date).toLocaleDateString(
+                    {new Date(certificate?.createdAt).toLocaleDateString(
                       "vi-VN"
                     )}
                   </Typography>
@@ -281,7 +272,7 @@ const CertificateDetail: React.FC<CertificateDetailProps> = ({
                     color="primary.main"
                     sx={{ fontFamily: "monospace" }}
                   >
-                    {certificate.certificate_number}
+                    {certificate?.certificateNumber}
                   </Typography>
                 </Box>
               </Box>
@@ -312,23 +303,6 @@ const CertificateDetail: React.FC<CertificateDetailProps> = ({
                   pt: 4,
                 }}
               >
-                <Box sx={{ textAlign: "center" }}>
-                  <Typography
-                    sx={{
-                      borderTop: `2px solid ${theme.palette.divider}`,
-                      pt: 1,
-                      color: theme.palette.text.primary,
-                      fontFamily: "'Great Vibes', cursive",
-                      fontSize: "1.8rem",
-                      lineHeight: 1,
-                    }}
-                  >
-                    {certificate.instructor_name}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    {certificate.instructor_title}
-                  </Typography>
-                </Box>
                 <Box sx={{ textAlign: "center" }}>
                   <Typography
                     sx={{

@@ -13,6 +13,8 @@ import { CourseSection } from './CourseSection';
 import { UserInstructor } from './UserInstructor';
 import { Review } from './Review';
 import { Enrollment } from './Enrollment';
+import { Certificate } from './Certificate';
+import { UserGrade } from './UserGrade';
 
 @Entity('courses')
 export class Course {
@@ -89,4 +91,10 @@ export class Course {
 
   @OneToMany(() => Enrollment, (enrollment) => enrollment.course)
   enrollments: Enrollment[];
+
+  @OneToMany(() => Certificate, (certificate) => certificate.course)
+  certificates: Certificate[];
+
+  @OneToMany(() => UserGrade, (userGrade) => userGrade.course)
+  userGrades: UserGrade[];
 }

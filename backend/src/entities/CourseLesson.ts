@@ -6,8 +6,12 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
+import { UserGrade } from './UserGrade';
 import { CourseSection } from './CourseSection';
+import { Assignment } from './Assignment';
+import { Quiz } from './Quiz';
 
 export enum ContentType {
   VIDEO = 'video',
@@ -61,4 +65,13 @@ export class CourseLesson {
   })
   @JoinColumn({ name: 'section_id' })
   section: CourseSection;
+
+  @OneToMany(() => UserGrade, (userGrade) => userGrade.lesson)
+  userGrades: UserGrade[];
+
+  @OneToMany(() => Assignment, (assignment) => assignment.lesson)
+  assignments: Assignment[];
+
+  @OneToMany(() => Quiz, (quiz) => quiz.lesson)
+  quizzes: Quiz[];
 }
