@@ -2,6 +2,12 @@ import { Box, Typography, Grid, Card, Button } from "@mui/material";
 import { Assignment, People, School } from "@mui/icons-material";
 import ForumDiscussionCard from "../forum/ForumDiscussionCard";
 import { useNavigate } from "react-router-dom";
+import { useEffect } from "react";
+import { selectForumsStatus } from "../../../features/forums/forumsSelectors";
+import { useAppDispatch } from "../../../app/hooks";
+import { useAppSelector } from "../../../app/hooks";
+import { selectAllForums } from "../../../features/forums/forumsSelectors";
+import { fetchForums } from "../../../features/forums/forumsApiSlice";
 
 interface ForumTopic {
   id: number;
@@ -50,6 +56,16 @@ const forumTopics: ForumTopic[] = [
 const FeaturedForumDiscussions = () => {
   const navigate = useNavigate();
 
+  const dispatch = useAppDispatch();
+  const forums = useAppSelector(selectAllForums);
+  const status = useAppSelector(selectForumsStatus);
+
+  useEffect(() => {
+    if (status === "idle") {
+      dispatch(fetchForums());
+    }
+  }, [dispatch, status, navigate]);
+
   return (
     <Box sx={{ mb: 8 }}>
       <Box sx={{ display: "flex", justifyContent: "space-between", mb: 3 }}>
@@ -95,38 +111,11 @@ const FeaturedForumDiscussions = () => {
         </Box>
       </Box>
 
-      {/* Quick Stats */}
-      <Box sx={{ mt: 4, mb: 4 }}>
-        <Grid container spacing={3}>
-          {[
-            { icon: <School />, label: "Chủ đề", value: "1,234" },
-            { icon: <Assignment />, label: "Bài viết", value: "5,678" },
-            {
-              icon: <People />,
-              label: "Thành viên tích cực",
-              value: "890",
-            },
-          ].map((stat, index) => (
-            <Grid item xs={12} sm={4} key={index}>
-              <Card sx={{ textAlign: "center", py: 2 }}>
-                <Box sx={{ color: "primary.main", mb: 1 }}>{stat.icon}</Box>
-                <Typography variant="h5" fontWeight="bold">
-                  {stat.value}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {stat.label}
-                </Typography>
-              </Card>
-            </Grid>
-          ))}
-        </Grid>
-      </Box>
-
       {/* Forum Topics */}
       <Grid container spacing={3}>
-        {forumTopics.map((topic) => (
-          <Grid item xs={12} key={topic.id}>
-            <ForumDiscussionCard topic={topic} />
+        {forums?.slice(0, 3)?.map((forum) => (
+          <Grid item xs={12} key={forum.id}>
+            <ForumDiscussionCard forum={forum} />
           </Grid>
         ))}
       </Grid>

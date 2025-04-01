@@ -38,6 +38,7 @@ import { Assignment } from './entities/Assignment';
 import { Quiz } from './entities/Quiz';
 import { UserGradesModule } from './modules/user-grades/user-grades.module';
 import { AcademicClass } from './entities/AcademicClass';
+import { CourseProgress } from './entities/CourseProgress';
 
 @Module({
   imports: [
@@ -80,6 +81,7 @@ import { AcademicClass } from './entities/AcademicClass';
         Assignment,
         Quiz,
         AcademicClass,
+        CourseProgress,
       ],
       // synchronize: true, // tự động tạo bảng trong entity (chỉ dùng trong môi tường dev)
     }),

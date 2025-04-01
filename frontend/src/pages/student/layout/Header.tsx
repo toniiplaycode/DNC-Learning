@@ -21,7 +21,6 @@ import {
   ListItemButton,
   ListItemIcon,
   Divider,
-  useTheme,
   Collapse,
 } from "@mui/material";
 import {
@@ -51,6 +50,13 @@ import { fetchCategories } from "../../../features/categories/categoriesApiSlice
 import { selectActiveCategories } from "../../../features/categories/categoriesSelectors";
 import { logout } from "../../../features/auth/authApiSlice";
 import { selectCurrentUser } from "../../../features/auth/authSelectors";
+import { setSearch } from "../../../features/commons/commonsSlide";
+import { fetchCourses } from "../../../features/courses/coursesApiSlice";
+import { selectAllCourses } from "../../../features/courses/coursesSelector";
+import { fetchInstructors } from "../../../features/user_instructors/instructorsApiSlice";
+import { selectAllInstructors } from "../../../features/user_instructors/instructorsSelectors";
+import { selectAllForums } from "../../../features/forums/forumsSelectors";
+import { fetchForums } from "../../../features/forums/forumsApiSlice";
 
 // Styled components
 const SearchDialog = styled(Dialog)(({ theme }) => ({
@@ -108,10 +114,17 @@ const Header = () => {
   const [isLogin, setIsLogin] = useState(false);
   const [user, setUser] = useState(null);
   const [mobileSubmenuOpen, setMobileSubmenuOpen] = useState(false);
+  const courses = useAppSelector(selectAllCourses);
+  const instructors = useAppSelector(selectAllInstructors);
+  const forums = useAppSelector(selectAllForums);
+  0;
 
   // Lấy danh sách danh mục khi component được mount
   useEffect(() => {
     dispatch(fetchCategories());
+    dispatch(fetchCourses());
+    dispatch(fetchInstructors());
+    dispatch(fetchForums());
   }, [dispatch]);
 
   useEffect(() => {
@@ -164,32 +177,65 @@ const Header = () => {
   };
 
   const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const query = event.target.value;
+    const query = event.target.value.toLowerCase();
     setSearchQuery(query);
 
-    // Mock search results
     if (query.trim()) {
-      setSearchResults([
-        {
-          type: "course",
-          title: "React & TypeScript",
-          instructor: "John Doe",
-          image: "/src/assets/courses/react-ts.png",
-        },
-        {
-          type: "instructor",
-          name: "Sarah Johnson",
-          title: "AI Expert",
-          avatar: "/src/assets/instructors/sarah.png",
-        },
-        {
-          type: "forum",
-          title: "Tips học lập trình hiệu quả",
-          author: "Alex Johnson",
-        },
-      ]);
+      const filteredResults = [
+        // Search courses
+        ...courses
+          .filter(
+            (course) =>
+              course.title.toLowerCase().includes(query) ||
+              course.description.toLowerCase().includes(query)
+          )
+          .map((course) => ({
+            type: "course",
+            id: course.id,
+            title: course.title,
+            image: course.thumbnailUrl,
+          })),
+
+        // Search instructors
+        ...instructors
+          .filter((instructor) =>
+            instructor.fullName.toLowerCase().includes(query)
+          )
+          .map((instructor) => ({
+            type: "instructor",
+            id: instructor.id,
+            title: instructor.fullName,
+            image: instructor.avatarUrl,
+          })),
+
+        // Search forums
+        ...forums
+          .filter((forum) => forum.title.toLowerCase().includes(query))
+          .map((forum) => ({
+            type: "forum",
+            id: forum.id,
+            title: forum.title,
+          })),
+      ];
+
+      setSearchResults(filteredResults);
     } else {
       setSearchResults([]);
+    }
+  };
+
+  const handleSearchResultClick = (result: any) => {
+    handleSearchClose();
+    switch (result.type) {
+      case "course":
+        navigate(`/course/${result.id}`);
+        break;
+      case "instructor":
+        navigate(`/view-instructor/${result.id}`);
+        break;
+      case "forum":
+        navigate(`/forum/${result.id}`);
+        break;
     }
   };
 
@@ -798,7 +844,7 @@ const Header = () => {
                 <Search />
               </SearchIconWrapper>
               <StyledInputBase
-                placeholder="Tìm kiếm khóa học, giảng viên..."
+                placeholder="Tìm kiếm khóa học, giảng viên, diễn đàn..."
                 value={searchQuery}
                 onChange={handleSearchChange}
                 autoFocus
@@ -814,17 +860,7 @@ const Header = () => {
             {searchResults.map((result, index) => (
               <MenuItem
                 key={index}
-                onClick={() => {
-                  handleSearchClose();
-                  // Navigate based on result type
-                  if (result.type === "course") {
-                    navigate(`/courses/${result.title}`);
-                  } else if (result.type === "instructor") {
-                    navigate(`/instructors/${result.name}`);
-                  } else if (result.type === "forum") {
-                    navigate(`/forum/post/${result.title}`);
-                  }
-                }}
+                onClick={() => handleSearchResultClick(result)}
               >
                 {result.type === "course" && (
                   <Stack direction="row" spacing={2} alignItems="center">
@@ -846,11 +882,13 @@ const Header = () => {
 
                 {result.type === "instructor" && (
                   <Stack direction="row" spacing={2} alignItems="center">
-                    <Avatar src={result.avatar} />
+                    <Avatar src={result.image} />
                     <Box>
-                      <Typography variant="subtitle2">{result.name}</Typography>
+                      <Typography variant="subtitle2">
+                        {result.title}
+                      </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        Giảng viên • {result.title}
+                        Giảng viên • {result.instructor}
                       </Typography>
                     </Box>
                   </Stack>
@@ -882,22 +920,67 @@ const Header = () => {
               </Box>
             )}
 
-            {!searchQuery && (
+            {searchQuery.length == 0 && (
               <Box sx={{ p: 2 }}>
+                {/* Popular Categories */}
                 <Typography variant="subtitle2" gutterBottom>
-                  Tìm kiếm phổ biến
+                  Danh mục phổ biến
+                </Typography>
+                <Stack direction="row" spacing={1} flexWrap="wrap" mb={2}>
+                  {categories.slice(0, 5).map((category) => (
+                    <Chip
+                      key={category.id}
+                      label={category.name}
+                      onClick={() => {
+                        setSearchQuery(category.name);
+                        handleSearchChange({
+                          target: { value: category.name },
+                        } as React.ChangeEvent<HTMLInputElement>);
+                      }}
+                      sx={{ m: 0.5 }}
+                    />
+                  ))}
+                </Stack>
+
+                {/* Featured Courses */}
+                <Typography variant="subtitle2" gutterBottom>
+                  Khóa học tiêu biểu
+                </Typography>
+                <Stack direction="row" spacing={1} flexWrap="wrap" mb={2}>
+                  {courses.slice(0, 5).map((course) => (
+                    <Chip
+                      key={course.id}
+                      label={course.title}
+                      onClick={() => {
+                        setSearchQuery(course.title);
+                        handleSearchChange({
+                          target: { value: course.title },
+                        } as React.ChangeEvent<HTMLInputElement>);
+                      }}
+                      sx={{ m: 0.5 }}
+                    />
+                  ))}
+                </Stack>
+
+                {/* Top Instructors */}
+                <Typography variant="subtitle2" gutterBottom>
+                  Giảng viên tiêu biểu
                 </Typography>
                 <Stack direction="row" spacing={1} flexWrap="wrap">
-                  {["React", "Python", "Marketing", "UI/UX", "English"].map(
-                    (term) => (
-                      <Chip
-                        key={term}
-                        label={term}
-                        onClick={() => setSearchQuery(term)}
-                        sx={{ m: 0.5 }}
-                      />
-                    )
-                  )}
+                  {instructors.slice(0, 5).map((instructor) => (
+                    <Chip
+                      key={instructor.id}
+                      avatar={<Avatar src={instructor.avatarUrl} />}
+                      label={instructor.fullName}
+                      onClick={() => {
+                        setSearchQuery(instructor.fullName);
+                        handleSearchChange({
+                          target: { value: instructor.fullName },
+                        } as React.ChangeEvent<HTMLInputElement>);
+                      }}
+                      sx={{ m: 0.5 }}
+                    />
+                  ))}
                 </Stack>
               </Box>
             )}

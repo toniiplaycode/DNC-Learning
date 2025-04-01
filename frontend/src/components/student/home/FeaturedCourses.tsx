@@ -44,7 +44,7 @@ const FeaturedCourses: React.FC = () => {
     id: course.id,
     title: course.title,
     instructor: {
-      name: course.instructor?.fullName || "Giảng viên",
+      fullName: course.instructor?.fullName || "Giảng viên",
       avatar: course.instructor?.user?.avatarUrl,
     },
     rating: calculateAverageRating(course.reviews),

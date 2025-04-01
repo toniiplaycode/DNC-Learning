@@ -71,7 +71,7 @@ const InstructorProfile = () => {
       id: course.id,
       title: course.title,
       instructor: {
-        name: currentInstructor.fullName,
+        fullName: currentInstructor.fullName,
         avatar:
           currentInstructor.user?.avatarUrl || "/src/assets/default-avatar.png",
       },

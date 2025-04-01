@@ -84,7 +84,14 @@ export class EnrollmentsService {
   async findByUser(userId: number): Promise<Enrollment[]> {
     return this.enrollmentsRepository.find({
       where: { userId },
-      relations: ['course'],
+      relations: [
+        'course',
+        'course.instructor',
+        'course.instructor.user',
+        'course.category',
+        'course.sections',
+        'course.sections.lessons',
+      ],
     });
   }
 

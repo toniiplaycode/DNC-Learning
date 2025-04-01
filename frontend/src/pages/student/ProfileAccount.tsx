@@ -1168,7 +1168,7 @@ const ProfileAccount: React.FC = () => {
                       Tổng quan
                     </Typography>
                     <Grid container spacing={3}>
-                      <Grid item xs={4}>
+                      <Grid item xs={12} md>
                         <Card>
                           <CardContent sx={{ textAlign: "center" }}>
                             <Typography variant="h4" color="primary">
@@ -1180,19 +1180,7 @@ const ProfileAccount: React.FC = () => {
                           </CardContent>
                         </Card>
                       </Grid>
-                      <Grid item xs={4}>
-                        <Card>
-                          <CardContent sx={{ textAlign: "center" }}>
-                            <Typography variant="h4">
-                              {mockUserData.grades.overall.totalCredits}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              Tổng số tín chỉ
-                            </Typography>
-                          </CardContent>
-                        </Card>
-                      </Grid>
-                      <Grid item xs={4}>
+                      <Grid item xs={12} md={6}>
                         <Card>
                           <CardContent sx={{ textAlign: "center" }}>
                             <Typography variant="h4" color="success.main">

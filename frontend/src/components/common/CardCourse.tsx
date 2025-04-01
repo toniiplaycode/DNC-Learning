@@ -18,7 +18,7 @@ interface CardCourseProps {
   id: number;
   title: string;
   instructor: {
-    name: string;
+    fullName: string;
     avatar?: string;
   };
   rating: number;
@@ -116,7 +116,7 @@ const CardCourse: React.FC<CardCourseProps> = ({
             sx={{ width: 24, height: 24, mr: 1 }}
           />
           <Typography variant="body2" color="text.secondary">
-            {instructor.name}
+            {instructor.fullName}
           </Typography>
         </Box>
 
@@ -197,7 +197,7 @@ const CardCourse: React.FC<CardCourseProps> = ({
                 navigate(`/course/${id}/learn`);
               }}
             >
-              Tiếp tục học
+              {progress === 100 ? "Xem lại" : "Tiếp tục học"}
             </Button>
           </>
         )}

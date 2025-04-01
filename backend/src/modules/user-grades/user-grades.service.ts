@@ -15,8 +15,6 @@ import { Assignment } from '../../entities/Assignment';
 import { Quiz } from '../../entities/Quiz';
 import { CreateUserGradeDto } from './dto/create-user-grade.dto';
 import { UpdateUserGradeDto } from './dto/update-user-grade.dto';
-import { plainToClass } from 'class-transformer';
-import { UserGradeResponseDto } from './dto/user-grade-response.dto';
 
 @Injectable()
 export class UserGradesService {
@@ -128,7 +126,7 @@ export class UserGradesService {
     userId?: number;
     courseId?: number;
     gradeType?: GradeType;
-  }): Promise<UserGradeResponseDto[]> {
+  }): Promise<UserGrade[]> {
     const queryBuilder = this.userGradeRepository
       .createQueryBuilder('grade')
       .leftJoinAndSelect('grade.user', 'user')
@@ -156,18 +154,10 @@ export class UserGradesService {
       });
     }
 
-    const grades = await queryBuilder.getMany();
-    return grades.map((grade) =>
-      plainToClass(UserGradeResponseDto, grade, {
-        excludeExtraneousValues: true,
-      }),
-    );
+    return queryBuilder.getMany();
   }
 
-  async findByCourse(
-    courseId: number,
-    userId?: number,
-  ): Promise<UserGradeResponseDto[]> {
+  async findByCourse(courseId: number, userId?: number): Promise<UserGrade[]> {
     const queryBuilder = this.userGradeRepository
       .createQueryBuilder('grade')
       .leftJoinAndSelect('grade.user', 'user')
@@ -182,16 +172,11 @@ export class UserGradesService {
       queryBuilder.andWhere('grade.userId = :userId', { userId });
     }
 
-    const grades = await queryBuilder.getMany();
-    return grades.map((grade) =>
-      plainToClass(UserGradeResponseDto, grade, {
-        excludeExtraneousValues: true,
-      }),
-    );
+    return queryBuilder.getMany();
   }
 
-  async findByUser(userId: number): Promise<UserGradeResponseDto[]> {
-    const grades = await this.userGradeRepository.find({
+  async findByUser(userId: number): Promise<UserGrade[]> {
+    return this.userGradeRepository.find({
       where: { userId },
       relations: [
         'user',
@@ -202,14 +187,9 @@ export class UserGradesService {
         'quiz',
       ],
     });
-    return grades.map((grade) =>
-      plainToClass(UserGradeResponseDto, grade, {
-        excludeExtraneousValues: true,
-      }),
-    );
   }
 
-  async findOne(id: number): Promise<UserGradeResponseDto> {
+  async findOne(id: number): Promise<UserGrade> {
     const grade = await this.userGradeRepository.findOne({
       where: { id },
       relations: [
@@ -226,16 +206,14 @@ export class UserGradesService {
       throw new NotFoundException(`Không tìm thấy điểm với ID ${id}`);
     }
 
-    return plainToClass(UserGradeResponseDto, grade, {
-      excludeExtraneousValues: true,
-    });
+    return grade;
   }
 
   async update(
     id: number,
     updateUserGradeDto: UpdateUserGradeDto,
     instructorId?: number,
-  ): Promise<UserGradeResponseDto> {
+  ): Promise<UserGrade> {
     const grade = await this.userGradeRepository.findOne({
       where: { id },
       relations: ['user', 'course', 'instructor'],
@@ -254,10 +232,7 @@ export class UserGradesService {
     Object.assign(grade, updateUserGradeDto);
 
     // Lưu lại và trả về kết quả
-    const updatedGrade = await this.userGradeRepository.save(grade);
-    return plainToClass(UserGradeResponseDto, updatedGrade, {
-      excludeExtraneousValues: true,
-    });
+    return this.userGradeRepository.save(grade);
   }
 
   async remove(id: number, instructorId?: number): Promise<void> {
@@ -284,7 +259,7 @@ export class UserGradesService {
     totalScore: number;
     maxScore: number;
     percentage: number;
-    grades: UserGradeResponseDto[];
+    grades: UserGrade[];
   }> {
     const grades = await this.findByCourse(courseId, userId);
 

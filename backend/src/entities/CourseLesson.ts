@@ -12,6 +12,7 @@ import { UserGrade } from './UserGrade';
 import { CourseSection } from './CourseSection';
 import { Assignment } from './Assignment';
 import { Quiz } from './Quiz';
+import { CourseProgress } from './CourseProgress';
 
 export enum ContentType {
   VIDEO = 'video',
@@ -74,4 +75,7 @@ export class CourseLesson {
 
   @OneToMany(() => Quiz, (quiz) => quiz.lesson)
   quizzes: Quiz[];
+
+  @OneToMany(() => CourseProgress, (progress) => progress.lesson)
+  progress: CourseProgress[];
 }
