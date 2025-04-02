@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, In } from 'typeorm';
 import { UserGrade, GradeType } from '../../entities/UserGrade';
 import { User } from '../../entities/User';
 import { Course } from '../../entities/Course';
@@ -15,39 +15,49 @@ import { Assignment } from '../../entities/Assignment';
 import { Quiz } from '../../entities/Quiz';
 import { CreateUserGradeDto } from './dto/create-user-grade.dto';
 import { UpdateUserGradeDto } from './dto/update-user-grade.dto';
+import { GradeSummaryDto } from './dto/grade-summary.dto';
+import { plainToClass } from 'class-transformer';
+
+// Define an interface for the course performance object
+export interface CoursePerformance {
+  courseId: number;
+  courseTitle: string;
+  averageGrade: number;
+  gradeCount: number;
+}
 
 @Injectable()
 export class UserGradesService {
   constructor(
     @InjectRepository(UserGrade)
-    private userGradeRepository: Repository<UserGrade>,
+    private userGradesRepository: Repository<UserGrade>,
     @InjectRepository(User)
-    private userRepository: Repository<User>,
+    private usersRepository: Repository<User>,
     @InjectRepository(Course)
-    private courseRepository: Repository<Course>,
+    private coursesRepository: Repository<Course>,
     @InjectRepository(UserInstructor)
-    private instructorRepository: Repository<UserInstructor>,
+    private instructorsRepository: Repository<UserInstructor>,
     @InjectRepository(CourseLesson)
-    private lessonRepository: Repository<CourseLesson>,
+    private lessonsRepository: Repository<CourseLesson>,
     @InjectRepository(Assignment)
-    private assignmentRepository: Repository<Assignment>,
+    private assignmentsRepository: Repository<Assignment>,
     @InjectRepository(Quiz)
-    private quizRepository: Repository<Quiz>,
+    private quizzesRepository: Repository<Quiz>,
   ) {}
 
   async create(createUserGradeDto: CreateUserGradeDto): Promise<UserGrade> {
-    // Kiểm tra người dùng tồn tại
-    const user = await this.userRepository.findOne({
+    // Kiểm tra user tồn tại
+    const user = await this.usersRepository.findOne({
       where: { id: createUserGradeDto.userId },
     });
     if (!user) {
       throw new NotFoundException(
-        `Không tìm thấy người dùng với ID ${createUserGradeDto.userId}`,
+        `Không tìm thấy học viên với ID ${createUserGradeDto.userId}`,
       );
     }
 
-    // Kiểm tra khóa học tồn tại
-    const course = await this.courseRepository.findOne({
+    // Kiểm tra course tồn tại
+    const course = await this.coursesRepository.findOne({
       where: { id: createUserGradeDto.courseId },
     });
     if (!course) {
@@ -56,8 +66,8 @@ export class UserGradesService {
       );
     }
 
-    // Kiểm tra giảng viên tồn tại
-    const instructor = await this.instructorRepository.findOne({
+    // Kiểm tra instructor tồn tại
+    const instructor = await this.instructorsRepository.findOne({
       where: { id: createUserGradeDto.gradedBy },
     });
     if (!instructor) {
@@ -66,147 +76,173 @@ export class UserGradesService {
       );
     }
 
-    // Kiểm tra bài học (nếu có)
+    // Kiểm tra các thành phần tùy chọn nếu có
     if (createUserGradeDto.lessonId) {
-      const lesson = await this.lessonRepository.findOne({
-        where: {
-          id: createUserGradeDto.lessonId,
-          section: { course: { id: createUserGradeDto.courseId } },
-        },
-        relations: ['section', 'section.course'],
+      const lesson = await this.lessonsRepository.findOne({
+        where: { id: createUserGradeDto.lessonId },
       });
       if (!lesson) {
-        throw new BadRequestException(
-          `Bài học không hợp lệ hoặc không thuộc khóa học này`,
+        throw new NotFoundException(
+          `Không tìm thấy bài học với ID ${createUserGradeDto.lessonId}`,
         );
       }
     }
 
-    // Kiểm tra bài tập (nếu có)
     if (createUserGradeDto.assignmentId) {
-      const assignment = await this.assignmentRepository.findOne({
+      const assignment = await this.assignmentsRepository.findOne({
         where: { id: createUserGradeDto.assignmentId },
-        relations: ['lesson', 'lesson.section', 'lesson.section.course'],
       });
-      if (
-        !assignment ||
-        assignment.lesson.section.course.id !== createUserGradeDto.courseId
-      ) {
-        throw new BadRequestException(
-          `Bài tập không hợp lệ hoặc không thuộc khóa học này`,
+      if (!assignment) {
+        throw new NotFoundException(
+          `Không tìm thấy bài tập với ID ${createUserGradeDto.assignmentId}`,
         );
       }
     }
 
-    // Kiểm tra bài kiểm tra (nếu có)
     if (createUserGradeDto.quizId) {
-      const quiz = await this.quizRepository.findOne({
+      const quiz = await this.quizzesRepository.findOne({
         where: { id: createUserGradeDto.quizId },
-        relations: ['lesson', 'lesson.section', 'lesson.section.course'],
       });
-      if (
-        !quiz ||
-        quiz.lesson.section.course.id !== createUserGradeDto.courseId
-      ) {
-        throw new BadRequestException(
-          `Bài kiểm tra không hợp lệ hoặc không thuộc khóa học này`,
+      if (!quiz) {
+        throw new NotFoundException(
+          `Không tìm thấy bài kiểm tra với ID ${createUserGradeDto.quizId}`,
         );
       }
     }
 
-    // Kiểm tra loại điểm phù hợp với dữ liệu
-    this.validateGradeType(createUserGradeDto);
+    // Tạo bản ghi điểm mới
+    const userGrade = this.userGradesRepository.create({
+      ...createUserGradeDto,
+      gradedAt: new Date(),
+    });
 
-    // Tạo điểm mới
-    const userGrade = this.userGradeRepository.create(createUserGradeDto);
-    return this.userGradeRepository.save(userGrade);
+    return this.userGradesRepository.save(userGrade);
   }
 
-  async findAll(filters?: {
-    userId?: number;
-    courseId?: number;
-    gradeType?: GradeType;
-  }): Promise<UserGrade[]> {
-    const queryBuilder = this.userGradeRepository
-      .createQueryBuilder('grade')
-      .leftJoinAndSelect('grade.user', 'user')
-      .leftJoinAndSelect('grade.course', 'course')
-      .leftJoinAndSelect('grade.instructor', 'instructor')
-      .leftJoinAndSelect('grade.lesson', 'lesson')
-      .leftJoinAndSelect('grade.assignment', 'assignment')
-      .leftJoinAndSelect('grade.quiz', 'quiz');
-
-    if (filters?.userId) {
-      queryBuilder.andWhere('grade.userId = :userId', {
-        userId: filters.userId,
-      });
-    }
-
-    if (filters?.courseId) {
-      queryBuilder.andWhere('grade.courseId = :courseId', {
-        courseId: filters.courseId,
-      });
-    }
-
-    if (filters?.gradeType) {
-      queryBuilder.andWhere('grade.gradeType = :gradeType', {
-        gradeType: filters.gradeType,
-      });
-    }
-
-    return queryBuilder.getMany();
-  }
-
-  async findByCourse(courseId: number, userId?: number): Promise<UserGrade[]> {
-    const queryBuilder = this.userGradeRepository
-      .createQueryBuilder('grade')
-      .leftJoinAndSelect('grade.user', 'user')
-      .leftJoinAndSelect('grade.course', 'course')
-      .leftJoinAndSelect('grade.instructor', 'instructor')
-      .leftJoinAndSelect('grade.lesson', 'lesson')
-      .leftJoinAndSelect('grade.assignment', 'assignment')
-      .leftJoinAndSelect('grade.quiz', 'quiz')
-      .where('grade.courseId = :courseId', { courseId });
+  async findAll(
+    userId?: number,
+    courseId?: number,
+    gradeType?: GradeType,
+  ): Promise<UserGrade[]> {
+    const whereConditions: any = {};
 
     if (userId) {
-      queryBuilder.andWhere('grade.userId = :userId', { userId });
+      whereConditions.userId = userId;
     }
 
-    return queryBuilder.getMany();
-  }
+    if (courseId) {
+      whereConditions.courseId = courseId;
+    }
 
-  async findByUser(userId: number): Promise<UserGrade[]> {
-    return this.userGradeRepository.find({
-      where: { userId },
+    if (gradeType) {
+      whereConditions.gradeType = gradeType;
+    }
+
+    const userGrades = await this.userGradesRepository.find({
+      where: whereConditions,
       relations: [
         'user',
         'course',
         'instructor',
+        'instructor.user',
         'lesson',
         'assignment',
         'quiz',
       ],
+      order: {
+        createdAt: 'DESC',
+      },
     });
+
+    return userGrades;
   }
 
   async findOne(id: number): Promise<UserGrade> {
-    const grade = await this.userGradeRepository.findOne({
+    const userGrade = await this.userGradesRepository.findOne({
       where: { id },
       relations: [
         'user',
         'course',
         'instructor',
+        'instructor.user',
         'lesson',
         'assignment',
         'quiz',
       ],
     });
 
-    if (!grade) {
+    if (!userGrade) {
       throw new NotFoundException(`Không tìm thấy điểm với ID ${id}`);
     }
 
-    return grade;
+    return userGrade;
+  }
+
+  async findByUserAndCourse(
+    userId: number,
+    courseId: number,
+  ): Promise<UserGrade[]> {
+    return this.userGradesRepository.find({
+      where: { userId, courseId },
+      relations: [
+        'user',
+        'course',
+        'instructor',
+        'instructor.user',
+        'lesson',
+        'assignment',
+        'quiz',
+      ],
+      select: {
+        user: {
+          id: true,
+          username: true,
+          email: true,
+          avatarUrl: true,
+        },
+        course: {
+          id: true,
+          title: true,
+          categoryId: true,
+          description: true,
+          thumbnailUrl: true,
+        },
+        instructor: {
+          id: true,
+          fullName: true,
+          user: {
+            id: true,
+            username: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
+      },
+      order: {
+        createdAt: 'DESC',
+      },
+    });
+  }
+
+  async findByUserAndGradeType(
+    userId: number,
+    gradeType: GradeType,
+  ): Promise<UserGrade[]> {
+    return this.userGradesRepository.find({
+      where: { userId, gradeType },
+      relations: [
+        'user',
+        'course',
+        'instructor',
+        'instructor.user',
+        'lesson',
+        'assignment',
+        'quiz',
+      ],
+      order: {
+        createdAt: 'DESC',
+      },
+    });
   }
 
   async update(
@@ -214,92 +250,263 @@ export class UserGradesService {
     updateUserGradeDto: UpdateUserGradeDto,
     instructorId?: number,
   ): Promise<UserGrade> {
-    const grade = await this.userGradeRepository.findOne({
-      where: { id },
-      relations: ['user', 'course', 'instructor'],
-    });
+    const userGrade = await this.findOne(id);
 
-    if (!grade) {
-      throw new NotFoundException(`Không tìm thấy điểm với ID ${id}`);
-    }
-
-    // Kiểm tra quyền chỉnh sửa điểm
-    if (instructorId && grade.gradedBy !== instructorId) {
-      throw new ForbiddenException('Bạn không có quyền chỉnh sửa điểm này');
+    // Kiểm tra quyền cập nhật (chỉ giảng viên chấm điểm mới có quyền sửa)
+    if (instructorId && userGrade.gradedBy !== instructorId) {
+      throw new ForbiddenException(
+        'Bạn không có quyền cập nhật điểm này vì không phải người chấm điểm',
+      );
     }
 
     // Cập nhật thông tin điểm
-    Object.assign(grade, updateUserGradeDto);
+    Object.assign(userGrade, updateUserGradeDto);
 
-    // Lưu lại và trả về kết quả
-    return this.userGradeRepository.save(grade);
+    // Cập nhật ngày chấm điểm
+    userGrade.gradedAt = new Date();
+
+    return this.userGradesRepository.save(userGrade);
   }
 
   async remove(id: number, instructorId?: number): Promise<void> {
-    const grade = await this.userGradeRepository.findOne({
-      where: { id },
-    });
+    const userGrade = await this.findOne(id);
 
-    if (!grade) {
-      throw new NotFoundException(`Không tìm thấy điểm với ID ${id}`);
+    // Kiểm tra quyền xóa (chỉ giảng viên chấm điểm mới có quyền xóa)
+    if (instructorId && userGrade.gradedBy !== instructorId) {
+      throw new ForbiddenException(
+        'Bạn không có quyền xóa điểm này vì không phải người chấm điểm',
+      );
     }
 
-    // Kiểm tra quyền xóa điểm
-    if (instructorId && grade.gradedBy !== instructorId) {
-      throw new ForbiddenException('Bạn không có quyền xóa điểm này');
-    }
-
-    await this.userGradeRepository.remove(grade);
+    await this.userGradesRepository.remove(userGrade);
   }
 
   async calculateCourseGrade(
     userId: number,
     courseId: number,
-  ): Promise<{
-    totalScore: number;
-    maxScore: number;
-    percentage: number;
-    grades: UserGrade[];
-  }> {
-    const grades = await this.findByCourse(courseId, userId);
+  ): Promise<GradeSummaryDto> {
+    // Lấy tất cả điểm của học viên trong khóa học
+    const grades = await this.findByUserAndCourse(userId, courseId);
+
+    if (grades.length === 0) {
+      throw new NotFoundException(
+        `Không tìm thấy điểm nào cho học viên ${userId} trong khóa học ${courseId}`,
+      );
+    }
+
+    // Khởi tạo đối tượng kết quả
+    const result: GradeSummaryDto = {
+      userId,
+      courseId,
+      overallGrade: 0,
+      assignments: {
+        average: 0,
+        totalWeight: 0,
+        count: 0,
+      },
+      quizzes: {
+        average: 0,
+        totalWeight: 0,
+        count: 0,
+      },
+      midterm: {
+        score: 0,
+        maxScore: 0,
+        weight: 0,
+      },
+      final: {
+        score: 0,
+        maxScore: 0,
+        weight: 0,
+      },
+      participation: {
+        score: 0,
+        maxScore: 0,
+        weight: 0,
+      },
+      gradesByType: {
+        [GradeType.ASSIGNMENT]: { average: 0, weight: 0, count: 0 },
+        [GradeType.QUIZ]: { average: 0, weight: 0, count: 0 },
+        [GradeType.MIDTERM]: { average: 0, weight: 0, count: 0 },
+        [GradeType.FINAL]: { average: 0, weight: 0, count: 0 },
+        [GradeType.PARTICIPATION]: { average: 0, weight: 0, count: 0 },
+      },
+    };
+
+    // Tính toán điểm theo từng loại
+    let totalWeightedScore = 0;
+    let totalWeight = 0;
+
+    for (const grade of grades) {
+      const normalizedScore =
+        (Number(grade.score) / Number(grade.maxScore)) * 100;
+      const weight = Number(grade.weight) || 1;
+
+      // Cập nhật thông tin cho từng loại
+      result.gradesByType[grade.gradeType].count += 1;
+      result.gradesByType[grade.gradeType].weight += weight;
+
+      // Tính điểm trung bình cho loại này
+      const currentType = result.gradesByType[grade.gradeType];
+      currentType.average =
+        (currentType.average * (currentType.count - 1) + normalizedScore) /
+        currentType.count;
+
+      // Tích lũy vào điểm tổng
+      totalWeightedScore += normalizedScore * weight;
+      totalWeight += weight;
+
+      // Cập nhật thông tin chi tiết cho từng loại
+      switch (grade.gradeType) {
+        case GradeType.ASSIGNMENT:
+          result.assignments.count += 1;
+          result.assignments.totalWeight += weight;
+          result.assignments.average =
+            (result.assignments.average * (result.assignments.count - 1) +
+              normalizedScore) /
+            result.assignments.count;
+          break;
+
+        case GradeType.QUIZ:
+          result.quizzes.count += 1;
+          result.quizzes.totalWeight += weight;
+          result.quizzes.average =
+            (result.quizzes.average * (result.quizzes.count - 1) +
+              normalizedScore) /
+            result.quizzes.count;
+          break;
+
+        case GradeType.MIDTERM:
+          result.midterm.score = Number(grade.score);
+          result.midterm.maxScore = Number(grade.maxScore);
+          result.midterm.weight = weight;
+          break;
+
+        case GradeType.FINAL:
+          result.final.score = Number(grade.score);
+          result.final.maxScore = Number(grade.maxScore);
+          result.final.weight = weight;
+          break;
+
+        case GradeType.PARTICIPATION:
+          result.participation.score = Number(grade.score);
+          result.participation.maxScore = Number(grade.maxScore);
+          result.participation.weight = weight;
+          break;
+      }
+    }
+
+    // Tính điểm trung bình tổng
+    if (totalWeight > 0) {
+      result.overallGrade = totalWeightedScore / totalWeight;
+    }
+
+    return plainToClass(GradeSummaryDto, result);
+  }
+
+  async getStudentPerformanceStats(userId: number) {
+    // Lấy tất cả điểm của học viên
+    const grades = await this.userGradesRepository.find({
+      where: { userId },
+    });
 
     if (grades.length === 0) {
       return {
-        totalScore: 0,
-        maxScore: 0,
-        percentage: 0,
-        grades: [],
+        overallAverage: 0,
+        courseCount: 0,
+        gradesByType: {
+          [GradeType.ASSIGNMENT]: 0,
+          [GradeType.QUIZ]: 0,
+          [GradeType.MIDTERM]: 0,
+          [GradeType.FINAL]: 0,
+          [GradeType.PARTICIPATION]: 0,
+        },
+        coursePerformance: [],
       };
     }
 
-    let totalWeightedScore = 0;
-    let totalWeightedMaxScore = 0;
+    // Lấy danh sách các khóa học mà học viên có điểm
+    const courseIds = [...new Set(grades.map((grade) => grade.courseId))];
 
-    grades.forEach((grade) => {
-      totalWeightedScore += grade.score * grade.weight;
-      totalWeightedMaxScore += grade.maxScore * grade.weight;
-    });
+    // Thống kê điểm trung bình cho từng loại điểm
+    const gradesByType = {
+      [GradeType.ASSIGNMENT]: 0,
+      [GradeType.QUIZ]: 0,
+      [GradeType.MIDTERM]: 0,
+      [GradeType.FINAL]: 0,
+      [GradeType.PARTICIPATION]: 0,
+    };
+
+    const typeCounters = {
+      [GradeType.ASSIGNMENT]: 0,
+      [GradeType.QUIZ]: 0,
+      [GradeType.MIDTERM]: 0,
+      [GradeType.FINAL]: 0,
+      [GradeType.PARTICIPATION]: 0,
+    };
+
+    let overallTotal = 0;
+    let overallCount = 0;
+
+    // Tính điểm trung bình cho từng loại
+    for (const grade of grades) {
+      const normalizedScore =
+        (Number(grade.score) / Number(grade.maxScore)) * 100;
+      gradesByType[grade.gradeType] += normalizedScore;
+      typeCounters[grade.gradeType]++;
+      overallTotal += normalizedScore;
+      overallCount++;
+    }
+
+    // Tính trung bình cho các loại điểm
+    for (const type in gradesByType) {
+      if (typeCounters[type] > 0) {
+        gradesByType[type] = gradesByType[type] / typeCounters[type];
+      }
+    }
+
+    // Tính điểm trung bình tổng
+    const overallAverage = overallCount > 0 ? overallTotal / overallCount : 0;
+
+    // Lấy thông tin chi tiết về các khóa học
+    const courses = await this.coursesRepository.findBy({ id: In(courseIds) });
+    const courseMap = new Map(courses.map((course) => [course.id, course]));
+
+    // Initialize the array with the proper type
+    const coursePerformance: CoursePerformance[] = [];
+
+    // Tính điểm trung bình cho từng khóa học
+    for (const courseId of courseIds) {
+      const courseGrades = grades.filter(
+        (grade) => grade.courseId === courseId,
+      );
+      let courseTotal = 0;
+      let courseWeight = 0;
+
+      for (const grade of courseGrades) {
+        const normalizedScore =
+          (Number(grade.score) / Number(grade.maxScore)) * 100;
+        const weight = Number(grade.weight) || 1;
+        courseTotal += normalizedScore * weight;
+        courseWeight += weight;
+      }
+
+      const courseAverage = courseWeight > 0 ? courseTotal / courseWeight : 0;
+      const course = courseMap.get(courseId);
+
+      coursePerformance.push({
+        courseId,
+        courseTitle: course?.title || `Khóa học ${courseId}`,
+        averageGrade: courseAverage,
+        gradeCount: courseGrades.length,
+      });
+    }
 
     return {
-      totalScore: totalWeightedScore,
-      maxScore: totalWeightedMaxScore,
-      percentage:
-        totalWeightedMaxScore > 0
-          ? (totalWeightedScore / totalWeightedMaxScore) * 100
-          : 0,
-      grades,
+      overallAverage,
+      courseCount: courseIds.length,
+      gradesByType,
+      coursePerformance,
     };
-  }
-
-  private validateGradeType(dto: CreateUserGradeDto): void {
-    // Kiểm tra điểm loại ASSIGNMENT cần có assignmentId
-    if (dto.gradeType === GradeType.ASSIGNMENT && !dto.assignmentId) {
-      throw new BadRequestException('Điểm loại ASSIGNMENT cần có mã bài tập');
-    }
-
-    // Kiểm tra điểm loại QUIZ cần có quizId
-    if (dto.gradeType === GradeType.QUIZ && !dto.quizId) {
-      throw new BadRequestException('Điểm loại QUIZ cần có mã bài kiểm tra');
-    }
   }
 }

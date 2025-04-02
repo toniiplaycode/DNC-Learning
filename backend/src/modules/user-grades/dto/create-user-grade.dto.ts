@@ -1,11 +1,11 @@
 import {
-  IsNumber,
   IsEnum,
+  IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
-  Min,
   Max,
-  IsPositive,
+  Min,
 } from 'class-validator';
 import { GradeType } from '../../../entities/UserGrade';
 import { Type } from 'class-transformer';
@@ -47,7 +47,7 @@ export class CreateUserGradeDto {
   score: number;
 
   @IsNumber()
-  @IsPositive()
+  @IsNotEmpty()
   @Type(() => Number)
   maxScore: number;
 

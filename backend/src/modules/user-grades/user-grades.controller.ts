@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
   ParseIntPipe,
+  ForbiddenException,
 } from '@nestjs/common';
 import { UserGradesService } from './user-grades.service';
 import { CreateUserGradeDto } from './dto/create-user-grade.dto';
@@ -27,72 +28,83 @@ export class UserGradesController {
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.INSTRUCTOR)
-  create(@Body() createUserGradeDto: CreateUserGradeDto, @GetUser() user) {
+  create(@Body() createUserGradeDto: CreateUserGradeDto) {
     return this.userGradesService.create(createUserGradeDto);
   }
 
   @Get()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.INSTRUCTOR)
+  @UseGuards(JwtAuthGuard)
   findAll(
     @Query('userId') userId?: string,
     @Query('courseId') courseId?: string,
     @Query('gradeType') gradeType?: GradeType,
     @GetUser() user?,
   ) {
-    const filters: any = {};
-
-    if (userId) filters.userId = parseInt(userId, 10);
-    if (courseId) filters.courseId = parseInt(courseId, 10);
-    if (gradeType) filters.gradeType = gradeType;
-
-    // Nếu là INSTRUCTOR và không phải admin, chỉ xem được điểm do mình chấm
-    if (user?.role === UserRole.INSTRUCTOR && user?.instructorId) {
-      filters.gradedBy = user.instructorId;
-    }
-
-    return this.userGradesService.findAll(filters);
-  }
-
-  @Get('course/:courseId')
-  @UseGuards(JwtAuthGuard)
-  findByCourse(
-    @Param('courseId', ParseIntPipe) courseId: number,
-    @Query('userId') userId?: string,
-    @GetUser() user?,
-  ) {
     // Nếu là học viên, chỉ xem được điểm của mình
     if (user?.role === UserRole.STUDENT) {
-      return this.userGradesService.findByCourse(courseId, user.id);
+      userId = String(user.id);
     }
 
-    // Ngược lại có thể xem điểm của người khác
-    return this.userGradesService.findByCourse(
-      courseId,
+    return this.userGradesService.findAll(
       userId ? parseInt(userId, 10) : undefined,
+      courseId ? parseInt(courseId, 10) : undefined,
+      gradeType,
     );
   }
 
-  @Get('user/:userId')
+  @Get('student/performance')
   @UseGuards(JwtAuthGuard)
-  findByUser(@Param('userId', ParseIntPipe) userId: number, @GetUser() user) {
-    // Nếu là học viên, chỉ xem được điểm của mình
-    if (user?.role === UserRole.STUDENT && user?.id !== userId) {
-      userId = user.id;
+  async getStudentPerformance(
+    @Query('userId') userId?: string,
+    @GetUser() user?,
+  ) {
+    // Nếu là học viên, chỉ xem được số liệu thống kê của mình
+    if (user?.role === UserRole.STUDENT) {
+      userId = String(user.id);
     }
 
-    return this.userGradesService.findByUser(userId);
+    if (!userId) {
+      throw new ForbiddenException('Vui lòng chỉ định ID học viên');
+    }
+
+    return this.userGradesService.getStudentPerformanceStats(
+      parseInt(userId, 10),
+    );
   }
 
-  @Get('calculate/:userId/:courseId')
+  @Get('user/:userId/course/:courseId')
   @UseGuards(JwtAuthGuard)
-  calculateCourseGrade(
+  findByUserAndCourse(
     @Param('userId', ParseIntPipe) userId: number,
     @Param('courseId', ParseIntPipe) courseId: number,
     @GetUser() user,
   ) {
     // Nếu là học viên, chỉ xem được điểm của mình
-    if (user?.role === UserRole.STUDENT && user?.id !== userId) {
+
+    if (
+      user?.role === UserRole.STUDENT &&
+      Number(user?.id) !== Number(userId)
+    ) {
+      throw new ForbiddenException(
+        'Bạn không có quyền xem điểm của người khác',
+      );
+    }
+
+    return this.userGradesService.findByUserAndCourse(userId, courseId);
+  }
+
+  @Get('user/:userId/course/:courseId/summary')
+  @UseGuards(JwtAuthGuard)
+  async calculateCourseGrade(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Param('courseId', ParseIntPipe) courseId: number,
+    @GetUser() user,
+  ) {
+    // Nếu là học viên, chỉ xem được điểm của mình
+    if (
+      user?.role === UserRole.STUDENT &&
+      Number(user?.id) !== Number(userId)
+    ) {
       userId = user.id;
     }
 

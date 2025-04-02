@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Box,
   Typography,
@@ -8,27 +8,64 @@ import {
   Stack,
   LinearProgress,
 } from "@mui/material";
+import { fetchUserCourseGrades } from "../../../features/user-grades/userGradesSlice";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import { useParams } from "react-router-dom";
+import { selectUser } from "../../../features/commons/commonsSelector";
+import { selectUserCourseGrades } from "../../../features/user-grades/userGradesSelectors";
+import { GradeType, UserGrade } from "../../../types/user-grade.types";
+import { format } from "date-fns";
 
-interface GradeItem {
-  id: number;
-  title: string;
-  type: "quiz" | "assignment" | "midterm" | "final";
-  score: number;
-  maxScore: number;
-}
+const GradeOverview: React.FC = () => {
+  const dispatch = useAppDispatch();
+  const { id } = useParams();
+  const currentUser = useAppSelector(selectUser);
+  const userCourseGrades = useAppSelector(selectUserCourseGrades);
 
-interface GradeOverviewProps {
-  grades: GradeItem[];
-}
+  useEffect(() => {
+    if (currentUser?.id && id) {
+      dispatch(
+        fetchUserCourseGrades({
+          userId: Number(currentUser?.id),
+          courseId: Number(id),
+        })
+      );
+    }
+  }, [dispatch, currentUser, id]);
 
-const GradeOverview: React.FC<GradeOverviewProps> = ({ grades }) => {
+  // Hàm lấy tiêu đề cho mỗi điểm
+  const getGradeTitle = (grade: UserGrade): string => {
+    if (grade.gradeType === GradeType.ASSIGNMENT && grade.assignment) {
+      return grade.assignment.title;
+    } else if (grade.gradeType === GradeType.QUIZ && grade.quiz) {
+      return grade.quiz.title;
+    } else if (grade.lesson) {
+      return grade.lesson.title;
+    } else {
+      const gradeTypeMap = {
+        [GradeType.MIDTERM]: "Bài thi giữa kỳ",
+        [GradeType.FINAL]: "Bài thi cuối kỳ",
+        [GradeType.PARTICIPATION]: "Điểm tham gia",
+        [GradeType.ASSIGNMENT]: "Bài tập",
+        [GradeType.QUIZ]: "Bài kiểm tra",
+      };
+      return gradeTypeMap[grade.gradeType] || "Không xác định";
+    }
+  };
+
   // Calculate overall grade
-  const totalWeight = grades.reduce((acc, grade) => acc + grade.weight, 0);
-  const weightedScore = grades.reduce(
-    (acc: number, grade: GradeItem) =>
-      acc + (grade.score / grade.maxScore) * grade.weight,
+  const totalWeight = userCourseGrades.reduce(
+    (acc, grade) => acc + Number(grade.weight),
     0
   );
+
+  const weightedScore = userCourseGrades.reduce(
+    (acc: number, grade: UserGrade) =>
+      acc +
+      (Number(grade.score) / Number(grade.maxScore)) * Number(grade.weight),
+    0
+  );
+
   const overallPercentage =
     totalWeight > 0 ? (weightedScore / totalWeight) * 100 : 0;
 
@@ -39,18 +76,18 @@ const GradeOverview: React.FC<GradeOverviewProps> = ({ grades }) => {
       </Typography>
 
       {/* Overall Grade Summary */}
-      <Card variant="outlined" sx={{ mb: 3 }}>
+      <Card sx={{ mb: 3 }}>
         <CardContent>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={4}>
-              <Typography variant="h5" fontWeight="bold" color="primary">
+            <Grid item xs={12} sm={6}>
+              <Typography variant="h4" color="primary">
                 {overallPercentage.toFixed(1)}%
               </Typography>
-              <Typography variant="body2" color="text.secondary">
+              <Typography variant="body1" color="text.secondary">
                 Điểm trung bình
               </Typography>
             </Grid>
-            <Grid item xs={12} md={8}>
+            <Grid item xs={12} sm={6}>
               <Box sx={{ width: "100%" }}>
                 <LinearProgress
                   variant="determinate"
@@ -67,15 +104,16 @@ const GradeOverview: React.FC<GradeOverviewProps> = ({ grades }) => {
         Chi tiết điểm số
       </Typography>
       <Stack spacing={2}>
-        {grades.map((grade) => (
+        {userCourseGrades.map((grade) => (
           <Card key={grade.id} variant="outlined">
             <CardContent>
               <Grid container spacing={2} alignItems="center">
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle1">{grade.title}</Typography>
+                  <Typography variant="subtitle1">
+                    {getGradeTitle(grade)}
+                  </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Hoàn thành:{" "}
-                    {new Date(grade.completedAt).toLocaleDateString()}
+                    Hoàn thành: {format(new Date(grade.gradedAt), "dd/MM/yyyy")}
                   </Typography>
                 </Grid>
                 <Grid item xs={12} sm={3}>
@@ -91,7 +129,7 @@ const GradeOverview: React.FC<GradeOverviewProps> = ({ grades }) => {
                 <Grid item xs={12} sm={3}>
                   <LinearProgress
                     variant="determinate"
-                    value={(grade.score / grade.maxScore) * 100}
+                    value={(Number(grade.score) / Number(grade.maxScore)) * 100}
                     sx={{ height: 8, borderRadius: 1 }}
                   />
                 </Grid>

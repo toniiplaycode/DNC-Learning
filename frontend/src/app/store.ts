@@ -8,6 +8,7 @@ import commonsReducer from "../features/commons/commonsSlide";
 import discussionsReducer from "../features/discussions/discussionsSlice";
 import documentsReducer from "../features/documents/documentsSlice";
 import reviewsReducer from "../features/reviews/reviewsSlice";
+import userGradesReducer from "../features/user-grades/userGradesSlice";
 // Import other reducers...
 
 export const store = configureStore({
@@ -21,6 +22,7 @@ export const store = configureStore({
     discussions: discussionsReducer,
     documents: documentsReducer,
     reviews: reviewsReducer,
+    userGrades: userGradesReducer,
     // Add other reducers...
   },
 });
