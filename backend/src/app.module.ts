@@ -39,6 +39,8 @@ import { Quiz } from './entities/Quiz';
 import { UserGradesModule } from './modules/user-grades/user-grades.module';
 import { AcademicClass } from './entities/AcademicClass';
 import { CourseProgress } from './entities/CourseProgress';
+import { CourseLessonDiscussion } from './entities/CourseLessonDiscussion';
+import { CourseLessonDiscussionsModule } from './modules/course-lesson-discussions/course-lesson-discussions.module';
 
 @Module({
   imports: [
@@ -82,6 +84,7 @@ import { CourseProgress } from './entities/CourseProgress';
         Quiz,
         AcademicClass,
         CourseProgress,
+        CourseLessonDiscussion,
       ],
       // synchronize: true, // tự động tạo bảng trong entity (chỉ dùng trong môi tường dev)
     }),
@@ -94,6 +97,7 @@ import { CourseProgress } from './entities/CourseProgress';
     EnrollmentsModule,
     CertificatesModule,
     UserGradesModule,
+    CourseLessonDiscussionsModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthMiddleware, InstructorMiddleware],

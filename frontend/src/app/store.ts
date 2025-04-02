@@ -5,6 +5,7 @@ import categoriesReducer from "../features/categories/categoriesSlice";
 import enrollmentsReducer from "../features/enrollments/enrollmentsApiSlice";
 import certificatesReducer from "../features/certificates/certificatesApiSlice";
 import commonsReducer from "../features/commons/commonsSlide";
+import discussionsReducer from "../features/discussions/discussionsSlice";
 // Import other reducers...
 
 export const store = configureStore({
@@ -15,6 +16,7 @@ export const store = configureStore({
     enrollments: enrollmentsReducer,
     certificates: certificatesReducer,
     commons: commonsReducer,
+    discussions: discussionsReducer,
     // Add other reducers...
   },
 });

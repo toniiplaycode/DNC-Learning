@@ -12,6 +12,7 @@ import { UserInstructor } from './UserInstructor';
 import { Certificate } from './Certificate';
 import { UserGrade } from './UserGrade';
 import { CourseProgress } from './CourseProgress';
+import { CourseLessonDiscussion } from './CourseLessonDiscussion';
 
 // Tạo enum cho role
 export enum UserRole {
@@ -99,4 +100,7 @@ export class User {
 
   @OneToMany(() => CourseProgress, (progress) => progress.user)
   courseProgress: CourseProgress[];
+
+  @OneToMany(() => CourseLessonDiscussion, (discussion) => discussion.user)
+  lessonDiscussions: CourseLessonDiscussion[];
 }

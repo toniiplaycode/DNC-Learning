@@ -1,198 +1,238 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
-  Box,
-  Typography,
   List,
   ListItem,
   ListItemIcon,
   ListItemText,
-  Card,
-  LinearProgress,
-  Stack,
+  Box,
+  Typography,
+  Chip,
+  Collapse,
+  ListItemButton,
 } from "@mui/material";
 import {
   PlayCircle,
   Description,
-  Assignment,
   Quiz,
-  VideoCall,
-  MenuBook,
-  Link as LinkIcon,
-  CheckCircle,
-  Lock,
   ExpandMore,
   ExpandLess,
+  InsertDriveFile,
+  Assignment,
+  TextSnippet,
+  TableChart,
+  PictureAsPdf,
+  Slideshow,
 } from "@mui/icons-material";
+import { formatFileSize } from "../../../utils/formatters";
 
-interface ContentItem {
-  id: number;
-  type:
-    | "video"
-    | "slide"
-    | "meet"
-    | "quiz"
-    | "assignment"
-    | "document"
-    | "link";
+interface Lesson {
+  id: string;
+  sectionId: string;
+  title: string;
+  contentType: string;
+  contentUrl: string | null;
+  content: string;
+  duration: number | null;
+  orderNumber: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Document {
+  id: string;
+  instructorId: string;
   title: string;
   description: string;
-  duration?: string;
-  url: string;
-  completed: boolean;
-  locked: boolean;
-  maxAttempts?: number;
-  passingScore?: number;
-  objectives?: string[];
-  prerequisites?: string[];
-  keywords?: string[];
+  fileUrl: string;
+  fileType: string;
+  fileSize: number;
+  uploadDate: string;
+  downloadCount: number;
+  status: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
 interface Section {
-  id: number;
+  id: string;
+  courseId: string;
   title: string;
-  progress: number;
-  contents: ContentItem[];
-  materials?: {
-    id: number;
-    title: string;
-    type: string;
-    url: string;
-  }[];
+  description: string;
+  orderNumber: number;
+  createdAt: string;
+  updatedAt: string;
+  lessons: Lesson[];
+  documents: Document[];
+  progress?: number; // Optional progress field
 }
 
 interface CourseStructureProps {
   sections: Section[];
-  handleContentClick: (content: ContentItem) => void;
+  handleLessonClick?: (lessonId: string) => void;
+  activeLesson?: number;
 }
 
 const CourseStructure: React.FC<CourseStructureProps> = ({
-  sections,
-  handleContentClick,
+  sections = [],
+  handleLessonClick,
+  activeLesson,
 }) => {
-  const [expandedSections, setExpandedSections] = useState<number[]>(
-    sections.map((section) => section.id)
+  const [expandedSections, setExpandedSections] = useState<
+    Record<string, boolean>
+  >(
+    (sections || []).reduce(
+      (acc, section) => ({ ...acc, [section.id]: true }),
+      {}
+    )
   );
 
-  const handleSectionToggle = (sectionId: number) => {
-    setExpandedSections((prevExpanded) =>
-      prevExpanded.includes(sectionId)
-        ? prevExpanded.filter((id) => id !== sectionId)
-        : [...prevExpanded, sectionId]
-    );
+  // Effect để tự động mở section chứa active lesson
+  useEffect(() => {
+    if (activeLesson) {
+      // Tìm section chứa active lesson
+      const sectionWithActiveLesson = sections.find((section) =>
+        section.lessons.some((lesson) => lesson.id === activeLesson.toString())
+      );
+
+      if (sectionWithActiveLesson) {
+        // Đảm bảo section này được mở
+        setExpandedSections((prev) => ({
+          ...prev,
+          [sectionWithActiveLesson.id]: true,
+        }));
+      }
+    }
+  }, [activeLesson, sections]);
+
+  const handleSectionToggle = (sectionId: string) => {
+    setExpandedSections((prev) => ({
+      ...prev,
+      [sectionId]: !prev[sectionId],
+    }));
   };
 
-  const getContentIcon = (type: string) => {
-    switch (type) {
+  const getContentIcon = (contentType: string) => {
+    switch (contentType) {
       case "video":
         return <PlayCircle color="primary" />;
-      case "slide":
-        return <Description color="info" />;
+      case "quiz":
+        return <Quiz color="warning" />;
       case "assignment":
         return <Assignment color="warning" />;
-      case "quiz":
-        return <Quiz color="error" />;
-      case "meet":
-        return <VideoCall color="secondary" />;
-      case "document":
-        return <MenuBook color="success" />;
-      case "link":
-        return <LinkIcon color="info" />;
+      case "pdf":
+        return <PictureAsPdf color="info" />;
+      case "docx":
+        return <Description color="info" />;
+      case "xlsx":
+        return <TableChart color="info" />;
+      case "txt":
+        return <TextSnippet color="info" />;
+      case "slide":
+        return <Slideshow color="info" />;
       default:
-        return <Description />;
+        return <Description color="info" />;
     }
   };
 
   return (
-    <Box>
-      <Typography variant="h6" gutterBottom>
-        Nội dung khóa học
-      </Typography>
-      <Stack spacing={2}>
-        {sections.map((section) => (
-          <Card key={section.id} variant="outlined">
-            <ListItem
-              button
-              onClick={() => handleSectionToggle(section.id)}
-              sx={{ py: 2 }}
-            >
-              <ListItemText
-                primary={
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <Typography variant="subtitle1">{section.title}</Typography>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        alignItems: "center",
-                        ml: "auto",
-                      }}
-                    >
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mr: 1 }}
-                      >
-                        {section.progress}%
-                      </Typography>
-                      {expandedSections.includes(section.id) ? (
-                        <ExpandLess />
-                      ) : (
-                        <ExpandMore />
-                      )}
-                    </Box>
-                  </Box>
-                }
-                secondary={
-                  <LinearProgress
-                    variant="determinate"
-                    value={section.progress}
-                    sx={{ mt: 1, height: 5, borderRadius: 5 }}
-                  />
-                }
-              />
-            </ListItem>
-
-            {expandedSections.includes(section.id) && (
-              <List disablePadding>
-                {section.contents.map((content) => (
-                  <ListItem
-                    key={content.id}
-                    onClick={() => handleContentClick(content)}
-                    sx={{
-                      pl: 4,
-                      opacity: content.locked ? 0.5 : 1,
-                      cursor: content.locked ? "not-allowed" : "pointer",
-                      "&:hover": {
-                        bgcolor: !content.locked ? "action.hover" : "inherit",
-                      },
-                    }}
-                  >
-                    <ListItemIcon>
-                      {content.completed ? (
-                        <CheckCircle color="success" />
-                      ) : content.locked ? (
-                        <Lock color="disabled" />
-                      ) : (
-                        getContentIcon(content.type)
-                      )}
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={content.title}
-                      secondary={
-                        <Typography variant="body2" color="text.secondary">
-                          {content.duration
-                            ? `${content.duration} • ${content.type}`
-                            : content.type}
-                        </Typography>
-                      }
+    <List sx={{ width: "100%" }}>
+      {sections.map((section) => (
+        <Box
+          key={section.id}
+          sx={{ mb: 2, border: "1px solid #e0e0e0", borderRadius: 1 }}
+        >
+          <ListItemButton
+            onClick={() => handleSectionToggle(section.id)}
+            sx={{ bgcolor: "background.paper" }}
+          >
+            <ListItemText
+              primary={
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                  }}
+                >
+                  <Typography variant="h6">
+                    Phần {section.orderNumber}: {section.title}
+                  </Typography>
+                  {section.progress !== undefined && (
+                    <Chip
+                      label={`${section.progress}% hoàn thành`}
+                      color={section.progress === 100 ? "success" : "primary"}
+                      size="small"
                     />
+                  )}
+                </Box>
+              }
+              secondary={section.description}
+            />
+            {expandedSections[section.id] ? <ExpandLess /> : <ExpandMore />}
+          </ListItemButton>
+
+          <Collapse
+            in={expandedSections[section.id]}
+            timeout="auto"
+            unmountOnExit
+          >
+            <List component="div" disablePadding>
+              {section.lessons.map((lesson) => (
+                <ListItem
+                  key={lesson.id}
+                  sx={{
+                    pl: 4,
+                    cursor: "pointer",
+                    bgcolor:
+                      activeLesson === lesson.id
+                        ? "rgba(25, 118, 210, 0.08)"
+                        : "transparent",
+                    borderLeft:
+                      activeLesson === lesson.id ? "4px solid #ff9f1c" : "none",
+                  }}
+                  onClick={() => handleLessonClick?.(lesson.id)}
+                >
+                  <ListItemIcon>
+                    {getContentIcon(lesson.contentType)}
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={`${section.orderNumber}.${lesson.orderNumber} ${lesson.title}`}
+                    secondary={
+                      lesson.duration
+                        ? `${lesson.duration} phút`
+                        : lesson.content
+                    }
+                  />
+                </ListItem>
+              ))}
+
+              {section.documents && section.documents.length > 0 && (
+                <>
+                  <ListItem sx={{ pl: 4 }}>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Tài liệu học tập
+                    </Typography>
                   </ListItem>
-                ))}
-              </List>
-            )}
-          </Card>
-        ))}
-      </Stack>
-    </Box>
+                  {section.documents.map((doc) => (
+                    <ListItem key={doc.id} sx={{ pl: 6 }}>
+                      <ListItemIcon>
+                        <InsertDriveFile />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary={doc.title}
+                        secondary={`${doc.fileType.toUpperCase()} • ${formatFileSize(
+                          doc.fileSize
+                        )}`}
+                      />
+                    </ListItem>
+                  ))}
+                </>
+              )}
+            </List>
+          </Collapse>
+        </Box>
+      ))}
+    </List>
   );
 };
 

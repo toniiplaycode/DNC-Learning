@@ -31,6 +31,12 @@ import {
   KeyboardArrowUp,
   PictureAsPdf,
   LibraryBooks,
+  Slideshow,
+  Description,
+  TableChart,
+  TextSnippet,
+  VideoLibrary,
+  Link as LinkIcon,
 } from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
 import CustomContainer from "../../components/common/CustomContainer";
@@ -563,16 +569,28 @@ const CourseDetail: React.FC = () => {
                             >
                               <ListItemIcon sx={{ minWidth: 40 }}>
                                 {lesson.contentType === "video" && (
-                                  <PlayCircleOutline color="primary" />
+                                  <VideoLibrary color="primary" />
                                 )}
                                 {lesson.contentType === "assignment" && (
-                                  <Assignment color="primary" />
+                                  <Assignment color="warning" />
                                 )}
                                 {lesson.contentType === "quiz" && (
-                                  <Quiz color="primary" />
+                                  <Quiz color="warning" />
                                 )}
-                                {lesson.contentType === "document" && (
-                                  <PictureAsPdf color="primary" />
+                                {lesson.contentType === "pdf" && (
+                                  <PictureAsPdf color="info" />
+                                )}
+                                {lesson.contentType === "slide" && (
+                                  <Slideshow color="info" />
+                                )}
+                                {lesson.contentType === "docx" && (
+                                  <Description color="info" />
+                                )}
+                                {lesson.contentType === "xlsx" && (
+                                  <TableChart color="info" />
+                                )}
+                                {lesson.contentType === "txt" && (
+                                  <TextSnippet color="info" />
                                 )}
                               </ListItemIcon>
                               <ListItemText
@@ -689,15 +707,19 @@ const CourseDetail: React.FC = () => {
                     Tài liệu khóa học
                   </Typography>
                   {currentCourse?.sections?.map((section, sectionIndex) => {
-                    // Kết hợp documents từ section và lessons có contentType="document"
+                    // Kết hợp documents từ section và lessons có contentType là "document", "pdf", "docx", "xlsx", "txt", "slide"
                     const documentLessons = section.lessons
-                      .filter(
-                        (lesson: any) => lesson.contentType === "document"
+                      .filter((lesson: any) =>
+                        ["pdf", "docx", "xlsx", "txt", "slide"].includes(
+                          lesson.contentType
+                        )
                       )
                       .map((lesson: any) => ({
                         id: lesson.id,
                         title: lesson.title,
-                        fileType: "pdf", // Giả định mặc định là PDF
+                        fileType: getFileTypeFromContentType(
+                          lesson.contentType
+                        ), // Xác định đúng fileType
                         fileSize: 1024, // Giả định kích thước mặc định
                         isLesson: true, // Đánh dấu đây là lesson
                         isFree: lesson.isFree,
@@ -735,10 +757,36 @@ const CourseDetail: React.FC = () => {
                               }}
                             >
                               <ListItemIcon>
-                                <PictureAsPdf
-                                  color="error"
-                                  sx={{ fontSize: 24 }}
-                                />
+                                {item.fileType === "pdf" && (
+                                  <PictureAsPdf
+                                    color="info"
+                                    sx={{ fontSize: 24 }}
+                                  />
+                                )}
+                                {item.fileType === "docx" && (
+                                  <Description
+                                    color="info"
+                                    sx={{ fontSize: 24 }}
+                                  />
+                                )}
+                                {item.fileType === "xlsx" && (
+                                  <TableChart
+                                    color="info"
+                                    sx={{ fontSize: 24 }}
+                                  />
+                                )}
+                                {item.fileType === "txt" && (
+                                  <TextSnippet
+                                    color="info"
+                                    sx={{ fontSize: 24 }}
+                                  />
+                                )}
+                                {item.fileType === "slide" && (
+                                  <Slideshow
+                                    color="info"
+                                    sx={{ fontSize: 24 }}
+                                  />
+                                )}
                               </ListItemIcon>
                               <ListItemText
                                 primary={item.title}
@@ -759,19 +807,11 @@ const CourseDetail: React.FC = () => {
                                       </Typography>
                                     )}
                                     <Chip
-                                      label="PDF"
+                                      label={item.fileType.toUpperCase()}
                                       size="small"
-                                      color="error"
+                                      color="info"
                                       variant="outlined"
                                     />
-                                    {item.isLesson && item.isFree && (
-                                      <Chip
-                                        label="Miễn phí"
-                                        size="small"
-                                        color="success"
-                                        variant="outlined"
-                                      />
-                                    )}
                                   </Stack>
                                 }
                               />
@@ -926,5 +966,25 @@ const CourseDetail: React.FC = () => {
     </CustomContainer>
   );
 };
+
+// Helper function để xác định fileType từ contentType
+function getFileTypeFromContentType(contentType: string): string {
+  switch (contentType) {
+    case "pdf":
+      return "pdf";
+    case "docx":
+      return "docx";
+    case "xlsx":
+      return "xlsx";
+    case "txt":
+      return "txt";
+    case "slide":
+      return "slide";
+    case "document":
+      return "pdf"; // Giả định mặc định cho document
+    default:
+      return "pdf";
+  }
+}
 
 export default CourseDetail;

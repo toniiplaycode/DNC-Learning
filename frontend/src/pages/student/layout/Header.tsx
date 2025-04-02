@@ -57,6 +57,7 @@ import { fetchInstructors } from "../../../features/user_instructors/instructors
 import { selectAllInstructors } from "../../../features/user_instructors/instructorsSelectors";
 import { selectAllForums } from "../../../features/forums/forumsSelectors";
 import { fetchForums } from "../../../features/forums/forumsApiSlice";
+import { alpha } from "@mui/material/styles";
 
 // Styled components
 const SearchDialog = styled(Dialog)(({ theme }) => ({
@@ -946,11 +947,12 @@ const Header = () => {
                 <Typography variant="subtitle2" gutterBottom>
                   Khóa học tiêu biểu
                 </Typography>
-                <Stack direction="row" spacing={1} flexWrap="wrap" mb={2}>
+                <Stack direction="row" spacing={1} flexWrap="wrap" mb={5}>
                   {courses.slice(0, 5).map((course) => (
                     <Chip
                       key={course.id}
                       label={course.title}
+                      alpha
                       onClick={() => {
                         setSearchQuery(course.title);
                         handleSearchChange({

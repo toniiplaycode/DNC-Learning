@@ -13,10 +13,15 @@ import { CourseSection } from './CourseSection';
 import { Assignment } from './Assignment';
 import { Quiz } from './Quiz';
 import { CourseProgress } from './CourseProgress';
+import { CourseLessonDiscussion } from './CourseLessonDiscussion';
 
 export enum ContentType {
   VIDEO = 'video',
-  DOCUMENT = 'document',
+  SLIDE = 'slide',
+  TXT = 'txt',
+  DOCX = 'docx',
+  PDF = 'pdf',
+  XLSX = 'xlsx',
   QUIZ = 'quiz',
   ASSIGNMENT = 'assignment',
 }
@@ -78,4 +83,7 @@ export class CourseLesson {
 
   @OneToMany(() => CourseProgress, (progress) => progress.lesson)
   progress: CourseProgress[];
+
+  @OneToMany(() => CourseLessonDiscussion, (discussion) => discussion.lesson)
+  discussions: CourseLessonDiscussion[];
 }

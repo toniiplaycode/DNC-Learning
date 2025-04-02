@@ -23,6 +23,9 @@ export class Document {
   @Column({ name: 'instructor_id' })
   instructorId: number;
 
+  @Column({ name: 'course_section_id', nullable: true })
+  courseSectionId: number;
+
   @Column({ length: 255 })
   title: string;
 
@@ -35,7 +38,7 @@ export class Document {
   @Column({
     name: 'file_type',
     length: 50,
-    enum: ['pdf', 'slide', 'code', 'link', 'txt', 'docx'],
+    enum: ['pdf', 'slide', 'code', 'link', 'txt', 'docx', 'xlsx'],
   })
   fileType: string;
 

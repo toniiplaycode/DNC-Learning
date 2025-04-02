@@ -4,8 +4,8 @@ import { RootState } from "../../store/store";
 export const selectAllCourses = (state: RootState) => state.courses.courses;
 
 // Lấy khóa học theo id
-export const selectCourseById = (state: RootState, courseId: number) =>
-  state.courses.courses.find((course) => course.id === courseId);
+export const selectCourseById = (state: RootState) =>
+  state.courses.currentCourse;
 
 // Lấy trạng thái loading
 export const selectCoursesLoading = (state: RootState) => state.courses.status;

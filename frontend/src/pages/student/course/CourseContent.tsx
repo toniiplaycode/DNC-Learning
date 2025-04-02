@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Container,
@@ -14,12 +14,15 @@ import {
 } from "@mui/material";
 import { ArrowBack } from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
-import ContentDiscussion from "../../../components/common/course/ContentDiscussion";
 import ContentDocuments from "../../../components/common/course/ContentDocuments";
 import CourseRating from "../../../components/common/course/CourseRating";
 import GradeOverview from "../../../components/common/course/GradeOverview";
 import CourseStructure from "../../../components/common/course/CourseStructure";
 import ContentDetail from "../../../components/common/course/ContentDetail";
+import { fetchCourseById } from "../../../features/courses/coursesApiSlice";
+import { useAppDispatch } from "../../../app/hooks";
+import { selectCourseById } from "../../../features/courses/coursesSelector";
+import { useAppSelector } from "../../../app/hooks";
 interface TabPanelProps {
   children?: React.ReactNode;
   value: number;
@@ -222,22 +225,69 @@ const mockCourseData = {
   ],
 };
 
-// Thêm hàm helper để lấy nội dung đầu tiên
-const getFirstContent = (sections: any[]) => {
-  return sections[0]?.contents[0] || null;
+// Cập nhật hàm helper để lấy bài học đầu tiên
+const getFirstLesson = (sections: any[]) => {
+  if (
+    !sections ||
+    sections.length === 0 ||
+    !sections[0].lessons ||
+    sections[0].lessons.length === 0
+  ) {
+    return null;
+  }
+
+  const firstLesson = sections[0].lessons[0];
+  return {
+    id: firstLesson.id,
+    type: firstLesson.contentType,
+    title: firstLesson.title,
+    description: firstLesson.content,
+    duration: firstLesson.duration ? `${firstLesson.duration}:00` : undefined,
+    url: firstLesson.contentUrl || "",
+    completed: false,
+  };
 };
 
 const CourseContent = () => {
   const { id: courseId } = useParams();
   const navigate = useNavigate();
-  // Khởi tạo selectedContent với nội dung đầu tiên
-  const [selectedContent, setSelectedContent] = useState<ContentItem | null>(
-    getFirstContent(mockCourseData.sections)
-  );
+  const dispatch = useAppDispatch();
+  const course = useAppSelector(selectCourseById);
 
-  const handleContentClick = (content: ContentItem) => {
-    if (!content.locked) {
-      setSelectedContent(content);
+  useEffect(() => {
+    dispatch(fetchCourseById(Number(courseId)));
+  }, [dispatch, courseId]);
+
+  useEffect(() => {
+    setSelectedLesson(getFirstLesson(course?.sections));
+  }, [course]);
+
+  const [selectedLesson, setSelectedLesson] = useState<ContentItem | null>();
+
+  const handleLessonClick = (id: string) => {
+    console.log("Lesson clicked:", id);
+
+    let selectedLesson = null;
+
+    // Tìm lesson trong tất cả các sections
+    course?.sections?.forEach((section) => {
+      const lesson = section.lessons.find((lesson) => lesson.id === id);
+      if (lesson) {
+        selectedLesson = {
+          id: lesson.id,
+          type: lesson.contentType,
+          title: lesson.title,
+          description: lesson.content,
+          duration: lesson.duration ? `${lesson.duration}:00` : undefined,
+          url: lesson.contentUrl || "",
+          completed: false, // Cần add thêm trường này nếu API có
+          // Các trường khác nếu cần
+        };
+      }
+    });
+
+    if (selectedLesson) {
+      setSelectedLesson(selectedLesson);
     }
   };
 
@@ -394,7 +444,7 @@ const CourseContent = () => {
           Quay lại tổng quan
         </Button>
         <Typography variant="h4" fontWeight="bold">
-          {mockCourseData.title}
+          {course?.title}
         </Typography>
       </Box>
 
@@ -444,8 +494,9 @@ const CourseContent = () => {
             <Card>
               <CardContent>
                 <CourseStructure
-                  sections={mockCourseData.sections}
-                  handleContentClick={handleContentClick}
+                  sections={course?.sections}
+                  handleLessonClick={handleLessonClick}
+                  activeLesson={selectedLesson?.id}
                 />
               </CardContent>
             </Card>
@@ -455,7 +506,7 @@ const CourseContent = () => {
         {/* Main Content Area */}
         <Grid item xs={12} md={9}>
           <Card>
-            {selectedContent && (
+            {selectedLesson && (
               <>
                 <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
                   <Tabs
@@ -463,7 +514,6 @@ const CourseContent = () => {
                     onChange={(e, newValue) => setActiveTab(newValue)}
                   >
                     <Tab label="Nội dung" />
-                    <Tab label="Thảo luận" />
                     <Tab label="Tài liệu" />
                     <Tab label="Điểm số" />
                     <Tab label="Đánh giá" />
@@ -471,26 +521,20 @@ const CourseContent = () => {
                 </Box>
 
                 <TabPanel value={activeTab} index={0}>
-                  <ContentDetail content={selectedContent} />
+                  <ContentDetail content={selectedLesson} />
                 </TabPanel>
 
                 <TabPanel value={activeTab} index={1}>
-                  {selectedContent && (
-                    <ContentDiscussion comments={mockComments} />
-                  )}
-                </TabPanel>
-
-                <TabPanel value={activeTab} index={2}>
                   <Box sx={{ mb: 4 }}>
                     <ContentDocuments documents={mockDocuments} />
                   </Box>
                 </TabPanel>
 
-                <TabPanel value={activeTab} index={3}>
+                <TabPanel value={activeTab} index={2}>
                   <GradeOverview grades={mockGrades} />
                 </TabPanel>
 
-                <TabPanel value={activeTab} index={4}>
+                <TabPanel value={activeTab} index={3}>
                   <CourseRating Reviews={mockReviews} />
                 </TabPanel>
               </>

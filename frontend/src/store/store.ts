@@ -7,6 +7,7 @@ import authReducer from "../features/auth/authSlice";
 import enrollmentsReducer from "../features/enrollments/enrollmentsApiSlice";
 import certificatesReducer from "../features/certificates/certificatesApiSlice";
 import commonsReducer from "../features/commons/commonsSlide";
+import discussionsReducer from "../features/discussions/discussionsSlice";
 // Import các reducer khác nếu có
 
 export const store = configureStore({
@@ -19,6 +20,7 @@ export const store = configureStore({
     enrollments: enrollmentsReducer,
     certificates: certificatesReducer,
     commons: commonsReducer,
+    discussions: discussionsReducer,
     // Thêm các reducer khác nếu có
   },
   middleware: (getDefaultMiddleware) =>

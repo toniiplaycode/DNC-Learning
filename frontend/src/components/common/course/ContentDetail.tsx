@@ -10,7 +10,12 @@ import { Button, Stack, Typography } from "@mui/material";
 import { Box } from "@mui/material";
 import QuizContent from "./QuizContent";
 import AssignmentContent from "./AssignmentContent";
-import React, { useState } from "react";
+import ContentDiscussion from "./ContentDiscussion";
+import { useEffect } from "react";
+import { fetchLessonDiscussions } from "../../../features/discussions/discussionsSlice";
+import { useAppDispatch } from "../../../app/hooks";
+import { useAppSelector } from "../../../app/hooks";
+import { selectLessonDiscussions } from "../../../features/discussions/discussionsSelectors";
 
 // Thêm nhiều câu hỏi mẫu hơn
 const mockQuestions = [
@@ -81,19 +86,186 @@ const mockQuestions = [
   },
 ];
 
+// Helper function để lấy file ID từ Google Drive URL
+function getFileIdFromUrl(url: string) {
+  // Xử lý URL dạng /file/d/{fileId}/view hoặc /presentation/d/{fileId}/edit
+  const fileIdMatch = url.match(/\/d\/([^\/]+)/);
+  return fileIdMatch ? fileIdMatch[1] : "";
+}
+
+// Helper function to render file viewer based on file type
+const renderFileViewer = (url: string, title: string, type: string) => {
+  const fileId = getFileIdFromUrl(url);
+
+  // Handle specific content types
+  switch (type) {
+    case "pdf":
+      return (
+        <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+          <iframe
+            width="100%"
+            height="100%"
+            src={`https://drive.google.com/file/d/${fileId}/preview`}
+            title={title}
+            frameBorder="0"
+            allowFullScreen
+          ></iframe>
+          <Stack direction="row" spacing={2} my={2} justifyContent="center">
+            <a
+              href={`https://drive.google.com/file/d/${fileId}/view`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button size="small" variant="contained">
+                Mở trong Drive
+              </Button>
+            </a>
+            <a
+              href={`https://drive.google.com/uc?export=download&id=${fileId}`}
+              download
+            >
+              <Button size="small" variant="outlined">
+                Tải xuống
+              </Button>
+            </a>
+          </Stack>
+        </Box>
+      );
+
+    case "txt":
+      return (
+        <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+          <iframe
+            width="100%"
+            height="100%"
+            src={`https://drive.google.com/file/d/${fileId}/preview`}
+            title={title}
+            frameBorder="0"
+            allowFullScreen
+          ></iframe>
+          <Stack direction="row" spacing={2} my={2} justifyContent="center">
+            <a
+              href={`https://drive.google.com/file/d/${fileId}/view`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button size="small" variant="contained">
+                Mở trong Drive
+              </Button>
+            </a>
+            <a
+              href={`https://drive.google.com/uc?export=download&id=${fileId}`}
+              download
+            >
+              <Button size="small" variant="outlined">
+                Tải xuống
+              </Button>
+            </a>
+          </Stack>
+        </Box>
+      );
+
+    case "docx":
+    case "xlsx":
+    case "slide":
+      return (
+        <Box sx={{ height: "100%", display: "flex", flexDirection: "column" }}>
+          <iframe
+            width="100%"
+            height="100%"
+            src={`https://docs.google.com/viewer?srcid=${fileId}&pid=explorer&efh=false&a=v&chrome=false&embedded=true`}
+            title={title}
+            frameBorder="0"
+            allowFullScreen
+          ></iframe>
+          <Stack direction="row" spacing={2} my={2} justifyContent="center">
+            <a
+              href={`https://drive.google.com/file/d/${fileId}/view`}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              <Button size="small" variant="contained">
+                Mở trong Drive
+              </Button>
+            </a>
+            <a
+              href={`https://drive.google.com/uc?export=download&id=${fileId}`}
+              download
+            >
+              <Button size="small" variant="outlined">
+                Tải xuống
+              </Button>
+            </a>
+          </Stack>
+        </Box>
+      );
+
+    default:
+      return (
+        <Box
+          sx={{
+            p: 3,
+            height: "100%",
+            display: "flex",
+            flexDirection: "column",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <Typography variant="body1" gutterBottom>
+            Không thể hiển thị trực tiếp tệp này
+          </Typography>
+          <Stack direction="row" spacing={2} mt={2}>
+            <a href={url} target="_blank" rel="noopener noreferrer">
+              <Button variant="contained">Mở tệp</Button>
+            </a>
+            {fileId && (
+              <a
+                href={`https://drive.google.com/uc?export=download&id=${fileId}`}
+                download
+              >
+                <Button variant="outlined">Tải xuống</Button>
+              </a>
+            )}
+          </Stack>
+        </Box>
+      );
+  }
+};
+
 // Cập nhật ContentDetail component
-const ContentDetail: React.FC<ContentDetailProps> = ({
-  content,
-}: {
-  content: ContentItem;
-}) => {
+const ContentDetail = ({ content }: { content: any }) => {
+  const dispatch = useAppDispatch();
+  const lessonDiscussions = useAppSelector(selectLessonDiscussions);
+
+  useEffect(() => {
+    dispatch(fetchLessonDiscussions(Number(content?.id)));
+  }, [dispatch, content?.id]);
+
+  console.log("Discussions:", lessonDiscussions);
+
+  console.log(content);
   return (
     <Box>
       {/* Main content area */}
       {content.type === "video" && (
         <Box sx={{ mb: 4 }}>
-          <Box sx={{ aspectRatio: "16/9", bgcolor: "black", mb: 2 }}>
-            {/* Video player component */}
+          <Box sx={{ aspectRatio: "16/9", mb: 2 }}>
+            {content.url && (
+              <iframe
+                width="100%"
+                height="100%"
+                src={
+                  content.url.includes("youtube.com")
+                    ? content.url.replace("watch?v=", "embed/").split("&")[0]
+                    : content.url
+                }
+                title={content.title}
+                frameBorder="0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              ></iframe>
+            )}
           </Box>
         </Box>
       )}
@@ -163,6 +335,46 @@ const ContentDetail: React.FC<ContentDetailProps> = ({
         </Box>
       )}
 
+      {content.type === "slide" && content.url && (
+        <Box sx={{ mb: 4 }}>
+          <Box sx={{ aspectRatio: "16/9", mb: 2, border: "1px solid #eee" }}>
+            {renderFileViewer(content.url, content.title, "slide")}
+          </Box>
+        </Box>
+      )}
+
+      {content.type === "txt" && content.url && (
+        <Box sx={{ mb: 4 }}>
+          <Box sx={{ aspectRatio: "16/9", mb: 2, border: "1px solid #eee" }}>
+            {renderFileViewer(content.url, content.title, "txt")}
+          </Box>
+        </Box>
+      )}
+
+      {content.type === "docx" && content.url && (
+        <Box sx={{ mb: 4 }}>
+          <Box sx={{ aspectRatio: "16/9", mb: 2, border: "1px solid #eee" }}>
+            {renderFileViewer(content.url, content.title, "docx")}
+          </Box>
+        </Box>
+      )}
+
+      {content.type === "pdf" && content.url && (
+        <Box sx={{ mb: 4 }}>
+          <Box sx={{ aspectRatio: "16/9", mb: 2, border: "1px solid #eee" }}>
+            {renderFileViewer(content.url, content.title, "pdf")}
+          </Box>
+        </Box>
+      )}
+
+      {content.type === "xlsx" && content.url && (
+        <Box sx={{ mb: 4 }}>
+          <Box sx={{ aspectRatio: "16/9", mb: 2, border: "1px solid #eee" }}>
+            {renderFileViewer(content.url, content.title, "xlsx")}
+          </Box>
+        </Box>
+      )}
+
       {/* Content description */}
       <Card sx={{ mt: 3, boxShadow: 0 }}>
         <CardContent>
@@ -187,7 +399,7 @@ const ContentDetail: React.FC<ContentDetailProps> = ({
                 Mục tiêu bài học:
               </Typography>
               <List dense>
-                {content.objectives.map((obj, index) => (
+                {content.objectives.map((obj: string, index: number) => (
                   <ListItem key={index}>
                     <ListItemIcon>
                       <CheckCircleOutline color="success" />
@@ -218,6 +430,11 @@ const ContentDetail: React.FC<ContentDetailProps> = ({
           )}
         </CardContent>
       </Card>
+
+      <ContentDiscussion
+        lessonId={content.id}
+        lessonDiscussions={lessonDiscussions}
+      />
     </Box>
   );
 };
