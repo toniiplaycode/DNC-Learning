@@ -26,3 +26,14 @@ CSDL hiện tại đã phù hợp với mục tiêu:
 ✅ Hỗ trợ cơ bản cho sinh viên trường
 ✅ Tận dụng các chức năng sẵn có
 ✅ Không phức tạp hóa hệ thống
+
+Mô hình Hybrid giữa LMS và Market Course có thể được thiết kế như sau:
+
+1. Tổng quan về mô hình Hybrid
+- LMS (Learning Management System): Hệ thống quản lý học tập, nơi giảng viên có thể tạo nội dung khóa học, giao bài tập, chấm điểm và theo dõi tiến độ học viên.
+- Market Course: Một nền tảng nơi giảng viên có thể bán khóa học, học viên có thể mua và học theo tiến độ tự do.
+- Hybrid Model: Kết hợp cả hai mô hình, đảm bảo khóa học có tính linh hoạt nhưng vẫn duy trì chất lượng học tập.
+2. Chất lượng khóa học thông qua bài kiểm tra
+- Mỗi khóa học sẽ có các bài kiểm tra ở từng phần, yêu cầu học viên hoàn thành trước khi tiếp tục.
+- Nội dung bài kiểm tra được lấy từ tài liệu như video, PDF, DOCX,...
+- Điểm số phản ánh mức độ tiếp thu của học viên.

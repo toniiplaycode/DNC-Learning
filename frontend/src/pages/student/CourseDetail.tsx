@@ -53,6 +53,7 @@ import {
   selectCurrentInstructor,
 } from "../../features/user_instructors/instructorsSelectors";
 import { useSelector } from "react-redux";
+import CourseRating from "../../components/common/course/CourseRating";
 
 interface Lesson {
   id: number;
@@ -697,6 +698,8 @@ const CourseDetail: React.FC = () => {
                   </List>
                 </CardContent>
               </Card>
+
+              <CourseRating />
             </TabPanel>
 
             {/* Documents Tab */}

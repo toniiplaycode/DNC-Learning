@@ -12,6 +12,7 @@ import {
 import { User } from './User';
 import { Course } from './Course';
 import { UserGrade } from './UserGrade';
+import { Document } from './Document';
 
 export enum VerificationStatus {
   PENDING = 'pending',
@@ -86,4 +87,7 @@ export class UserInstructor {
 
   @OneToMany(() => UserGrade, (userGrade) => userGrade.instructor)
   userGrades: UserGrade[];
+
+  @OneToMany(() => Document, (document) => document.instructor)
+  documents: Document[];
 }

@@ -76,6 +76,7 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
   sections = [],
   handleLessonClick,
   activeLesson,
+  setActiveTab,
 }) => {
   const [expandedSections, setExpandedSections] = useState<
     Record<string, boolean>
@@ -155,7 +156,7 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
                   }}
                 >
                   <Typography variant="h6">
-                    Phần {section.orderNumber}: {section.title}
+                    Phần {section.orderNumber} - {section.title}
                   </Typography>
                   {section.progress !== undefined && (
                     <Chip
@@ -190,7 +191,10 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
                     borderLeft:
                       activeLesson === lesson.id ? "4px solid #ff9f1c" : "none",
                   }}
-                  onClick={() => handleLessonClick?.(lesson.id)}
+                  onClick={() => {
+                    handleLessonClick?.(lesson.id);
+                    setActiveTab?.(0);
+                  }}
                 >
                   <ListItemIcon>
                     {getContentIcon(lesson.contentType)}
@@ -214,7 +218,19 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
                     </Typography>
                   </ListItem>
                   {section.documents.map((doc) => (
-                    <ListItem key={doc.id} sx={{ pl: 6 }}>
+                    <ListItem
+                      key={doc.id}
+                      sx={{
+                        pl: 6,
+                        cursor: "pointer",
+                        "&:hover": {
+                          bgcolor: "rgba(25, 118, 210, 0.08)",
+                        },
+                      }}
+                      onClick={() => {
+                        setActiveTab?.(1);
+                      }}
+                    >
                       <ListItemIcon>
                         <InsertDriveFile />
                       </ListItemIcon>

@@ -242,9 +242,6 @@ const ContentDetail = ({ content }: { content: any }) => {
     dispatch(fetchLessonDiscussions(Number(content?.id)));
   }, [dispatch, content?.id]);
 
-  console.log("Discussions:", lessonDiscussions);
-
-  console.log(content);
   return (
     <Box>
       {/* Main content area */}

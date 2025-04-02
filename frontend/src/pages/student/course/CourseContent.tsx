@@ -293,69 +293,6 @@ const CourseContent = () => {
 
   const [activeTab, setActiveTab] = useState(0);
 
-  const mockComments = [
-    {
-      id: 1,
-      user: {
-        id: 1,
-        name: "John Doe",
-        avatar: "/src/assets/avatar.png",
-        role: "student",
-      },
-      content: "Làm thế nào để xử lý re-render tối ưu trong React?",
-      createdAt: "2 giờ trước",
-      replies: [
-        {
-          id: 2,
-          user: {
-            id: 2,
-            name: "Instructor Alex",
-            avatar: "/src/assets/avatar.png",
-            role: "instructor",
-          },
-          content: `Để tối ưu re-render trong React, bạn có thể:
-        1. Sử dụng React.memo() cho component
-        2. Tối ưu useCallback và useMemo
-        3. Tránh inline function trong props
-        4. Phân chia component hợp lý`,
-          createdAt: "1 giờ trước",
-        },
-      ],
-    },
-  ];
-
-  // Thêm dữ liệu mock cho tài liệu
-  const mockDocuments = [
-    {
-      id: 1,
-      title: "Slide bài giảng React Hooks",
-      fileType: "pdf",
-      fileSize: "2.5 MB",
-      downloadUrl: "https://example.com/slides.pdf",
-    },
-    {
-      id: 2,
-      title: "Source code mẫu",
-      fileType: "code",
-      fileSize: "350 KB",
-      downloadUrl: "https://example.com/code.zip",
-    },
-    {
-      id: 3,
-      title: "Hình minh họa kiến trúc",
-      fileType: "image",
-      fileSize: "1.2 MB",
-      downloadUrl: "https://example.com/architecture.png",
-    },
-    {
-      id: 4,
-      title: "Tài liệu tham khảo",
-      fileType: "pdf",
-      fileSize: "4.8 MB",
-      downloadUrl: "https://example.com/references.pdf",
-    },
-  ];
-
   // Mock data
   const mockGrades = [
     {
@@ -399,37 +336,6 @@ const CourseContent = () => {
       completedAt: "2023-09-25",
       feedback:
         "Excellent work! Very clean code and good performance optimization.",
-    },
-  ];
-
-  // Mock data - sẽ được thay thế bằng API call trong tương lai
-  const mockReviews = [
-    {
-      id: 1,
-      userName: "Nguyễn Văn A",
-      userAvatar: "/src/assets/avatar.png",
-      rating: 5,
-      content:
-        "Khóa học rất chi tiết và dễ hiểu. Giảng viên giải thích rõ ràng và có nhiều ví dụ thực tế.",
-      date: "2023-08-15",
-    },
-    {
-      id: 2,
-      userName: "Trần Thị B",
-      userAvatar: "/src/assets/avatar.png",
-      rating: 4,
-      content:
-        "Nội dung hay, nhưng một số phần hơi khó hiểu. Hy vọng sẽ có thêm ví dụ trong các phần nâng cao.",
-      date: "2023-08-10",
-    },
-    {
-      id: 3,
-      userName: "Lê Văn C",
-      userAvatar: "/src/assets/avatar.png",
-      rating: 5,
-      content:
-        "Tuyệt vời! Đã học được rất nhiều điều mới và áp dụng ngay vào dự án của mình.",
-      date: "2023-07-22",
     },
   ];
 
@@ -497,6 +403,7 @@ const CourseContent = () => {
                   sections={course?.sections}
                   handleLessonClick={handleLessonClick}
                   activeLesson={selectedLesson?.id}
+                  setActiveTab={setActiveTab}
                 />
               </CardContent>
             </Card>
@@ -526,7 +433,7 @@ const CourseContent = () => {
 
                 <TabPanel value={activeTab} index={1}>
                   <Box sx={{ mb: 4 }}>
-                    <ContentDocuments documents={mockDocuments} />
+                    <ContentDocuments />
                   </Box>
                 </TabPanel>
 
@@ -535,7 +442,7 @@ const CourseContent = () => {
                 </TabPanel>
 
                 <TabPanel value={activeTab} index={3}>
-                  <CourseRating Reviews={mockReviews} />
+                  <CourseRating />
                 </TabPanel>
               </>
             )}

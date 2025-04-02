@@ -41,6 +41,8 @@ import { AcademicClass } from './entities/AcademicClass';
 import { CourseProgress } from './entities/CourseProgress';
 import { CourseLessonDiscussion } from './entities/CourseLessonDiscussion';
 import { CourseLessonDiscussionsModule } from './modules/course-lesson-discussions/course-lesson-discussions.module';
+import { DocumentsModule } from './modules/documents/documents.module';
+import { ReviewsModule } from './modules/reviews/reviews.module';
 
 @Module({
   imports: [
@@ -98,6 +100,8 @@ import { CourseLessonDiscussionsModule } from './modules/course-lesson-discussio
     CertificatesModule,
     UserGradesModule,
     CourseLessonDiscussionsModule,
+    DocumentsModule,
+    ReviewsModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthMiddleware, InstructorMiddleware],

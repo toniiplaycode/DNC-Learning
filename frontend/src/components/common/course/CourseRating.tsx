@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -9,34 +9,31 @@ import {
   Button,
   Stack,
   Avatar,
-  Divider,
 } from "@mui/material";
+import { fetchReviewsByCourse } from "../../../features/reviews/reviewsSlice";
+import { useNavigate, useParams } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import { selectCourseReviews } from "../../../features/reviews/reviewsSelectors";
 
-interface ReviewItem {
-  id: number;
-  userName: string;
-  userAvatar: string;
-  rating: number;
-  content: string;
-  date: string;
-}
-
-interface Reviews {
-  id: number;
-  userName: string;
-  userAvatar: string;
-  rating: number;
-  content: string;
-  date: string;
-}
-
-interface CourseRatingProps {
-  Reviews: Reviews[];
-}
-
-const CourseRating: React.FC<CourseRatingProps> = ({ Reviews }) => {
+const CourseRating = () => {
+  const dispatch = useAppDispatch();
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const courseReviews = useAppSelector(selectCourseReviews);
   const [rating, setRating] = useState<number | null>(0);
   const [reviewText, setReviewText] = useState("");
+  const [showForm, setShowForm] = useState(false);
+
+  useEffect(() => {
+    if (id) {
+      dispatch(fetchReviewsByCourse(Number(id)));
+    }
+    // Kiểm tra URL
+    const currentUrl = window.location.pathname;
+    setShowForm(
+      currentUrl.includes("course/1/learn") || currentUrl === "/course/1/learn"
+    );
+  }, [dispatch, id, navigate]);
 
   const handleSubmitReview = () => {
     // Xử lý gửi đánh giá
@@ -48,53 +45,56 @@ const CourseRating: React.FC<CourseRatingProps> = ({ Reviews }) => {
 
   return (
     <Box>
-      <Typography variant="h6" gutterBottom>
-        Đánh giá khóa học
-      </Typography>
+      {showForm && (
+        <>
+          <Typography variant="h6" gutterBottom>
+            Đánh giá khóa học
+          </Typography>
+          {/* Form đánh giá */}
+          <Card sx={{ mb: 4 }}>
+            <CardContent>
+              <Stack spacing={2}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                  }}
+                >
+                  <Typography>Đánh giá của bạn:</Typography>
+                  <Rating
+                    value={rating}
+                    onChange={(event, newValue) => {
+                      setRating(newValue);
+                    }}
+                    size="large"
+                  />
+                  <Typography color="text.secondary">({rating} / 5)</Typography>
+                </Box>
 
-      {/* Form đánh giá */}
-      <Card sx={{ mb: 4 }}>
-        <CardContent>
-          <Stack spacing={2}>
-            <Box
-              sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 1,
-              }}
-            >
-              <Typography>Đánh giá của bạn:</Typography>
-              <Rating
-                value={rating}
-                onChange={(event, newValue) => {
-                  setRating(newValue);
-                }}
-                size="large"
-              />
-              <Typography color="text.secondary">({rating} / 5)</Typography>
-            </Box>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={4}
+                  placeholder="Nhập đánh giá của bạn về khóa học..."
+                  value={reviewText}
+                  onChange={(e) => setReviewText(e.target.value)}
+                />
 
-            <TextField
-              fullWidth
-              multiline
-              rows={4}
-              placeholder="Nhập đánh giá của bạn về khóa học..."
-              value={reviewText}
-              onChange={(e) => setReviewText(e.target.value)}
-            />
-
-            <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
-              <Button
-                variant="contained"
-                onClick={handleSubmitReview}
-                disabled={!rating || !reviewText.trim()}
-              >
-                Gửi đánh giá
-              </Button>
-            </Box>
-          </Stack>
-        </CardContent>
-      </Card>
+                <Box sx={{ display: "flex", justifyContent: "flex-end" }}>
+                  <Button
+                    variant="contained"
+                    onClick={handleSubmitReview}
+                    disabled={!rating || !reviewText.trim()}
+                  >
+                    Gửi đánh giá
+                  </Button>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </>
+      )}
 
       {/* Danh sách đánh giá */}
       <Typography variant="h6" gutterBottom>
@@ -102,11 +102,11 @@ const CourseRating: React.FC<CourseRatingProps> = ({ Reviews }) => {
       </Typography>
 
       <Stack spacing={2}>
-        {Reviews.map((review: ReviewItem) => (
+        {courseReviews.map((review) => (
           <Card key={review.id} variant="outlined">
             <CardContent>
               <Stack direction="row" spacing={2} alignItems="flex-start">
-                <Avatar src={review.userAvatar} />
+                <Avatar src={review?.student?.user?.avatarUrl} />
                 <Box sx={{ flexGrow: 1 }}>
                   <Box
                     sx={{
@@ -118,7 +118,7 @@ const CourseRating: React.FC<CourseRatingProps> = ({ Reviews }) => {
                     }}
                   >
                     <Typography variant="subtitle1">
-                      {review.userName}
+                      {review?.student?.fullName}
                     </Typography>
                     <Rating
                       value={review.rating}
@@ -131,10 +131,10 @@ const CourseRating: React.FC<CourseRatingProps> = ({ Reviews }) => {
                       color="text.secondary"
                       sx={{ ml: "auto" }}
                     >
-                      {new Date(review.date).toLocaleDateString()}
+                      {new Date(review?.createdAt).toLocaleDateString()}
                     </Typography>
                   </Box>
-                  <Typography variant="body2">{review.content}</Typography>
+                  <Typography variant="body2">{review?.reviewText}</Typography>
                 </Box>
               </Stack>
             </CardContent>

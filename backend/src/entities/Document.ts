@@ -70,7 +70,7 @@ export class Document {
 
   @ManyToOne(() => UserInstructor)
   @JoinColumn({ name: 'instructor_id' })
-  author: UserInstructor;
+  instructor: UserInstructor;
 
   @ManyToOne(() => CourseSection)
   @JoinColumn({ name: 'course_section_id' })

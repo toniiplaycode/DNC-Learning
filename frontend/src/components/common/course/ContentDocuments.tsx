@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState, Fragment } from "react";
 import {
   Box,
   Typography,
@@ -19,36 +19,33 @@ import {
 } from "@mui/material";
 import {
   PictureAsPdf,
-  Image,
   Code,
-  Archive,
-  AttachFile,
   Download,
   Close,
-  FileOpen,
   Delete,
+  Description,
+  TableChart,
+  Slideshow,
+  TextSnippet,
+  LinkOff,
 } from "@mui/icons-material";
-
-interface Document {
-  id: number;
-  title: string;
-  description?: string;
-  fileType: string; // "pdf", "image", "code", "archive", "other"
-  fileSize: string;
-  downloadUrl: string;
-}
+import { fetchDocumentsByCourse } from "../../../features/documents/documentsSlice";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import { useParams } from "react-router-dom";
+import { selectCourseDocuments } from "../../../features/documents/documentsSelectors";
 
 interface ContentDocumentsProps {
-  documents: Document[];
   isInstructor?: boolean;
   onDeleteDocument?: (documentId: number) => void;
 }
 
 const ContentDocuments: React.FC<ContentDocumentsProps> = ({
-  documents,
   isInstructor = false,
   onDeleteDocument,
 }) => {
+  const dispatch = useAppDispatch();
+  const { id } = useParams();
+  const documentsCourse = useAppSelector(selectCourseDocuments);
   const [selectedDocument, setSelectedDocument] = useState<Document | null>(
     null
   );
@@ -56,18 +53,28 @@ const ContentDocuments: React.FC<ContentDocumentsProps> = ({
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [documentToDelete, setDocumentToDelete] = useState<number | null>(null);
 
-  const getFileIcon = (fileType: string) => {
-    switch (fileType) {
+  useEffect(() => {
+    dispatch(fetchDocumentsByCourse(Number(id)));
+  }, [dispatch, id]);
+
+  const getFileIcon = (contentType: string) => {
+    switch (contentType) {
       case "pdf":
-        return <PictureAsPdf color="error" />;
-      case "image":
-        return <Image color="primary" />;
+        return <PictureAsPdf color="info" />;
+      case "docx":
+        return <Description color="info" />;
+      case "xlsx":
+        return <TableChart color="info" />;
+      case "txt":
+        return <TextSnippet color="info" />;
+      case "slide":
+        return <Slideshow color="info" />;
       case "code":
-        return <Code color="secondary" />;
-      case "archive":
-        return <Archive color="warning" />;
+        return <Code color="info" />;
+      case "link":
+        return <LinkOff color="info" />;
       default:
-        return <AttachFile />;
+        return <Description color="info" />;
     }
   };
 
@@ -77,7 +84,9 @@ const ContentDocuments: React.FC<ContentDocumentsProps> = ({
   };
 
   const handleDownload = (url: string) => {
-    window.open(url, "_blank");
+    window.open(
+      `https://drive.google.com/uc?export=download&id=${getFileIdFromUrl(url)}`
+    );
   };
 
   const handleDeleteClick = (e: React.MouseEvent, docId: number) => {
@@ -94,44 +103,153 @@ const ContentDocuments: React.FC<ContentDocumentsProps> = ({
     setDocumentToDelete(null);
   };
 
+  // Helper function để lấy file ID từ Google Drive URL
+  function getFileIdFromUrl(url: string) {
+    // Xử lý URL dạng /file/d/{fileId}/view hoặc /presentation/d/{fileId}/edit
+    const fileIdMatch = url.match(/\/d\/([^\/]+)/);
+    return fileIdMatch ? fileIdMatch[1] : "";
+  }
+
   const renderPreview = (doc: Document) => {
+    const fileId = getFileIdFromUrl(doc.fileUrl);
+
+    // Handle specific content types
     switch (doc.fileType) {
       case "pdf":
         return (
-          <iframe
-            src={doc.downloadUrl}
-            width="100%"
-            height="500px"
-            style={{ border: "none" }}
-            title={doc.title}
-          />
+          <Box
+            sx={{ height: "100%", display: "flex", flexDirection: "column" }}
+          >
+            <iframe
+              width="100%"
+              height="100%"
+              src={`https://drive.google.com/file/d/${fileId}/preview`}
+              title={doc.title}
+              frameBorder="0"
+              allowFullScreen
+            ></iframe>
+            <Stack direction="row" spacing={2} my={2} justifyContent="center">
+              <a
+                href={`https://drive.google.com/file/d/${fileId}/view`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button size="small" variant="contained">
+                  Mở trong Drive
+                </Button>
+              </a>
+              <a
+                href={`https://drive.google.com/uc?export=download&id=${fileId}`}
+                download
+              >
+                <Button size="small" variant="outlined">
+                  Tải xuống
+                </Button>
+              </a>
+            </Stack>
+          </Box>
         );
-      case "image":
+
+      case "txt":
         return (
-          <img
-            src={doc.downloadUrl}
-            alt={doc.title}
-            style={{
-              maxWidth: "100%",
-              maxHeight: "500px",
-              objectFit: "contain",
-            }}
-          />
+          <Box
+            sx={{ height: "100%", display: "flex", flexDirection: "column" }}
+          >
+            <iframe
+              width="100%"
+              height="100%"
+              src={`https://drive.google.com/file/d/${fileId}/preview`}
+              title={doc.title}
+              frameBorder="0"
+              allowFullScreen
+            ></iframe>
+            <Stack direction="row" spacing={2} my={2} justifyContent="center">
+              <a
+                href={`https://drive.google.com/file/d/${fileId}/view`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button size="small" variant="contained">
+                  Mở trong Drive
+                </Button>
+              </a>
+              <a
+                href={`https://drive.google.com/uc?export=download&id=${fileId}`}
+                download
+              >
+                <Button size="small" variant="outlined">
+                  Tải xuống
+                </Button>
+              </a>
+            </Stack>
+          </Box>
         );
+
+      case "docx":
+      case "xlsx":
+      case "slide":
+        return (
+          <Box
+            sx={{ height: "100%", display: "flex", flexDirection: "column" }}
+          >
+            <iframe
+              width="100%"
+              height="100%"
+              src={`https://docs.google.com/viewer?srcid=${fileId}&pid=explorer&efh=false&a=v&chrome=false&embedded=true`}
+              title={doc.title}
+              frameBorder="0"
+              allowFullScreen
+            ></iframe>
+            <Stack direction="row" spacing={2} my={2} justifyContent="center">
+              <a
+                href={`https://drive.google.com/file/d/${fileId}/view`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Button size="small" variant="contained">
+                  Mở trong Drive
+                </Button>
+              </a>
+              <a
+                href={`https://drive.google.com/uc?export=download&id=${fileId}`}
+                download
+              >
+                <Button size="small" variant="outlined">
+                  Tải xuống
+                </Button>
+              </a>
+            </Stack>
+          </Box>
+        );
+
       default:
         return (
-          <Box sx={{ textAlign: "center", py: 4 }}>
+          <Box
+            sx={{
+              p: 3,
+              height: "100%",
+              display: "flex",
+              flexDirection: "column",
+              justifyContent: "center",
+              alignItems: "center",
+            }}
+          >
             <Typography variant="body1" gutterBottom>
-              Không thể xem trước tệp này.
+              Không thể hiển thị trực tiếp tệp này
             </Typography>
-            <Button
-              variant="contained"
-              startIcon={<Download />}
-              onClick={() => handleDownload(doc.downloadUrl)}
-              sx={{ mt: 2 }}
-            >
-              Tải xuống để xem
-            </Button>
+            <Stack direction="row" spacing={2} mt={2}>
+              <a href={doc.fileUrl} target="_blank" rel="noopener noreferrer">
+                <Button variant="contained">Mở tệp</Button>
+              </a>
+              {fileId && (
+                <a
+                  href={`https://drive.google.com/uc?export=download&id=${fileId}`}
+                  download
+                >
+                  <Button variant="outlined">Tải xuống</Button>
+                </a>
+              )}
+            </Stack>
           </Box>
         );
     }
@@ -140,55 +258,60 @@ const ContentDocuments: React.FC<ContentDocumentsProps> = ({
   return (
     <Box>
       <List sx={{ bgcolor: "background.paper" }}>
-        {documents.map((doc) => (
-          <ListItem
-            key={doc.id}
-            disablePadding
-            secondaryAction={
-              <Stack direction="row" spacing={1}>
-                <Button
-                  size="small"
-                  startIcon={<Download />}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDownload(doc.downloadUrl);
-                  }}
-                >
-                  Tải xuống
-                </Button>
-                {isInstructor && (
-                  <IconButton
-                    edge="end"
-                    aria-label="delete"
-                    onClick={(e) => handleDeleteClick(e, doc.id)}
-                    color="error"
+        {documentsCourse?.map((doc) => (
+          <Fragment key={doc.id}>
+            <Typography variant="h6">
+              Phần {doc?.courseSection?.orderNumber} -{" "}
+              {doc?.courseSection?.title}
+            </Typography>
+            <ListItem
+              disablePadding
+              secondaryAction={
+                <Stack direction="row" spacing={1}>
+                  <Button
                     size="small"
+                    startIcon={<Download />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDownload(doc.fileUrl);
+                    }}
                   >
-                    <Delete />
-                  </IconButton>
-                )}
-              </Stack>
-            }
-          >
-            <ListItemButton onClick={() => handlePreview(doc)}>
-              <ListItemIcon>{getFileIcon(doc.fileType)}</ListItemIcon>
-              <ListItemText
-                primary={doc.title}
-                secondary={
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Typography variant="body2" color="text.secondary">
-                      {doc.fileSize}
-                    </Typography>
-                    <Chip
-                      label={doc.fileType.toUpperCase()}
+                    Tải xuống
+                  </Button>
+                  {isInstructor && (
+                    <IconButton
+                      edge="end"
+                      aria-label="delete"
+                      onClick={(e) => handleDeleteClick(e, doc.id)}
+                      color="error"
                       size="small"
-                      variant="outlined"
-                    />
-                  </Stack>
-                }
-              />
-            </ListItemButton>
-          </ListItem>
+                    >
+                      <Delete />
+                    </IconButton>
+                  )}
+                </Stack>
+              }
+            >
+              <ListItemButton onClick={() => handlePreview(doc)}>
+                <ListItemIcon>{getFileIcon(doc.fileType)}</ListItemIcon>
+                <ListItemText
+                  primary={doc.title}
+                  secondary={
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Typography variant="body2" color="text.secondary">
+                        {doc.fileSize} KB
+                      </Typography>
+                      <Chip
+                        label={doc.fileType.toUpperCase()}
+                        size="small"
+                        variant="outlined"
+                      />
+                    </Stack>
+                  }
+                />
+              </ListItemButton>
+            </ListItem>
+          </Fragment>
         ))}
       </List>
 
@@ -196,8 +319,18 @@ const ContentDocuments: React.FC<ContentDocumentsProps> = ({
       <Dialog
         open={previewOpen}
         onClose={() => setPreviewOpen(false)}
-        maxWidth="md"
         fullWidth
+        maxWidth="xl"
+        fullScreen={true}
+        sx={{
+          "& .MuiDialog-paper": {
+            width: "90%",
+            height: "90%",
+            maxWidth: "none",
+            maxHeight: "none",
+            m: 0,
+          },
+        }}
       >
         {selectedDocument && (
           <>
@@ -216,23 +349,6 @@ const ContentDocuments: React.FC<ContentDocumentsProps> = ({
               </Box>
             </DialogTitle>
             <DialogContent>{renderPreview(selectedDocument)}</DialogContent>
-            <DialogActions>
-              <Button
-                startIcon={<FileOpen />}
-                onClick={() =>
-                  window.open(selectedDocument.downloadUrl, "_blank")
-                }
-              >
-                Mở trong tab mới
-              </Button>
-              <Button
-                variant="contained"
-                startIcon={<Download />}
-                onClick={() => handleDownload(selectedDocument.downloadUrl)}
-              >
-                Tải xuống
-              </Button>
-            </DialogActions>
           </>
         )}
       </Dialog>
