@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -8,65 +8,43 @@ import {
   FormControlLabel,
   Radio,
   Button,
-  Stack,
-  LinearProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  Alert,
-  IconButton,
+  Divider,
+  Paper,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
-import { Timer, Help, CheckCircle, Cancel, Close } from "@mui/icons-material";
-import QuizExplanation from "./QuizExplanation";
+import {
+  Timer,
+  Help,
+  CheckCircle,
+  Cancel,
+  Close,
+  PlayArrow,
+} from "@mui/icons-material";
+import { fetchQuizzesByLesson } from "../../../features/quizzes/quizzesSlice";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import { selectLessonQuizzes } from "../../../features/quizzes/quizzesSelectors";
 
 interface Question {
   id: number;
   content: string;
   options: string[];
   correctAnswer: number;
-  explanation: string;
+  explanation?: string;
 }
 
-interface QuizData {
+interface Quiz {
   id: number;
   title: string;
   description: string;
-  timeLimit: number; // in minutes
-  passingScore: number;
-  maxAttempts: number;
+  timeLimit: number;
   questions: Question[];
 }
 
 interface QuizContentProps {
-  quizData: QuizData;
+  lessonId: number;
   onComplete: (score: number) => void;
 }
-
-const mockQuizData: QuizData = {
-  id: 1,
-  title: "Kiểm tra kiến thức React Hooks",
-  description: "Bài kiểm tra đánh giá kiến thức về React Hooks cơ bản",
-  timeLimit: 30,
-  passingScore: 70,
-  maxAttempts: 2,
-  questions: [
-    {
-      id: 1,
-      content: "useState hook được sử dụng để làm gì?",
-      options: [
-        "Quản lý side effects",
-        "Quản lý state trong functional component",
-        "Tối ưu performance",
-        "Xử lý routing",
-      ],
-      correctAnswer: 1,
-      explanation:
-        "useState là hook cơ bản để quản lý state trong functional component.",
-    },
-    // Thêm các câu hỏi khác...
-  ],
-};
 
 // Thêm hàm helper để chia câu hỏi thành các cột
 const getQuestionColumns = (totalQuestions: number) => {
@@ -98,325 +76,479 @@ const getQuestionStatus = (
   return "unanswered";
 };
 
-const QuizContent: React.FC<QuizContentProps> = ({ quizData, onComplete }) => {
-  const [currentQuestion, setCurrentQuestion] = useState(0);
-  const [answers, setAnswers] = useState<number[]>([]);
-  const [timeLeft, setTimeLeft] = useState(quizData.timeLimit * 60);
-  const [showResult, setShowResult] = useState(false);
-  const [showExplanation, setShowExplanation] = useState(false);
+const QuizContent: React.FC<QuizContentProps> = ({ lessonId, onComplete }) => {
+  const dispatch = useAppDispatch();
+  const lessonQuizzes = useAppSelector(selectLessonQuizzes);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
-  // Timer
-  React.useEffect(() => {
-    if (timeLeft > 0 && !showResult) {
-      const timer = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
+  // State
+  const [answers, setAnswers] = useState<number[]>([]);
+  const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
+  const [quizSubmitted, setQuizSubmitted] = useState(false);
+  const [quizStarted, setQuizStarted] = useState(false);
+  const [score, setScore] = useState(0);
+  const [showExplanations, setShowExplanations] = useState(false);
+
+  // Use the first quiz from the lesson quizzes if available
+  const activeQuiz =
+    lessonQuizzes && lessonQuizzes.length > 0 ? lessonQuizzes[0] : null;
+
+  useEffect(() => {
+    // Fetch quizzes when the component mounts
+    dispatch(fetchQuizzesByLesson(lessonId));
+  }, [dispatch, lessonId]);
+
+  useEffect(() => {
+    // Initialize time limit if the quiz has one and has been started
+    if (activeQuiz && activeQuiz.timeLimit && !timeRemaining && quizStarted) {
+      setTimeRemaining(activeQuiz.timeLimit * 60); // Convert minutes to seconds
+    }
+  }, [activeQuiz, timeRemaining, quizStarted]);
+
+  useEffect(() => {
+    if (activeQuiz && activeQuiz.showExplanation === 0) {
+      setShowExplanations(false);
+    }
+    if (activeQuiz && activeQuiz.showExplanation === 1) {
+      setShowExplanations(true);
+    }
+  }, [activeQuiz]);
+
+  console.log(activeQuiz?.showExplanation);
+
+  useEffect(() => {
+    // Timer logic
+    if (timeRemaining !== null && timeRemaining > 0 && !quizSubmitted) {
+      const timer = setTimeout(() => {
+        setTimeRemaining(timeRemaining - 1);
       }, 1000);
-      return () => clearInterval(timer);
-    } else if (timeLeft === 0 && !showResult) {
+      return () => clearTimeout(timer);
+    } else if (timeRemaining === 0 && !quizSubmitted) {
       handleSubmit();
     }
-  }, [timeLeft, showResult]);
+  }, [timeRemaining, quizSubmitted]);
 
-  const handleAnswer = (value: number) => {
+  const handleStartQuiz = () => {
+    setQuizStarted(true);
+  };
+
+  const handleAnswerChange = (questionIndex: number, optionIndex: number) => {
     const newAnswers = [...answers];
-    newAnswers[currentQuestion] = value;
+    newAnswers[questionIndex] = optionIndex;
     setAnswers(newAnswers);
   };
 
   const handleSubmit = () => {
-    const score = calculateScore();
-    setShowResult(true);
-    onComplete(score);
-  };
+    if (!activeQuiz) return;
 
-  const calculateScore = () => {
-    const correctAnswers = answers.reduce((acc, answer, index) => {
-      if (answer === undefined) return acc;
-      return answer === quizData.questions[index].correctAnswer ? acc + 1 : acc;
-    }, 0);
-    return (correctAnswers / quizData.questions.length) * 100;
+    let correctCount = 0;
+
+    answers.forEach((answer, index) => {
+      const question = activeQuiz.questions[index];
+      const correctOption = question.options.findIndex(
+        (option) => option.isCorrect
+      );
+      if (answer === correctOption) {
+        correctCount++;
+      }
+    });
+
+    const finalScore = Math.round(
+      (correctCount / activeQuiz.questions.length) * 100
+    );
+    setScore(finalScore);
+    setQuizSubmitted(true);
+    onComplete(finalScore);
   };
 
   const formatTime = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
-    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+    return `${minutes.toString().padStart(2, "0")}:${remainingSeconds
+      .toString()
+      .padStart(2, "0")}`;
   };
-
-  if (showResult) {
-    const score = calculateScore();
-    const passed = score >= quizData.passingScore;
-
+  if (!activeQuiz) {
     return (
-      <Box>
+      <Box sx={{ p: 3 }}>
+        <Typography>Đang tải bài quiz...</Typography>
+      </Box>
+    );
+  }
+
+  if (quizSubmitted) {
+    return (
+      <Box sx={{ p: 3 }}>
         <Card>
           <CardContent>
-            <Stack spacing={3} alignItems="center">
-              {passed ? (
-                <CheckCircle color="success" sx={{ fontSize: 60 }} />
-              ) : (
-                <Cancel color="error" sx={{ fontSize: 60 }} />
-              )}
-              <Typography variant="h5" textAlign="center">
-                {passed
-                  ? "Chúc mừng! Bạn đã hoàn thành bài kiểm tra"
-                  : "Bạn chưa đạt yêu cầu"}
-              </Typography>
-              <Typography
-                variant="h4"
-                color={passed ? "success.main" : "error.main"}
-              >
-                {score.toFixed(1)}%
-              </Typography>
-            </Stack>
-          </CardContent>
-        </Card>
+            <Typography variant="h5" gutterBottom>
+              Kết quả
+            </Typography>
 
-        <Box sx={{ mt: 3, textAlign: "center" }}>
-          <Button
-            variant="contained"
-            onClick={() => setShowExplanation(true)}
-            startIcon={<Help />}
-            size="large"
-          >
-            Xem giải thích
-          </Button>
-        </Box>
-
-        <Dialog
-          open={showExplanation}
-          onClose={() => setShowExplanation(false)}
-          maxWidth="md"
-          fullWidth
-        >
-          <DialogTitle>
             <Box
               sx={{
                 display: "flex",
-                justifyContent: "space-between",
                 alignItems: "center",
+                justifyContent: "center",
+                flexDirection: "column",
+                mb: 3,
               }}
             >
-              Giải thích chi tiết
-              <IconButton
-                size="small"
-                onClick={() => setShowExplanation(false)}
+              <Typography
+                variant="h3"
+                color={score >= 70 ? "success.main" : "error.main"}
               >
-                <Close />
-              </IconButton>
+                {score}%
+              </Typography>
+              <Typography variant="subtitle1">
+                {score >= 70 ? "Đạt" : "Chưa đạt"}
+              </Typography>
             </Box>
-          </DialogTitle>
-          <DialogContent>
-            <QuizExplanation
-              questions={quizData.questions}
-              userAnswers={answers}
-              score={calculateScore()}
-              passingScore={quizData.passingScore}
-            />
-          </DialogContent>
-        </Dialog>
+
+            <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
+              <Button
+                variant="outlined"
+                color="primary"
+                startIcon={<Help />}
+                onClick={() => setShowExplanations(!showExplanations)}
+                sx={{ mx: 1 }}
+              >
+                {showExplanations
+                  ? "Ẩn kết quả chi tiết"
+                  : "Xem kết quả chi tiết"}
+              </Button>
+            </Box>
+
+            {showExplanations && (
+              <>
+                <Typography variant="h6" gutterBottom>
+                  Chi tiết câu trả lời:
+                </Typography>
+
+                {activeQuiz.questions.map((question, index) => {
+                  const userAnswer =
+                    answers[index] !== undefined ? answers[index] : -1;
+                  const correctOptionIndex = question.options.findIndex(
+                    (option) => option.isCorrect
+                  );
+                  const isCorrect = userAnswer === correctOptionIndex;
+
+                  return (
+                    <Paper
+                      key={question.id}
+                      elevation={1}
+                      sx={{
+                        p: 2,
+                        mb: 2,
+                        borderLeft: 4,
+                        borderColor: isCorrect ? "primary.main" : "error.main",
+                      }}
+                    >
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", mb: 1 }}
+                      >
+                        <Typography
+                          variant="body1"
+                          sx={{ fontWeight: "medium", flex: 1 }}
+                        >
+                          {index + 1}. {question.questionText}
+                        </Typography>
+
+                        {isCorrect ? (
+                          <CheckCircle color="success" />
+                        ) : (
+                          <Cancel color="error" />
+                        )}
+                      </Box>
+
+                      <Box sx={{ pl: 4 }}>
+                        {question.options.map((option, optionIndex) => (
+                          <Typography
+                            key={option.id}
+                            variant="body2"
+                            sx={{
+                              color:
+                                optionIndex === correctOptionIndex
+                                  ? "success.main"
+                                  : optionIndex === userAnswer
+                                  ? "error.main"
+                                  : "text.primary",
+                              fontWeight:
+                                optionIndex === correctOptionIndex ||
+                                optionIndex === userAnswer
+                                  ? "bold"
+                                  : "normal",
+                            }}
+                          >
+                            {String.fromCharCode(65 + optionIndex)}.{" "}
+                            {option.optionText}
+                            {optionIndex === userAnswer &&
+                              optionIndex !== correctOptionIndex &&
+                              " (Đã chọn)"}
+                            {optionIndex === correctOptionIndex &&
+                              " (Đáp án đúng)"}
+                          </Typography>
+                        ))}
+                      </Box>
+
+                      {/* Always show explanation when details are shown */}
+                      {question.correctExplanation && (
+                        <Box
+                          sx={{
+                            mt: 2,
+                            pl: 4,
+                            pt: 1,
+                            pb: 1,
+                            bgcolor: "primary.light",
+                            borderRadius: 1,
+                            opacity: 0.8,
+                          }}
+                        >
+                          <Typography
+                            variant="subtitle2"
+                            sx={{ fontWeight: "bold", mb: 0.5, color: "black" }}
+                          >
+                            Giải thích:
+                          </Typography>
+                          <Typography variant="body2" sx={{ color: "black" }}>
+                            {question.correctExplanation}
+                          </Typography>
+                        </Box>
+                      )}
+                    </Paper>
+                  );
+                })}
+              </>
+            )}
+          </CardContent>
+        </Card>
+      </Box>
+    );
+  }
+
+  if (!quizStarted) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Card sx={{ maxWidth: 800, mx: "auto" }}>
+          <CardContent sx={{ textAlign: "center", py: 4 }}>
+            <Typography variant="h4" gutterBottom color="primary">
+              {activeQuiz.title}
+            </Typography>
+
+            <Box sx={{ my: 3, px: 3 }}>
+              {activeQuiz.description && (
+                <Typography variant="body1" paragraph>
+                  {activeQuiz.description}
+                </Typography>
+              )}
+
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  flexWrap: "wrap",
+                  gap: 3,
+                  my: 4,
+                }}
+              >
+                <Paper
+                  elevation={1}
+                  sx={{
+                    p: 2,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    minWidth: "150px",
+                  }}
+                >
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Số câu hỏi
+                  </Typography>
+                  <Typography variant="h5" sx={{ mt: 1 }}>
+                    {activeQuiz.questions.length}
+                  </Typography>
+                </Paper>
+
+                {activeQuiz.timeLimit && (
+                  <Paper
+                    elevation={1}
+                    sx={{
+                      p: 2,
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      minWidth: "150px",
+                    }}
+                  >
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Thời gian
+                    </Typography>
+                    <Typography variant="h5" sx={{ mt: 1 }}>
+                      {activeQuiz.timeLimit} phút
+                    </Typography>
+                  </Paper>
+                )}
+              </Box>
+
+              <Typography variant="subtitle1" sx={{ mb: 3 }}>
+                Bạn cần hoàn thành tất cả câu hỏi trong thời gian quy định.
+              </Typography>
+            </Box>
+
+            <Button
+              variant="contained"
+              size="large"
+              startIcon={<PlayArrow />}
+              onClick={handleStartQuiz}
+              sx={{ px: 4, py: 1.5, borderRadius: 2 }}
+            >
+              Bắt đầu làm bài
+            </Button>
+          </CardContent>
+        </Card>
       </Box>
     );
   }
 
   return (
-    <Box sx={{ display: "flex", gap: 3 }}>
-      {/* Question List */}
-      <Card sx={{ width: "auto", alignSelf: "flex-start" }}>
-        <CardContent>
-          <Typography variant="subtitle1" gutterBottom>
-            Danh sách câu hỏi
+    <Box sx={{ p: 3, position: "relative" }}>
+      <Box sx={{ mb: 2 }}>
+        <Typography variant="h5" gutterBottom>
+          {activeQuiz.title}
+        </Typography>
+        {activeQuiz.description && (
+          <Typography variant="body2" color="text.secondary" paragraph>
+            {activeQuiz.description}
           </Typography>
-          <Stack direction="row" spacing={3}>
-            {getQuestionColumns(quizData.questions.length).map(
-              (column, colIndex) => (
-                <Stack key={colIndex} spacing={1}>
-                  {column.map((questionIndex) => {
-                    const status = getQuestionStatus(
-                      questionIndex,
-                      currentQuestion,
-                      answers
-                    );
-                    return (
-                      <Button
-                        key={questionIndex}
-                        variant={
-                          status === "current" ? "contained" : "outlined"
-                        }
-                        size="small"
-                        onClick={() => setCurrentQuestion(questionIndex)}
-                        sx={{
-                          minWidth: 40,
-                          width: 40,
-                          height: 40,
-                          p: 0,
-                          borderRadius: 2,
-                          ...(status === "answered" && {
-                            backgroundColor: "action.hover",
-                            "&:hover": {
-                              backgroundColor: "action.selected",
-                            },
-                          }),
-                          ...(status === "current" && {
-                            backgroundColor: "primary.main",
-                            "&:hover": {
-                              backgroundColor: "primary.dark",
-                            },
-                          }),
-                        }}
-                      >
-                        {questionIndex + 1}
-                      </Button>
-                    );
-                  })}
-                </Stack>
-              )
-            )}
-          </Stack>
+        )}
+      </Box>
 
-          {/* Legend */}
-          <Box sx={{ mt: 2 }}>
-            <Typography variant="body2" color="text.secondary" gutterBottom>
-              Chú thích:
+      {/* Responsive sidebar - fixed on desktop, normal flow on mobile */}
+      <Box
+        sx={{
+          ...(isMobile
+            ? {
+                width: "100%",
+                mb: 3,
+              }
+            : {
+                position: "fixed",
+                top: 100,
+                right: 4,
+                width: "240px",
+                zIndex: 10,
+              }),
+        }}
+      >
+        <Paper elevation={3} sx={{ p: 2, borderRadius: 2 }}>
+          {timeRemaining !== null && (
+            <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+              <Timer color="primary" sx={{ mr: 1 }} />
+              <Typography variant="subtitle1" fontWeight="bold">
+                Thời gian còn lại: {formatTime(timeRemaining)}
+              </Typography>
+            </Box>
+          )}
+
+          <Box sx={{ mb: 2 }}>
+            <Typography variant="subtitle1">
+              <strong>Tiến độ:</strong>{" "}
+              {answers.filter((a) => a !== undefined).length}/
+              {activeQuiz.questions.length} câu
             </Typography>
-            <Stack spacing={1}>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box
-                  sx={{
-                    width: 12,
-                    height: 12,
-                    bgcolor: "action.hover",
-                    borderRadius: 1,
-                  }}
-                />
-                <Typography variant="caption">
-                  Đã trả lời ({answers.filter((a) => a !== undefined).length})
-                </Typography>
-              </Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box
-                  sx={{
-                    width: 12,
-                    height: 12,
-                    bgcolor: "primary.main",
-                    borderRadius: 1,
-                  }}
-                />
-                <Typography variant="caption">Câu hiện tại</Typography>
-              </Box>
-              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                <Box
-                  sx={{
-                    width: 12,
-                    height: 12,
-                    border: 1,
-                    borderColor: "divider",
-                    borderRadius: 1,
-                  }}
-                />
-                <Typography variant="caption">
-                  Chưa trả lời (
-                  {quizData.questions.length -
-                    answers.filter((a) => a !== undefined).length}
-                  )
-                </Typography>
-              </Box>
-            </Stack>
+            <Box
+              sx={{ mt: 1, height: 8, bgcolor: "grey.200", borderRadius: 1 }}
+            >
+              <Box
+                sx={{
+                  height: "100%",
+                  width: `${
+                    (answers.filter((a) => a !== undefined).length /
+                      activeQuiz.questions.length) *
+                    100
+                  }%`,
+                  bgcolor: "primary.main",
+                  borderRadius: 1,
+                }}
+              />
+            </Box>
           </Box>
+
+          <Button
+            variant="contained"
+            color="primary"
+            fullWidth
+            onClick={handleSubmit}
+            disabled={
+              answers.filter((a) => a !== undefined).length !==
+              activeQuiz.questions.length
+            }
+          >
+            Nộp bài
+          </Button>
+        </Paper>
+      </Box>
+
+      <Card
+        sx={{
+          width: "100%",
+        }}
+      >
+        <CardContent>
+          {/* All quiz questions */}
+          {activeQuiz.questions.map((question, index) => (
+            <Box key={question.id} sx={{ mb: 4 }}>
+              <Typography
+                variant="h6"
+                gutterBottom
+                sx={{ display: "flex", alignItems: "center" }}
+              >
+                <Box
+                  sx={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: "50%",
+                    bgcolor: "primary.main",
+                    color: "white",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    mr: 1,
+                  }}
+                >
+                  {index + 1}
+                </Box>
+                {question.questionText}
+              </Typography>
+
+              <RadioGroup
+                name={`question-${question.id}`}
+                value={answers[index] !== undefined ? answers[index] : ""}
+                onChange={(e) =>
+                  handleAnswerChange(index, parseInt(e.target.value))
+                }
+                sx={{ ml: 4 }}
+              >
+                {question.options.map((option, optionIndex) => (
+                  <FormControlLabel
+                    key={option.id}
+                    value={optionIndex}
+                    control={<Radio />}
+                    label={`${String.fromCharCode(65 + optionIndex)}. ${
+                      option.optionText
+                    }`}
+                  />
+                ))}
+              </RadioGroup>
+
+              {index < activeQuiz.questions.length - 1 && (
+                <Divider sx={{ my: 2 }} />
+              )}
+            </Box>
+          ))}
         </CardContent>
       </Card>
-
-      {/* Question Content */}
-      <Box sx={{ flex: 1 }}>
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Stack
-              direction="row"
-              justifyContent="space-between"
-              alignItems="center"
-            >
-              <Typography variant="h6">{quizData.title}</Typography>
-              <Stack direction="row" spacing={2} alignItems="center">
-                <Timer color="action" />
-                <Typography color={timeLeft < 300 ? "error" : "text.secondary"}>
-                  {formatTime(timeLeft)}
-                </Typography>
-              </Stack>
-            </Stack>
-            <LinearProgress
-              variant="determinate"
-              value={((currentQuestion + 1) / quizData.questions.length) * 100}
-              sx={{ mt: 2 }}
-            />
-          </CardContent>
-        </Card>
-
-        {/* Question */}
-        <Card>
-          <CardContent>
-            <Typography variant="subtitle1" gutterBottom>
-              Câu {currentQuestion + 1}/{quizData.questions.length}
-            </Typography>
-            <Typography variant="body1" sx={{ mb: 3 }}>
-              {quizData.questions[currentQuestion].content}
-            </Typography>
-
-            <RadioGroup
-              value={answers[currentQuestion] ?? -1}
-              onChange={(e) => handleAnswer(Number(e.target.value))}
-            >
-              <Stack spacing={2}>
-                {quizData.questions[currentQuestion].options.map(
-                  (option, index) => (
-                    <FormControlLabel
-                      key={index}
-                      value={index}
-                      control={<Radio />}
-                      label={option}
-                      sx={{
-                        p: 1,
-                        border: 1,
-                        borderColor: "divider",
-                        borderRadius: 1,
-                      }}
-                    />
-                  )
-                )}
-              </Stack>
-            </RadioGroup>
-
-            <Stack direction="row" spacing={2} sx={{ mt: 4 }}>
-              <Button
-                variant="outlined"
-                disabled={currentQuestion === 0}
-                onClick={() => setCurrentQuestion((prev) => prev - 1)}
-              >
-                Câu trước
-              </Button>
-              {currentQuestion < quizData.questions.length - 1 ? (
-                <Button
-                  variant="contained"
-                  onClick={() => setCurrentQuestion((prev) => prev + 1)}
-                >
-                  Câu tiếp theo
-                </Button>
-              ) : (
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={handleSubmit}
-                  disabled={
-                    answers.filter((a) => a !== undefined).length !==
-                    quizData.questions.length
-                  }
-                >
-                  Nộp bài
-                </Button>
-              )}
-            </Stack>
-          </CardContent>
-        </Card>
-      </Box>
     </Box>
   );
 };

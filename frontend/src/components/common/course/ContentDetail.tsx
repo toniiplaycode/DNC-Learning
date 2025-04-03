@@ -285,6 +285,7 @@ const ContentDetail = ({ content }: { content: any }) => {
       {content.type === "quiz" && (
         <Box sx={{ mb: 4 }}>
           <QuizContent
+            lessonId={content.id}
             quizData={{
               id: content.id,
               title: content.title,

@@ -43,6 +43,11 @@ import { CourseLessonDiscussion } from './entities/CourseLessonDiscussion';
 import { CourseLessonDiscussionsModule } from './modules/course-lesson-discussions/course-lesson-discussions.module';
 import { DocumentsModule } from './modules/documents/documents.module';
 import { ReviewsModule } from './modules/reviews/reviews.module';
+import { QuizAttempt } from './entities/QuizAttempt';
+import { QuizQuestion } from './entities/QuizQuestion';
+import { QuizOption } from './entities/QuizOption';
+import { QuizResponse } from './entities/QuizResponse';
+import { QuizzesModule } from './modules/quizzes/quizzes.module';
 
 @Module({
   imports: [
@@ -87,6 +92,10 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
         AcademicClass,
         CourseProgress,
         CourseLessonDiscussion,
+        QuizAttempt,
+        QuizQuestion,
+        QuizOption,
+        QuizResponse,
       ],
       // synchronize: true, // tự động tạo bảng trong entity (chỉ dùng trong môi tường dev)
     }),
@@ -102,6 +111,7 @@ import { ReviewsModule } from './modules/reviews/reviews.module';
     CourseLessonDiscussionsModule,
     DocumentsModule,
     ReviewsModule,
+    QuizzesModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthMiddleware, InstructorMiddleware],

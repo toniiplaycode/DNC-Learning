@@ -75,6 +75,13 @@ export class Quiz {
   quizType: QuizType;
 
   @Column({
+    name: 'show_explanation',
+    type: 'tinyint',
+    default: 1,
+  })
+  showExplanation: number;
+
+  @Column({
     name: 'start_time',
     type: 'datetime',
     nullable: true,

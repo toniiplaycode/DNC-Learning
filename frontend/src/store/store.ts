@@ -11,6 +11,7 @@ import discussionsReducer from "../features/discussions/discussionsSlice";
 import documentsReducer from "../features/documents/documentsSlice";
 import reviewsReducer from "../features/reviews/reviewsSlice";
 import userGradesReducer from "../features/user-grades/userGradesSlice";
+import quizzesReducer from "../features/quizzes/quizzesSlice";
 // Import các reducer khác nếu có
 
 export const store = configureStore({
@@ -27,6 +28,7 @@ export const store = configureStore({
     documents: documentsReducer,
     reviews: reviewsReducer,
     userGrades: userGradesReducer,
+    quizzes: quizzesReducer,
     // Thêm các reducer khác nếu có
   },
   middleware: (getDefaultMiddleware) =>
