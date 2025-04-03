@@ -11,6 +11,8 @@ import {
 import { CourseLesson } from './CourseLesson';
 import { UserGrade } from './UserGrade';
 import { AcademicClass } from './AcademicClass';
+import { QuizQuestion } from './QuizQuestion';
+import { QuizAttempt } from './QuizAttempt';
 
 export enum QuizType {
   PRACTICE = 'practice',
@@ -108,4 +110,10 @@ export class Quiz {
   // Relationship with UserGrade
   @OneToMany(() => UserGrade, (userGrade) => userGrade.quiz)
   grades: UserGrade[];
+
+  @OneToMany(() => QuizQuestion, (question) => question.quiz)
+  questions: QuizQuestion[];
+
+  @OneToMany(() => QuizAttempt, (attempt) => attempt.quiz)
+  attempts: QuizAttempt[];
 }
