@@ -8,6 +8,8 @@ export const selectAllUserGrades = (state: RootState) =>
   state.userGrades.userGrades;
 export const selectUserCourseGrades = (state: RootState) =>
   state.userGrades.userCourseGrades;
+export const selectUserGradesByUser = (state: RootState) =>
+  state.userGrades.userGrades;
 export const selectCurrentGrade = (state: RootState) =>
   state.userGrades.currentGrade;
 export const selectCourseSummary = (state: RootState) =>

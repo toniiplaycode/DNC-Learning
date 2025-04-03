@@ -218,8 +218,45 @@ export class UserGradesService {
           },
         },
       },
-      order: {
-        createdAt: 'DESC',
+    });
+  }
+
+  async findByUser(userId: number): Promise<UserGrade[]> {
+    return this.userGradesRepository.find({
+      where: { userId },
+      relations: [
+        'user',
+        'course',
+        'instructor',
+        'instructor.user',
+        'lesson',
+        'assignment',
+        'quiz',
+      ],
+      select: {
+        user: {
+          id: true,
+          username: true,
+          email: true,
+          avatarUrl: true,
+        },
+        course: {
+          id: true,
+          title: true,
+          categoryId: true,
+          description: true,
+          thumbnailUrl: true,
+        },
+        instructor: {
+          id: true,
+          fullName: true,
+          user: {
+            id: true,
+            username: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
       },
     });
   }

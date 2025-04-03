@@ -53,6 +53,20 @@ export const fetchUserCourseGrades = createAsyncThunk(
   }
 );
 
+export const fetchUserGradesByUser = createAsyncThunk(
+  "userGrades/fetchUserGradesByUser",
+  async (userId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/user-grades/user/${userId}`);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Không thể tải điểm số của người dùng"
+      );
+    }
+  }
+);
+
 export const fetchGradeById = createAsyncThunk(
   "userGrades/fetchById",
   async (id: number, { rejectWithValue }) => {
@@ -198,6 +212,20 @@ const userGradesSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchUserCourseGrades.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
+
+      // fetchUserGradesByUser
+      .addCase(fetchUserGradesByUser.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchUserGradesByUser.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.userGrades = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchUserGradesByUser.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
       })

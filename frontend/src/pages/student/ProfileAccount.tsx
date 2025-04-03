@@ -27,6 +27,7 @@ import {
   Select,
   MenuItem,
   IconButton,
+  CircularProgress,
 } from "@mui/material";
 import {
   Email,
@@ -55,187 +56,46 @@ import { fetchUserEnrollments } from "../../features/enrollments/enrollmentsApiS
 import { selectUserEnrollments } from "../../features/enrollments/enrollmentsSelectors";
 import { fetchUserCertificates } from "../../features/certificates/certificatesApiSlice";
 import { selectUserCertificates } from "../../features/certificates/certificatesSelectors";
-// Cập nhật mock data theo cấu trúc CSDL
-const mockUserData = {
-  // Từ bảng users
-  id: 1,
-  username: "nguyenvana",
-  email: "nguyenvana@gmail.com",
-  phone: "0987654321",
-  role: "student",
-  status: "active",
-  avatar_url: "/src/assets/avatar.png",
-  last_login: "2024-03-15T10:30:00",
-  created_at: "2023-01-15",
-
-  // Từ bảng user_students
-  studentInfo: {
-    student_code: "SV2024001",
-    full_name: "Nguyễn Văn A",
-    date_of_birth: "1995-05-15",
-    gender: "male",
-    education_level: "Đại học",
-    occupation: "Developer",
-    bio: "Là một lập trình viên với niềm đam mê học hỏi và phát triển bản thân",
-    interests: "Programming, AI, Machine Learning",
-    address: "123 Đường ABC",
-    city: "TP. Hồ Chí Minh",
-    country: "Việt Nam",
-    learning_goals: "Trở thành Full-stack Developer",
-    preferred_language: "Vietnamese",
-    total_courses_enrolled: 5,
-    total_courses_completed: 2,
-    achievement_points: 250,
-  },
-
-  // Từ bảng enrollments và courses
-  currentCourses: [
-    {
-      id: 1,
-      title: "React & TypeScript",
-      progress: 65,
-      status: "active",
-      enrollment_date: "2024-02-01",
-      last_accessed: "2024-03-10",
-    },
-    {
-      id: 2,
-      title: "Node.js Advanced",
-      progress: 30,
-      status: "active",
-      enrollment_date: "2024-02-15",
-      last_accessed: "2024-03-09",
-    },
-  ],
-
-  // Từ bảng certificates và courses
-  certificates: [
-    {
-      id: 1,
-      course_title: "JavaScript Advanced",
-      certificate_number: "CERT-001",
-      issue_date: "2024-01-15",
-      status: "active",
-    },
-    {
-      id: 2,
-      course_title: "Web Development",
-      certificate_number: "CERT-002",
-      issue_date: "2023-12-20",
-      status: "active",
-    },
-  ],
-
-  // Từ bảng user_achievements và achievements
-  achievements: [
-    {
-      id: 1,
-      name: "Học viên tích cực",
-      description: "Hoàn thành 5 khóa học",
-      badge_image_url: "🏆",
-      points: 100,
-    },
-    {
-      id: 2,
-      name: "Siêu sao bài tập",
-      description: "Nộp 20 bài tập đúng hạn",
-      badge_image_url: "⭐",
-      points: 150,
-    },
-  ],
-
-  // Từ bảng user_grades
-  recentGrades: [
-    {
-      course_title: "React & TypeScript",
-      grade_type: "assignment",
-      score: 95,
-      max_score: 100,
-      graded_at: "2024-03-08",
-    },
-    {
-      course_title: "Node.js Advanced",
-      grade_type: "quiz",
-      score: 85,
-      max_score: 100,
-      graded_at: "2024-03-05",
-    },
-  ],
-
-  // Từ bảng class_attendance
-  attendance: {
-    total_classes: 20,
-    present: 18,
-    absent: 1,
-    late: 1,
-    attendance_rate: 90,
-  },
-
-  // Thêm dữ liệu điểm số
-  grades: {
-    overall: {
-      gpa: 3.7,
-      totalCredits: 45,
-      completedCourses: 5,
-    },
-    courseGrades: [
-      {
-        course_id: 1,
-        course_title: "React & TypeScript",
-        final_grade: 85,
-        assignments_average: 88,
-        quizzes_average: 82,
-        midterm_grade: 85,
-        final_exam_grade: 90,
-        participation_grade: 95,
-        attendance_percentage: 95,
-        status: "completed",
-        completion_date: "2024-02-15",
-      },
-      {
-        course_id: 2,
-        course_title: "Node.js Advanced",
-        final_grade: 78,
-        assignments_average: 75,
-        quizzes_average: 80,
-        midterm_grade: 76,
-        final_exam_grade: 82,
-        participation_grade: 90,
-        attendance_percentage: 88,
-        status: "completed",
-        completion_date: "2024-01-20",
-      },
-      // ... more courses
-    ],
-  },
-};
+import { fetchUserGradesByUser } from "../../features/user-grades/userGradesSlice";
+import { selectUserGradesByUser } from "../../features/user-grades/userGradesSelectors";
 
 const ProfileAccount: React.FC = () => {
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector(selectCurrentUser);
   const userEnrollments = useAppSelector(selectUserEnrollments);
   const userCertificates = useAppSelector(selectUserCertificates);
+  const userGrades = useAppSelector(selectUserGradesByUser);
   const [user, setUser] = useState<any>(null);
   const [currentTab, setCurrentTab] = useState(0);
   const [editProfileOpen, setEditProfileOpen] = useState(false);
   const [editContactOpen, setEditContactOpen] = useState(false);
   const [editPersonalOpen, setEditPersonalOpen] = useState(false);
   const [formData, setFormData] = useState({
-    fullName: mockUserData.studentInfo.full_name,
-    email: mockUserData.email,
-    phone: mockUserData.phone,
-    address: mockUserData.studentInfo.address,
-    city: mockUserData.studentInfo.city,
-    country: mockUserData.studentInfo.country,
-    dateOfBirth: mockUserData.studentInfo.date_of_birth,
-    gender: mockUserData.studentInfo.gender,
-    occupation: mockUserData.studentInfo.occupation,
-    education: mockUserData.studentInfo.education_level,
-    bio: mockUserData.studentInfo.bio,
-    interests: mockUserData.studentInfo.interests,
-    learningGoals: mockUserData.studentInfo.learning_goals,
-    preferredLanguage: mockUserData.studentInfo.preferred_language,
+    fullName: user?.userStudent?.fullName,
+    email: user?.email,
+    phone: user?.phone,
+    address: user?.address,
+    city: user?.city,
+    country: user?.country,
+    dateOfBirth: user?.dateOfBirth,
+    gender: user?.gender,
+    occupation: user?.occupation,
+    education: user?.education,
+    bio: user?.bio,
+    interests: user?.interests,
+    learningGoals: user?.learningGoals,
+    preferredLanguage: user?.preferredLanguage,
   });
+  const [loadingGrades, setLoadingGrades] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setLoadingGrades(true);
+      dispatch(fetchUserGradesByUser(Number(user.id))).finally(() =>
+        setLoadingGrades(false)
+      );
+    }
+  }, [dispatch, user]);
 
   useEffect(() => {
     if (currentUser) {
@@ -309,8 +169,6 @@ const ProfileAccount: React.FC = () => {
   };
 
   const handleSubmit = (type: "profile" | "contact" | "personal") => {
-    console.log("Submitting:", type, formData);
-
     switch (type) {
       case "profile":
         setEditProfileOpen(false);
@@ -339,7 +197,6 @@ const ProfileAccount: React.FC = () => {
       // Hiển thị thông báo lỗi
       return;
     }
-    console.log("Submitting new password:", formPassword);
     setChangePasswordOpen(false);
     // Reset form
     setFormPassword({
@@ -351,7 +208,6 @@ const ProfileAccount: React.FC = () => {
 
   const handleAvatarChange = (file: File) => {
     // Xử lý upload avatar
-    console.log("Upload avatar:", file);
     // Sau này sẽ gọi API để upload file và cập nhật avatar_url
   };
 
@@ -1172,7 +1028,24 @@ const ProfileAccount: React.FC = () => {
                         <Card>
                           <CardContent sx={{ textAlign: "center" }}>
                             <Typography variant="h4" color="primary">
-                              {mockUserData.grades.overall.gpa}
+                              {userGrades && userGrades.length > 0
+                                ? (
+                                    userGrades.reduce(
+                                      (sum, grade) =>
+                                        sum +
+                                        (Number(grade.score) /
+                                          Number(grade.maxScore)) *
+                                          100 *
+                                          Number(grade.weight || 1),
+                                      0
+                                    ) /
+                                    userGrades.reduce(
+                                      (sum, grade) =>
+                                        sum + Number(grade.weight || 1),
+                                      0
+                                    )
+                                  ).toFixed(2)
+                                : "0.00"}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
                               Điểm trung bình
@@ -1184,7 +1057,12 @@ const ProfileAccount: React.FC = () => {
                         <Card>
                           <CardContent sx={{ textAlign: "center" }}>
                             <Typography variant="h4" color="success.main">
-                              {mockUserData.grades.overall.completedCourses}
+                              {userEnrollments
+                                ? userEnrollments.filter(
+                                    (enrollment) =>
+                                      enrollment.status === "completed"
+                                  ).length
+                                : 0}
                             </Typography>
                             <Typography variant="body2" color="text.secondary">
                               Khóa học hoàn thành
@@ -1200,131 +1078,248 @@ const ProfileAccount: React.FC = () => {
                     <Typography variant="h6" gutterBottom>
                       Chi tiết điểm từng khóa học
                     </Typography>
-                    {mockUserData.grades.courseGrades.map((course) => (
-                      <Card key={course.course_id} sx={{ mb: 2 }}>
-                        <CardContent>
-                          <Box sx={{ mb: 2 }}>
-                            <Typography variant="subtitle1" fontWeight="bold">
-                              {course.course_title}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              Hoàn thành:{" "}
-                              {new Date(
-                                course.completion_date
-                              ).toLocaleDateString("vi-VN")}
-                            </Typography>
-                          </Box>
+                    {loadingGrades ? (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "center",
+                          my: 3,
+                        }}
+                      >
+                        <CircularProgress />
+                      </Box>
+                    ) : userGrades && userGrades.length > 0 ? (
+                      Object.values(
+                        userGrades.reduce((acc, grade) => {
+                          const courseId = grade.courseId;
 
-                          <Grid container spacing={2}>
-                            <Grid item xs={12} sm={6}>
-                              <Stack spacing={1}>
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                  }}
-                                >
-                                  <Typography variant="body2">
-                                    Điểm cuối khóa:
-                                  </Typography>
-                                  <Typography variant="body2" fontWeight="bold">
-                                    {course.final_grade}/100
-                                  </Typography>
-                                </Box>
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                  }}
-                                >
-                                  <Typography variant="body2">
-                                    Điểm bài tập:
-                                  </Typography>
-                                  <Typography variant="body2">
-                                    {course.assignments_average}/100
-                                  </Typography>
-                                </Box>
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                  }}
-                                >
-                                  <Typography variant="body2">
-                                    Điểm kiểm tra:
-                                  </Typography>
-                                  <Typography variant="body2">
-                                    {course.quizzes_average}/100
-                                  </Typography>
-                                </Box>
-                              </Stack>
-                            </Grid>
-                            <Grid item xs={12} sm={6}>
-                              <Stack spacing={1}>
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                  }}
-                                >
-                                  <Typography variant="body2">
-                                    Điểm giữa kỳ:
-                                  </Typography>
-                                  <Typography variant="body2">
-                                    {course.midterm_grade}/100
-                                  </Typography>
-                                </Box>
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                  }}
-                                >
-                                  <Typography variant="body2">
-                                    Điểm cuối kỳ:
-                                  </Typography>
-                                  <Typography variant="body2">
-                                    {course.final_exam_grade}/100
-                                  </Typography>
-                                </Box>
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                  }}
-                                >
-                                  <Typography variant="body2">
-                                    Tỷ lệ tham gia:
-                                  </Typography>
-                                  <Typography variant="body2">
-                                    {course.attendance_percentage}%
-                                  </Typography>
-                                </Box>
-                              </Stack>
-                            </Grid>
-                          </Grid>
+                          // Nhóm các điểm theo khóa học
+                          if (!acc[courseId]) {
+                            acc[courseId] = {
+                              course_id: courseId,
+                              course_title:
+                                grade.course?.title ||
+                                "Khóa học không xác định",
+                              grades: [],
+                              completion_date: grade.gradedAt,
+                              final_grade: 0,
+                              total_weight: 0,
+                            };
+                          }
 
-                          <LinearProgress
-                            variant="determinate"
-                            value={course.final_grade}
-                            sx={{
-                              mt: 2,
-                              height: 8,
-                              borderRadius: 1,
-                              backgroundColor: "grey.200",
-                              "& .MuiLinearProgress-bar": {
-                                backgroundColor:
-                                  course.final_grade >= 80
-                                    ? "success.main"
-                                    : course.final_grade >= 65
-                                    ? "warning.main"
-                                    : "error.main",
-                              },
-                            }}
-                          />
-                        </CardContent>
-                      </Card>
-                    ))}
+                          // Thêm điểm này vào danh sách điểm của khóa học
+                          acc[courseId].grades.push(grade);
+
+                          // Cập nhật ngày hoàn thành (lấy ngày gần nhất)
+                          if (
+                            new Date(grade.gradedAt) >
+                            new Date(acc[courseId].completion_date)
+                          ) {
+                            acc[courseId].completion_date = grade.gradedAt;
+                          }
+
+                          // Tính điểm cuối cùng dựa trên trọng số
+                          const weight = Number(grade.weight);
+                          const score = Number(grade.score);
+                          const maxScore = Number(grade.maxScore);
+                          const weightedScore =
+                            (score / maxScore) * 100 * weight;
+
+                          acc[courseId].final_grade += weightedScore;
+                          acc[courseId].total_weight += weight;
+
+                          return acc;
+                        }, {})
+                      ).map((course) => {
+                        // Chuẩn hóa điểm cuối cùng
+                        course.final_grade =
+                          course.total_weight > 0
+                            ? Math.round(
+                                (course.final_grade / course.total_weight) * 100
+                              ) / 100
+                            : 0;
+
+                        return (
+                          <Card key={course.course_id} sx={{ mb: 2 }}>
+                            <CardContent>
+                              <Box sx={{ mb: 2 }}>
+                                <Typography
+                                  variant="subtitle1"
+                                  fontWeight="bold"
+                                >
+                                  {course.course_title}
+                                </Typography>
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
+                                  Cập nhật:{" "}
+                                  {new Date(
+                                    course.completion_date
+                                  ).toLocaleDateString("vi-VN")}
+                                </Typography>
+                              </Box>
+
+                              <Grid container spacing={2}>
+                                <Grid item xs={12}>
+                                  <Stack spacing={1}>
+                                    {/* Điểm cuối khóa (tổng kết) */}
+                                    <Box
+                                      sx={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        borderBottom: "1px solid #e0e0e0",
+                                      }}
+                                    >
+                                      <Typography variant="body2">
+                                        Điểm tổng kết:
+                                      </Typography>
+                                      <Typography
+                                        variant="body2"
+                                        fontWeight="bold"
+                                      >
+                                        {course.final_grade}/100
+                                      </Typography>
+                                    </Box>
+
+                                    {/* Các loại điểm cụ thể */}
+                                    {course.grades
+                                      .filter(
+                                        (grade) => grade.gradeType === "final"
+                                      )
+                                      .map((grade) => (
+                                        <Box
+                                          key={grade.id}
+                                          sx={{
+                                            display: "flex",
+                                            justifyContent: "space-between",
+                                            borderBottom: "1px solid #e0e0e0",
+                                          }}
+                                        >
+                                          <Typography variant="body2">
+                                            Điểm cuối khóa:
+                                          </Typography>
+                                          <Typography variant="body2">
+                                            {Number(grade.score)}/
+                                            {Number(grade.maxScore)} (x
+                                            {Number(grade.weight)})
+                                          </Typography>
+                                        </Box>
+                                      ))}
+
+                                    {course.grades
+                                      .filter(
+                                        (grade) => grade.gradeType === "midterm"
+                                      )
+                                      .map((grade) => (
+                                        <Box
+                                          key={grade.id}
+                                          sx={{
+                                            display: "flex",
+                                            justifyContent: "space-between",
+                                            borderBottom: "1px solid #e0e0e0",
+                                          }}
+                                        >
+                                          <Typography variant="body2">
+                                            Điểm giữa khóa:
+                                          </Typography>
+                                          <Typography variant="body2">
+                                            {Number(grade.score)}/
+                                            {Number(grade.maxScore)} (x
+                                            {Number(grade.weight)})
+                                          </Typography>
+                                        </Box>
+                                      ))}
+
+                                    {course.grades
+                                      .filter(
+                                        (grade) => grade.gradeType === "quiz"
+                                      )
+                                      .map((grade) => (
+                                        <Box
+                                          key={grade.id}
+                                          sx={{
+                                            display: "flex",
+                                            justifyContent: "space-between",
+                                            borderBottom: "1px solid #e0e0e0",
+                                          }}
+                                        >
+                                          <Typography variant="body2">
+                                            {grade.quiz?.title ||
+                                              "Bài kiểm tra"}
+                                            :
+                                          </Typography>
+                                          <Typography variant="body2">
+                                            {Number(grade.score)}/
+                                            {Number(grade.maxScore)} (x
+                                            {Number(grade.weight)})
+                                          </Typography>
+                                        </Box>
+                                      ))}
+
+                                    {course.grades
+                                      .filter(
+                                        (grade) =>
+                                          grade.gradeType === "assignment"
+                                      )
+                                      .map((grade) => (
+                                        <Box
+                                          key={grade.id}
+                                          sx={{
+                                            display: "flex",
+                                            justifyContent: "space-between",
+                                            borderBottom: "1px solid #e0e0e0",
+                                          }}
+                                        >
+                                          <Typography variant="body2">
+                                            {grade.assignment?.title ||
+                                              grade.lesson?.title ||
+                                              "Bài tập"}
+                                            :
+                                          </Typography>
+                                          <Typography variant="body2">
+                                            {Number(grade.score)}/
+                                            {Number(grade.maxScore)} (x
+                                            {Number(grade.weight)})
+                                          </Typography>
+                                        </Box>
+                                      ))}
+
+                                    {course.grades
+                                      .filter(
+                                        (grade) =>
+                                          grade.gradeType === "participation"
+                                      )
+                                      .map((grade) => (
+                                        <Box
+                                          key={grade.id}
+                                          sx={{
+                                            display: "flex",
+                                            justifyContent: "space-between",
+                                          }}
+                                        >
+                                          <Typography variant="body2">
+                                            Điểm tham gia:
+                                          </Typography>
+                                          <Typography variant="body2">
+                                            {Number(grade.score)}/
+                                            {Number(grade.maxScore)} (x
+                                            {Number(grade.weight)})
+                                          </Typography>
+                                        </Box>
+                                      ))}
+                                  </Stack>
+                                </Grid>
+                              </Grid>
+                            </CardContent>
+                          </Card>
+                        );
+                      })
+                    ) : (
+                      <Typography variant="body2" color="text.secondary">
+                        Bạn chưa có điểm nào trong hệ thống.
+                      </Typography>
+                    )}
                   </Box>
                 </Stack>
               </TabPanel>

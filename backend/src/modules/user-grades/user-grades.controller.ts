@@ -93,6 +93,12 @@ export class UserGradesController {
     return this.userGradesService.findByUserAndCourse(userId, courseId);
   }
 
+  @Get('user/:userId')
+  @UseGuards(JwtAuthGuard)
+  findByUser(@Param('userId', ParseIntPipe) userId: number) {
+    return this.userGradesService.findByUser(userId);
+  }
+
   @Get('user/:userId/course/:courseId/summary')
   @UseGuards(JwtAuthGuard)
   async calculateCourseGrade(
