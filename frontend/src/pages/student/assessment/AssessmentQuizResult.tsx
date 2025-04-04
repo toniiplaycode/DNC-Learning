@@ -1,6 +1,4 @@
-import React, { useState, useEffect } from "react";
 import { Box, Typography, Card, Button, Chip, Stack } from "@mui/material";
-import QuizExplanation from "../../../components/common/course/QuizExplanation";
 import CustomContainer from "../../../components/common/CustomContainer";
 import { Assignment, CheckCircle } from "@mui/icons-material";
 import { useNavigate, useParams } from "react-router-dom";
@@ -178,20 +176,6 @@ const AssessmentQuizResult = () => {
           )}
         </Box>
       </Card>
-
-      {/* Giải thích chi tiết các câu trả lời */}
-      <Box>
-        <Typography variant="h5" gutterBottom>
-          Phân tích chi tiết
-        </Typography>
-
-        <QuizExplanation
-          questions={quizData.questions}
-          userAnswers={userAnswers}
-          score={score}
-          passingScore={quizData.passingScore}
-        />
-      </Box>
     </CustomContainer>
   );
 };

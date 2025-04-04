@@ -13,68 +13,15 @@ import {
   useTheme,
   useMediaQuery,
 } from "@mui/material";
-import {
-  Timer,
-  Help,
-  CheckCircle,
-  Cancel,
-  Close,
-  PlayArrow,
-} from "@mui/icons-material";
+import { Timer, CheckCircle, Cancel, PlayArrow } from "@mui/icons-material";
 import { fetchQuizzesByLesson } from "../../../features/quizzes/quizzesSlice";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { selectLessonQuizzes } from "../../../features/quizzes/quizzesSelectors";
-
-interface Question {
-  id: number;
-  content: string;
-  options: string[];
-  correctAnswer: number;
-  explanation?: string;
-}
-
-interface Quiz {
-  id: number;
-  title: string;
-  description: string;
-  timeLimit: number;
-  questions: Question[];
-}
 
 interface QuizContentProps {
   lessonId: number;
   onComplete: (score: number) => void;
 }
-
-// Thêm hàm helper để chia câu hỏi thành các cột
-const getQuestionColumns = (totalQuestions: number) => {
-  const columns = Math.ceil(totalQuestions / 10);
-  const result = [];
-  for (let i = 0; i < columns; i++) {
-    result.push(
-      Array.from(
-        { length: Math.min(10, totalQuestions - i * 10) },
-        (_, index) => index + i * 10
-      )
-    );
-  }
-  return result;
-};
-
-// Thêm helper function để xác định trạng thái câu hỏi
-const getQuestionStatus = (
-  questionIndex: number,
-  currentQuestion: number,
-  answers: number[]
-) => {
-  if (currentQuestion === questionIndex) {
-    return "current";
-  }
-  if (answers[questionIndex] !== undefined) {
-    return "answered";
-  }
-  return "unanswered";
-};
 
 const QuizContent: React.FC<QuizContentProps> = ({ lessonId, onComplete }) => {
   const dispatch = useAppDispatch();
@@ -88,7 +35,7 @@ const QuizContent: React.FC<QuizContentProps> = ({ lessonId, onComplete }) => {
   const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizStarted, setQuizStarted] = useState(false);
   const [score, setScore] = useState(0);
-  const [showExplanations, setShowExplanations] = useState(false);
+  const [activeShowExplanations, setActiveShowExplanations] = useState(false);
 
   // Use the first quiz from the lesson quizzes if available
   const activeQuiz =
@@ -107,15 +54,13 @@ const QuizContent: React.FC<QuizContentProps> = ({ lessonId, onComplete }) => {
   }, [activeQuiz, timeRemaining, quizStarted]);
 
   useEffect(() => {
-    if (activeQuiz && activeQuiz.showExplanation === 0) {
-      setShowExplanations(false);
+    if (activeQuiz && activeQuiz?.showExplanation === 0) {
+      setActiveShowExplanations(false);
     }
-    if (activeQuiz && activeQuiz.showExplanation === 1) {
-      setShowExplanations(true);
+    if (activeQuiz && activeQuiz?.showExplanation === 1) {
+      setActiveShowExplanations(true);
     }
   }, [activeQuiz]);
-
-  console.log(activeQuiz?.showExplanation);
 
   useEffect(() => {
     // Timer logic
@@ -145,8 +90,8 @@ const QuizContent: React.FC<QuizContentProps> = ({ lessonId, onComplete }) => {
     let correctCount = 0;
 
     answers.forEach((answer, index) => {
-      const question = activeQuiz.questions[index];
-      const correctOption = question.options.findIndex(
+      const question = activeQuiz?.questions?.[index];
+      const correctOption = question?.options?.findIndex(
         (option) => option.isCorrect
       );
       if (answer === correctOption) {
@@ -155,7 +100,7 @@ const QuizContent: React.FC<QuizContentProps> = ({ lessonId, onComplete }) => {
     });
 
     const finalScore = Math.round(
-      (correctCount / activeQuiz.questions.length) * 100
+      (correctCount / activeQuiz?.questions?.length) * 100
     );
     setScore(finalScore);
     setQuizSubmitted(true);
@@ -206,30 +151,16 @@ const QuizContent: React.FC<QuizContentProps> = ({ lessonId, onComplete }) => {
               </Typography>
             </Box>
 
-            <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
-              <Button
-                variant="outlined"
-                color="primary"
-                startIcon={<Help />}
-                onClick={() => setShowExplanations(!showExplanations)}
-                sx={{ mx: 1 }}
-              >
-                {showExplanations
-                  ? "Ẩn kết quả chi tiết"
-                  : "Xem kết quả chi tiết"}
-              </Button>
-            </Box>
-
-            {showExplanations && (
+            {activeShowExplanations && (
               <>
                 <Typography variant="h6" gutterBottom>
                   Chi tiết câu trả lời:
                 </Typography>
 
-                {activeQuiz.questions.map((question, index) => {
+                {activeQuiz?.questions?.map((question, index) => {
                   const userAnswer =
                     answers[index] !== undefined ? answers[index] : -1;
-                  const correctOptionIndex = question.options.findIndex(
+                  const correctOptionIndex = question?.options?.findIndex(
                     (option) => option.isCorrect
                   );
                   const isCorrect = userAnswer === correctOptionIndex;
@@ -263,7 +194,7 @@ const QuizContent: React.FC<QuizContentProps> = ({ lessonId, onComplete }) => {
                       </Box>
 
                       <Box sx={{ pl: 4 }}>
-                        {question.options.map((option, optionIndex) => (
+                        {question?.options?.map((option, optionIndex) => (
                           <Typography
                             key={option.id}
                             variant="body2"
@@ -366,7 +297,7 @@ const QuizContent: React.FC<QuizContentProps> = ({ lessonId, onComplete }) => {
                     Số câu hỏi
                   </Typography>
                   <Typography variant="h5" sx={{ mt: 1 }}>
-                    {activeQuiz.questions.length}
+                    {activeQuiz?.questions?.length}
                   </Typography>
                 </Paper>
 
@@ -452,20 +383,108 @@ const QuizContent: React.FC<QuizContentProps> = ({ lessonId, onComplete }) => {
           )}
 
           <Box sx={{ mb: 2 }}>
-            <Typography variant="subtitle1">
-              <strong>Tiến độ:</strong>{" "}
-              {answers.filter((a) => a !== undefined).length}/
-              {activeQuiz.questions.length} câu
-            </Typography>
+            {/* Add detailed counts */}
             <Box
-              sx={{ mt: 1, height: 8, bgcolor: "grey.200", borderRadius: 1 }}
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                mt: 1,
+                mb: 2,
+                fontSize: "0.875rem",
+              }}
             >
+              <Box sx={{ display: "flex", alignItems: "center" }}>
+                <Box
+                  sx={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: "50%",
+                    bgcolor: "primary.main",
+                    mr: 0.5,
+                  }}
+                />
+                <Typography variant="body2" color="text.secondary">
+                  Đã chọn: {answers.filter((a) => a !== undefined).length}
+                </Typography>
+              </Box>
+              <Box sx={{ display: "flex", alignItems: "center" }}>
+                <Box
+                  sx={{
+                    width: 10,
+                    height: 10,
+                    borderRadius: "50%",
+                    bgcolor: "grey.400",
+                    mr: 0.5,
+                  }}
+                />
+                <Typography variant="body2" color="text.secondary">
+                  Chưa chọn:{" "}
+                  {activeQuiz?.questions?.length -
+                    answers.filter((a) => a !== undefined).length}
+                </Typography>
+              </Box>
+            </Box>
+
+            {/* Question number indicators */}
+            <Box sx={{ mt: 2, mb: 2 }}>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                Câu hỏi:
+              </Typography>
+              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                {activeQuiz?.questions?.map((_, index) => {
+                  const isAnswered = answers[index] !== undefined;
+                  return (
+                    <Box
+                      key={index}
+                      sx={{
+                        width: 28,
+                        height: 28,
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        borderRadius: "50%",
+                        bgcolor: isAnswered ? "primary.main" : "grey.200",
+                        color: isAnswered ? "white" : "text.secondary",
+                        fontWeight: isAnswered ? "bold" : "normal",
+                        fontSize: "0.75rem",
+                        cursor: "pointer",
+                        transition: "all 0.2s",
+                        "&:hover": {
+                          bgcolor: isAnswered ? "primary.dark" : "grey.300",
+                        },
+                      }}
+                      onClick={() => {
+                        // Scroll to the question with 20px top margin
+                        const questionElement = document.getElementById(
+                          `question-${index}`
+                        );
+                        if (questionElement) {
+                          const rect = questionElement.getBoundingClientRect();
+                          const scrollTop =
+                            window.pageYOffset ||
+                            document.documentElement.scrollTop;
+                          const targetPosition = scrollTop + rect.top - 120;
+                          window.scrollTo({
+                            top: targetPosition,
+                            behavior: "smooth",
+                          });
+                        }
+                      }}
+                    >
+                      {index + 1}
+                    </Box>
+                  );
+                })}
+              </Box>
+            </Box>
+
+            <Box sx={{ height: 8, bgcolor: "grey.200", borderRadius: 1 }}>
               <Box
                 sx={{
                   height: "100%",
                   width: `${
                     (answers.filter((a) => a !== undefined).length /
-                      activeQuiz.questions.length) *
+                      activeQuiz?.questions?.length) *
                     100
                   }%`,
                   bgcolor: "primary.main",
@@ -482,7 +501,7 @@ const QuizContent: React.FC<QuizContentProps> = ({ lessonId, onComplete }) => {
             onClick={handleSubmit}
             disabled={
               answers.filter((a) => a !== undefined).length !==
-              activeQuiz.questions.length
+              activeQuiz?.questions?.length
             }
           >
             Nộp bài
@@ -497,8 +516,8 @@ const QuizContent: React.FC<QuizContentProps> = ({ lessonId, onComplete }) => {
       >
         <CardContent>
           {/* All quiz questions */}
-          {activeQuiz.questions.map((question, index) => (
-            <Box key={question.id} sx={{ mb: 4 }}>
+          {activeQuiz?.questions?.map((question, index) => (
+            <Box key={question.id} sx={{ mb: 4 }} id={`question-${index}`}>
               <Typography
                 variant="h6"
                 gutterBottom
@@ -530,7 +549,7 @@ const QuizContent: React.FC<QuizContentProps> = ({ lessonId, onComplete }) => {
                 }
                 sx={{ ml: 4 }}
               >
-                {question.options.map((option, optionIndex) => (
+                {question?.options?.map((option, optionIndex) => (
                   <FormControlLabel
                     key={option.id}
                     value={optionIndex}
@@ -542,7 +561,7 @@ const QuizContent: React.FC<QuizContentProps> = ({ lessonId, onComplete }) => {
                 ))}
               </RadioGroup>
 
-              {index < activeQuiz.questions.length - 1 && (
+              {index < activeQuiz?.questions?.length - 1 && (
                 <Divider sx={{ my: 2 }} />
               )}
             </Box>

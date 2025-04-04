@@ -17,75 +17,6 @@ import { useAppDispatch } from "../../../app/hooks";
 import { useAppSelector } from "../../../app/hooks";
 import { selectLessonDiscussions } from "../../../features/discussions/discussionsSelectors";
 
-// Thêm nhiều câu hỏi mẫu hơn
-const mockQuestions = [
-  {
-    id: 1,
-    content: "useState hook được sử dụng để làm gì?",
-    options: [
-      "Quản lý side effects",
-      "Quản lý state trong functional component",
-      "Tối ưu performance",
-      "Xử lý routing",
-    ],
-    correctAnswer: 1,
-    explanation:
-      "useState là hook cơ bản để quản lý state trong functional component.",
-  },
-  {
-    id: 2,
-    content: "useEffect hook được gọi khi nào?",
-    options: [
-      "Chỉ khi component mount",
-      "Sau mỗi lần render",
-      "Khi dependencies thay đổi",
-      "Tất cả các trường hợp trên",
-    ],
-    correctAnswer: 3,
-    explanation:
-      "useEffect có thể được gọi trong cả 3 trường hợp tùy vào cách sử dụng dependencies.",
-  },
-  {
-    id: 3,
-    content: "useMemo hook dùng để làm gì?",
-    options: [
-      "Tối ưu performance bằng cách cache giá trị",
-      "Quản lý state",
-      "Xử lý side effects",
-      "Tạo ref",
-    ],
-    correctAnswer: 0,
-    explanation:
-      "useMemo giúp tối ưu performance bằng cách cache giá trị tính toán.",
-  },
-  {
-    id: 4,
-    content: "useCallback hook khác gì với useMemo?",
-    options: [
-      "useCallback cache function, useMemo cache value",
-      "useCallback cache value, useMemo cache function",
-      "Không có sự khác biệt",
-      "Không thể so sánh",
-    ],
-    correctAnswer: 0,
-    explanation:
-      "useCallback được sử dụng để cache function references, trong khi useMemo cache giá trị tính toán.",
-  },
-  {
-    id: 5,
-    content: "Custom hooks trong React là gì?",
-    options: [
-      "Các hooks có sẵn của React",
-      "Function bắt đầu bằng use và có thể tái sử dụng logic",
-      "Class components",
-      "Thư viện bên thứ 3",
-    ],
-    correctAnswer: 1,
-    explanation:
-      "Custom hooks là các function bắt đầu bằng use và cho phép tái sử dụng logic giữa các components.",
-  },
-];
-
 // Helper function để lấy file ID từ Google Drive URL
 function getFileIdFromUrl(url: string) {
   // Xử lý URL dạng /file/d/{fileId}/view hoặc /presentation/d/{fileId}/edit
@@ -242,6 +173,8 @@ const ContentDetail = ({ content }: { content: any }) => {
     dispatch(fetchLessonDiscussions(Number(content?.id)));
   }, [dispatch, content?.id]);
 
+  console.log(content);
+
   return (
     <Box>
       {/* Main content area */}
@@ -286,15 +219,6 @@ const ContentDetail = ({ content }: { content: any }) => {
         <Box sx={{ mb: 4 }}>
           <QuizContent
             lessonId={content.id}
-            quizData={{
-              id: content.id,
-              title: content.title,
-              description: content.description,
-              timeLimit: 30,
-              passingScore: content.passingScore || 70,
-              maxAttempts: content.maxAttempts || 2,
-              questions: mockQuestions,
-            }}
             onComplete={(score) => {
               console.log("Quiz completed with score:", score);
               // Thêm logic cập nhật trạng thái hoàn thành
