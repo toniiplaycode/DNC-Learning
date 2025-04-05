@@ -26,8 +26,8 @@ export class Quiz {
   @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
-  @Column({ name: 'lesson_id' })
-  lessonId: number;
+  @Column({ name: 'lesson_id', nullable: true })
+  lessonId: number | null;
 
   @Column({ name: 'academic_class_id', nullable: true })
   academicClassId: number | null;

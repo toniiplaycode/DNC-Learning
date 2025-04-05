@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { Assignment } from './Assignment';
 import { Quiz } from './Quiz';
+import { UserStudentAcademic } from './UserStudentAcademic';
 
 export enum AcademicClassStatus {
   ACTIVE = 'active',
@@ -58,4 +59,10 @@ export class AcademicClass {
 
   @OneToMany(() => Quiz, (quiz) => quiz.academicClass)
   quizzes: Quiz[];
+
+  @OneToMany(
+    () => UserStudentAcademic,
+    (userStudentAcademic) => userStudentAcademic.academicClass,
+  )
+  studentsAcademic: UserStudentAcademic[];
 }

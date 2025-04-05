@@ -44,9 +44,6 @@ export class Enrollment {
   @Column({ name: 'completion_date', type: 'timestamp', nullable: true })
   completionDate: Date;
 
-  @Column({ type: 'float', default: 0 })
-  progress: number;
-
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

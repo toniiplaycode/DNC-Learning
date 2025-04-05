@@ -23,6 +23,8 @@ import { fetchCourseById } from "../../../features/courses/coursesApiSlice";
 import { useAppDispatch } from "../../../app/hooks";
 import { selectCourseById } from "../../../features/courses/coursesSelector";
 import { useAppSelector } from "../../../app/hooks";
+import { fetchCourseProgress } from "../../../features/enrollments/enrollmentsApiSlice";
+import { selectCourseProgress } from "../../../features/enrollments/enrollmentsSelectors";
 interface TabPanelProps {
   children?: React.ReactNode;
   value: number;
@@ -88,9 +90,11 @@ const CourseContent = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const course = useAppSelector(selectCourseById);
+  const courseProgress = useAppSelector(selectCourseProgress);
 
   useEffect(() => {
     dispatch(fetchCourseById(Number(courseId)));
+    dispatch(fetchCourseProgress({ courseId: Number(courseId) }));
   }, [dispatch, courseId]);
 
   useEffect(() => {
@@ -128,52 +132,6 @@ const CourseContent = () => {
 
   const [activeTab, setActiveTab] = useState(0);
 
-  // Mock data
-  const mockGrades = [
-    {
-      id: 1,
-      title: "Quiz 1: React Hooks Basics",
-      type: "quiz",
-      score: 8,
-      maxScore: 10,
-      weight: 10,
-      completedAt: "2023-08-15",
-    },
-    {
-      id: 2,
-      title: "Assignment 1: Todo App",
-      type: "assignment",
-      score: 85,
-      maxScore: 100,
-      weight: 15,
-      completedAt: "2023-08-20",
-      feedback:
-        "Good work on component structure. Could improve on state management.",
-    },
-    {
-      id: 3,
-      title: "Midterm Exam",
-      type: "midterm",
-      score: 75,
-      maxScore: 100,
-      weight: 30,
-      completedAt: "2023-09-05",
-      feedback:
-        "Strong understanding of core concepts, but needs improvement in advanced topics.",
-    },
-    {
-      id: 4,
-      title: "Assignment 2: E-commerce App",
-      type: "assignment",
-      score: 92,
-      maxScore: 100,
-      weight: 15,
-      completedAt: "2023-09-25",
-      feedback:
-        "Excellent work! Very clean code and good performance optimization.",
-    },
-  ];
-
   return (
     <Container maxWidth="xl" sx={{ py: 4, mt: 2 }}>
       <Box sx={{ mb: 3, display: "flex", alignItems: "center", gap: 2 }}>
@@ -210,22 +168,44 @@ const CourseContent = () => {
                   </Typography>
                   <LinearProgress
                     variant="determinate"
-                    value={45}
+                    value={courseProgress?.completionPercentage || 0}
                     sx={{ height: 10, borderRadius: 1 }}
                   />
                   <Typography variant="body2" sx={{ mt: 1 }}>
-                    45% hoàn thành
+                    {courseProgress?.completionPercentage || 0}% hoàn thành
                   </Typography>
                 </Box>
                 <Stack spacing={1}>
                   <Typography variant="body2" color="text.secondary">
-                    • 3/6 chương hoàn thành
+                    •{" "}
+                    {courseProgress?.sections?.filter(
+                      (section: any) => section.completionPercentage === 100
+                    ).length || 0}
+                    /{courseProgress?.sections?.length || 0} chương hoàn thành
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    • 12/24 bài học hoàn thành
+                    • {courseProgress?.completedLessons || 0}/
+                    {courseProgress?.totalLessons || 0} bài học hoàn thành
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    • 2/4 bài kiểm tra hoàn thành
+                    •{" "}
+                    {courseProgress?.sections
+                      ?.flatMap((s: any) => s.lessons)
+                      .filter(
+                        (l: any) =>
+                          l.completed &&
+                          (l.contentType === "quiz" ||
+                            l.contentType === "assignment")
+                      ).length || 0}
+                    /
+                    {courseProgress?.sections
+                      ?.flatMap((s: any) => s.lessons)
+                      .filter(
+                        (l: any) =>
+                          l.contentType === "quiz" ||
+                          l.contentType === "assignment"
+                      ).length || 0}{" "}
+                    bài kiểm tra hoàn thành
                   </Typography>
                 </Stack>
               </CardContent>
@@ -273,7 +253,7 @@ const CourseContent = () => {
                 </TabPanel>
 
                 <TabPanel value={activeTab} index={2}>
-                  <GradeOverview grades={mockGrades} />
+                  <GradeOverview />
                 </TabPanel>
 
                 <TabPanel value={activeTab} index={3}>

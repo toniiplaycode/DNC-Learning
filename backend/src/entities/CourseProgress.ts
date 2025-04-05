@@ -1,22 +1,13 @@
 import {
   Entity,
-  Column,
   PrimaryGeneratedColumn,
+  Column,
   ManyToOne,
   JoinColumn,
-  CreateDateColumn,
-  UpdateDateColumn,
-  Index,
   Unique,
 } from 'typeorm';
 import { User } from './User';
 import { CourseLesson } from './CourseLesson';
-
-export enum ProgressStatus {
-  NOT_STARTED = 'not_started',
-  IN_PROGRESS = 'in_progress',
-  COMPLETED = 'completed',
-}
 
 @Entity('course_progress')
 @Unique('unique_progress', ['userId', 'lessonId'])
@@ -24,42 +15,35 @@ export class CourseProgress {
   @PrimaryGeneratedColumn({ type: 'bigint' })
   id: number;
 
-  @Column({ name: 'user_id' })
+  @Column({
+    name: 'user_id',
+    type: 'bigint',
+  })
   userId: number;
 
-  @Column({ name: 'lesson_id' })
+  @Column({
+    name: 'lesson_id',
+    type: 'bigint',
+  })
   lessonId: number;
 
   @Column({
-    type: 'enum',
-    enum: ProgressStatus,
-    default: ProgressStatus.NOT_STARTED,
+    name: 'completed_at',
+    type: 'timestamp',
+    nullable: true,
+    default: () => 'CURRENT_TIMESTAMP',
   })
-  status: ProgressStatus;
-
-  @Column({
-    name: 'progress_percentage',
-    type: 'decimal',
-    precision: 5,
-    scale: 2,
-    default: 0,
-  })
-  progressPercentage: number;
+  completedAt: Date;
 
   @Column({
     name: 'last_accessed',
     type: 'timestamp',
     nullable: true,
+    default: () => 'CURRENT_TIMESTAMP',
   })
-  lastAccessed: Date | null;
+  lastAccessed: Date;
 
-  @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
-
-  @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
-
-  // Relationships
+  // Relations
   @ManyToOne(() => User)
   @JoinColumn({ name: 'user_id' })
   user: User;

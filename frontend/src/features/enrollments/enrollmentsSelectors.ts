@@ -90,3 +90,43 @@ export const selectRecentEnrollments = createSelector(
       .slice(0, 5); // Get the 5 most recent enrollments
   }
 );
+
+// Add new selectors for progress data
+export const selectUserProgress = (state: RootState) =>
+  state.enrollments.userProgress;
+
+export const selectCourseProgress = (state: RootState) =>
+  state.enrollments.courseProgress;
+
+// Add a selector to get a specific section's progress from user progress
+export const selectSectionProgress = (sectionId: number) =>
+  createSelector([selectUserProgress], (userProgress) => {
+    if (!userProgress || !userProgress.sections) return null;
+    return (
+      userProgress.sections.find((section) => section.id === sectionId) || null
+    );
+  });
+
+// Add a selector to get a specific lesson's progress from user progress
+export const selectLessonProgress = (lessonId: number) =>
+  createSelector([selectUserProgress], (userProgress) => {
+    if (!userProgress || !userProgress.sections) return null;
+
+    for (const section of userProgress.sections) {
+      if (!section.lessons) continue;
+
+      const lesson = section.lessons.find((lesson) => lesson.id === lessonId);
+      if (lesson) return lesson;
+    }
+
+    return null;
+  });
+
+// Add a selector to get completion percentage
+export const selectCompletionPercentage = createSelector(
+  [selectUserProgress],
+  (userProgress) => {
+    if (!userProgress) return 0;
+    return userProgress.completionPercentage || 0;
+  }
+);

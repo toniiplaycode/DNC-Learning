@@ -11,10 +11,4 @@ export class CreateEnrollmentDto {
   @IsEnum(EnrollmentStatus)
   @IsOptional()
   status?: EnrollmentStatus;
-
-  @IsNumber()
-  @IsOptional()
-  @Min(0)
-  @Max(100)
-  progress?: number;
 }

@@ -36,9 +36,6 @@ export class EnrollmentResponseDto {
   completionDate: Date;
 
   @Expose()
-  progress: number;
-
-  @Expose()
   @Type(() => CourseInfo)
   course?: CourseInfo;
 

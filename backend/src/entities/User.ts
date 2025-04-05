@@ -13,10 +13,12 @@ import { Certificate } from './Certificate';
 import { UserGrade } from './UserGrade';
 import { CourseProgress } from './CourseProgress';
 import { CourseLessonDiscussion } from './CourseLessonDiscussion';
+import { UserStudentAcademic } from './UserStudentAcademic';
 
 // Tạo enum cho role
 export enum UserRole {
   STUDENT = 'student',
+  STUDENT_ACADEMIC = 'student_academic',
   INSTRUCTOR = 'instructor',
   ADMIN = 'admin',
 }
@@ -88,6 +90,12 @@ export class User {
 
   @OneToOne(() => UserStudent, (userStudent) => userStudent.user)
   userStudent: UserStudent;
+
+  @OneToOne(
+    () => UserStudentAcademic,
+    (userStudentAcademic) => userStudentAcademic.user,
+  )
+  userStudentAcademic: UserStudentAcademic;
 
   @OneToOne(() => UserInstructor, (userInstructor) => userInstructor.user)
   userInstructor: UserInstructor;

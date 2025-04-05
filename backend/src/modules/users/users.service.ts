@@ -14,6 +14,7 @@ export class UsersService {
     return this.userRepository.find({
       relations: {
         userStudent: true,
+        userStudentAcademic: true,
         userInstructor: true,
       },
     });
@@ -30,6 +31,7 @@ export class UsersService {
       where: { id },
       relations: {
         userStudent: true,
+        userStudentAcademic: true,
         userInstructor: true,
       },
     });
@@ -40,6 +42,7 @@ export class UsersService {
       where: { email },
       relations: {
         userStudent: true,
+        userStudentAcademic: true,
         userInstructor: true,
       },
     });

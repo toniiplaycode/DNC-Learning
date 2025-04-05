@@ -18,10 +18,4 @@ export class UpdateEnrollmentDto {
   @IsOptional()
   @Type(() => Date)
   completionDate?: Date;
-
-  @IsNumber()
-  @IsOptional()
-  @Min(0)
-  @Max(100)
-  progress?: number;
 }

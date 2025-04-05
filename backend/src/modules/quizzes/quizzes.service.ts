@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan, MoreThan, IsNull } from 'typeorm';
+import { Repository, LessThan, MoreThan, IsNull, In } from 'typeorm';
 import { Quiz, QuizType } from '../../entities/Quiz';
 import { QuizQuestion, QuestionType } from '../../entities/QuizQuestion';
 import { QuizOption } from '../../entities/QuizOption';
@@ -136,6 +136,40 @@ export class QuizzesService {
     });
 
     return quizzes;
+  }
+
+  async findAllByStudentAcademicInAcademicClass(
+    studentAcademicId: number,
+  ): Promise<Quiz[]> {
+    try {
+      // Tìm tất cả các lớp học mà sinh viên tham gia
+      const query = `
+        SELECT academic_class_id 
+        FROM user_students_academic 
+        WHERE id = ?
+      `;
+
+      const result = await this.quizzesRepository.manager.query(query, [
+        studentAcademicId,
+      ]);
+
+      if (!result || result.length === 0) {
+        return [];
+      }
+
+      // Lấy academic_class_id
+      const academicClassIds = result.map((row) => row.academic_class_id);
+
+      // Tìm tất cả quiz thuộc các lớp học đó
+      return this.quizzesRepository.find({
+        where: { academicClassId: In(academicClassIds) },
+        relations: ['questions', 'questions.options'],
+        order: { createdAt: 'DESC' },
+      });
+    } catch (error) {
+      console.error('Error finding quizzes:', error);
+      return [];
+    }
   }
 
   async update(id: number, updateQuizDto: UpdateQuizDto): Promise<Quiz> {
@@ -425,11 +459,13 @@ export class QuizzesService {
 
     // Tạo điểm cho user nếu là bài kiểm tra chính thức
     if (attempt.quiz.quizType !== QuizType.PRACTICE) {
-      // Lấy thông tin course từ lesson
-      const lesson = await this.lessonsRepository.findOne({
-        where: { id: attempt.quiz.lessonId },
-        relations: ['section', 'section.course'],
-      });
+      let lesson;
+      if (attempt.quiz.lessonId) {
+        lesson = await this.lessonsRepository.findOne({
+          where: { id: attempt.quiz.lessonId },
+          relations: ['section', 'section.course'],
+        });
+      }
 
       if (lesson && lesson.section && lesson.section.course) {
         // Tìm instructor cho quiz này

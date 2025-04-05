@@ -104,6 +104,47 @@ export const unenrollFromCourse = createAsyncThunk(
   }
 );
 
+// Add new progress interfaces to your type definitions
+export interface UserProgressParams {
+  userId: number;
+  courseId: number;
+}
+
+export interface CourseProgressParams {
+  courseId: number;
+}
+
+// Add new thunks for progress endpoints
+export const fetchUserProgress = createAsyncThunk(
+  "enrollments/fetchUserProgress",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/enrollments/progress`);
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        (error as Error).message || "Failed to fetch user progress"
+      );
+    }
+  }
+);
+
+export const fetchCourseProgress = createAsyncThunk(
+  "enrollments/fetchCourseProgress",
+  async ({ courseId }: CourseProgressParams, { rejectWithValue }) => {
+    try {
+      const response = await api.get(
+        `/enrollments/progress/course/${courseId}`
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(
+        (error as Error).message || "Failed to fetch course progress"
+      );
+    }
+  }
+);
+
 interface EnrollmentsState {
   enrollments: Enrollment[];
   userEnrollments: Enrollment[];
@@ -111,6 +152,8 @@ interface EnrollmentsState {
   stats: EnrollmentStats | null;
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
+  userProgress: any | null;
+  courseProgress: any | null;
 }
 
 const initialState: EnrollmentsState = {
@@ -120,6 +163,8 @@ const initialState: EnrollmentsState = {
   stats: null,
   status: "idle",
   error: null,
+  userProgress: null,
+  courseProgress: null,
 };
 
 const enrollmentsSlice = createSlice({
@@ -133,6 +178,10 @@ const enrollmentsSlice = createSlice({
       state.stats = null;
       state.status = "idle";
       state.error = null;
+    },
+    resetProgressState: (state) => {
+      state.userProgress = null;
+      state.courseProgress = null;
     },
   },
   extraReducers: (builder) => {
@@ -300,10 +349,39 @@ const enrollmentsSlice = createSlice({
       .addCase(unenrollFromCourse.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
+      })
+
+      // Handle fetchUserProgress
+      .addCase(fetchUserProgress.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchUserProgress.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.userProgress = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchUserProgress.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
+
+      // Handle fetchCourseProgress
+      .addCase(fetchCourseProgress.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchCourseProgress.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.courseProgress = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchCourseProgress.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
       });
   },
 });
 
-export const { resetEnrollmentsState } = enrollmentsSlice.actions;
+export const { resetEnrollmentsState, resetProgressState } =
+  enrollmentsSlice.actions;
 
 export default enrollmentsSlice.reducer;

@@ -1,39 +1,39 @@
 import {
-  IsNumber,
   IsEnum,
+  IsNotEmpty,
+  IsNumber,
   IsOptional,
   IsString,
-  IsDate,
+  IsDateString,
 } from 'class-validator';
 import { CertificateStatus } from '../../../entities/Certificate';
-import { Type } from 'class-transformer';
 
 export class CreateCertificateDto {
+  @IsNotEmpty()
   @IsNumber()
   userId: number;
 
+  @IsNotEmpty()
   @IsNumber()
   courseId: number;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   certificateNumber?: string;
 
-  @IsString()
   @IsOptional()
+  @IsString()
   certificateUrl?: string;
 
-  @IsDate()
   @IsOptional()
-  @Type(() => Date)
+  @IsDateString()
   issueDate?: Date;
 
-  @IsDate()
   @IsOptional()
-  @Type(() => Date)
+  @IsDateString()
   expiryDate?: Date;
 
-  @IsEnum(CertificateStatus)
   @IsOptional()
+  @IsEnum(CertificateStatus)
   status?: CertificateStatus;
 }

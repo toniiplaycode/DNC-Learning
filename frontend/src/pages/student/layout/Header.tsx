@@ -50,14 +50,13 @@ import { fetchCategories } from "../../../features/categories/categoriesApiSlice
 import { selectActiveCategories } from "../../../features/categories/categoriesSelectors";
 import { logout } from "../../../features/auth/authApiSlice";
 import { selectCurrentUser } from "../../../features/auth/authSelectors";
-import { setSearch } from "../../../features/commons/commonsSlide";
 import { fetchCourses } from "../../../features/courses/coursesApiSlice";
 import { selectAllCourses } from "../../../features/courses/coursesSelector";
 import { fetchInstructors } from "../../../features/user_instructors/instructorsApiSlice";
 import { selectAllInstructors } from "../../../features/user_instructors/instructorsSelectors";
 import { selectAllForums } from "../../../features/forums/forumsSelectors";
 import { fetchForums } from "../../../features/forums/forumsApiSlice";
-import { alpha } from "@mui/material/styles";
+import { UserStudentAcademic } from "../../../../../backend/src/entities/UserStudentAcademic";
 
 // Styled components
 const SearchDialog = styled(Dialog)(({ theme }) => ({
@@ -516,10 +515,12 @@ const Header = () => {
                   />
                   <Box sx={{ textAlign: "left" }}>
                     <Typography variant="subtitle2">
-                      {user?.userStudent?.fullName || "User"}
+                      {user?.userStudent?.fullName ||
+                        user?.userStudentAcademic?.fullName ||
+                        "User"}
                     </Typography>
                     <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                      {user?.role === "student" ? "Học viên" : "Giảng viên"}
+                      {user?.role === "student" ? "Học viên" : "Sinh viên"}
                     </Typography>
                   </Box>
                 </Button>

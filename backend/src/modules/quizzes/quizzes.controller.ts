@@ -22,6 +22,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../../entities/User';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { QuizType } from '../../entities/Quiz';
+import { Quiz } from '../../entities/Quiz';
 
 @Controller('quizzes')
 export class QuizzesController {
@@ -56,6 +57,17 @@ export class QuizzesController {
   @UseGuards(JwtAuthGuard)
   findByLesson(@Param('lessonId', ParseIntPipe) lessonId: number) {
     return this.quizzesService.findByLesson(lessonId);
+  }
+
+  @Get('student-academic/:id')
+  @UseGuards(JwtAuthGuard)
+  @Roles(UserRole.STUDENT_ACADEMIC)
+  async findAllByStudentAcademicInAcademicClass(
+    @Param('id', ParseIntPipe) studentAcademicId: number,
+  ): Promise<Quiz[]> {
+    return this.quizzesService.findAllByStudentAcademicInAcademicClass(
+      studentAcademicId,
+    );
   }
 
   @Patch(':id')

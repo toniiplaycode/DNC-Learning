@@ -48,12 +48,11 @@ import { QuizQuestion } from './entities/QuizQuestion';
 import { QuizOption } from './entities/QuizOption';
 import { QuizResponse } from './entities/QuizResponse';
 import { QuizzesModule } from './modules/quizzes/quizzes.module';
+import { UserStudentAcademic } from './entities/UserStudentAcademic';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true,
-    }),
+    ConfigModule.forRoot(),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
@@ -64,40 +63,45 @@ import { QuizzesModule } from './modules/quizzes/quizzes.module';
       }),
       inject: [ConfigService],
     }),
-    TypeOrmModule.forRoot({
-      type: process.env.DB_DRIVER as 'mysql',
-      host: process.env.DB_HOST,
-      port: parseInt(process.env.DB_PORT || '3306'),
-      username: process.env.DB_USERNAME,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
-      entities: [
-        Course,
-        User,
-        Category,
-        CourseSection,
-        CourseLesson,
-        Document,
-        UserInstructor,
-        UserStudent,
-        Review,
-        Enrollment,
-        Forum,
-        ForumReply,
-        ForumLike,
-        Certificate,
-        UserGrade,
-        Assignment,
-        Quiz,
-        AcademicClass,
-        CourseProgress,
-        CourseLessonDiscussion,
-        QuizAttempt,
-        QuizQuestion,
-        QuizOption,
-        QuizResponse,
-      ],
-      // synchronize: true, // tự động tạo bảng trong entity (chỉ dùng trong môi tường dev)
+    TypeOrmModule.forRootAsync({
+      imports: [ConfigModule],
+      useFactory: (configService: ConfigService) => ({
+        type: 'mysql',
+        host: configService.get('DB_HOST', 'localhost'),
+        port: +configService.get('DB_PORT', '3306'),
+        username: configService.get('DB_USERNAME', 'root'),
+        password: configService.get('DB_PASSWORD', ''),
+        database: configService.get('DB_DATABASE', 'system_elearning'),
+        entities: [
+          Course,
+          User,
+          Category,
+          CourseSection,
+          CourseLesson,
+          Document,
+          UserInstructor,
+          UserStudent,
+          Review,
+          Enrollment,
+          Forum,
+          ForumReply,
+          ForumLike,
+          Certificate,
+          UserGrade,
+          Assignment,
+          Quiz,
+          AcademicClass,
+          CourseProgress,
+          CourseLessonDiscussion,
+          QuizAttempt,
+          QuizQuestion,
+          QuizOption,
+          QuizResponse,
+          UserStudentAcademic,
+        ],
+        // synchronize: true, // tự động tạo bảng trong entity (chỉ dùng trong môi tường dev)
+      }),
+      inject: [ConfigService],
     }),
     CoursesModule,
     UsersModule,

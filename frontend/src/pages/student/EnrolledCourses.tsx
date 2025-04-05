@@ -3,17 +3,25 @@ import { Box, Typography, Grid } from "@mui/material";
 import CustomContainer from "../../components/common/CustomContainer";
 import CardCourse from "../../components/common/CardCourse";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
-import { selectUserEnrollments } from "../../features/enrollments/enrollmentsSelectors";
-import { fetchUserEnrollments } from "../../features/enrollments/enrollmentsApiSlice";
+import {
+  selectUserEnrollments,
+  selectUserProgress,
+} from "../../features/enrollments/enrollmentsSelectors";
+import {
+  fetchUserEnrollments,
+  fetchUserProgress,
+} from "../../features/enrollments/enrollmentsApiSlice";
 
 const EnrolledCourses: React.FC = () => {
   const dispatch = useAppDispatch();
   const userEnrollments = useAppSelector(selectUserEnrollments);
+  const userProgress = useAppSelector(selectUserProgress);
   const [user, setUser] = useState<any>(null);
 
   useEffect(() => {
     if (user?.id) {
       dispatch(fetchUserEnrollments(user?.id));
+      dispatch(fetchUserProgress());
     }
   }, [dispatch, user?.id]);
 
@@ -41,6 +49,10 @@ const EnrolledCourses: React.FC = () => {
 
         <Grid container spacing={3}>
           {userEnrollments?.map((course) => {
+            const courseProgress = userProgress?.find(
+              (progress: any) => progress.courseId === course.course?.id
+            );
+
             const calculateTotalLessons = (course: any) => {
               if (!course.sections) return 0;
               return course.sections.reduce(
@@ -60,7 +72,7 @@ const EnrolledCourses: React.FC = () => {
               totalLessons: calculateTotalLessons(course.course),
               price: course.course?.price,
               image: course.course?.thumbnailUrl,
-              progress: course.progress,
+              progress: courseProgress?.completionPercentage,
               isEnrolled: true,
               category: course.course?.category?.name,
             };

@@ -5,12 +5,22 @@ import { EnrollmentsService } from './enrollments.service';
 import { Enrollment } from '../../entities/Enrollment';
 import { Course } from '../../entities/Course';
 import { User } from '../../entities/User';
+import { CourseProgress } from '../../entities/CourseProgress';
+import { CourseLesson } from '../../entities/CourseLesson';
+import { CourseSection } from '../../entities/CourseSection';
 import { CoursesModule } from '../courses/courses.module';
 import { UsersModule } from '../users/users.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Enrollment, Course, User]),
+    TypeOrmModule.forFeature([
+      Enrollment,
+      Course,
+      User,
+      CourseProgress,
+      CourseLesson,
+      CourseSection,
+    ]),
     CoursesModule,
     UsersModule,
   ],
