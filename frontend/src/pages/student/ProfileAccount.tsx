@@ -238,7 +238,9 @@ const ProfileAccount: React.FC = () => {
         <Stack spacing={2} sx={{ mt: 1 }}>
           <TextField
             fullWidth
-            label="Mã học viên"
+            label={
+              currentUser?.role === "student" ? "Mã học viên" : "Mã sinh viên"
+            }
             value={
               user?.userStudent?.id || user?.userStudentAcademic?.studentCode
             }
@@ -443,53 +445,70 @@ const ProfileAccount: React.FC = () => {
           </IconButton>
         </Box>
       </DialogTitle>
-      <DialogContent dividers>
-        <Stack spacing={2} sx={{ mt: 1 }}>
-          <TextField
-            fullWidth
-            label="Nghề nghiệp"
-            name="occupation"
-            value={user?.userStudent?.occupation}
-            onChange={handleFormChange}
-          />
-          <TextField
-            fullWidth
-            label="Trình độ học vấn"
-            name="education"
-            value={user?.userStudent?.educationLevel}
-            onChange={handleFormChange}
-          />
-          <TextField
-            fullWidth
-            label="Sở thích"
-            name="interests"
-            multiline
-            rows={2}
-            value={user?.userStudent?.interests}
-            onChange={handleFormChange}
-          />
-          <TextField
-            fullWidth
-            label="Mục tiêu học tập"
-            name="learningGoals"
-            multiline
-            rows={2}
-            value={user?.userStudent?.learningGoals}
-            onChange={handleFormChange}
-          />
-          <TextField
-            fullWidth
-            type="date"
-            label="Ngày sinh"
-            name="dateOfBirth"
-            value={user?.userStudent?.dateOfBirth}
-            onChange={handleFormChange}
-            InputLabelProps={{
-              shrink: true,
-            }}
-          />
-        </Stack>
-      </DialogContent>
+      {currentUser?.role === "student" && (
+        <DialogContent dividers>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              fullWidth
+              label="Nghề nghiệp"
+              name="occupation"
+              value={user?.userStudent?.occupation}
+              onChange={handleFormChange}
+            />
+            <TextField
+              fullWidth
+              label="Trình độ học vấn"
+              name="education"
+              value={user?.userStudent?.educationLevel}
+              onChange={handleFormChange}
+            />
+            <TextField
+              fullWidth
+              label="Sở thích"
+              name="interests"
+              multiline
+              rows={2}
+              value={user?.userStudent?.interests}
+              onChange={handleFormChange}
+            />
+            <TextField
+              fullWidth
+              label="Mục tiêu học tập"
+              name="learningGoals"
+              multiline
+              rows={2}
+              value={user?.userStudent?.learningGoals}
+              onChange={handleFormChange}
+            />
+            <TextField
+              fullWidth
+              type="date"
+              label="Ngày sinh"
+              name="dateOfBirth"
+              value={user?.userStudent?.dateOfBirth}
+              onChange={handleFormChange}
+              InputLabelProps={{
+                shrink: true,
+              }}
+            />
+          </Stack>
+        </DialogContent>
+      )}
+
+      {(currentUser?.role as string) == "student_academic" && (
+        <DialogContent dividers>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <TextField
+              fullWidth
+              label="Ngành học"
+              name="major"
+              value={user?.userStudentAcademic?.major}
+              onChange={handleFormChange}
+            />
+          </Stack>
+        </DialogContent>
+      )}
+
       <DialogActions>
         <Button onClick={() => setEditPersonalOpen(false)}>Hủy</Button>
         <Button variant="contained" onClick={() => handleSubmit("personal")}>
@@ -529,7 +548,10 @@ const ProfileAccount: React.FC = () => {
                       user?.userStudentAcademic?.fullName}
                   </Typography>
                   <Typography variant="subtitle1" color="primary" gutterBottom>
-                    Mã học viên:{" "}
+                    {currentUser?.role === "student"
+                      ? "Mã học viên"
+                      : "Mã sinh viên"}
+                    :{" "}
                     {user?.userStudent?.id ||
                       user?.userStudentAcademic?.studentCode}
                   </Typography>
@@ -739,60 +761,62 @@ const ProfileAccount: React.FC = () => {
                   <Divider />
 
                   {/* Certificates */}
-                  <Box>
-                    <Typography variant="h6" gutterBottom>
-                      Chứng chỉ đã đạt được
-                    </Typography>
-                    <List>
-                      {userCertificates?.length > 0
-                        ? userCertificates?.map((cert) => (
-                            <ListItem
-                              key={cert.id}
-                              sx={{
-                                border: 1,
-                                borderColor: "divider",
-                                borderRadius: 1,
-                                mb: 1,
-                                "&:last-child": {
-                                  mb: 0,
-                                },
-                              }}
-                            >
-                              <ListItemIcon>
-                                <School color="primary" />
-                              </ListItemIcon>
-                              <ListItemText
-                                primary={cert?.course?.title}
-                                secondary={
-                                  <>
-                                    Cấp ngày:{" "}
-                                    {new Date(
-                                      cert?.createdAt
-                                    ).toLocaleDateString("vi-VN")}{" "}
-                                    | Số chứng chỉ: {cert?.certificateNumber}
-                                  </>
-                                }
-                              />
-                              <Button
-                                variant="outlined"
-                                size="small"
-                                onClick={() =>
-                                  setSelectedCertificate({
-                                    ...cert,
-                                    student_name: user?.userStudent?.fullName,
-                                    student_code: user?.userStudent?.id,
-                                    certificate_url: cert?.certificateUrl,
-                                  })
-                                }
-                                sx={{ minWidth: 100 }}
+                  {currentUser?.role === "student" && (
+                    <Box>
+                      <Typography variant="h6" gutterBottom>
+                        Chứng chỉ đã đạt được
+                      </Typography>
+                      <List>
+                        {userCertificates?.length > 0
+                          ? userCertificates?.map((cert) => (
+                              <ListItem
+                                key={cert.id}
+                                sx={{
+                                  border: 1,
+                                  borderColor: "divider",
+                                  borderRadius: 1,
+                                  mb: 1,
+                                  "&:last-child": {
+                                    mb: 0,
+                                  },
+                                }}
                               >
-                                Xem chi tiết
-                              </Button>
-                            </ListItem>
-                          ))
-                        : "Không có chứng chỉ"}
-                    </List>
-                  </Box>
+                                <ListItemIcon>
+                                  <School color="primary" />
+                                </ListItemIcon>
+                                <ListItemText
+                                  primary={cert?.course?.title}
+                                  secondary={
+                                    <>
+                                      Cấp ngày:{" "}
+                                      {new Date(
+                                        cert?.createdAt
+                                      ).toLocaleDateString("vi-VN")}{" "}
+                                      | Số chứng chỉ: {cert?.certificateNumber}
+                                    </>
+                                  }
+                                />
+                                <Button
+                                  variant="outlined"
+                                  size="small"
+                                  onClick={() =>
+                                    setSelectedCertificate({
+                                      ...cert,
+                                      student_name: user?.userStudent?.fullName,
+                                      student_code: user?.userStudent?.id,
+                                      certificate_url: cert?.certificateUrl,
+                                    })
+                                  }
+                                  sx={{ minWidth: 100 }}
+                                >
+                                  Xem chi tiết
+                                </Button>
+                              </ListItem>
+                            ))
+                          : "Không có chứng chỉ"}
+                      </List>
+                    </Box>
+                  )}
                 </Stack>
               </TabPanel>
 
@@ -805,7 +829,9 @@ const ProfileAccount: React.FC = () => {
                       color="text.secondary"
                       gutterBottom
                     >
-                      Mã học viên
+                      {currentUser?.role === "student"
+                        ? "Mã học viên"
+                        : "Mã sinh viên"}
                     </Typography>
                     <Typography
                       variant="body1"

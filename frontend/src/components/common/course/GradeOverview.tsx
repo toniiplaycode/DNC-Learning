@@ -11,15 +11,14 @@ import {
 import { fetchUserCourseGrades } from "../../../features/user-grades/userGradesSlice";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { useParams } from "react-router-dom";
-import { selectUser } from "../../../features/commons/commonsSelector";
 import { selectUserCourseGrades } from "../../../features/user-grades/userGradesSelectors";
 import { GradeType, UserGrade } from "../../../types/user-grade.types";
 import { format } from "date-fns";
-
+import { selectCurrentUser } from "../../../features/auth/authSelectors";
 const GradeOverview: React.FC = () => {
   const dispatch = useAppDispatch();
   const { id } = useParams();
-  const currentUser = useAppSelector(selectUser);
+  const currentUser = useAppSelector(selectCurrentUser);
   const userCourseGrades = useAppSelector(selectUserCourseGrades);
 
   useEffect(() => {

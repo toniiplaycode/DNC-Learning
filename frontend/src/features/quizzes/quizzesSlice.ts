@@ -64,6 +64,23 @@ export const fetchQuizById = createAsyncThunk(
   }
 );
 
+export const fetchQuizzesByStudentAcademic = createAsyncThunk(
+  "quizzes/fetchByStudentAcademic",
+  async (studentAcademicId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get(
+        `/quizzes/student-academic/${studentAcademicId}`
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          "Không thể tải bài kiểm tra cho sinh viên học thuật"
+      );
+    }
+  }
+);
+
 export const createQuiz = createAsyncThunk(
   "quizzes/create",
   async (data: CreateQuizData, { rejectWithValue }) => {
@@ -462,7 +479,6 @@ const quizzesSlice = createSlice({
               status: "completed",
               endTime: new Date().toISOString(),
             };
-            aaaaaaâ;
           }
           return attempt;
         });
@@ -485,6 +501,20 @@ const quizzesSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchQuizResults.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
+
+      // Fetch quizzes by student academic
+      .addCase(fetchQuizzesByStudentAcademic.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchQuizzesByStudentAcademic.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.quizzes = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchQuizzesByStudentAcademic.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
       });

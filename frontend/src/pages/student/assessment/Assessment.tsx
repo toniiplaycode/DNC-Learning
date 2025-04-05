@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -25,6 +25,10 @@ import {
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import CustomContainer from "../../../components/common/CustomContainer";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import { fetchQuizzesByStudentAcademic } from "../../../features/quizzes/quizzesSlice";
+import { selectQuizzesByStudentAcademic } from "../../../features/quizzes/quizzesSelectors";
+import { selectCurrentUser } from "../../../features/auth/authSelectors";
 
 // Mock data cho các bài kiểm tra
 const mockAssessments = [
@@ -104,8 +108,23 @@ const mockAssessments = [
 
 const Assessment = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const currentUser = useAppSelector(selectCurrentUser);
+  const quizzesByStudentAcademic = useAppSelector(
+    selectQuizzesByStudentAcademic
+  );
   const [tabValue, setTabValue] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+
+  useEffect(() => {
+    if (currentUser?.role == "student_academic") {
+      dispatch(
+        fetchQuizzesByStudentAcademic(currentUser?.userStudentAcademic?.id)
+      );
+    }
+  }, [currentUser]);
+
+  console.log(quizzesByStudentAcademic);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -148,7 +167,7 @@ const Assessment = () => {
   return (
     <CustomContainer maxWidth="lg">
       <Typography variant="h4" component="h1" gutterBottom fontWeight="bold">
-        Trung tâm kiểm tra & bài tập
+        Kiểm tra & bài tập
       </Typography>
 
       <Box sx={{ mb: 4 }}>

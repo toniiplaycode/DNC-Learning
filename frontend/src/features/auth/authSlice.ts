@@ -19,9 +19,10 @@ interface AuthState {
 
 // Khởi tạo state từ localStorage nếu có
 const token = localStorage.getItem("token");
+const user = localStorage.getItem("user");
 
 const initialState: AuthState = {
-  user: null,
+  user: user ? JSON.parse(user) : null,
   token: token,
   isAuthenticated: !!token,
   status: "idle",

@@ -4,7 +4,6 @@ import coursesReducer from "../features/courses/coursesSlice";
 import categoriesReducer from "../features/categories/categoriesSlice";
 import enrollmentsReducer from "../features/enrollments/enrollmentsApiSlice";
 import certificatesReducer from "../features/certificates/certificatesApiSlice";
-import commonsReducer from "../features/commons/commonsSlide";
 import discussionsReducer from "../features/discussions/discussionsSlice";
 import documentsReducer from "../features/documents/documentsSlice";
 import reviewsReducer from "../features/reviews/reviewsSlice";
@@ -19,12 +18,12 @@ export const store = configureStore({
     categories: categoriesReducer,
     enrollments: enrollmentsReducer,
     certificates: certificatesReducer,
-    commons: commonsReducer,
     discussions: discussionsReducer,
     documents: documentsReducer,
     reviews: reviewsReducer,
     userGrades: userGradesReducer,
     quizzes: quizzesReducer,
+
     // Add other reducers...
   },
 });

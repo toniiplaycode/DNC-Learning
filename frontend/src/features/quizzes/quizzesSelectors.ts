@@ -136,3 +136,42 @@ export const selectUserQuizStats = createSelector(
     };
   }
 );
+
+// Selector để lấy quiz cho sinh viên học thuật
+export const selectQuizzesByStudentAcademic = createSelector(
+  [selectAllQuizzes],
+  (quizzes) => quizzes
+);
+
+// Selector để lọc quiz theo lớp học thuật và đang hoạt động
+export const selectActiveAcademicQuizzes = createSelector(
+  [selectAllQuizzes],
+  (quizzes) =>
+    quizzes.filter((quiz) => quiz.isActive && quiz.academicClassId !== null)
+);
+
+// Selector để lấy quiz đang diễn ra (trong khoảng thời gian từ startTime đến endTime)
+export const selectOngoingAcademicQuizzes = createSelector(
+  [selectActiveAcademicQuizzes],
+  (quizzes) => {
+    const now = new Date();
+    return quizzes.filter(
+      (quiz) =>
+        quiz.startTime &&
+        quiz.endTime &&
+        new Date(quiz.startTime) <= now &&
+        new Date(quiz.endTime) >= now
+    );
+  }
+);
+
+// Selector để lấy quiz sắp diễn ra
+export const selectUpcomingAcademicQuizzes = createSelector(
+  [selectActiveAcademicQuizzes],
+  (quizzes) => {
+    const now = new Date();
+    return quizzes.filter(
+      (quiz) => quiz.startTime && new Date(quiz.startTime) > now
+    );
+  }
+);

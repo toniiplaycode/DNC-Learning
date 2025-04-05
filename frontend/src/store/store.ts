@@ -6,7 +6,6 @@ import forumsReducer from "../features/forums/forumsSlice";
 import authReducer from "../features/auth/authSlice";
 import enrollmentsReducer from "../features/enrollments/enrollmentsApiSlice";
 import certificatesReducer from "../features/certificates/certificatesApiSlice";
-import commonsReducer from "../features/commons/commonsSlide";
 import discussionsReducer from "../features/discussions/discussionsSlice";
 import documentsReducer from "../features/documents/documentsSlice";
 import reviewsReducer from "../features/reviews/reviewsSlice";
@@ -23,7 +22,6 @@ export const store = configureStore({
     auth: authReducer,
     enrollments: enrollmentsReducer,
     certificates: certificatesReducer,
-    commons: commonsReducer,
     discussions: discussionsReducer,
     documents: documentsReducer,
     reviews: reviewsReducer,

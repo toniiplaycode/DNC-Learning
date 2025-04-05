@@ -103,7 +103,8 @@ export const selectSectionProgress = (sectionId: number) =>
   createSelector([selectUserProgress], (userProgress) => {
     if (!userProgress || !userProgress.sections) return null;
     return (
-      userProgress.sections.find((section) => section.id === sectionId) || null
+      userProgress.sections.find((section: any) => section.id === sectionId) ||
+      null
     );
   });
 
@@ -115,7 +116,9 @@ export const selectLessonProgress = (lessonId: number) =>
     for (const section of userProgress.sections) {
       if (!section.lessons) continue;
 
-      const lesson = section.lessons.find((lesson) => lesson.id === lessonId);
+      const lesson = section.lessons.find(
+        (lesson: any) => lesson.id === lessonId
+      );
       if (lesson) return lesson;
     }
 
@@ -130,3 +133,27 @@ export const selectCompletionPercentage = createSelector(
     return userProgress.completionPercentage || 0;
   }
 );
+
+export const selectSectionById = (sectionId: string) =>
+  createSelector([selectUserProgress], (userProgress) => {
+    if (!userProgress || !userProgress.sections) return null;
+    return (
+      userProgress.sections.find((section: any) => section.id === sectionId) ||
+      null
+    );
+  });
+
+export const selectLessonById = (lessonId: string, userProgress: any) => {
+  if (!userProgress || !userProgress.sections) return null;
+
+  for (const section of userProgress.sections) {
+    if (!section.lessons) continue;
+
+    const lesson = section.lessons.find(
+      (lesson: any) => lesson.id === lessonId
+    );
+    if (lesson) return lesson;
+  }
+
+  return null;
+};
