@@ -101,7 +101,7 @@ export class QuizzesService {
     return quiz;
   }
 
-  async findByLesson(lessonId: number): Promise<Quiz[]> {
+  async findByLesson(lessonId: number): Promise<Quiz | null> {
     if (!lessonId) {
       throw new BadRequestException('Lesson ID is required');
     }
@@ -115,27 +115,29 @@ export class QuizzesService {
       throw new NotFoundException(`Không tìm thấy bài học với ID ${lessonId}`);
     }
 
-    // Find quizzes for this lesson
-    const quizzes = await this.quizzesRepository.find({
+    // Find the first quiz for this lesson
+    const quiz = await this.quizzesRepository.findOne({
       where: { lessonId },
       relations: ['questions', 'questions.options'],
       order: { createdAt: 'DESC' },
     });
 
-    // Sort questions and options for each quiz
-    quizzes.forEach((quiz) => {
-      if (quiz.questions) {
-        quiz.questions.sort((a, b) => a.orderNumber - b.orderNumber);
+    if (!quiz) {
+      return null;
+    }
 
-        quiz.questions.forEach((question) => {
-          if (question.options) {
-            question.options.sort((a, b) => a.orderNumber - b.orderNumber);
-          }
-        });
-      }
-    });
+    // Sort questions and options
+    if (quiz.questions) {
+      quiz.questions.sort((a, b) => a.orderNumber - b.orderNumber);
 
-    return quizzes;
+      quiz.questions.forEach((question) => {
+        if (question.options) {
+          question.options.sort((a, b) => a.orderNumber - b.orderNumber);
+        }
+      });
+    }
+
+    return quiz;
   }
 
   async findAllByStudentAcademicInAcademicClass(
@@ -163,7 +165,7 @@ export class QuizzesService {
       // Tìm tất cả quiz thuộc các lớp học đó
       return this.quizzesRepository.find({
         where: { academicClassId: In(academicClassIds) },
-        relations: ['questions', 'questions.options'],
+        relations: ['questions', 'questions.options', 'academicClass'],
         order: { createdAt: 'DESC' },
       });
     } catch (error) {

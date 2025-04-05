@@ -14,21 +14,37 @@ import {
   useMediaQuery,
 } from "@mui/material";
 import { Timer, CheckCircle, Cancel, PlayArrow } from "@mui/icons-material";
-import { fetchQuizzesByLesson } from "../../../features/quizzes/quizzesSlice";
+import {
+  fetchQuizById,
+  fetchQuizzesByLesson,
+} from "../../../features/quizzes/quizzesSlice";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
-import { selectLessonQuizzes } from "../../../features/quizzes/quizzesSelectors";
+import {
+  selectCurrentQuiz,
+  selectLessonQuizzes,
+} from "../../../features/quizzes/quizzesSelectors";
+import { selectCurrentUser } from "../../../features/auth/authSelectors";
+import { useLocation, useNavigate } from "react-router-dom";
 
 interface QuizContentProps {
+  quizId: number;
   lessonId: number;
   onComplete: (score: number) => void;
 }
 
-const QuizContent: React.FC<QuizContentProps> = ({ lessonId, onComplete }) => {
+const QuizContent: React.FC<QuizContentProps> = ({
+  quizId,
+  lessonId,
+  onComplete,
+}) => {
   const dispatch = useAppDispatch();
+  const location = useLocation();
+  const currentUser = useAppSelector(selectCurrentUser);
   const lessonQuizzes = useAppSelector(selectLessonQuizzes);
+  const quizById = useAppSelector(selectCurrentQuiz);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-
+  const [activeQuiz, setActiveQuiz] = useState();
   // State
   const [answers, setAnswers] = useState<number[]>([]);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
@@ -37,14 +53,22 @@ const QuizContent: React.FC<QuizContentProps> = ({ lessonId, onComplete }) => {
   const [score, setScore] = useState(0);
   const [activeShowExplanations, setActiveShowExplanations] = useState(false);
 
-  // Use the first quiz from the lesson quizzes if available
-  const activeQuiz =
-    lessonQuizzes && lessonQuizzes.length > 0 ? lessonQuizzes[0] : null;
-
   useEffect(() => {
     // Fetch quizzes when the component mounts
-    dispatch(fetchQuizzesByLesson(lessonId));
-  }, [dispatch, lessonId]);
+    if (quizId) {
+      dispatch(fetchQuizById(quizId));
+    } else if (lessonId) {
+      dispatch(fetchQuizzesByLesson(lessonId));
+    }
+  }, [currentUser, dispatch, location, lessonId, quizId]);
+
+  useEffect(() => {
+    if (quizId) {
+      setActiveQuiz(quizById);
+    } else if (lessonId) {
+      setActiveQuiz(lessonQuizzes);
+    }
+  }, [currentUser, dispatch, location, quizById, lessonQuizzes]);
 
   useEffect(() => {
     // Initialize time limit if the quiz has one and has been started

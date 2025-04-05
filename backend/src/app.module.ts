@@ -49,6 +49,7 @@ import { QuizOption } from './entities/QuizOption';
 import { QuizResponse } from './entities/QuizResponse';
 import { QuizzesModule } from './modules/quizzes/quizzes.module';
 import { UserStudentAcademic } from './entities/UserStudentAcademic';
+import { AssignmentsModule } from './modules/assignments/assignments.module';
 
 @Module({
   imports: [
@@ -116,6 +117,7 @@ import { UserStudentAcademic } from './entities/UserStudentAcademic';
     DocumentsModule,
     ReviewsModule,
     QuizzesModule,
+    AssignmentsModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthMiddleware, InstructorMiddleware],

@@ -22,6 +22,7 @@ import {
   MenuBook,
   DocumentScanner,
   School,
+  QuestionAnswer,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import CustomContainer from "../../../components/common/CustomContainer";
@@ -29,139 +30,63 @@ import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { fetchQuizzesByStudentAcademic } from "../../../features/quizzes/quizzesSlice";
 import { selectQuizzesByStudentAcademic } from "../../../features/quizzes/quizzesSelectors";
 import { selectCurrentUser } from "../../../features/auth/authSelectors";
-
-// Mock data cho các bài kiểm tra
-const mockAssessments = [
-  {
-    id: 1,
-    title: "Kiểm tra React Hooks cơ bản",
-    description: "Đánh giá kiến thức về React Hooks",
-    type: "quiz",
-    course: "React & TypeScript Masterclass",
-    instructor: "John Doe",
-    duration: 30, // phút
-    questionCount: 15,
-    difficulty: "medium", // easy, medium, hard
-    isCompleted: false,
-    availableUntil: "2025-06-30",
-    points: 100,
-  },
-  {
-    id: 2,
-    title: "Bài tập Redux Middleware",
-    description: "Ứng dụng Redux Middleware vào dự án thực tế",
-    type: "assignment",
-    course: "React & TypeScript Masterclass",
-    instructor: "John Doe",
-    duration: 120, // phút
-    difficulty: "hard",
-    isCompleted: true,
-    completedDate: "2025-05-15",
-    score: 85,
-    availableUntil: "2025-06-30",
-    points: 200,
-  },
-  {
-    id: 3,
-    title: "Luyện tập Node.js Authentication",
-    description: "Xây dựng hệ thống xác thực với Node.js và JWT",
-    type: "quiz",
-    course: "Node.js Advanced Concepts",
-    instructor: "Jane Smith",
-    duration: 45,
-    questionCount: 20,
-    difficulty: "hard",
-    isCompleted: true,
-    completedDate: "2025-05-10",
-    score: 90,
-    availableUntil: "2025-06-15",
-    points: 150,
-  },
-  {
-    id: 4,
-    title: "Kiểm tra cơ bản TypeScript",
-    description: "Kiểm tra kiến thức về TypeScript types và interfaces",
-    type: "quiz",
-    course: "TypeScript Fundamentals",
-    instructor: "David Johnson",
-    duration: 20,
-    questionCount: 10,
-    difficulty: "easy",
-    isCompleted: false,
-    availableUntil: "2025-07-20",
-    points: 50,
-  },
-  {
-    id: 5,
-    title: "Bài tập RESTful API",
-    description: "Xây dựng RESTful API với Express.js",
-    type: "assignment",
-    course: "Node.js Advanced Concepts",
-    instructor: "Jane Smith",
-    duration: 180,
-    difficulty: "medium",
-    isCompleted: false,
-    availableUntil: "2025-06-25",
-    points: 250,
-  },
-];
+import { fetchAssignmentsByStudentAcademic } from "../../../features/assignments/assignmentsSlice";
+import { selectStudentAcademicAssignments } from "../../../features/assignments/assignmentsSelectors";
 
 const Assessment = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const currentUser = useAppSelector(selectCurrentUser);
+  const currentAuthUser = useAppSelector(selectCurrentUser);
   const quizzesByStudentAcademic = useAppSelector(
     selectQuizzesByStudentAcademic
   );
+  const assignmentsByStudentAcademic = useAppSelector(
+    selectStudentAcademicAssignments
+  );
   const [tabValue, setTabValue] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [filteredAssessments, setFilteredAssessments] = useState([]);
 
   useEffect(() => {
-    if (currentUser?.role == "student_academic") {
+    if (currentAuthUser?.role == "student_academic") {
       dispatch(
-        fetchQuizzesByStudentAcademic(currentUser?.userStudentAcademic?.id)
+        fetchQuizzesByStudentAcademic(currentAuthUser?.userStudentAcademic?.id)
+      );
+      dispatch(
+        fetchAssignmentsByStudentAcademic(
+          currentAuthUser?.userStudentAcademic?.id
+        )
       );
     }
-  }, [currentUser]);
+  }, [currentAuthUser, dispatch]);
 
-  console.log(quizzesByStudentAcademic);
+  // Filter assessments when dependencies change
+  useEffect(() => {
+    if (currentAuthUser?.role == "student_academic") {
+      const filtered = [
+        ...quizzesByStudentAcademic,
+        ...assignmentsByStudentAcademic,
+      ].filter((assessment) => {
+        const matchesSearch = assessment.title
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase());
+
+        if (tabValue === 0) return matchesSearch;
+        if (tabValue === 1) return assessment.quizType && matchesSearch;
+        if (tabValue === 2) return assessment.assignmentType && matchesSearch;
+        if (tabValue === 3) return assessment.isCompleted && matchesSearch;
+
+        return false;
+      });
+
+      setFilteredAssessments(filtered);
+    } else if (currentAuthUser?.role == "student") {
+      setFilteredAssessments([]);
+    }
+  }, [quizzesByStudentAcademic, tabValue, searchQuery, currentAuthUser]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
-  };
-
-  // Filter assessments based on tab and search
-  const filteredAssessments = mockAssessments.filter((assessment) => {
-    const matchesSearch = assessment.title
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-
-    if (tabValue === 0) return matchesSearch;
-    if (tabValue === 1) return assessment.type === "quiz" && matchesSearch;
-    if (tabValue === 2)
-      return assessment.type === "assignment" && matchesSearch;
-    if (tabValue === 3) return assessment.isCompleted && matchesSearch;
-
-    return false;
-  });
-
-  // Function to render difficulty chip
-  const renderDifficultyChip = (difficulty: string) => {
-    const color =
-      difficulty === "easy"
-        ? "success"
-        : difficulty === "medium"
-        ? "warning"
-        : "error";
-
-    const label =
-      difficulty === "easy"
-        ? "Dễ"
-        : difficulty === "medium"
-        ? "Trung bình"
-        : "Khó";
-
-    return <Chip size="small" color={color} label={label} />;
   };
 
   return (
@@ -216,12 +141,11 @@ const Assessment = () => {
                   alignItems="center"
                   sx={{ mb: 2 }}
                 >
-                  {assessment.type === "quiz" ? (
+                  {assessment.quizType ? (
                     <Quiz color="primary" />
                   ) : (
-                    <Assignment color="secondary" />
+                    <Assignment color="primary" />
                   )}
-                  {renderDifficultyChip(assessment.difficulty)}
                 </Stack>
 
                 <Typography variant="h6" gutterBottom>
@@ -240,21 +164,26 @@ const Assessment = () => {
                   <Stack direction="row" spacing={1}>
                     <MenuBook fontSize="small" color="action" />
                     <Typography variant="body2" color="text.secondary">
-                      {assessment.course}
+                      {assessment.academicClass?.className}
                     </Typography>
                   </Stack>
 
-                  <Stack direction="row" spacing={1}>
-                    <Timer fontSize="small" color="action" />
-                    <Typography variant="body2" color="text.secondary">
-                      {assessment.duration} phút
-                    </Typography>
-                  </Stack>
+                  {assessment.quizType && (
+                    <Stack direction="row" spacing={1}>
+                      <Timer fontSize="small" color="action" />
+                      <Typography variant="body2" color="text.secondary">
+                        {assessment?.timeLimit} phút
+                      </Typography>
+                    </Stack>
+                  )}
 
-                  {assessment.type === "quiz" && (
-                    <Typography variant="body2" color="text.secondary">
-                      {assessment.questionCount} câu hỏi
-                    </Typography>
+                  {assessment.quizType && (
+                    <Stack direction="row" spacing={1}>
+                      <QuestionAnswer fontSize="small" color="action" />
+                      <Typography variant="body2" color="text.secondary">
+                        {assessment.questions?.length} câu hỏi
+                      </Typography>
+                    </Stack>
                   )}
 
                   {assessment.isCompleted && (
@@ -275,7 +204,11 @@ const Assessment = () => {
                 >
                   {assessment.isCompleted
                     ? `Hoàn thành: ${assessment.completedDate}`
-                    : `Hạn: ${assessment.availableUntil}`}
+                    : `Hạn: ${
+                        assessment?.endTime
+                          ? new Date(assessment?.endTime).toLocaleString()
+                          : "Chưa có hạn"
+                      }`}
                 </Typography>
               </CardContent>
 
@@ -286,7 +219,9 @@ const Assessment = () => {
                     variant="outlined"
                     onClick={() =>
                       navigate(
-                        `/assessment/${assessment.type}/${assessment.id}/result`
+                        `/assessment/${
+                          assessment.quizType ? "quiz" : "assignment"
+                        }/${assessment.id}/result`
                       )
                     }
                   >
@@ -298,7 +233,9 @@ const Assessment = () => {
                     variant="contained"
                     onClick={() =>
                       navigate(
-                        `/assessment/${assessment.type}/${assessment.id}`
+                        `/assessment/${
+                          assessment.quizType ? "quiz" : "assignment"
+                        }/${assessment.id}`
                       )
                     }
                   >

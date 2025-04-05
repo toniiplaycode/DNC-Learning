@@ -9,6 +9,7 @@ import documentsReducer from "../features/documents/documentsSlice";
 import reviewsReducer from "../features/reviews/reviewsSlice";
 import userGradesReducer from "../features/user-grades/userGradesSlice";
 import quizzesReducer from "../features/quizzes/quizzesSlice";
+import assignmentsReducer from "../features/assignments/assignmentsSlice";
 // Import other reducers...
 
 export const store = configureStore({
@@ -23,7 +24,7 @@ export const store = configureStore({
     reviews: reviewsReducer,
     userGrades: userGradesReducer,
     quizzes: quizzesReducer,
-
+    assignments: assignmentsReducer,
     // Add other reducers...
   },
 });
