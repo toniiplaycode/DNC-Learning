@@ -2,108 +2,75 @@ import { Box, Typography, Card, Button, Chip, Stack } from "@mui/material";
 import CustomContainer from "../../../components/common/CustomContainer";
 import { Assignment, CheckCircle } from "@mui/icons-material";
 import { useNavigate, useParams } from "react-router-dom";
-
-// Mock data cho câu hỏi quiz
-const mockQuizData = {
-  id: 1,
-  title: "Kiểm tra kiến thức React Hooks",
-  description:
-    "Hãy hoàn thành bài kiểm tra để đánh giá hiểu biết của bạn về React Hooks",
-  timeLimit: 30,
-  passingScore: 70,
-  questions: [
-    {
-      id: 1,
-      content: "useState hook được sử dụng để làm gì?",
-      options: [
-        "Quản lý side effects",
-        "Quản lý state trong functional component",
-        "Tối ưu performance",
-        "Xử lý routing",
-      ],
-      correctAnswer: 1,
-      explanation:
-        "useState là hook cơ bản để quản lý state trong functional component.",
-    },
-    {
-      id: 2,
-      content: "useEffect hook được gọi khi nào?",
-      options: [
-        "Chỉ khi component mount",
-        "Sau mỗi lần render",
-        "Khi dependencies thay đổi",
-        "Tất cả các trường hợp trên",
-      ],
-      correctAnswer: 3,
-      explanation:
-        "useEffect có thể được gọi trong cả 3 trường hợp tùy vào cách sử dụng dependencies.",
-    },
-    {
-      id: 3,
-      content: "useMemo hook dùng để làm gì?",
-      options: [
-        "Tối ưu performance bằng cách cache giá trị",
-        "Quản lý state",
-        "Xử lý side effects",
-        "Tạo ref",
-      ],
-      correctAnswer: 0,
-      explanation:
-        "useMemo giúp tối ưu performance bằng cách cache giá trị tính toán.",
-    },
-    {
-      id: 4,
-      content: "useCallback hook khác gì với useMemo?",
-      options: [
-        "useCallback cache function, useMemo cache value",
-        "useCallback cache value, useMemo cache function",
-        "Không có sự khác biệt",
-        "Không thể so sánh",
-      ],
-      correctAnswer: 0,
-      explanation:
-        "useCallback được sử dụng để cache function references, trong khi useMemo cache giá trị tính toán.",
-    },
-    {
-      id: 5,
-      content: "Custom hooks trong React là gì?",
-      options: [
-        "Các hooks có sẵn của React",
-        "Function bắt đầu bằng use và có thể tái sử dụng logic",
-        "Class components",
-        "Thư viện bên thứ 3",
-      ],
-      correctAnswer: 1,
-      explanation:
-        "Custom hooks là các function bắt đầu bằng use và cho phép tái sử dụng logic giữa các components.",
-    },
-  ],
-};
-
-// Mock data cho câu trả lời của user
-const mockUserAnswers = [1, 2, 0, 0, 1]; // Các lựa chọn của người dùng
+import { useEffect } from "react";
+import { fetchAttemptById } from "../../../features/quizAttempts/quizAttemptsSlice";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import { selectCurrentAttempt } from "../../../features/quizAttempts/quizAttemptsSelectors";
+import { formatDateTime } from "../../../utils/formatters";
 
 const AssessmentQuizResult = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const { id } = useParams();
+  const currentQuizAttempt = useAppSelector(selectCurrentAttempt);
 
-  // Trong thực tế sẽ lấy từ API
-  const quizData = mockQuizData;
-  const userAnswers = mockUserAnswers;
+  useEffect(() => {
+    dispatch(fetchAttemptById(Number(id)));
+  }, [id, dispatch]);
 
-  // Tính điểm
+  // Chờ đến khi dữ liệu được tải
+  if (!currentQuizAttempt || !currentQuizAttempt.quiz) {
+    return (
+      <CustomContainer>
+        <Typography>Đang tải dữ liệu...</Typography>
+      </CustomContainer>
+    );
+  }
+
+  const quizData = currentQuizAttempt.quiz;
+
+  // Tính điểm dựa trên dữ liệu thực
   const calculateScore = () => {
-    let correctCount = 0;
-    quizData.questions.forEach((question, index) => {
-      if (question.correctAnswer === userAnswers[index]) {
-        correctCount++;
-      }
-    });
-    return Math.round((correctCount / quizData.questions.length) * 100);
+    if (!currentQuizAttempt.responses || !quizData.questions) return 0;
+
+    // Lấy tổng điểm từ responses
+    const totalScore = parseFloat(currentQuizAttempt.score);
+
+    // Tính điểm tối đa
+    const maxScore = quizData.questions.reduce(
+      (sum, question) => sum + question.points,
+      0
+    );
+
+    // Tính phần trăm điểm
+    return Math.round((totalScore / maxScore) * 100);
   };
 
   const score = calculateScore();
   const isPassed = score >= quizData.passingScore;
+  // Tính thời gian làm bài (phút:giây)
+  const calculateDuration = () => {
+    if (!currentQuizAttempt.startTime || !currentQuizAttempt.endTime)
+      return "N/A";
+
+    const startTime = new Date(currentQuizAttempt.startTime).getTime();
+    const endTime = new Date(currentQuizAttempt.endTime).getTime();
+
+    const durationInSeconds = Math.floor((endTime - startTime) / 1000);
+    const minutes = Math.floor(durationInSeconds / 60);
+    const seconds = durationInSeconds % 60;
+
+    return `${minutes}:${seconds < 10 ? "0" : ""}${seconds}`;
+  };
+
+  // Lấy số câu đúng
+  const getCorrectAnswersCount = () => {
+    if (!currentQuizAttempt.responses) return 0;
+
+    return currentQuizAttempt.responses.filter(
+      (response) => parseFloat(response.score) > 0
+    ).length;
+  };
 
   return (
     <CustomContainer>
@@ -141,22 +108,18 @@ const AssessmentQuizResult = () => {
 
           <Stack spacing={1}>
             <Typography variant="body2">
-              <strong>Số câu đúng:</strong>{" "}
-              {
-                quizData.questions.filter(
-                  (q, i) => q.correctAnswer === userAnswers[i]
-                ).length
-              }
-              /{quizData.questions.length}
+              <strong>Số câu đúng:</strong> {getCorrectAnswersCount()}/
+              {quizData.questions.length}
             </Typography>
             <Typography variant="body2">
               <strong>Điểm tối thiểu để đạt:</strong> {quizData.passingScore}%
             </Typography>
             <Typography variant="body2">
-              <strong>Thời gian làm bài:</strong> 12:30
+              <strong>Thời gian làm bài:</strong> {calculateDuration()}
             </Typography>
             <Typography variant="body2">
-              <strong>Thời gian nộp:</strong> 20/03/2024 14:30
+              <strong>Thời gian nộp:</strong>{" "}
+              {formatDateTime(currentQuizAttempt.endTime)}
             </Typography>
           </Stack>
         </Stack>
@@ -166,16 +129,107 @@ const AssessmentQuizResult = () => {
             Quay lại danh sách
           </Button>
 
-          {!isPassed && (
+          {!isPassed && quizData.attemptsAllowed > 1 && (
             <Button
               variant="contained"
-              onClick={() => navigate(`/assessment/quiz/${quizId}`)}
+              onClick={() => navigate(`/assessment/quiz/${quizData.id}`)}
             >
               Làm lại bài kiểm tra
             </Button>
           )}
         </Box>
       </Card>
+
+      {/* Chi tiết câu trả lời */}
+      <Typography variant="h5" gutterBottom sx={{ mt: 4, mb: 3 }}>
+        Chi tiết câu trả lời
+      </Typography>
+
+      {quizData.questions.map((question, index) => {
+        // Tìm response tương ứng với question
+        const response = currentQuizAttempt.responses?.find(
+          (r) => r.questionId === question.id
+        );
+
+        // Tìm option đã chọn
+        const selectedOption = question.options?.find(
+          (opt) => opt.id === response?.selectedOptionId
+        );
+
+        // Tìm option đúng
+        const correctOption = question.options?.find((opt) => opt.isCorrect);
+
+        // Kiểm tra xem câu trả lời có đúng không
+        const isCorrect = selectedOption?.isCorrect || false;
+
+        return (
+          <Card key={question.id} sx={{ mb: 3, p: 3 }}>
+            <Typography variant="subtitle1" fontWeight="bold">
+              Câu hỏi {index + 1}: {question.questionText}
+            </Typography>
+
+            <Box sx={{ mt: 2 }}>
+              {question.options?.map((option) => (
+                <Box
+                  key={option.id}
+                  sx={{
+                    p: 1,
+                    pl: 2,
+                    mb: 1,
+                    borderRadius: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    bgcolor:
+                      option.id === response?.selectedOptionId
+                        ? option.isCorrect
+                          ? "success.light"
+                          : "error.light"
+                        : option.isCorrect
+                        ? "success.light"
+                        : "background.paper",
+                  }}
+                >
+                  <Typography variant="body2">{option.optionText}</Typography>
+                  {option.id === response?.selectedOptionId && (
+                    <Box sx={{ ml: 1 }}>
+                      {option.isCorrect ? (
+                        <CheckCircle fontSize="small" color="success" />
+                      ) : (
+                        <Assignment fontSize="small" color="error" />
+                      )}
+                    </Box>
+                  )}
+                </Box>
+              ))}
+            </Box>
+
+            {quizData.showExplanation === 1 && (
+              <Box sx={{ mt: 2, p: 2, bgcolor: "grey.100", borderRadius: 1 }}>
+                <Typography variant="body2" fontWeight="bold">
+                  Giải thích:
+                </Typography>
+                <Typography variant="body2">
+                  {question.correctExplanation}
+                </Typography>
+              </Box>
+            )}
+
+            <Box
+              sx={{ mt: 2, display: "flex", justifyContent: "space-between" }}
+            >
+              <Typography variant="body2">
+                <strong>Điểm: </strong>
+                {parseFloat(response?.score || "0")}/{question.points} điểm
+              </Typography>
+              <Chip
+                label={isCorrect ? "Đúng" : "Sai"}
+                color={isCorrect ? "success" : "error"}
+                size="small"
+              />
+            </Box>
+          </Card>
+        );
+      })}
     </CustomContainer>
   );
 };

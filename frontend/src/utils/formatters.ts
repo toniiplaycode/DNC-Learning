@@ -11,3 +11,15 @@ export function getFileIdFromUrl(url: string): string {
   const fileIdMatch = url.match(/\/d\/([^\/]+)/);
   return fileIdMatch ? fileIdMatch[1] : "";
 }
+
+// Format thời gian
+export const formatDateTime = (dateString: string) => {
+  const date = new Date(dateString);
+  return new Intl.DateTimeFormat("vi-VN", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+};

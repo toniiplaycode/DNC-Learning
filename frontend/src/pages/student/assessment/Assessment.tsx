@@ -34,6 +34,7 @@ import { fetchAssignmentsByStudentAcademic } from "../../../features/assignments
 import { selectStudentAcademicAssignments } from "../../../features/assignments/assignmentsSelectors";
 import { selectUserAttempt } from "../../../features/quizAttempts/quizAttemptsSelectors";
 import { fetchUserAttempts } from "../../../features/quizAttempts/quizAttemptsSlice";
+import { formatDateTime } from "../../../utils/formatters";
 
 const Assessment = () => {
   const navigate = useNavigate();
@@ -49,6 +50,7 @@ const Assessment = () => {
   const [tabValue, setTabValue] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredAssessments, setFilteredAssessments] = useState([]);
+  const [completedAssessments, setCompletedAssessments] = useState([]);
 
   useEffect(() => {
     if (currentAuthUser?.role == "student_academic") {
@@ -75,27 +77,45 @@ const Assessment = () => {
           .toLowerCase()
           .includes(searchQuery.toLowerCase());
 
+        // Kiểm tra nếu quiz này đã được làm
+        const isCompleted = !!userAttempts?.find(
+          (attempt) => attempt.quizId === assessment.id
+        );
+
         if (tabValue === 0) return matchesSearch;
         if (tabValue === 1) return assessment.quizType && matchesSearch;
         if (tabValue === 2) return assessment.assignmentType && matchesSearch;
-        if (tabValue === 3) return assessment.isCompleted && matchesSearch;
+        if (tabValue === 3) return isCompleted && matchesSearch;
 
         return false;
       });
 
       setFilteredAssessments(filtered);
+      // Tạo danh sách các quiz đã làm
+      const completed = userAttempts.filter((quiz_attempt) =>
+        filtered.some((assessment) => quiz_attempt.quizId === assessment.id)
+      );
+
+      setCompletedAssessments(completed);
     } else if (currentAuthUser?.role == "student") {
       setFilteredAssessments([]);
+      setCompletedAssessments([]);
     }
-  }, [quizzesByStudentAcademic, tabValue, searchQuery, currentAuthUser]);
+  }, [
+    quizzesByStudentAcademic,
+    assignmentsByStudentAcademic,
+    tabValue,
+    searchQuery,
+    currentAuthUser,
+    userAttempts,
+  ]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
-  console.log(filteredAssessments);
-
-  console.log(userAttempts);
+  console.log("Đã làm:", completedAssessments);
+  console.log("Tất cả:", filteredAssessments);
 
   return (
     <CustomContainer maxWidth="lg">
@@ -194,13 +214,22 @@ const Assessment = () => {
                     </Stack>
                   )}
 
-                  {assessment.isCompleted && (
+                  {userAttempts?.some(
+                    (attempt) => attempt.quizId === assessment.id
+                  ) && (
                     <Typography
                       variant="body2"
                       color="primary"
                       fontWeight="bold"
                     >
-                      Điểm: {assessment.score}/100
+                      Điểm:{" "}
+                      {
+                        userAttempts.find(
+                          (quiz_attempt) =>
+                            quiz_attempt.quizId === assessment.id
+                        )?.score
+                      }
+                      /100
                     </Typography>
                   )}
                 </Stack>
@@ -210,18 +239,27 @@ const Assessment = () => {
                   display="block"
                   sx={{ mt: "auto" }}
                 >
-                  {assessment.isCompleted
-                    ? `Hoàn thành: ${assessment.completedDate}`
+                  {userAttempts?.some(
+                    (attempt) => attempt.quizId === assessment.id
+                  )
+                    ? `Hoàn thành: ${formatDateTime(
+                        userAttempts.find(
+                          (quiz_attempt) =>
+                            quiz_attempt.quizId === assessment.id
+                        )?.endTime || new Date().toISOString()
+                      )}`
                     : `Hạn: ${
                         assessment?.endTime
-                          ? new Date(assessment?.endTime).toLocaleString()
+                          ? formatDateTime(assessment?.endTime)
                           : "Chưa có hạn"
                       }`}
                 </Typography>
               </CardContent>
 
               <CardActions>
-                {assessment.isCompleted ? (
+                {userAttempts?.some(
+                  (attempt) => attempt.quizId === assessment.id
+                ) ? (
                   <Button
                     fullWidth
                     variant="outlined"
@@ -229,7 +267,12 @@ const Assessment = () => {
                       navigate(
                         `/assessment/${
                           assessment.quizType ? "quiz" : "assignment"
-                        }/${assessment.id}/result`
+                        }/${
+                          userAttempts.find(
+                            (quiz_attempt) =>
+                              quiz_attempt.quizId === assessment.id
+                          )?.id
+                        }/result`
                       )
                     }
                   >
