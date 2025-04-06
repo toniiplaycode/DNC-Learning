@@ -11,6 +11,8 @@ import {
   ParseIntPipe,
 } from '@nestjs/common';
 import { QuizzesService } from './quizzes.service';
+import { QuizAttemptsService } from './quiz-attempts.service';
+import { QuizResponsesService } from './quiz-responses.service';
 import { CreateQuizDto } from './dto/create-quiz.dto';
 import { UpdateQuizDto } from './dto/update-quiz.dto';
 import { CreateQuestionDto } from './dto/create-question.dto';
@@ -26,7 +28,11 @@ import { Quiz } from '../../entities/Quiz';
 
 @Controller('quizzes')
 export class QuizzesController {
-  constructor(private readonly quizzesService: QuizzesService) {}
+  constructor(
+    private readonly quizzesService: QuizzesService,
+    private readonly quizzesAttemptsService: QuizAttemptsService,
+    private readonly quizzesResponsesService: QuizResponsesService,
+  ) {}
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -140,5 +146,16 @@ export class QuizzesController {
     @GetUser() user,
   ) {
     return this.quizzesService.getResults(attemptId, user.id);
+  }
+
+  // Quản lý Attempts
+  @Get('attempts/:id')
+  findAttemptById(@Param('id') id: number) {
+    return this.quizzesAttemptsService.findById(id);
+  }
+
+  @Get('attempts/user/:userId')
+  findAttemptsByUser(@Param('userId') userId: number) {
+    return this.quizzesAttemptsService.findAllByUserId(userId);
   }
 }

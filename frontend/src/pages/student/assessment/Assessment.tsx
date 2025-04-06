@@ -32,6 +32,8 @@ import { selectQuizzesByStudentAcademic } from "../../../features/quizzes/quizze
 import { selectCurrentUser } from "../../../features/auth/authSelectors";
 import { fetchAssignmentsByStudentAcademic } from "../../../features/assignments/assignmentsSlice";
 import { selectStudentAcademicAssignments } from "../../../features/assignments/assignmentsSelectors";
+import { selectUserAttempt } from "../../../features/quizAttempts/quizAttemptsSelectors";
+import { fetchUserAttempts } from "../../../features/quizAttempts/quizAttemptsSlice";
 
 const Assessment = () => {
   const navigate = useNavigate();
@@ -43,6 +45,7 @@ const Assessment = () => {
   const assignmentsByStudentAcademic = useAppSelector(
     selectStudentAcademicAssignments
   );
+  const userAttempts = useAppSelector(selectUserAttempt);
   const [tabValue, setTabValue] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredAssessments, setFilteredAssessments] = useState([]);
@@ -57,6 +60,7 @@ const Assessment = () => {
           currentAuthUser?.userStudentAcademic?.id
         )
       );
+      dispatch(fetchUserAttempts(currentAuthUser?.id));
     }
   }, [currentAuthUser, dispatch]);
 
@@ -88,6 +92,10 @@ const Assessment = () => {
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
+
+  console.log(filteredAssessments);
+
+  console.log(userAttempts);
 
   return (
     <CustomContainer maxWidth="lg">

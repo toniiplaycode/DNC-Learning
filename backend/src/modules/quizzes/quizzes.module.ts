@@ -10,6 +10,8 @@ import { QuizResponse } from '../../entities/QuizResponse';
 import { CourseLesson } from '../../entities/CourseLesson';
 import { User } from '../../entities/User';
 import { UserGradesModule } from '../user-grades/user-grades.module';
+import { QuizAttemptsService } from './quiz-attempts.service';
+import { QuizResponsesService } from './quiz-responses.service';
 
 @Module({
   imports: [
@@ -25,7 +27,7 @@ import { UserGradesModule } from '../user-grades/user-grades.module';
     UserGradesModule,
   ],
   controllers: [QuizzesController],
-  providers: [QuizzesService],
-  exports: [QuizzesService],
+  providers: [QuizzesService, QuizAttemptsService, QuizResponsesService],
+  exports: [QuizzesService, QuizAttemptsService, QuizResponsesService],
 })
 export class QuizzesModule {}

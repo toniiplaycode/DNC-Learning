@@ -1,14 +1,11 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import {
   QuizzesState,
-  Quiz,
   QuizType,
   CreateQuizData,
   UpdateQuizData,
   CreateQuestionData,
   SubmitQuizData,
-  QuizAttempt,
-  QuizResult,
 } from "../../types/quiz.types";
 import { api } from "../../services/api";
 
@@ -170,9 +167,9 @@ export const createAttempt = createAsyncThunk(
 
 export const fetchUserAttempts = createAsyncThunk(
   "quizzes/fetchUserAttempts",
-  async (_, { rejectWithValue }) => {
+  async (userId: number, { rejectWithValue }) => {
     try {
-      const response = await api.get("/quizzes/attempts/user");
+      const response = await api.get(`/quizzes/attempts/user/${userId}`);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(

@@ -10,6 +10,7 @@ import reviewsReducer from "../features/reviews/reviewsSlice";
 import userGradesReducer from "../features/user-grades/userGradesSlice";
 import quizzesReducer from "../features/quizzes/quizzesSlice";
 import assignmentsReducer from "../features/assignments/assignmentsSlice";
+import quizAttemptsReducer from "../features/quizAttempts/quizAttemptsSlice";
 // Import other reducers...
 
 export const store = configureStore({
@@ -25,8 +26,10 @@ export const store = configureStore({
     userGrades: userGradesReducer,
     quizzes: quizzesReducer,
     assignments: assignmentsReducer,
+    quizAttempts: quizAttemptsReducer,
     // Add other reducers...
   },
 });
+
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
