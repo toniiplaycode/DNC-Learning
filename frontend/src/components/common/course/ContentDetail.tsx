@@ -11,7 +11,7 @@ import { Box } from "@mui/material";
 import QuizContent from "./QuizContent";
 import AssignmentContent from "./AssignmentContent";
 import ContentDiscussion from "./ContentDiscussion";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { fetchLessonDiscussions } from "../../../features/discussions/discussionsSlice";
 import { useAppDispatch } from "../../../app/hooks";
 import { useAppSelector } from "../../../app/hooks";
@@ -168,12 +168,16 @@ const renderFileViewer = (url: string, title: string, type: string) => {
 const ContentDetail = ({ content }: { content: any }) => {
   const dispatch = useAppDispatch();
   const lessonDiscussions = useAppSelector(selectLessonDiscussions);
+  const [showDiscussion, setShowDiscussion] = useState(false);
 
   useEffect(() => {
     dispatch(fetchLessonDiscussions(Number(content?.id)));
+    if (content.type == "quiz") {
+      setShowDiscussion(false);
+    } else {
+      setShowDiscussion(true);
+    }
   }, [dispatch, content?.id]);
-
-  console.log(content);
 
   return (
     <Box>
@@ -219,6 +223,7 @@ const ContentDetail = ({ content }: { content: any }) => {
         <Box sx={{ mb: 4 }}>
           <QuizContent
             lessonId={content.id}
+            setShowDiscussion={setShowDiscussion}
             onComplete={(score) => {
               console.log("Quiz completed with score:", score);
               // Thêm logic cập nhật trạng thái hoàn thành
@@ -353,10 +358,12 @@ const ContentDetail = ({ content }: { content: any }) => {
         </CardContent>
       </Card>
 
-      <ContentDiscussion
-        lessonId={content.id}
-        lessonDiscussions={lessonDiscussions}
-      />
+      {showDiscussion && (
+        <ContentDiscussion
+          lessonId={content.id}
+          lessonDiscussions={lessonDiscussions}
+        />
+      )}
     </Box>
   );
 };

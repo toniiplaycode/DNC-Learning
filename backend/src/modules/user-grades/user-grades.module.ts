@@ -7,8 +7,8 @@ import { User } from '../../entities/User';
 import { Course } from '../../entities/Course';
 import { UserInstructor } from '../../entities/UserInstructor';
 import { CourseLesson } from '../../entities/CourseLesson';
-import { Assignment } from '../../entities/Assignment';
-import { Quiz } from '../../entities/Quiz';
+import { QuizAttempt } from '../../entities/QuizAttempt';
+import { AssignmentSubmission } from '../../entities/AssignmentSubmission';
 
 @Module({
   imports: [
@@ -18,8 +18,8 @@ import { Quiz } from '../../entities/Quiz';
       Course,
       UserInstructor,
       CourseLesson,
-      Assignment,
-      Quiz,
+      AssignmentSubmission,
+      QuizAttempt,
     ]),
   ],
   controllers: [UserGradesController],

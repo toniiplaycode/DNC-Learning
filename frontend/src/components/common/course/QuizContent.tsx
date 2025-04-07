@@ -17,11 +17,13 @@ import { Timer, CheckCircle, Cancel, PlayArrow } from "@mui/icons-material";
 import {
   fetchQuizById,
   fetchQuizzesByLesson,
+  fetchUserAttempts,
 } from "../../../features/quizzes/quizzesSlice";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import {
   selectCurrentQuiz,
   selectLessonQuizzes,
+  selectUserAttempts,
 } from "../../../features/quizzes/quizzesSelectors";
 import { selectCurrentUser } from "../../../features/auth/authSelectors";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -29,12 +31,14 @@ import { useLocation, useNavigate } from "react-router-dom";
 interface QuizContentProps {
   quizId: number;
   lessonId: number;
+  setShowDiscussion: (show: boolean) => void;
   onComplete: (score: number) => void;
 }
 
 const QuizContent: React.FC<QuizContentProps> = ({
   quizId,
   lessonId,
+  setShowDiscussion,
   onComplete,
 }) => {
   const dispatch = useAppDispatch();
@@ -42,6 +46,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
   const currentUser = useAppSelector(selectCurrentUser);
   const lessonQuizzes = useAppSelector(selectLessonQuizzes);
   const quizById = useAppSelector(selectCurrentQuiz);
+  const userAttempts = useAppSelector(selectUserAttempts);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [activeQuiz, setActiveQuiz] = useState();
@@ -53,6 +58,14 @@ const QuizContent: React.FC<QuizContentProps> = ({
   const [score, setScore] = useState(0);
   const [activeShowExplanations, setActiveShowExplanations] = useState(false);
 
+  // Tạo state quizStatus để theo dõi trạng thái làm bài quiz
+  const [quizStatus, setQuizStatus] = useState({
+    isAttempted: false,
+    bestScore: 0,
+    status: "",
+    canRetake: false,
+  });
+
   useEffect(() => {
     // Fetch quizzes when the component mounts
     if (quizId) {
@@ -60,6 +73,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
     } else if (lessonId) {
       dispatch(fetchQuizzesByLesson(lessonId));
     }
+    dispatch(fetchUserAttempts(Number(currentUser?.id)));
   }, [currentUser, dispatch, location, lessonId, quizId]);
 
   useEffect(() => {
@@ -67,8 +81,53 @@ const QuizContent: React.FC<QuizContentProps> = ({
       setActiveQuiz(quizById);
     } else if (lessonId) {
       setActiveQuiz(lessonQuizzes);
+
+      // Kiểm tra nếu có userAttempts và lessonQuizzes
+      if (userAttempts?.length > 0 && lessonQuizzes) {
+        // Lọc các attempts cho quiz hiện tại
+        const quizAttempts = userAttempts.filter(
+          (attempt) => attempt.quizId === lessonQuizzes.id
+        );
+
+        if (quizAttempts.length > 0) {
+          // Đã có ít nhất một lần thử
+          const completedAttempts = quizAttempts.filter(
+            (attempt) => attempt.status === "completed"
+          );
+
+          const inProgressAttempts = quizAttempts.filter(
+            (attempt) => attempt.status === "in_progress"
+          );
+
+          // Tìm attempt có điểm cao nhất
+          let bestAttempt = null;
+          let bestScore = 0;
+
+          completedAttempts.forEach((attempt) => {
+            if (attempt.score && parseFloat(attempt.score) > bestScore) {
+              bestScore = parseFloat(attempt.score);
+              bestAttempt = attempt;
+            }
+          });
+
+          // Kiểm tra có thể thử lại không
+          const canRetake = lessonQuizzes.attemptsAllowed > quizAttempts.length;
+
+          setQuizStatus({
+            isAttempted: true,
+            bestScore: bestScore,
+            status:
+              inProgressAttempts.length > 0
+                ? "in_progress"
+                : completedAttempts.length > 0
+                ? "completed"
+                : "abandoned",
+            canRetake: canRetake,
+          });
+        }
+      }
     }
-  }, [currentUser, dispatch, location, quizById, lessonQuizzes]);
+  }, [currentUser, dispatch, location, quizById, lessonQuizzes, userAttempts]);
 
   useEffect(() => {
     // Initialize time limit if the quiz has one and has been started
@@ -128,6 +187,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
     );
     setScore(finalScore);
     setQuizSubmitted(true);
+    setShowDiscussion(true);
     onComplete(finalScore);
   };
 

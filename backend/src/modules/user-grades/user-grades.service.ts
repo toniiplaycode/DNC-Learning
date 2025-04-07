@@ -13,6 +13,8 @@ import { UserInstructor } from '../../entities/UserInstructor';
 import { CourseLesson } from '../../entities/CourseLesson';
 import { Assignment } from '../../entities/Assignment';
 import { Quiz } from '../../entities/Quiz';
+import { QuizAttempt } from '../../entities/QuizAttempt';
+import { AssignmentSubmission } from '../../entities/AssignmentSubmission';
 import { CreateUserGradeDto } from './dto/create-user-grade.dto';
 import { UpdateUserGradeDto } from './dto/update-user-grade.dto';
 import { GradeSummaryDto } from './dto/grade-summary.dto';
@@ -39,10 +41,10 @@ export class UserGradesService {
     private instructorsRepository: Repository<UserInstructor>,
     @InjectRepository(CourseLesson)
     private lessonsRepository: Repository<CourseLesson>,
-    @InjectRepository(Assignment)
-    private assignmentsRepository: Repository<Assignment>,
-    @InjectRepository(Quiz)
-    private quizzesRepository: Repository<Quiz>,
+    @InjectRepository(AssignmentSubmission)
+    private assignmentSubmissionsRepository: Repository<AssignmentSubmission>,
+    @InjectRepository(QuizAttempt)
+    private quizAttemptsRepository: Repository<QuizAttempt>,
   ) {}
 
   async create(createUserGradeDto: CreateUserGradeDto): Promise<UserGrade> {
@@ -89,7 +91,7 @@ export class UserGradesService {
     }
 
     if (createUserGradeDto.assignmentId) {
-      const assignment = await this.assignmentsRepository.findOne({
+      const assignment = await this.assignmentSubmissionsRepository.findOne({
         where: { id: createUserGradeDto.assignmentId },
       });
       if (!assignment) {
@@ -100,7 +102,7 @@ export class UserGradesService {
     }
 
     if (createUserGradeDto.quizId) {
-      const quiz = await this.quizzesRepository.findOne({
+      const quiz = await this.quizAttemptsRepository.findOne({
         where: { id: createUserGradeDto.quizId },
       });
       if (!quiz) {
@@ -146,8 +148,8 @@ export class UserGradesService {
         'instructor',
         'instructor.user',
         'lesson',
-        'assignment',
-        'quiz',
+        'quizAttempt',
+        'assignmentSubmission',
       ],
       order: {
         createdAt: 'DESC',
@@ -166,8 +168,8 @@ export class UserGradesService {
         'instructor',
         'instructor.user',
         'lesson',
-        'assignment',
-        'quiz',
+        'quizAttempt',
+        'assignmentSubmission',
       ],
     });
 
@@ -190,8 +192,8 @@ export class UserGradesService {
         'instructor',
         'instructor.user',
         'lesson',
-        'assignment',
-        'quiz',
+        'quizAttempt',
+        'assignmentSubmission',
       ],
       select: {
         user: {
@@ -230,8 +232,8 @@ export class UserGradesService {
         'instructor',
         'instructor.user',
         'lesson',
-        'assignment',
-        'quiz',
+        'quizAttempt',
+        'assignmentSubmission',
       ],
       select: {
         user: {
@@ -273,8 +275,8 @@ export class UserGradesService {
         'instructor',
         'instructor.user',
         'lesson',
-        'assignment',
-        'quiz',
+        'quizAttempt',
+        'assignmentSubmission',
       ],
       order: {
         createdAt: 'DESC',

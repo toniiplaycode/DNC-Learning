@@ -69,7 +69,7 @@ const Assessment = () => {
     }
   }, [currentAuthUser, dispatch]);
 
-  console.log("userSubmissions", userSubmissions);
+  console.log(userAttempts);
 
   // Filter assessments when dependencies change
   useEffect(() => {

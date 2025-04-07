@@ -6,9 +6,11 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
 import { User } from './User';
 import { Assignment } from './Assignment';
+import { UserGrade } from './UserGrade';
 
 export enum SubmissionStatus {
   SUBMITTED = 'submitted',
@@ -68,4 +70,7 @@ export class AssignmentSubmission {
   @ManyToOne(() => User)
   @JoinColumn({ name: 'user_id' })
   user: User;
+
+  @OneToMany(() => UserGrade, (userGrade) => userGrade.assignmentSubmission)
+  userGrades: UserGrade[];
 }

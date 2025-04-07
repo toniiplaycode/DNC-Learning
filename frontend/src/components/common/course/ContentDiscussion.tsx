@@ -20,7 +20,6 @@ import { vi } from "date-fns/locale";
 import { useDispatch, useSelector } from "react-redux";
 import {
   createDiscussion,
-  updateDiscussion,
   deleteDiscussion,
   hideDiscussion,
   fetchLessonDiscussions,

@@ -11,6 +11,7 @@ import {
 import { User } from './User';
 import { Quiz } from './Quiz';
 import { QuizResponse } from './QuizResponse';
+import { UserGrade } from './UserGrade';
 
 export enum AttemptStatus {
   IN_PROGRESS = 'in_progress',
@@ -69,4 +70,7 @@ export class QuizAttempt {
 
   @OneToMany(() => QuizResponse, (response) => response.attempt)
   responses: QuizResponse[];
+
+  @OneToMany(() => UserGrade, (userGrade) => userGrade.quizAttempt)
+  userGrades: UserGrade[];
 }
