@@ -9,8 +9,8 @@ import {
   OneToMany,
 } from 'typeorm';
 import { CourseLesson } from './CourseLesson';
-import { UserGrade } from './UserGrade';
 import { AcademicClass } from './AcademicClass';
+import { AssignmentSubmission } from './AssignmentSubmission';
 
 export enum AssignmentType {
   PRACTICE = 'practice',
@@ -103,7 +103,6 @@ export class Assignment {
   @JoinColumn({ name: 'academic_class_id' })
   academicClass: AcademicClass;
 
-  // Relationship with UserGrade
-  @OneToMany(() => UserGrade, (userGrade) => userGrade.assignment)
-  grades: UserGrade[];
+  @OneToMany(() => AssignmentSubmission, (submission) => submission.assignment)
+  assignmentSubmissions: AssignmentSubmission[];
 }

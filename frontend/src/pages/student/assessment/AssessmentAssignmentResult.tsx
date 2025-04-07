@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Box,
   Typography,
@@ -34,151 +34,26 @@ import {
 } from "@mui/icons-material";
 import { useNavigate, useParams } from "react-router-dom";
 import CustomContainer from "../../../components/common/CustomContainer";
-import ReactMarkdown from "react-markdown";
-
-// Mock data cho kết quả bài tập
-const mockAssignmentResult = {
-  id: 1,
-  title: "Bài tập: Xây dựng ứng dụng React Hooks",
-  description:
-    "Trong bài tập này, bạn sẽ áp dụng kiến thức về React Hooks để xây dựng một ứng dụng quản lý công việc (Todo App) đơn giản.",
-  maxPoints: 100,
-  score: 85,
-  submittedAt: "18/03/2024 23:45",
-  gradedAt: "20/03/2024 14:30",
-  status: "graded", // pending, graded, rejected, late
-  dueDate: "20/03/2024 23:59",
-  isLate: false,
-  feedback: `
-## Nhận xét chi tiết
-
-Bài làm của bạn hoàn thành tốt các yêu cầu cơ bản của bài tập. Ứng dụng Todo chạy ổn định và có đầy đủ chức năng theo yêu cầu.
-
-### Điểm mạnh:
-- Sử dụng useState và useEffect đúng cách
-- Custom hook useTodoStorage được triển khai tốt
-- Giao diện dễ sử dụng
-
-### Điểm cần cải thiện:
-- Cần tối ưu hóa hiệu suất với useCallback và useMemo
-- TypeScript có thể được sử dụng triệt để hơn với các interface rõ ràng
-- Cần xử lý thêm các trường hợp lỗi
-
-Tổng thể đây là một bài nộp tốt. Tiếp tục phát huy!
-  `,
-  submittedFiles: [
-    {
-      id: 1,
-      name: "react_hooks_todo_app.zip",
-      type: "zip",
-      size: "1.4 MB",
-      url: "/path/to/file.zip",
-    },
-    {
-      id: 2,
-      name: "README.md",
-      type: "md",
-      size: "4 KB",
-      url: "/path/to/readme.md",
-    },
-    {
-      id: 3,
-      name: "screenshot.png",
-      type: "image",
-      size: "245 KB",
-      url: "/path/to/screenshot.png",
-    },
-  ],
-  note: "Em đã hoàn thành bài tập theo yêu cầu. Em đã cố gắng áp dụng tất cả các hooks đã học trong khóa. Phần dark mode em làm thêm như một tính năng bổ sung.",
-  instructor: {
-    name: "Nguyễn Văn A",
-    avatar: "/src/assets/avatar.png",
-  },
-};
-
-// Hàm để chọn icon phù hợp với loại file
-const getFileIcon = (fileType: string) => {
-  switch (fileType) {
-    case "pdf":
-      return <PictureAsPdf color="error" />;
-    case "doc":
-    case "docx":
-    case "txt":
-    case "md":
-      return <Description color="primary" />;
-    case "js":
-    case "ts":
-    case "jsx":
-    case "tsx":
-    case "html":
-    case "css":
-      return <Code color="success" />;
-    case "jpg":
-    case "jpeg":
-    case "png":
-    case "gif":
-      return <Image color="info" />;
-    case "zip":
-    case "rar":
-      return <Archive color="warning" />;
-    default:
-      return <InsertDriveFile />;
-  }
-};
+import { fetchSubmissionsByAssignment } from "../../../features/assignment-submissions/assignmentSubmissionsSlice";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import { selectAssignmentSubmissions } from "../../../features/assignment-submissions/assignmentSubmissionsSelectors";
+import { formatDateTime } from "../../../utils/formatters";
 
 const AssessmentAssignmentResult = () => {
   const navigate = useNavigate();
   const { id } = useParams();
+  const dispatch = useAppDispatch();
+  const assignmentSubmissions = useAppSelector(selectAssignmentSubmissions);
 
-  // Trong thực tế, dữ liệu sẽ được lấy từ API dựa theo id
-  const assignmentResult = mockAssignmentResult;
-
-  // Xác định trạng thái và màu sắc tương ứng
-  const getStatusInfo = () => {
-    switch (assignmentResult.status) {
-      case "graded":
-        return {
-          label: "Đã chấm điểm",
-          color: "success",
-          icon: <CheckCircle />,
-        };
-      case "pending":
-        return {
-          label: "Đang chờ chấm",
-          color: "warning",
-          icon: <AccessTime />,
-        };
-      case "rejected":
-        return {
-          label: "Bị từ chối",
-          color: "error",
-          icon: <Feedback />,
-        };
-      case "late":
-        return {
-          label: "Nộp muộn",
-          color: "warning",
-          icon: <AccessTime />,
-        };
-      default:
-        return {
-          label: "Đã nộp",
-          color: "info",
-          icon: <Assignment />,
-        };
-    }
-  };
-
-  const statusInfo = getStatusInfo();
+  useEffect(() => {
+    dispatch(fetchSubmissionsByAssignment(Number(id)));
+  }, [dispatch, id]);
 
   return (
     <CustomContainer>
       <Box sx={{ mb: 3 }}>
         <Typography variant="h4" gutterBottom>
           Kết quả bài tập
-        </Typography>
-        <Typography variant="subtitle1" color="text.secondary">
-          {assignmentResult.title}
         </Typography>
       </Box>
 
@@ -197,40 +72,25 @@ const AssessmentAssignmentResult = () => {
                   Điểm số
                 </Typography>
                 <Stack direction="row" spacing={1} alignItems="center">
-                  <Typography variant="h3" color="primary.main">
-                    {assignmentResult.score}
+                  <Typography variant="h4" color="primary.main">
+                    {assignmentSubmissions?.score || "chưa chấm điểm"}
                   </Typography>
-                  <Typography variant="h6" color="text.secondary">
-                    / {assignmentResult.maxPoints}
+                  <Typography variant="h4" color="text.secondary">
+                    / {assignmentSubmissions?.assignment?.maxScore}
                   </Typography>
                 </Stack>
               </Box>
-
-              <Chip
-                icon={statusInfo.icon}
-                label={statusInfo.label}
-                color={statusInfo.color as any}
-                sx={{ fontWeight: "medium" }}
-              />
             </Stack>
-
-            <Box sx={{ mt: 1, mb: 2 }}>
-              <LinearProgress
-                variant="determinate"
-                value={
-                  (assignmentResult.score / assignmentResult.maxPoints) * 100
-                }
-                sx={{ height: 8, borderRadius: 1 }}
-              />
-            </Box>
 
             <Stack spacing={1}>
               <Typography variant="body2">
-                <strong>Bài tập:</strong> {assignmentResult.title}
+                <strong>Bài tập:</strong>{" "}
+                {assignmentSubmissions?.assignment?.title}
               </Typography>
               <Typography variant="body2">
-                <strong>Thời gian nộp:</strong> {assignmentResult.submittedAt}
-                {assignmentResult.isLate && (
+                <strong>Thời gian nộp:</strong>{" "}
+                {formatDateTime(assignmentSubmissions?.submittedAt)}
+                {assignmentSubmissions?.isLate && (
                   <Chip
                     label="Muộn"
                     color="error"
@@ -239,11 +99,11 @@ const AssessmentAssignmentResult = () => {
                   />
                 )}
               </Typography>
+              {/* <Typography variant="body2">
+                <strong>Chấm điểm lúc:</strong>
+              </Typography> */}
               <Typography variant="body2">
-                <strong>Chấm điểm lúc:</strong> {assignmentResult.gradedAt}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Người chấm:</strong> {assignmentResult.instructor.name}
+                <strong>Người chấm:</strong>
               </Typography>
             </Stack>
 
@@ -259,7 +119,7 @@ const AssessmentAssignmentResult = () => {
                 <Feedback sx={{ mr: 1 }} /> Nhận xét của giảng viên
               </Typography>
 
-              <Paper
+              {/* <Paper
                 elevation={0}
                 sx={{
                   p: 2,
@@ -286,7 +146,7 @@ const AssessmentAssignmentResult = () => {
                 <Box sx={{ ml: 7 }}>
                   <ReactMarkdown>{assignmentResult.feedback}</ReactMarkdown>
                 </Box>
-              </Paper>
+              </Paper> */}
             </Box>
           </Card>
         </Grid>
@@ -303,36 +163,19 @@ const AssessmentAssignmentResult = () => {
               <AttachFile sx={{ mr: 1 }} /> Files đã nộp
             </Typography>
 
-            <List>
-              {assignmentResult.submittedFiles.map((file) => (
-                <ListItem
-                  key={file.id}
-                  secondaryAction={
-                    <IconButton
-                      edge="end"
-                      aria-label="download"
-                      color="primary"
-                    >
-                      <DownloadForOffline />
-                    </IconButton>
-                  }
-                  sx={{ px: 1 }}
-                >
-                  <ListItemIcon>{getFileIcon(file.type)}</ListItemIcon>
-                  <ListItemText primary={file.name} secondary={file.size} />
-                </ListItem>
-              ))}
-            </List>
+            <Link href={assignmentSubmissions?.fileUrl} target="_blank">
+              {assignmentSubmissions?.fileUrl}
+            </Link>
           </Card>
 
           {/* Phần ghi chú khi nộp bài */}
-          {assignmentResult.note && (
+          {assignmentSubmissions?.submissionText && (
             <Card sx={{ p: 3 }}>
               <Typography variant="h6" gutterBottom>
                 Ghi chú khi nộp bài
               </Typography>
               <Typography variant="body2" sx={{ whiteSpace: "pre-line" }}>
-                {assignmentResult.note}
+                {assignmentSubmissions?.submissionText}
               </Typography>
             </Card>
           )}
@@ -346,7 +189,11 @@ const AssessmentAssignmentResult = () => {
 
         <Button
           variant="contained"
-          onClick={() => navigate(`/assessment/assignment/${id}`)}
+          onClick={() =>
+            navigate(
+              `/assessment/assignment/${assignmentSubmissions?.assignmentId}`
+            )
+          }
         >
           Nộp lại
         </Button>

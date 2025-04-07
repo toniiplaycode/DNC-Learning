@@ -9,7 +9,6 @@ import {
   OneToMany,
 } from 'typeorm';
 import { CourseLesson } from './CourseLesson';
-import { UserGrade } from './UserGrade';
 import { AcademicClass } from './AcademicClass';
 import { QuizQuestion } from './QuizQuestion';
 import { QuizAttempt } from './QuizAttempt';
@@ -113,10 +112,6 @@ export class Quiz {
   @ManyToOne(() => AcademicClass, (academicClass) => academicClass.quizzes)
   @JoinColumn({ name: 'academic_class_id' })
   academicClass: AcademicClass;
-
-  // Relationship with UserGrade
-  @OneToMany(() => UserGrade, (userGrade) => userGrade.quiz)
-  grades: UserGrade[];
 
   @OneToMany(() => QuizQuestion, (question) => question.quiz)
   questions: QuizQuestion[];

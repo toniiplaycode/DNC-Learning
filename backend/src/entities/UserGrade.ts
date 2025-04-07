@@ -11,8 +11,8 @@ import { User } from './User';
 import { Course } from './Course';
 import { UserInstructor } from './UserInstructor';
 import { CourseLesson } from './CourseLesson';
-import { Assignment } from './Assignment';
-import { Quiz } from './Quiz';
+import { QuizAttempt } from './QuizAttempt';
+import { AssignmentSubmission } from './AssignmentSubmission';
 
 export enum GradeType {
   ASSIGNMENT = 'assignment',
@@ -39,11 +39,11 @@ export class UserGrade {
   @Column({ name: 'lesson_id', nullable: true })
   lessonId: number | null;
 
-  @Column({ name: 'assignment_id', nullable: true })
-  assignmentId: number | null;
+  @Column({ name: 'assignment_submission_id', nullable: true })
+  assignmentSubmissionId: number | null;
 
-  @Column({ name: 'quiz_id', nullable: true })
-  quizId: number | null;
+  @Column({ name: 'quiz_attempt_id', nullable: true })
+  quizAttemptId: number | null;
 
   @Column({
     name: 'grade_type',
@@ -111,11 +111,11 @@ export class UserGrade {
   @JoinColumn({ name: 'lesson_id' })
   lesson: CourseLesson | null;
 
-  @ManyToOne(() => Assignment, { nullable: true })
-  @JoinColumn({ name: 'assignment_id' })
-  assignment: Assignment | null;
+  @ManyToOne(() => AssignmentSubmission, { nullable: true })
+  @JoinColumn({ name: 'assignment_submission_id' })
+  assignmentSubmission: AssignmentSubmission | null;
 
-  @ManyToOne(() => Quiz, { nullable: true })
-  @JoinColumn({ name: 'quiz_id' })
-  quiz: Quiz | null;
+  @ManyToOne(() => QuizAttempt, { nullable: true })
+  @JoinColumn({ name: 'quiz_attempt_id' })
+  quizAttempt: QuizAttempt | null;
 }

@@ -50,6 +50,8 @@ import { QuizResponse } from './entities/QuizResponse';
 import { QuizzesModule } from './modules/quizzes/quizzes.module';
 import { UserStudentAcademic } from './entities/UserStudentAcademic';
 import { AssignmentsModule } from './modules/assignments/assignments.module';
+import { AssignmentSubmission } from './entities/AssignmentSubmission';
+import { AssignmentSubmissionsModule } from './modules/assignment-submissions/assignment-submissions.module';
 
 @Module({
   imports: [
@@ -99,6 +101,7 @@ import { AssignmentsModule } from './modules/assignments/assignments.module';
           QuizOption,
           QuizResponse,
           UserStudentAcademic,
+          AssignmentSubmission,
         ],
         // synchronize: true, // tự động tạo bảng trong entity (chỉ dùng trong môi tường dev)
       }),
@@ -118,6 +121,7 @@ import { AssignmentsModule } from './modules/assignments/assignments.module';
     ReviewsModule,
     QuizzesModule,
     AssignmentsModule,
+    AssignmentSubmissionsModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthMiddleware, InstructorMiddleware],

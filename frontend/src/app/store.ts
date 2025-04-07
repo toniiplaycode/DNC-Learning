@@ -11,6 +11,7 @@ import userGradesReducer from "../features/user-grades/userGradesSlice";
 import quizzesReducer from "../features/quizzes/quizzesSlice";
 import assignmentsReducer from "../features/assignments/assignmentsSlice";
 import quizAttemptsReducer from "../features/quizAttempts/quizAttemptsSlice";
+import assignmentSubmissionsReducer from "../features/assignment-submissions/assignmentSubmissionsSlice";
 // Import other reducers...
 
 export const store = configureStore({
@@ -27,6 +28,7 @@ export const store = configureStore({
     quizzes: quizzesReducer,
     assignments: assignmentsReducer,
     quizAttempts: quizAttemptsReducer,
+    assignmentSubmissions: assignmentSubmissionsReducer,
     // Add other reducers...
   },
 });

@@ -35,6 +35,8 @@ import { selectStudentAcademicAssignments } from "../../../features/assignments/
 import { selectUserAttempt } from "../../../features/quizAttempts/quizAttemptsSelectors";
 import { fetchUserAttempts } from "../../../features/quizAttempts/quizAttemptsSlice";
 import { formatDateTime } from "../../../utils/formatters";
+import { fetchUserSubmissions } from "../../../features/assignment-submissions/assignmentSubmissionsSlice";
+import { selectUserSubmissions } from "../../../features/assignment-submissions/assignmentSubmissionsSelectors";
 
 const Assessment = () => {
   const navigate = useNavigate();
@@ -47,10 +49,10 @@ const Assessment = () => {
     selectStudentAcademicAssignments
   );
   const userAttempts = useAppSelector(selectUserAttempt);
+  const userSubmissions = useAppSelector(selectUserSubmissions);
   const [tabValue, setTabValue] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredAssessments, setFilteredAssessments] = useState([]);
-  const [completedAssessments, setCompletedAssessments] = useState([]);
 
   useEffect(() => {
     if (currentAuthUser?.role == "student_academic") {
@@ -63,8 +65,11 @@ const Assessment = () => {
         )
       );
       dispatch(fetchUserAttempts(currentAuthUser?.id));
+      dispatch(fetchUserSubmissions());
     }
   }, [currentAuthUser, dispatch]);
+
+  console.log("userSubmissions", userSubmissions);
 
   // Filter assessments when dependencies change
   useEffect(() => {
@@ -78,28 +83,28 @@ const Assessment = () => {
           .includes(searchQuery.toLowerCase());
 
         // Kiểm tra nếu quiz này đã được làm
-        const isCompleted = !!userAttempts?.find(
+        const isQuizCompleted = !!userAttempts?.find(
           (attempt) => attempt.quizId === assessment.id
+        );
+
+        // Kiểm tra nếu bài tập này đã được làm
+        const isAssignmentCompleted = userSubmissions?.some(
+          (submission) => submission.assignmentId === assessment.id
         );
 
         if (tabValue === 0) return matchesSearch;
         if (tabValue === 1) return assessment.quizType && matchesSearch;
         if (tabValue === 2) return assessment.assignmentType && matchesSearch;
-        if (tabValue === 3) return isCompleted && matchesSearch;
+        if (tabValue === 3)
+          return (isQuizCompleted || isAssignmentCompleted) && matchesSearch;
 
         return false;
       });
 
       setFilteredAssessments(filtered);
       // Tạo danh sách các quiz đã làm
-      const completed = userAttempts.filter((quiz_attempt) =>
-        filtered.some((assessment) => quiz_attempt.quizId === assessment.id)
-      );
-
-      setCompletedAssessments(completed);
     } else if (currentAuthUser?.role == "student") {
       setFilteredAssessments([]);
-      setCompletedAssessments([]);
     }
   }, [
     quizzesByStudentAcademic,
@@ -113,9 +118,6 @@ const Assessment = () => {
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
-
-  console.log("Đã làm:", completedAssessments);
-  console.log("Tất cả:", filteredAssessments);
 
   return (
     <CustomContainer maxWidth="lg">
@@ -253,12 +255,29 @@ const Assessment = () => {
                           ? formatDateTime(assessment?.endTime)
                           : "Chưa có hạn"
                       }`}
+
+                  {userSubmissions?.some(
+                    (submission) => submission.assignmentId === assessment.id
+                  ) && (
+                    <Typography variant="body2" sx={{ fontSize: "12px" }}>
+                      Đã làm:{" "}
+                      {formatDateTime(
+                        userSubmissions.find(
+                          (submission) =>
+                            submission.assignmentId === assessment.id
+                        )?.submittedAt || new Date().toISOString()
+                      )}
+                    </Typography>
+                  )}
                 </Typography>
               </CardContent>
 
               <CardActions>
                 {userAttempts?.some(
                   (attempt) => attempt.quizId === assessment.id
+                ) ||
+                userSubmissions?.some(
+                  (submission) => submission.assignmentId === assessment.id
                 ) ? (
                   <Button
                     fullWidth
@@ -271,6 +290,10 @@ const Assessment = () => {
                           userAttempts.find(
                             (quiz_attempt) =>
                               quiz_attempt.quizId === assessment.id
+                          )?.id ||
+                          userSubmissions.find(
+                            (submission) =>
+                              submission.assignmentId === assessment.id
                           )?.id
                         }/result`
                       )
