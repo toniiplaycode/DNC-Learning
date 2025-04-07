@@ -58,13 +58,8 @@ const QuizContent: React.FC<QuizContentProps> = ({
   const [score, setScore] = useState(0);
   const [activeShowExplanations, setActiveShowExplanations] = useState(false);
 
-  // Tạo state quizStatus để theo dõi trạng thái làm bài quiz
-  const [quizStatus, setQuizStatus] = useState({
-    isAttempted: false,
-    bestScore: 0,
-    status: "",
-    canRetake: false,
-  });
+  // Tạo state cho lần thử gần nhất
+  const [latestAttempt, setLatestAttempt] = useState(null);
 
   useEffect(() => {
     // Fetch quizzes when the component mounts
@@ -90,44 +85,21 @@ const QuizContent: React.FC<QuizContentProps> = ({
         );
 
         if (quizAttempts.length > 0) {
-          // Đã có ít nhất một lần thử
-          const completedAttempts = quizAttempts.filter(
-            (attempt) => attempt.status === "completed"
-          );
-
-          const inProgressAttempts = quizAttempts.filter(
-            (attempt) => attempt.status === "in_progress"
-          );
-
-          // Tìm attempt có điểm cao nhất
-          let bestAttempt = null;
-          let bestScore = 0;
-
-          completedAttempts.forEach((attempt) => {
-            if (attempt.score && parseFloat(attempt.score) > bestScore) {
-              bestScore = parseFloat(attempt.score);
-              bestAttempt = attempt;
-            }
+          // Sắp xếp attempts theo thời gian tạo giảm dần (mới nhất lên đầu)
+          const sortedAttempts = [...quizAttempts].sort((a, b) => {
+            return (
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
           });
 
-          // Kiểm tra có thể thử lại không
-          const canRetake = lessonQuizzes.attemptsAllowed > quizAttempts.length;
-
-          setQuizStatus({
-            isAttempted: true,
-            bestScore: bestScore,
-            status:
-              inProgressAttempts.length > 0
-                ? "in_progress"
-                : completedAttempts.length > 0
-                ? "completed"
-                : "abandoned",
-            canRetake: canRetake,
-          });
+          // Lấy lần thử gần nhất
+          setLatestAttempt(sortedAttempts[0]);
         }
       }
     }
   }, [currentUser, dispatch, location, quizById, lessonQuizzes, userAttempts]);
+
+  console.log(latestAttempt);
 
   useEffect(() => {
     // Initialize time limit if the quiz has one and has been started
