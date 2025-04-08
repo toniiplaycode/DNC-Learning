@@ -56,7 +56,6 @@ import { fetchInstructors } from "../../../features/user_instructors/instructors
 import { selectAllInstructors } from "../../../features/user_instructors/instructorsSelectors";
 import { selectAllForums } from "../../../features/forums/forumsSelectors";
 import { fetchForums } from "../../../features/forums/forumsApiSlice";
-import { UserStudentAcademic } from "../../../../../backend/src/entities/UserStudentAcademic";
 
 // Styled components
 const SearchDialog = styled(Dialog)(({ theme }) => ({
@@ -117,7 +116,6 @@ const Header = () => {
   const courses = useAppSelector(selectAllCourses);
   const instructors = useAppSelector(selectAllInstructors);
   const forums = useAppSelector(selectAllForums);
-  0;
 
   // Lấy danh sách danh mục khi component được mount
   useEffect(() => {
@@ -404,7 +402,13 @@ const Header = () => {
               <Button
                 color="inherit"
                 startIcon={<SchoolIcon />}
-                onClick={() => navigate("/enrolled-courses")}
+                onClick={() => {
+                  if (currentUser) {
+                    navigate("/enrolled-courses");
+                  } else {
+                    navigate("/login");
+                  }
+                }}
               >
                 Khóa học của tôi
               </Button>
@@ -490,7 +494,7 @@ const Header = () => {
             </IconButton>
 
             {/* Notifications */}
-            <NotificationCenter />
+            {currentUser && <NotificationCenter />}
 
             {/* Desktop Profile */}
             {isLogin ? (
@@ -540,15 +544,6 @@ const Header = () => {
                   >
                     <PersonIcon sx={{ mr: 1 }} />
                     Trang cá nhân
-                  </MenuItem>
-                  <MenuItem
-                    onClick={() => {
-                      navigate("/settings");
-                      handleClose();
-                    }}
-                  >
-                    <SettingsIcon sx={{ mr: 1 }} />
-                    Cài đặt
                   </MenuItem>
                   <Divider />
                   <MenuItem onClick={handleLogout}>

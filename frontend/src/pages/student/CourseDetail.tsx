@@ -44,16 +44,15 @@ import { useAppSelector } from "../../app/hooks";
 import { useAppDispatch } from "../../app/hooks";
 import { fetchCourseById } from "../../features/courses/coursesApiSlice";
 import { formatDate } from "date-fns";
-import {
-  fetchInstructorById,
-  fetchInstructors,
-} from "../../features/user_instructors/instructorsApiSlice";
-import {
-  selectAllInstructors,
-  selectCurrentInstructor,
-} from "../../features/user_instructors/instructorsSelectors";
+import { fetchInstructorById } from "../../features/user_instructors/instructorsApiSlice";
+import { selectCurrentInstructor } from "../../features/user_instructors/instructorsSelectors";
 import { useSelector } from "react-redux";
 import CourseRating from "../../components/common/course/CourseRating";
+import { fetchUserEnrollments } from "../../features/enrollments/enrollmentsApiSlice";
+import { selectCurrentUser } from "../../features/auth/authSelectors";
+import { selectUserEnrollments } from "../../features/enrollments/enrollmentsSelectors";
+import { useAppSelector as useReduxAppSelector } from "../../redux/hooks";
+import { selectUserEnrollments as selectReduxUserEnrollments } from "../../redux/features/user/userSelectors";
 
 interface Lesson {
   id: number;
@@ -338,30 +337,53 @@ const TabPanel = (props: TabPanelProps) => {
 const CourseDetail: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const { courseId } = useParams();
-
   const { id } = useParams<{ id: string }>();
+  const { currentCourse, status, error } = useAppSelector(
+    (state) => state.courses
+  );
+  const currentUser = useAppSelector(selectCurrentUser);
+  const userEnrollments = useAppSelector(selectUserEnrollments);
+  const currentInstructor = useAppSelector(selectCurrentInstructor);
+  const [isEnrolled, setIsEnrolled] = useState(false);
+  const [courseProgress, setCourseProgress] = useState(0);
+  const [expandedSections, setExpandedSections] = useState<number[]>([0]);
+  const [activeTab, setActiveTab] = useState(0);
 
   useEffect(() => {
     if (id) {
       dispatch(fetchCourseById(parseInt(id)));
     }
-  }, [dispatch, id]);
 
-  const { currentCourse, status, error } = useAppSelector(
-    (state) => state.courses
-  );
+    if (currentUser?.id) {
+      dispatch(fetchUserEnrollments(Number(currentUser?.id)));
+    }
+  }, [dispatch, id, currentUser]);
+
+  useEffect(() => {
+    // Kiểm tra người dùng trước tiên
+    if (!currentUser) {
+      setIsEnrolled(false);
+      setCourseProgress(0);
+      return;
+    }
+
+    // Sau đó mới kiểm tra enrollment nếu người dùng tồn tại
+    if (userEnrollments && userEnrollments.length > 0) {
+      const currentEnrollment = userEnrollments.find(
+        (enrollment) => Number(enrollment?.course?.id) === Number(id)
+      );
+      setIsEnrolled(!!currentEnrollment);
+      setCourseProgress(currentEnrollment?.progress || 0);
+    }
+  }, [id, currentUser, userEnrollments]);
+
+  console.log(currentUser);
 
   useEffect(() => {
     if (currentCourse?.instructor?.id) {
       dispatch(fetchInstructorById(currentCourse?.instructor?.id));
     }
   }, [currentCourse, id]);
-
-  const currentInstructor = useSelector(selectCurrentInstructor);
-
-  const [expandedSections, setExpandedSections] = useState<number[]>([0]);
-  const [activeTab, setActiveTab] = useState(0);
 
   const handleSectionToggle = (sectionId: number) => {
     setExpandedSections((prev) =>
@@ -687,14 +709,12 @@ const CourseDetail: React.FC = () => {
                     Chứng chỉ
                   </Typography>
                   <List>
-                    {mockCourseData.certificates.map((req, index) => (
-                      <ListItem key={index} sx={{ px: 0 }}>
-                        <ListItemIcon>
-                          <CheckCircle color="info" />
-                        </ListItemIcon>
-                        <ListItemText primary={req} />
-                      </ListItem>
-                    ))}
+                    <ListItem sx={{ px: 0 }}>
+                      <ListItemIcon>
+                        <CheckCircle color="info" />
+                      </ListItemIcon>
+                      Khóa học được cấp chứng chỉ theo chuẩn quốc tế
+                    </ListItem>
                   </List>
                 </CardContent>
               </Card>
@@ -842,126 +862,81 @@ const CourseDetail: React.FC = () => {
         <Grid item xs={12} md={4}>
           <Card sx={{ position: "sticky", top: 100, marginBottom: 2 }}>
             <CardContent>
-              {mockCourseData.isEnrolled ? (
-                // Enrolled student view
-                <>
-                  <CardMedia
-                    component="img"
-                    height="140"
-                    image={"/src/assets/logo.png"}
-                    sx={{
-                      objectFit: "cover",
-                      borderRadius: 2,
-                      border: "1px solid #e0e0e0",
-                    }}
-                  />
-
-                  <Box sx={{ mb: 3 }}>
-                    <Typography variant="h6" gutterBottom>
-                      Tiến độ học tập
-                    </Typography>
-                    <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-                      <Box sx={{ flexGrow: 1, mr: 1 }}>
-                        <LinearProgress
-                          variant="determinate"
-                          value={mockCourseData.progress}
-                          sx={{ height: 8, borderRadius: 4 }}
-                        />
-                      </Box>
-                      <Typography variant="body2" color="text.secondary">
-                        {mockCourseData.progress}%
+              <CardMedia
+                component="img"
+                height="140"
+                image={"/src/assets/logo.png"}
+                sx={{
+                  objectFit: "cover",
+                  borderRadius: 2,
+                  border: "1px solid #e0e0e0",
+                }}
+              />
+              <Box sx={{ mb: 3 }}>
+                <Box sx={{ display: "flex", alignItems: "baseline", mb: 1 }}>
+                  <Typography variant="h4" fontWeight="bold" sx={{ mt: 2 }}>
+                    {isEnrolled ? (
+                      <Typography
+                        variant="h5"
+                        fontWeight="bold"
+                        color="primary"
+                      >
+                        Đã tham gia
                       </Typography>
-                    </Box>
-                  </Box>
+                    ) : (
+                      formatPrice(currentCourse?.price || 0)
+                    )}
+                  </Typography>
+                </Box>
+              </Box>
 
-                  <Button
-                    variant="contained"
-                    fullWidth
-                    size="large"
-                    sx={{ mb: 3 }}
-                    onClick={() => navigate(`/course/${courseId}/learn`)}
-                  >
-                    Tiếp tục học
-                  </Button>
-
-                  <Divider sx={{ mb: 3 }} />
-
-                  <InstructorInfo />
-                </>
-              ) : (
-                // Non-enrolled student view
-                <>
-                  <CardMedia
-                    component="img"
-                    height="140"
-                    image={"/src/assets/logo.png"}
-                    sx={{
-                      objectFit: "cover",
-                      borderRadius: 2,
-                      border: "1px solid #e0e0e0",
-                    }}
-                  />
-                  <Box sx={{ mb: 3 }}>
-                    <Box
-                      sx={{ display: "flex", alignItems: "baseline", mb: 1 }}
-                    >
-                      <Typography variant="h4" fontWeight="bold" sx={{ mt: 2 }}>
-                        {formatPrice(currentCourse?.price || 0)}
-                      </Typography>
-                    </Box>
-                  </Box>
-
-                  <Box sx={{ mb: 3 }}>
-                    <Typography variant="body2" paragraph>
-                      Khóa học bao gồm:
+              <Box sx={{ mb: 3 }}>
+                <Typography variant="body2" paragraph>
+                  Khóa học bao gồm:
+                </Typography>
+                <Stack spacing={1}>
+                  <Box sx={{ display: "flex", gap: 1 }}>
+                    <PlayCircleOutline />
+                    <Typography variant="body2">
+                      {totalLessons} bài học
                     </Typography>
-                    <Stack spacing={1}>
-                      <Box sx={{ display: "flex", gap: 1 }}>
-                        <PlayCircleOutline />
-                        <Typography variant="body2">
-                          {totalLessons} bài học
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: "flex", gap: 1 }}>
-                        <AccessTime />
-                        <Typography variant="body2">12 tuần học</Typography>
-                      </Box>
-                      <Box sx={{ display: "flex", gap: 1 }}>
-                        <Assignment />
-                        <Typography variant="body2">
-                          Bài tập thực hành
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: "flex", gap: 1 }}>
-                        <Quiz />
-                        <Typography variant="body2">
-                          Kiểm tra đánh giá
-                        </Typography>
-                      </Box>
-                      <Box sx={{ display: "flex", gap: 1 }}>
-                        <LibraryBooks />
-                        <Typography variant="body2">
-                          Tài liệu học tập
-                        </Typography>
-                      </Box>
-                    </Stack>
                   </Box>
+                  <Box sx={{ display: "flex", gap: 1 }}>
+                    <AccessTime />
+                    <Typography variant="body2">12 tuần học</Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", gap: 1 }}>
+                    <Assignment />
+                    <Typography variant="body2">Bài tập thực hành</Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", gap: 1 }}>
+                    <Quiz />
+                    <Typography variant="body2">Kiểm tra đánh giá</Typography>
+                  </Box>
+                  <Box sx={{ display: "flex", gap: 1 }}>
+                    <LibraryBooks />
+                    <Typography variant="body2">Tài liệu học tập</Typography>
+                  </Box>
+                </Stack>
+              </Box>
 
-                  <Button
-                    variant="contained"
-                    fullWidth
-                    size="large"
-                    sx={{ mb: 2 }}
-                    onClick={() => navigate(`/purchase/${courseId}`)}
-                  >
-                    Đăng ký ngay
-                  </Button>
+              <Button
+                variant="contained"
+                fullWidth
+                size="large"
+                sx={{ mb: 2 }}
+                onClick={() => {
+                  isEnrolled
+                    ? navigate(`/course/${id}/learn`)
+                    : navigate(`/purchase/${id}`);
+                }}
+              >
+                {isEnrolled ? "Tiếp tục học" : "Đăng ký ngay"}
+              </Button>
 
-                  <Divider sx={{ mb: 3 }} />
+              <Divider sx={{ mb: 3 }} />
 
-                  <InstructorInfo />
-                </>
-              )}
+              <InstructorInfo />
             </CardContent>
           </Card>
         </Grid>

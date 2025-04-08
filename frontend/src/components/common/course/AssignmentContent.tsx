@@ -19,6 +19,9 @@ import {
   DialogActions,
   TextField,
   Link,
+  CardHeader,
+  Divider,
+  Paper,
 } from "@mui/material";
 import {
   CloudUpload,
@@ -29,11 +32,19 @@ import {
   Image,
   Code,
   Archive,
+  AssignmentTurnedIn,
+  Grade,
+  AccessTime,
+  Feedback,
+  InsertDriveFile,
+  DownloadForOffline,
+  Comment,
 } from "@mui/icons-material";
 import { useAppDispatch } from "../../../app/hooks";
 import { useAppSelector } from "../../../app/hooks";
 import { fetchSubmissionsByAssignment } from "../../../features/assignment-submissions/assignmentSubmissionsSlice";
 import { selectAssignmentSubmissions } from "../../../features/assignment-submissions/assignmentSubmissionsSelectors";
+import { formatDateTime } from "../../../utils/formatters";
 
 interface AssignmentFile {
   id: string;
@@ -135,94 +146,179 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
     }
   };
 
-  console.log(assignmentSubmissions);
-
   return (
     <Box>
       {/* Hiển thị thông tin bài nộp khi có dữ liệu */}
       {assignmentSubmissions &&
       Object.keys(assignmentSubmissions).length > 0 ? (
         <Box sx={{ mt: 3 }}>
-          <Card sx={{ mb: 3 }}>
-            <CardContent>
-              <Stack spacing={2}>
-                <Typography variant="h5" gutterBottom>
-                  Bài nộp gần nhất
-                </Typography>
-
-                <Box>
-                  <Typography variant="body1" fontWeight="bold">
-                    Điểm số:
-                  </Typography>
-                  <Stack direction="row" spacing={1} alignItems="center">
-                    <Typography variant="h5" color="primary.main">
-                      {assignmentSubmissions.score || "Chưa chấm điểm"}
+          <Card sx={{ mb: 3, borderRadius: 2, boxShadow: 3 }}>
+            <CardHeader
+              title={
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <AssignmentTurnedIn sx={{ mr: 1, color: "primary.main" }} />
+                  <Typography variant="h5">Bài nộp gần nhất</Typography>
+                </Box>
+              }
+              sx={{ bgcolor: "primary.light", color: "white", pb: 1 }}
+            />
+            <CardContent sx={{ p: 3 }}>
+              <Stack spacing={3}>
+                {/* Điểm số */}
+                <Box sx={{ display: "flex", alignItems: "flex-start" }}>
+                  <Grade sx={{ mr: 2, color: "primary.main", fontSize: 28 }} />
+                  <Box>
+                    <Typography variant="body1" fontWeight="bold" gutterBottom>
+                      Điểm số:
                     </Typography>
-                    {assignmentSubmissions.assignment?.maxScore && (
-                      <Typography variant="h5" color="text.secondary">
-                        / {assignmentSubmissions.assignment.maxScore}
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Typography
+                        variant="h4"
+                        sx={{
+                          color: assignmentSubmissions.score
+                            ? "success.main"
+                            : "text.secondary",
+                          fontWeight: "bold",
+                        }}
+                      >
+                        {assignmentSubmissions.score || "Chưa chấm điểm"}
                       </Typography>
-                    )}
-                  </Stack>
+                      {assignmentSubmissions.assignment?.maxScore && (
+                        <Typography variant="h5" color="text.secondary">
+                          / {assignmentSubmissions.assignment.maxScore}
+                        </Typography>
+                      )}
+                    </Stack>
+                  </Box>
                 </Box>
 
-                <Box>
-                  <Typography variant="body1" fontWeight="bold">
-                    Thời gian nộp:
-                  </Typography>
-                  <Typography>
-                    {assignmentSubmissions.submittedAt
-                      ? new Date(
-                          assignmentSubmissions.submittedAt
-                        ).toLocaleString()
-                      : ""}
-                    {assignmentSubmissions.isLate && (
-                      <Chip
-                        label="Muộn"
-                        color="error"
-                        size="small"
-                        sx={{ ml: 1 }}
-                      />
-                    )}
-                  </Typography>
+                <Divider />
+
+                {/* Thời gian nộp */}
+                <Box sx={{ display: "flex", alignItems: "flex-start" }}>
+                  <AccessTime sx={{ mr: 2, color: "info.main" }} />
+                  <Box>
+                    <Typography variant="body1" fontWeight="bold" gutterBottom>
+                      Thời gian nộp:
+                    </Typography>
+                    <Typography variant="body1">
+                      {assignmentSubmissions.submittedAt
+                        ? formatDateTime(assignmentSubmissions.submittedAt)
+                        : ""}
+                      {assignmentSubmissions.isLate && (
+                        <Chip
+                          label="Muộn"
+                          color="error"
+                          size="small"
+                          sx={{ ml: 1, fontWeight: "bold" }}
+                        />
+                      )}
+                    </Typography>
+                  </Box>
                 </Box>
 
+                {/* Feedback */}
                 {assignmentSubmissions.feedback && (
-                  <Box>
-                    <Typography variant="body1" fontWeight="bold">
-                      Nhận xét của giảng viên:
-                    </Typography>
-                    <Typography sx={{ whiteSpace: "pre-line" }}>
-                      {assignmentSubmissions.feedback}
-                    </Typography>
-                  </Box>
+                  <>
+                    <Divider />
+                    <Box sx={{ display: "flex", alignItems: "flex-start" }}>
+                      <Feedback sx={{ mr: 2, color: "secondary.main" }} />
+                      <Box>
+                        <Typography
+                          variant="body1"
+                          fontWeight="bold"
+                          gutterBottom
+                        >
+                          Nhận xét của giảng viên:
+                        </Typography>
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 2,
+                            bgcolor: "grey.50",
+                            borderRadius: 2,
+                            whiteSpace: "pre-line",
+                            border: "1px solid",
+                            borderColor: "divider",
+                          }}
+                        >
+                          {assignmentSubmissions.feedback}
+                        </Paper>
+                      </Box>
+                    </Box>
+                  </>
                 )}
 
+                {/* File đã nộp */}
                 {assignmentSubmissions.fileUrl && (
-                  <Box>
-                    <Typography variant="body1" fontWeight="bold">
-                      File đã nộp:
-                    </Typography>
-                    <Link
-                      href={assignmentSubmissions.fileUrl}
-                      target="_blank"
-                      sx={{ display: "flex", alignItems: "center" }}
-                    >
-                      <AttachFile sx={{ mr: 1 }} />
-                      {assignmentSubmissions.fileUrl.split("/").pop()}
-                    </Link>
-                  </Box>
+                  <>
+                    <Divider />
+                    <Box sx={{ display: "flex", alignItems: "flex-start" }}>
+                      <AttachFile sx={{ mr: 2, color: "info.dark" }} />
+                      <Box>
+                        <Typography
+                          variant="body1"
+                          fontWeight="bold"
+                          gutterBottom
+                        >
+                          File đã nộp:
+                        </Typography>
+                        <Link
+                          href={assignmentSubmissions.fileUrl}
+                          target="_blank"
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            p: 1,
+                            bgcolor: "grey.100",
+                            borderRadius: 1,
+                            "&:hover": { bgcolor: "grey.200" },
+                          }}
+                        >
+                          <InsertDriveFile
+                            sx={{ mr: 1, color: "primary.main" }}
+                          />
+                          <Typography noWrap>
+                            {assignmentSubmissions.fileUrl.split("/").pop()}
+                          </Typography>
+                          <Box sx={{ flexGrow: 1 }} />
+                          <DownloadForOffline color="primary" />
+                        </Link>
+                      </Box>
+                    </Box>
+                  </>
                 )}
 
+                {/* Ghi chú khi nộp bài */}
                 {assignmentSubmissions.submissionText && (
-                  <Box>
-                    <Typography variant="body1" fontWeight="bold">
-                      Ghi chú khi nộp bài:
-                    </Typography>
-                    <Typography sx={{ whiteSpace: "pre-line" }}>
-                      {assignmentSubmissions.submissionText}
-                    </Typography>
-                  </Box>
+                  <>
+                    <Divider />
+                    <Box sx={{ display: "flex", alignItems: "flex-start" }}>
+                      <Comment sx={{ mr: 2, color: "text.secondary" }} />
+                      <Box>
+                        <Typography
+                          variant="body1"
+                          fontWeight="bold"
+                          gutterBottom
+                        >
+                          Ghi chú khi nộp bài:
+                        </Typography>
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 2,
+                            bgcolor: "grey.50",
+                            borderRadius: 2,
+                            whiteSpace: "pre-line",
+                            border: "1px solid",
+                            borderColor: "divider",
+                          }}
+                        >
+                          {assignmentSubmissions.submissionText}
+                        </Paper>
+                      </Box>
+                    </Box>
+                  </>
                 )}
               </Stack>
             </CardContent>

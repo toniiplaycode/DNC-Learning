@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Container,
@@ -33,6 +33,11 @@ import {
   ArrowBack,
 } from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
+import { fetchCourseById } from "../../features/courses/coursesApiSlice";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import { selectCourseById } from "../../features/courses/coursesSelector";
+import { selectCurrentUser } from "../../features/auth/authSelectors";
+import { enrollInCourse } from "../../features/enrollments/enrollmentsApiSlice";
 
 // Thêm interface cho thông tin ngân hàng
 interface BankInfo {
@@ -46,17 +51,49 @@ interface BankInfo {
 const PurchaseCourse = () => {
   const { id: courseId } = useParams();
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState("");
+  const currentCourse = useAppSelector(selectCourseById);
+  const currentUser = useAppSelector(selectCurrentUser);
 
-  // Mock data
+  useEffect(() => {
+    if (courseId) {
+      dispatch(fetchCourseById(Number(courseId)));
+    }
+  }, [courseId, dispatch]);
+
+  // Tính tổng số bài học và thời lượng từ dữ liệu thực
+  const calculateCourseStats = () => {
+    if (!currentCourse) return { totalLessons: 0, duration: 0 };
+
+    let totalLessons = 0;
+    let totalDuration = 0;
+
+    currentCourse.sections?.forEach((section) => {
+      totalLessons += section.lessons?.length || 0;
+
+      section.lessons?.forEach((lesson) => {
+        if (lesson.duration) {
+          totalDuration += lesson.duration;
+        }
+      });
+    });
+
+    return {
+      totalLessons,
+      duration: totalDuration,
+    };
+  };
+
+  const { totalLessons, duration } = calculateCourseStats();
+
+  // Tạo dữ liệu khóa học từ data API và một số dữ liệu mặc định
   const courseData = {
     id: courseId,
-    title: "React & TypeScript Masterclass",
-    price: 499000,
-    originalPrice: 1499000,
-    duration: "20 giờ",
-    totalLessons: 32,
+    title: currentCourse?.title || "Khóa học",
+    price: currentCourse?.price || 0,
+    totalLessons: totalLessons || 32,
     features: [
       "Truy cập vĩnh viễn",
       "Chứng chỉ hoàn thành",
@@ -69,6 +106,13 @@ const PurchaseCourse = () => {
       "Chuyển khoản ngân hàng",
       "Ví điện tử",
     ],
+    level: currentCourse?.level || "beginner",
+    category: currentCourse?.category?.name || "Khóa học",
+    instructor: currentCourse?.instructor?.fullName || "Giảng viên",
+    thumbnailUrl: currentCourse?.thumbnailUrl || "/src/assets/logo.png",
+    description: currentCourse?.description || "Mô tả khóa học",
+    required: currentCourse?.required || "Yêu cầu khóa học",
+    learned: currentCourse?.learned || "Những gì bạn sẽ học được",
   };
 
   const paymentMethods = [
@@ -114,6 +158,13 @@ const PurchaseCourse = () => {
 
   const handleConfirmPurchase = () => {
     // Xử lý xác nhận mua
+    dispatch(
+      enrollInCourse({
+        userId: Number(currentUser?.id),
+        courseId: Number(courseId),
+      })
+    );
+
     navigate(`/course/${courseId}/learn`);
   };
 
@@ -132,7 +183,7 @@ const PurchaseCourse = () => {
         <Grid item xs={12} md={8}>
           <Card>
             <CardContent>
-              <Typography variant="h5" gutterBottom>
+              <Typography variant="h4" fontWeight="bold" gutterBottom>
                 {courseData.title}
               </Typography>
 
@@ -144,15 +195,6 @@ const PurchaseCourse = () => {
               <Stack spacing={2}>
                 <Typography variant="h6">Bao gồm:</Typography>
                 <List>
-                  <ListItem>
-                    <ListItemIcon>
-                      <AccessTime />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary={`${courseData.duration} học tập`}
-                      secondary="Học mọi lúc, mọi nơi"
-                    />
-                  </ListItem>
                   <ListItem>
                     <ListItemIcon>
                       <LibraryBooks />
@@ -219,16 +261,6 @@ const PurchaseCourse = () => {
                     style: "currency",
                     currency: "VND",
                   }).format(courseData.price)}
-                </Typography>
-                <Typography
-                  variant="body2"
-                  color="text.secondary"
-                  sx={{ textDecoration: "line-through" }}
-                >
-                  {new Intl.NumberFormat("vi-VN", {
-                    style: "currency",
-                    currency: "VND",
-                  }).format(courseData.originalPrice)}
                 </Typography>
               </Box>
 

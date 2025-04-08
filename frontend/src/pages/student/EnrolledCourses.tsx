@@ -54,7 +54,7 @@ const EnrolledCourses: React.FC = () => {
             );
 
             const calculateTotalLessons = (course: any) => {
-              if (!course.sections) return 0;
+              if (!course || !course.sections) return 0;
               return course.sections.reduce(
                 (total: number, section: any) =>
                   total + (section.lessons?.length || 0),

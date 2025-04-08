@@ -115,6 +115,9 @@ export class EnrollmentsService {
         'course.sections',
         'course.sections.lessons',
       ],
+      order: {
+        enrollmentDate: 'ASC',
+      },
     });
   }
 
