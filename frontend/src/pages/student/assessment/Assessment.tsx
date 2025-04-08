@@ -69,8 +69,6 @@ const Assessment = () => {
     }
   }, [currentAuthUser, dispatch]);
 
-  console.log(userAttempts);
-
   // Filter assessments when dependencies change
   useEffect(() => {
     if (currentAuthUser?.role == "student_academic") {
@@ -286,16 +284,7 @@ const Assessment = () => {
                       navigate(
                         `/assessment/${
                           assessment.quizType ? "quiz" : "assignment"
-                        }/${
-                          userAttempts.find(
-                            (quiz_attempt) =>
-                              quiz_attempt.quizId === assessment.id
-                          )?.id ||
-                          userSubmissions.find(
-                            (submission) =>
-                              submission.assignmentId === assessment.id
-                          )?.id
-                        }/result`
+                        }/${assessment.id}`
                       )
                     }
                   >

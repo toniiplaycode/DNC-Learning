@@ -20,13 +20,12 @@ export const AssessmentAssignment = () => {
     }
   }, [id]);
 
-  console.log(currentAssignment);
-
   return (
     <CustomContainer>
       <AssignmentContent
         assignmentData={{
           id: Number(currentAssignment?.id),
+          assignmentId: Number(currentAssignment?.id),
           title: currentAssignment?.title || "",
           description: currentAssignment?.description || "",
           dueDate: currentAssignment?.dueDate || "",

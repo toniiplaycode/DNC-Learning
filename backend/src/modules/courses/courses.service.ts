@@ -18,7 +18,9 @@ export class CoursesService {
           user: true,
         },
         sections: {
-          lessons: true,
+          lessons: {
+            assignments: true,
+          },
           documents: true,
         },
         reviews: true,
@@ -59,7 +61,9 @@ export class CoursesService {
           courses: true,
         },
         sections: {
-          lessons: true,
+          lessons: {
+            assignments: true,
+          },
           documents: true,
         },
         reviews: true,

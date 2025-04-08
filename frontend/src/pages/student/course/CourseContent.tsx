@@ -114,6 +114,7 @@ const CourseContent = () => {
       if (lesson) {
         selectedLesson = {
           id: lesson.id,
+          assignmentId: lesson.assignments ? lesson.assignments[0]?.id : null,
           type: lesson.contentType,
           title: lesson.title,
           description: lesson.content,

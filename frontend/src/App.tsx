@@ -37,8 +37,6 @@ import AdminInstructors from "./pages/admin/AdminInstructors";
 import Assessment from "./pages/student/assessment/Assessment";
 import AssessmentQuiz from "./pages/student/assessment/AssessmentQuiz";
 import AssessmentAssignment from "./pages/student/assessment/AssessmentAssignment";
-import AssessmentQuizResult from "./pages/student/assessment/AssessmentQuizResult";
-import AssessmentAssignmentResult from "./pages/student/assessment/AssessmentAssignmentResult";
 import AdminStudents from "./pages/admin/AdminStudents";
 import AdminCategories from "./pages/admin/AdminCategories";
 import AdminPayments from "./pages/admin/AdminPayments";
@@ -68,16 +66,8 @@ const App = () => {
         <Route path="/assessment" element={<Assessment />} />
         <Route path="/assessment/quiz/:id" element={<AssessmentQuiz />} />
         <Route
-          path="/assessment/quiz/:id/result"
-          element={<AssessmentQuizResult />}
-        />
-        <Route
           path="/assessment/assignment/:id"
           element={<AssessmentAssignment />}
-        />
-        <Route
-          path="/assessment/assignment/:id/result"
-          element={<AssessmentAssignmentResult />}
         />
       </Route>
 

@@ -237,6 +237,7 @@ const ContentDetail = ({ content }: { content: any }) => {
           <AssignmentContent
             assignmentData={{
               id: content.id,
+              assignmentId: content.assignmentId,
               title: content.title,
               description: content.description,
               dueDate: "23:59 15/03/2024",

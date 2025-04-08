@@ -98,14 +98,20 @@ export class AssignmentSubmissionsService {
     });
   }
 
-  async findByAssignment(id: number): Promise<AssignmentSubmission> {
+  async findByAssignment(id: number): Promise<AssignmentSubmission | {}> {
+    // Kiểm tra id có hợp lệ không
+    if (!id || isNaN(id)) {
+      return {};
+    }
+
     const submission = await this.submissionsRepository.findOne({
-      where: { id },
+      where: { assignmentId: id },
       relations: ['assignment'],
     });
 
+    // Trả về object trống nếu không tìm thấy
     if (!submission) {
-      throw new NotFoundException(`Submission với ID ${id} không tồn tại`);
+      return {};
     }
 
     return submission;

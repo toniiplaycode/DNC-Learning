@@ -26,7 +26,7 @@ import {
   selectUserAttempts,
 } from "../../../features/quizzes/quizzesSelectors";
 import { selectCurrentUser } from "../../../features/auth/authSelectors";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 
 interface QuizContentProps {
   quizId: number;
@@ -42,6 +42,8 @@ const QuizContent: React.FC<QuizContentProps> = ({
   onComplete,
 }) => {
   const dispatch = useAppDispatch();
+  const { id } = useParams();
+  const { pathname } = useLocation();
   const location = useLocation();
   const currentUser = useAppSelector(selectCurrentUser);
   const lessonQuizzes = useAppSelector(selectLessonQuizzes);
@@ -57,6 +59,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
   const [quizStarted, setQuizStarted] = useState(false);
   const [score, setScore] = useState(0);
   const [activeShowExplanations, setActiveShowExplanations] = useState(false);
+  const [isAssessmentQuiz, setIsAssessmentQuiz] = useState(false);
 
   // Tạo state cho lần thử gần nhất
   const [latestAttempt, setLatestAttempt] = useState(null);
@@ -68,9 +71,46 @@ const QuizContent: React.FC<QuizContentProps> = ({
     } else if (lessonId) {
       dispatch(fetchQuizzesByLesson(lessonId));
     }
-    dispatch(fetchUserAttempts(Number(currentUser?.id)));
+    if (pathname.includes("assessment/quiz")) {
+      setIsAssessmentQuiz(true);
+    }
   }, [currentUser, dispatch, location, lessonId, quizId]);
 
+  // useEffect riêng để fetch user attempts
+  useEffect(() => {
+    if (currentUser?.id) {
+      dispatch(fetchUserAttempts(Number(currentUser?.id)));
+    }
+  }, [currentUser, dispatch, id, pathname]);
+
+  // useEffect để lấy lần thử gần nhất, dùng cho quiz assessment bên trang assessment
+  useEffect(() => {
+    if (userAttempts?.length > 0 && isAssessmentQuiz) {
+      // Lọc các attempts cho quiz hiện tại (nếu quizById có)
+      if (quizById) {
+        const quizAttempts = userAttempts.filter(
+          (attempt) => attempt.quizId === quizById.id
+        );
+
+        if (quizAttempts.length > 0) {
+          // Sắp xếp attempts theo thời gian tạo giảm dần (mới nhất lên đầu)
+          const sortedAttempts = [...quizAttempts].sort((a, b) => {
+            return (
+              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+            );
+          });
+
+          // Lấy lần thử gần nhất
+          setLatestAttempt(sortedAttempts[0]);
+        }
+      } else {
+        // Nếu không có quizById, giữ nguyên logic cũ
+        setLatestAttempt(userAttempts[0]);
+      }
+    }
+  }, [userAttempts, isAssessmentQuiz, quizById]);
+
+  // useEffect để lấy quiz hiện tại, dùng cho quiz bên trang course trong lesson
   useEffect(() => {
     if (quizId) {
       setActiveQuiz(quizById);
@@ -99,7 +139,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
     }
   }, [currentUser, dispatch, location, quizById, lessonQuizzes, userAttempts]);
 
-  console.log(latestAttempt);
+  console.log("latestAttempt", latestAttempt);
 
   useEffect(() => {
     // Initialize time limit if the quiz has one and has been started
@@ -159,7 +199,9 @@ const QuizContent: React.FC<QuizContentProps> = ({
     );
     setScore(finalScore);
     setQuizSubmitted(true);
-    setShowDiscussion(true);
+    if (!isAssessmentQuiz) {
+      setShowDiscussion(true);
+    }
     onComplete(finalScore);
   };
 
@@ -170,21 +212,59 @@ const QuizContent: React.FC<QuizContentProps> = ({
       .toString()
       .padStart(2, "0")}`;
   };
-  if (!activeQuiz) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Typography>Đang tải bài quiz...</Typography>
-      </Box>
-    );
-  }
 
-  if (quizSubmitted) {
+  // Thêm useEffect để xử lý khi latestAttempt thay đổi
+  useEffect(() => {
+    if (latestAttempt && latestAttempt.status === "completed") {
+      setQuizSubmitted(true);
+      setScore(parseFloat(latestAttempt.score));
+      if (!isAssessmentQuiz) {
+        setShowDiscussion(true);
+      }
+
+      // Tạo mảng answers từ responses của latestAttempt
+      const userAnswers = [];
+
+      if (latestAttempt.responses && activeQuiz?.questions) {
+        activeQuiz.questions.forEach((question) => {
+          const response = latestAttempt.responses.find(
+            (r) => r.questionId === question.id
+          );
+
+          if (response && response.selectedOption) {
+            // Tìm index của option đã chọn trong danh sách options của câu hỏi
+            const questionInQuiz = activeQuiz.questions.find(
+              (q) => q.id === question.id
+            );
+            if (questionInQuiz && questionInQuiz.options) {
+              const optionIndex = questionInQuiz.options.findIndex(
+                (opt) => opt.id === response.selectedOption.id
+              );
+              userAnswers.push(optionIndex);
+            }
+          } else {
+            userAnswers.push(-1); // Không có câu trả lời
+          }
+        });
+
+        setAnswers(userAnswers);
+      }
+    }
+  }, [latestAttempt, activeQuiz]);
+
+  // Tách phần render ra khỏi phần kiểm tra latestAttempt
+  if (
+    latestAttempt &&
+    latestAttempt.status === "completed" &&
+    quizSubmitted &&
+    activeShowExplanations
+  ) {
     return (
       <Box sx={{ p: 3 }}>
         <Card>
           <CardContent>
             <Typography variant="h5" gutterBottom>
-              Kết quả
+              Kết quả bài làm gần nhất
             </Typography>
 
             <Box
@@ -198,12 +278,49 @@ const QuizContent: React.FC<QuizContentProps> = ({
             >
               <Typography
                 variant="h3"
-                color={score >= 70 ? "success.main" : "error.main"}
+                color={
+                  score >= (activeQuiz?.passingScore || 70)
+                    ? "success.main"
+                    : "error.main"
+                }
               >
-                {score}%
+                {latestAttempt?.responses
+                  ? latestAttempt.responses.filter(
+                      (response) => parseFloat(response.score) > 0
+                    ).length
+                  : answers.filter((answer) => {
+                      // Đếm số câu trả lời đúng dựa vào mảng answers
+                      const questionIndex = activeQuiz?.questions?.findIndex(
+                        (_, idx) => idx === answer
+                      );
+                      return (
+                        questionIndex !== -1 && questionIndex !== undefined
+                      );
+                    }).length}
+                /{activeQuiz?.questions?.length} câu
               </Typography>
               <Typography variant="subtitle1">
-                {score >= 70 ? "Đạt" : "Chưa đạt"}
+                {latestAttempt?.responses
+                  ? (latestAttempt.responses.filter(
+                      (r) => parseFloat(r.score) > 0
+                    ).length /
+                      activeQuiz?.questions?.length) *
+                      100 >=
+                    50
+                    ? "Đạt"
+                    : "Chưa đạt"
+                  : (activeQuiz?.questions?.filter(
+                      (_, i) =>
+                        answers[i] ===
+                        activeQuiz.questions?.[i].options?.findIndex(
+                          (o) => o.isCorrect
+                        )
+                    ).length /
+                      activeQuiz?.questions?.length) *
+                      100 >=
+                    50
+                  ? "Đạt"
+                  : "Chưa đạt"}
               </Typography>
             </Box>
 
@@ -308,8 +425,38 @@ const QuizContent: React.FC<QuizContentProps> = ({
                 })}
               </>
             )}
+
+            {/* Thêm nút làm lại nếu cần */}
+            {activeQuiz &&
+              activeQuiz.attemptsAllowed >
+                (userAttempts?.filter((a) => a.quizId === activeQuiz.id)
+                  ?.length || 0) && (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => {
+                    // Reset state để làm bài mới
+                    setQuizSubmitted(false);
+                    setQuizStarted(false);
+                    setAnswers([]);
+                    setScore(0);
+                    setTimeRemaining(null);
+                  }}
+                  sx={{ mt: 2 }}
+                >
+                  Làm lại bài
+                </Button>
+              )}
           </CardContent>
         </Card>
+      </Box>
+    );
+  }
+
+  if (!activeQuiz) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Typography>Đang tải bài quiz...</Typography>
       </Box>
     );
   }

@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -18,6 +18,7 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  Link,
 } from "@mui/material";
 import {
   CloudUpload,
@@ -29,6 +30,10 @@ import {
   Code,
   Archive,
 } from "@mui/icons-material";
+import { useAppDispatch } from "../../../app/hooks";
+import { useAppSelector } from "../../../app/hooks";
+import { fetchSubmissionsByAssignment } from "../../../features/assignment-submissions/assignmentSubmissionsSlice";
+import { selectAssignmentSubmissions } from "../../../features/assignment-submissions/assignmentSubmissionsSelectors";
 
 interface AssignmentFile {
   id: string;
@@ -41,6 +46,7 @@ interface AssignmentFile {
 interface AssignmentContentProps {
   assignmentData: {
     id: number;
+    assignmentId: number;
     title: string;
     description: string;
     dueDate?: string;
@@ -75,11 +81,22 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
   assignmentData,
   onSubmit,
 }) => {
+  const dispatch = useAppDispatch();
+  const assignmentSubmissions = useAppSelector(selectAssignmentSubmissions);
+
   const [files, setFiles] = useState<AssignmentFile[]>([]);
   const [note, setNote] = useState("");
   const [uploading, setUploading] = useState(false);
   const [openPreview, setOpenPreview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (assignmentData.assignmentId !== null) {
+      dispatch(
+        fetchSubmissionsByAssignment(Number(assignmentData.assignmentId))
+      );
+    }
+  }, [dispatch, assignmentData]);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(event.target.files || []);
@@ -118,117 +135,211 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
     }
   };
 
+  console.log(assignmentSubmissions);
+
   return (
     <Box>
-      {/* Assignment Info */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
-          <Stack direction="row" spacing={2} alignItems="center">
-            {assignmentData.dueDate && (
-              <Chip
-                label={`Hạn nộp: ${assignmentData.dueDate}`}
-                color="warning"
-              />
-            )}
-            <Chip
-              label={`Tối đa ${assignmentData.maxFiles} file`}
-              variant="outlined"
-            />
-            <Chip
-              label={`Dung lượng tối đa: ${assignmentData.maxFileSize}MB`}
-              variant="outlined"
-            />
-          </Stack>
-        </CardContent>
-      </Card>
+      {/* Hiển thị thông tin bài nộp khi có dữ liệu */}
+      {assignmentSubmissions &&
+      Object.keys(assignmentSubmissions).length > 0 ? (
+        <Box sx={{ mt: 3 }}>
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Stack spacing={2}>
+                <Typography variant="h5" gutterBottom>
+                  Bài nộp gần nhất
+                </Typography>
 
-      {/* Upload Section */}
-      <Card>
-        <CardContent>
-          <input
-            type="file"
-            ref={fileInputRef}
-            style={{ display: "none" }}
-            multiple
-            onChange={handleFileSelect}
-            accept={assignmentData.allowedFileTypes.join(",")}
-          />
+                <Box>
+                  <Typography variant="body1" fontWeight="bold">
+                    Điểm số:
+                  </Typography>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Typography variant="h5" color="primary.main">
+                      {assignmentSubmissions.score || "Chưa chấm điểm"}
+                    </Typography>
+                    {assignmentSubmissions.assignment?.maxScore && (
+                      <Typography variant="h5" color="text.secondary">
+                        / {assignmentSubmissions.assignment.maxScore}
+                      </Typography>
+                    )}
+                  </Stack>
+                </Box>
 
-          <Stack spacing={3}>
-            {/* File List */}
-            {files.length > 0 && (
-              <List>
-                {files.map((file) => (
-                  <ListItem
-                    key={file.id}
-                    secondaryAction={
-                      <IconButton
-                        edge="end"
-                        onClick={() => handleRemoveFile(file.id)}
-                      >
-                        <Delete />
-                      </IconButton>
-                    }
-                  >
-                    <ListItemIcon>{getFileIcon(file.type)}</ListItemIcon>
-                    <ListItemText
-                      primary={file.name}
-                      secondary={formatFileSize(file.size)}
-                    />
-                  </ListItem>
-                ))}
-              </List>
-            )}
+                <Box>
+                  <Typography variant="body1" fontWeight="bold">
+                    Thời gian nộp:
+                  </Typography>
+                  <Typography>
+                    {assignmentSubmissions.submittedAt
+                      ? new Date(
+                          assignmentSubmissions.submittedAt
+                        ).toLocaleString()
+                      : ""}
+                    {assignmentSubmissions.isLate && (
+                      <Chip
+                        label="Muộn"
+                        color="error"
+                        size="small"
+                        sx={{ ml: 1 }}
+                      />
+                    )}
+                  </Typography>
+                </Box>
 
-            {/* Upload Button */}
-            <Box sx={{ textAlign: "center" }}>
-              <Button
-                variant="outlined"
-                startIcon={<CloudUpload />}
-                onClick={() => fileInputRef.current?.click()}
-                disabled={files.length >= assignmentData.maxFiles}
-              >
-                Chọn file
-              </Button>
-              <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                Định dạng cho phép: {assignmentData.allowedFileTypes.join(", ")}
-              </Typography>
-            </Box>
-
-            {/* Note */}
-            <TextField
-              fullWidth
-              multiline
-              rows={3}
-              label="Ghi chú"
-              value={note}
-              onChange={(e) => setNote(e.target.value)}
-              placeholder="Nhập ghi chú về bài nộp của bạn (không bắt buộc)"
-            />
-
-            {/* Submit Button */}
-            <Box sx={{ textAlign: "right" }}>
-              <Button
-                variant="contained"
-                onClick={handleSubmit}
-                disabled={files.length === 0 || uploading}
-              >
-                {uploading ? (
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <LinearProgress
-                      sx={{ width: 100, mr: 1 }}
-                      color="inherit"
-                    />
-                    Đang tải lên...
+                {assignmentSubmissions.feedback && (
+                  <Box>
+                    <Typography variant="body1" fontWeight="bold">
+                      Nhận xét của giảng viên:
+                    </Typography>
+                    <Typography sx={{ whiteSpace: "pre-line" }}>
+                      {assignmentSubmissions.feedback}
+                    </Typography>
                   </Box>
-                ) : (
-                  "Nộp bài"
                 )}
-              </Button>
-            </Box>
-          </Stack>
-        </CardContent>
-      </Card>
+
+                {assignmentSubmissions.fileUrl && (
+                  <Box>
+                    <Typography variant="body1" fontWeight="bold">
+                      File đã nộp:
+                    </Typography>
+                    <Link
+                      href={assignmentSubmissions.fileUrl}
+                      target="_blank"
+                      sx={{ display: "flex", alignItems: "center" }}
+                    >
+                      <AttachFile sx={{ mr: 1 }} />
+                      {assignmentSubmissions.fileUrl.split("/").pop()}
+                    </Link>
+                  </Box>
+                )}
+
+                {assignmentSubmissions.submissionText && (
+                  <Box>
+                    <Typography variant="body1" fontWeight="bold">
+                      Ghi chú khi nộp bài:
+                    </Typography>
+                    <Typography sx={{ whiteSpace: "pre-line" }}>
+                      {assignmentSubmissions.submissionText}
+                    </Typography>
+                  </Box>
+                )}
+              </Stack>
+            </CardContent>
+          </Card>
+        </Box>
+      ) : (
+        <>
+          <Card sx={{ mb: 3 }}>
+            <CardContent>
+              <Stack direction="row" spacing={2} alignItems="center">
+                {assignmentData.dueDate && (
+                  <Chip
+                    label={`Hạn nộp: ${assignmentData.dueDate}`}
+                    color="warning"
+                  />
+                )}
+                <Chip
+                  label={`Tối đa ${assignmentData.maxFiles} file`}
+                  variant="outlined"
+                />
+                <Chip
+                  label={`Dung lượng tối đa: ${assignmentData.maxFileSize}MB`}
+                  variant="outlined"
+                />
+              </Stack>
+            </CardContent>
+          </Card>
+          {/* Upload Section */}
+          <Card>
+            <CardContent>
+              <input
+                type="file"
+                ref={fileInputRef}
+                style={{ display: "none" }}
+                multiple
+                onChange={handleFileSelect}
+                accept={assignmentData.allowedFileTypes.join(",")}
+              />
+
+              <Stack spacing={3}>
+                {/* File List */}
+                {files.length > 0 && (
+                  <List>
+                    {files.map((file) => (
+                      <ListItem
+                        key={file.id}
+                        secondaryAction={
+                          <IconButton
+                            edge="end"
+                            onClick={() => handleRemoveFile(file.id)}
+                          >
+                            <Delete />
+                          </IconButton>
+                        }
+                      >
+                        <ListItemIcon>{getFileIcon(file.type)}</ListItemIcon>
+                        <ListItemText
+                          primary={file.name}
+                          secondary={formatFileSize(file.size)}
+                        />
+                      </ListItem>
+                    ))}
+                  </List>
+                )}
+
+                {/* Upload Button */}
+                <Box sx={{ textAlign: "center" }}>
+                  <Button
+                    variant="outlined"
+                    startIcon={<CloudUpload />}
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={files.length >= assignmentData.maxFiles}
+                  >
+                    Chọn file
+                  </Button>
+                  <Typography variant="caption" display="block" sx={{ mt: 1 }}>
+                    Định dạng cho phép:{" "}
+                    {assignmentData.allowedFileTypes.join(", ")}
+                  </Typography>
+                </Box>
+
+                {/* Note */}
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={3}
+                  label="Ghi chú"
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="Nhập ghi chú về bài nộp của bạn (không bắt buộc)"
+                />
+
+                {/* Submit Button */}
+                <Box sx={{ textAlign: "right" }}>
+                  <Button
+                    variant="contained"
+                    onClick={handleSubmit}
+                    disabled={files.length === 0 || uploading}
+                  >
+                    {uploading ? (
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <LinearProgress
+                          sx={{ width: 100, mr: 1 }}
+                          color="inherit"
+                        />
+                        Đang tải lên...
+                      </Box>
+                    ) : (
+                      "Nộp bài"
+                    )}
+                  </Button>
+                </Box>
+              </Stack>
+            </CardContent>
+          </Card>
+        </>
+      )}
 
       {/* Preview Dialog */}
       <Dialog
