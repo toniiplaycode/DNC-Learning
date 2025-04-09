@@ -50,6 +50,12 @@ export interface Forum {
   isLiked?: boolean;
 }
 
+export interface UserLikeForum {
+  id: number;
+  username: string;
+  email: string;
+}
+
 // Fetch forums
 export const fetchForums = createAsyncThunk(
   "forums/fetchForums",
@@ -142,12 +148,9 @@ export const fetchForumReplies = createAsyncThunk(
 // Create forum reply
 export const createForumReply = createAsyncThunk(
   "forums/createForumReply",
-  async (replyData: Partial<ForumReply>, { rejectWithValue }) => {
+  async (replyData: any, { rejectWithValue }) => {
     try {
-      const response = await api.post(
-        `/forums/${replyData.forumId}/replies`,
-        replyData
-      );
+      const response = await api.post(`/forums/replies`, replyData);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data || "Không thể tạo bình luận");
@@ -155,31 +158,44 @@ export const createForumReply = createAsyncThunk(
   }
 );
 
-// Like forum
-export const likeForum = createAsyncThunk(
-  "forums/likeForum",
+// remove forum reply
+export const removeForumReply = createAsyncThunk(
+  "forums/removeForumReply",
+  async (replyId: number, { rejectWithValue }) => {
+    try {
+      await api.delete(`/forums/replies/${replyId}`);
+      return replyId;
+    } catch (error: any) {
+      return rejectWithValue(error.response?.data || "Không thể xóa bình luận");
+    }
+  }
+);
+
+// Get user like forum
+export const getUserLikeForum = createAsyncThunk(
+  "forums/getUserLikeForum",
+  async (forumId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/forums/${forumId}/like`);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data || "Không thể lấy danh sách người thích diễn đàn"
+      );
+    }
+  }
+);
+
+// Toggle like forum
+export const toggleLikeForum = createAsyncThunk(
+  "forums/toggleLikeForum",
   async (forumId: number, { rejectWithValue }) => {
     try {
       const response = await api.post(`/forums/${forumId}/like`);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data || "Không thể thích diễn đàn"
-      );
-    }
-  }
-);
-
-// Unlike forum
-export const unlikeForum = createAsyncThunk(
-  "forums/unlikeForum",
-  async (forumId: number, { rejectWithValue }) => {
-    try {
-      const response = await api.delete(`/forums/${forumId}/like`);
-      return response.data;
-    } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data || "Không thể bỏ thích diễn đàn"
+        error.response?.data || "Không thể thích/bỏ thích diễn đàn"
       );
     }
   }

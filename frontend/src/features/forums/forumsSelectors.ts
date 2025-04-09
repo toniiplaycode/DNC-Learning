@@ -1,5 +1,10 @@
 import { RootState } from "../../store/store";
-import { Forum, ForumReply, ForumStatus } from "./forumsApiSlice";
+import {
+  Forum,
+  ForumReply,
+  ForumStatus,
+  UserLikeForum,
+} from "./forumsApiSlice";
 
 // Lấy tất cả forums
 export const selectAllForums = (state: RootState): Forum[] =>
@@ -51,3 +56,7 @@ export const selectSolvedForums = (state: RootState): Forum[] =>
 // Lấy tất cả forums đã được like bởi user
 export const selectLikedForums = (state: RootState): Forum[] =>
   state.forums.forums.filter((forum) => forum.isLiked);
+
+// Lấy tất cả user đã like forum
+export const selectUserLikeForum = (state: RootState): UserLikeForum[] =>
+  state.forums.userLikeForum;

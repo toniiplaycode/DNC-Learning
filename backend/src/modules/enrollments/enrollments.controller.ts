@@ -50,7 +50,6 @@ export class EnrollmentsController {
   @Get('user/:userId')
   @UseGuards(JwtAuthGuard)
   findByUser(@Param('userId', ParseIntPipe) userId: number, @GetUser() user) {
-    console.log('user', user);
     // Check if user is requesting their own enrollments or is admin/instructor
     if (user.role === UserRole.STUDENT && user.id !== userId) {
       userId = user.id;

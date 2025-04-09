@@ -7,7 +7,6 @@ import {
   Param,
   Delete,
   Query,
-  Request,
   UseGuards,
   ForbiddenException,
 } from '@nestjs/common';
@@ -17,99 +16,113 @@ import { UpdateForumDto } from './dto/update-forum.dto';
 import { CreateForumReplyDto } from './dto/create-forum-reply.dto';
 import { UpdateForumReplyDto } from './dto/update-forum-reply.dto';
 import { ForumStatus } from '../../entities/Forum';
+import { GetUser } from '../auth/decorators/get-user.decorator';
+import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 
 @Controller('forums')
 export class ForumsController {
   constructor(private readonly forumsService: ForumsService) {}
 
   @Get()
+  @UseGuards(JwtAuthGuard)
   findAll(
     @Query('courseId') courseId?: number,
     @Query('status') status?: ForumStatus,
-    @Request() req?,
+    @GetUser() user?,
   ) {
-    const userId = req.user?.id;
+    const userId = user?.id;
     return this.forumsService.findAll(courseId, status, userId);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string, @Request() req?) {
-    const userId = req.user?.id;
+  @UseGuards(JwtAuthGuard)
+  findOne(@Param('id') id: string, @GetUser() user?) {
+    const userId = user?.id;
     return this.forumsService.findOne(+id, userId);
   }
 
   @Post()
-  create(@Body() createForumDto: CreateForumDto, @Request() req) {
-    return this.forumsService.create(createForumDto, req.user.id);
+  @UseGuards(JwtAuthGuard)
+  create(@Body() createForumDto: CreateForumDto, @GetUser() user) {
+    return this.forumsService.create(createForumDto, user.id);
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard)
   update(
     @Param('id') id: string,
     @Body() updateForumDto: UpdateForumDto,
-    @Request() req,
+    @GetUser() user,
   ) {
-    return this.forumsService.update(+id, updateForumDto, req.user);
+    return this.forumsService.update(+id, updateForumDto, user);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string, @Request() req) {
-    return this.forumsService.remove(+id, req.user);
+  @UseGuards(JwtAuthGuard)
+  remove(@Param('id') id: string, @GetUser() user) {
+    return this.forumsService.remove(+id, user);
   }
 
   // Forum Reply Endpoints
   @Get(':id/replies')
-  findReplies(@Param('id') id: string, @Request() req?) {
-    const userId = req.user?.id;
+  @UseGuards(JwtAuthGuard)
+  findReplies(@Param('id') id: string, @GetUser() user?) {
+    const userId = user?.id;
     return this.forumsService.findRepliesByForumId(+id, userId);
   }
 
   @Post('replies')
-  createReply(@Body() createReplyDto: CreateForumReplyDto, @Request() req) {
-    return this.forumsService.createReply(createReplyDto, req.user.id);
+  @UseGuards(JwtAuthGuard)
+  createReply(@Body() createReplyDto: CreateForumReplyDto, @GetUser() user) {
+    return this.forumsService.createReply(createReplyDto, user.id);
   }
 
   @Patch('replies/:id')
+  @UseGuards(JwtAuthGuard)
   updateReply(
     @Param('id') id: string,
     @Body() updateReplyDto: UpdateForumReplyDto,
-    @Request() req,
+    @GetUser() user,
   ) {
-    return this.forumsService.updateReply(+id, updateReplyDto, req.user);
+    return this.forumsService.updateReply(+id, updateReplyDto, user);
   }
 
   @Delete('replies/:id')
-  removeReply(@Param('id') id: string, @Request() req) {
-    return this.forumsService.removeReply(+id, req.user);
+  @UseGuards(JwtAuthGuard)
+  removeReply(@Param('id') id: string, @GetUser() user) {
+    return this.forumsService.removeReply(+id, user);
   }
 
   // Solution endpoints
   @Patch(':forumId/replies/:replyId/solution')
+  @UseGuards(JwtAuthGuard)
   markAsSolution(
     @Param('forumId') forumId: string,
     @Param('replyId') replyId: string,
-    @Request() req,
+    @GetUser() user,
   ) {
-    return this.forumsService.markAsSolution(+replyId, +forumId, req.user);
+    return this.forumsService.markAsSolution(+replyId, +forumId, user);
   }
 
   @Delete(':forumId/replies/:replyId/solution')
+  @UseGuards(JwtAuthGuard)
   unmarkAsSolution(
     @Param('forumId') forumId: string,
     @Param('replyId') replyId: string,
-    @Request() req,
+    @GetUser() user,
   ) {
-    return this.forumsService.unmarkAsSolution(+replyId, +forumId, req.user);
+    return this.forumsService.unmarkAsSolution(+replyId, +forumId, user);
   }
 
   // Like endpoints
-  @Post(':id/like')
-  likeForum(@Param('id') id: string, @Request() req) {
-    return this.forumsService.likeForum(+id, req.user.id);
+  @Get(':id/like')
+  getUserLikeForum(@Param('id') id: string) {
+    return this.forumsService.getUserLikeForum(+id);
   }
 
-  @Delete(':id/like')
-  unlikeForum(@Param('id') id: string, @Request() req) {
-    return this.forumsService.unlikeForum(+id, req.user.id);
+  @Post(':id/like')
+  @UseGuards(JwtAuthGuard)
+  toggleLikeForum(@Param('id') id: string, @GetUser() user) {
+    return this.forumsService.toggleLikeForum(+id, user.id);
   }
 }

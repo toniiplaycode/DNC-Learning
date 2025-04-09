@@ -38,6 +38,7 @@ import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { selectCourseById } from "../../features/courses/coursesSelector";
 import { selectCurrentUser } from "../../features/auth/authSelectors";
 import { enrollInCourse } from "../../features/enrollments/enrollmentsApiSlice";
+import { toast } from "react-toastify";
 
 // Thêm interface cho thông tin ngân hàng
 interface BankInfo {
@@ -152,8 +153,12 @@ const PurchaseCourse = () => {
   };
 
   const handlePurchase = () => {
-    // Xử lý mua khóa học
-    setOpenDialog(true);
+    if (currentUser?.role == "student") {
+      // Xử lý mua khóa học
+      setOpenDialog(true);
+    } else {
+      navigate(`/login`);
+    }
   };
 
   const handleConfirmPurchase = () => {

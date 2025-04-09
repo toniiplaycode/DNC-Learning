@@ -16,18 +16,23 @@ import {
   Collapse,
   ToggleButton,
   ToggleButtonGroup,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
 } from "@mui/material";
 import {
   ThumbUp,
   ThumbUpOutlined,
   Comment,
-  Visibility,
   Share,
   Send,
   Reply,
   ExpandMore,
   ExpandLess,
   Sort,
+  DeleteOutline,
 } from "@mui/icons-material";
 import ScrollOnTop from "./ScrollOnTop";
 import {
@@ -35,12 +40,22 @@ import {
   selectForumsStatus,
 } from "../../features/forums/forumsSelectors";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
-import { fetchForumById } from "../../features/forums/forumsApiSlice";
+import {
+  createForumReply,
+  fetchForumById,
+  getUserLikeForum,
+  removeForumReply,
+  toggleLikeForum,
+} from "../../features/forums/forumsApiSlice";
 import { useParams } from "react-router-dom";
+import { useSelector } from "react-redux";
+import { selectCurrentUser } from "../../features/auth/authSelectors";
+import { mt } from "date-fns/locale";
 
 interface ForumUser {
   id: number | string;
   username: string;
+  role: string;
   avatarUrl?: string;
 }
 
@@ -97,19 +112,24 @@ const ForumDiscussionDetail = ({
   const [page, setPage] = useState(1);
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const commentsPerPage = 5;
+  const currentUser = useSelector(selectCurrentUser);
+
+  // Thêm state cho dialog xác nhận xóa
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [replyToDelete, setReplyToDelete] = useState<number | null>(null);
 
   const discussion = useMemo(
     () => propDiscussion || currentForum,
     [propDiscussion, currentForum]
   );
 
-  console.log("discussion", discussion);
-
   useEffect(() => {
     if (id && !propDiscussion) {
       dispatch(fetchForumById(Number(id)));
     }
   }, [id, dispatch, propDiscussion]);
+
+  console.log(discussion);
 
   useEffect(() => {
     if (discussion) {
@@ -177,13 +197,17 @@ const ForumDiscussionDetail = ({
 
   const handleSubmitComment = () => {
     if (comment.trim()) {
-      console.log("Gửi bình luận:", {
-        content: comment,
-        forumId: discussion.id,
-        replyId: replyingTo,
+      dispatch(
+        createForumReply({
+          content: comment,
+          forumId: Number(discussion.id),
+          replyId: replyingTo,
+        })
+      ).then(() => {
+        dispatch(fetchForumById(Number(discussion.id)));
+        setComment("");
+        setReplyingTo(null);
       });
-      setComment("");
-      setReplyingTo(null);
     }
   };
 
@@ -205,13 +229,43 @@ const ForumDiscussionDetail = ({
       setLikeCount((prev) => (isLiked ? prev - 1 : prev + 1));
 
       // Gọi API like/unlike
-      // await dispatch(toggleForumLike(discussion.id));
+      await dispatch(toggleLikeForum(Number(discussion.id)));
 
       // Nếu có lỗi thì revert lại
     } catch (error) {
       setIsLiked(isLiked);
       setLikeCount(likeCount);
       console.error("Error toggling like:", error);
+    }
+  };
+
+  // Kiểm tra xem bình luận có phải của user hiện tại không
+  const isCurrentUserReply = (reply: ForumReply) => {
+    return currentUser?.id === reply.user.id;
+  };
+
+  // Xử lý mở dialog xác nhận xóa
+  const handleOpenDeleteDialog = (replyId: number) => {
+    setReplyToDelete(replyId);
+    setDeleteDialogOpen(true);
+  };
+
+  // Xử lý đóng dialog xác nhận xóa
+  const handleCloseDeleteDialog = () => {
+    setDeleteDialogOpen(false);
+    setReplyToDelete(null);
+  };
+
+  // Xử lý xóa bình luận
+  const handleDeleteReply = () => {
+    if (replyToDelete) {
+      dispatch(removeForumReply(replyToDelete)).then(() => {
+        // Sau khi xóa thành công, reload forum để cập nhật UI
+        if (discussion?.id) {
+          dispatch(fetchForumById(Number(discussion.id)));
+        }
+        handleCloseDeleteDialog();
+      });
     }
   };
 
@@ -227,8 +281,8 @@ const ForumDiscussionDetail = ({
               <Avatar
                 src={
                   reply.user?.avatarUrl
-                    ? `/src/assets/${reply.user.avatarUrl}`
-                    : undefined
+                    ? reply.user?.avatarUrl
+                    : "/src/assets/logo.png"
                 }
                 alt={reply.user?.username || "User"}
               />
@@ -239,9 +293,14 @@ const ForumDiscussionDetail = ({
                   alignItems="center"
                   sx={{ mb: 1 }}
                 >
-                  <Typography variant="subtitle1">
-                    {reply.user?.username || "Người dùng"}
-                  </Typography>
+                  <Box mt={-0.8}>
+                    <Typography variant="subtitle1" fontWeight={600}>
+                      {reply.user?.username || "Người dùng"}
+                    </Typography>
+                    <Typography variant="subtitle2" color="primary.main">
+                      {reply.user?.role == "student" ? "Học viên" : "Sinh viên"}
+                    </Typography>
+                  </Box>
                   <Typography variant="caption" color="text.secondary">
                     {formatDate(reply.createdAt)}
                   </Typography>
@@ -258,6 +317,17 @@ const ForumDiscussionDetail = ({
                   >
                     <Reply fontSize="small" />
                   </IconButton>
+
+                  {/* Thêm nút xóa chỉ khi bình luận là của người dùng hiện tại */}
+                  {isCurrentUserReply(reply) && (
+                    <IconButton
+                      size="small"
+                      onClick={() => handleOpenDeleteDialog(Number(reply.id))}
+                      color="error"
+                    >
+                      <DeleteOutline fontSize="small" />
+                    </IconButton>
+                  )}
                 </Stack>
               </Box>
             </Stack>
@@ -267,50 +337,7 @@ const ForumDiscussionDetail = ({
         {/* Hiển thị các phản hồi con */}
         {childReplies.length > 0 && (
           <Box sx={{ pl: 6, mt: 1 }}>
-            {childReplies.map((childReply) => (
-              <Card key={childReply.id} variant="outlined" sx={{ mb: 2 }}>
-                <CardContent>
-                  <Stack direction="row" spacing={2}>
-                    <Avatar
-                      src={
-                        childReply.user?.avatarUrl
-                          ? `/src/assets/${childReply.user.avatarUrl}`
-                          : undefined
-                      }
-                      alt={childReply.user?.username || "User"}
-                    />
-                    <Box sx={{ flex: 1 }}>
-                      <Stack
-                        direction="row"
-                        justifyContent="space-between"
-                        alignItems="center"
-                        sx={{ mb: 1 }}
-                      >
-                        <Typography variant="subtitle1">
-                          {childReply.user?.username || "Người dùng"}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {formatDate(childReply.createdAt)}
-                        </Typography>
-                      </Stack>
-
-                      <Typography variant="body1" sx={{ mb: 2 }}>
-                        {childReply.content}
-                      </Typography>
-
-                      <Stack direction="row" spacing={1}>
-                        <IconButton
-                          size="small"
-                          onClick={() => setReplyingTo(Number(childReply.id))}
-                        >
-                          <Reply fontSize="small" />
-                        </IconButton>
-                      </Stack>
-                    </Box>
-                  </Stack>
-                </CardContent>
-              </Card>
-            ))}
+            {childReplies.map((childReply) => renderReply(childReply))}
           </Box>
         )}
       </Box>
@@ -333,9 +360,7 @@ const ForumDiscussionDetail = ({
               <Avatar
                 src={
                   discussion.user?.avatarUrl
-                    ? `/src/assets/${discussion.user.avatarUrl}`
-                    : discussion.thumbnailUrl
-                    ? `/src/assets/${discussion.thumbnailUrl}`
+                    ? discussion.user?.avatarUrl
                     : "/src/assets/logo.png"
                 }
                 alt={discussion.user?.username || "User"}
@@ -343,9 +368,11 @@ const ForumDiscussionDetail = ({
               />
               <Box>
                 <Stack direction="row" spacing={1} alignItems="center">
-                  <Typography variant="subtitle1">
-                    {discussion.user?.username || "Người dùng"}
-                  </Typography>
+                  <Box>
+                    <Typography variant="subtitle1">
+                      {discussion.user?.username || "Người dùng"}
+                    </Typography>
+                  </Box>
                   <Typography variant="caption" color="text.secondary">
                     • {formatDate(discussion.createdAt)}
                   </Typography>
@@ -652,6 +679,24 @@ const ForumDiscussionDetail = ({
           )}
         </Collapse>
       </Box>
+
+      {/* Dialog xác nhận xóa bình luận */}
+      <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>
+        <DialogTitle>Xác nhận xóa</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Bạn có chắc chắn muốn xóa bình luận này không?
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseDeleteDialog} color="primary">
+            Hủy
+          </Button>
+          <Button onClick={handleDeleteReply} color="error" variant="contained">
+            Xóa
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Container>
   );
 };

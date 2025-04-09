@@ -9,9 +9,10 @@ import {
   deleteForum,
   fetchForumReplies,
   createForumReply,
-  likeForum,
-  unlikeForum,
   markAsSolution,
+  getUserLikeForum,
+  UserLikeForum,
+  toggleLikeForum,
 } from "./forumsApiSlice";
 
 interface ForumsState {
@@ -20,6 +21,7 @@ interface ForumsState {
   replies: { [forumId: number]: ForumReply[] };
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
+  userLikeForum: UserLikeForum[];
 }
 
 const initialState: ForumsState = {
@@ -28,6 +30,7 @@ const initialState: ForumsState = {
   replies: {},
   status: "idle",
   error: null,
+  userLikeForum: [],
 };
 
 const forumsSlice = createSlice({
@@ -219,35 +222,39 @@ const forumsSlice = createSlice({
           (action.payload as string) || "Đã xảy ra lỗi khi tạo bình luận";
       })
 
-      // Like/Unlike forum reducers
-      .addCase(likeForum.fulfilled, (state, action: PayloadAction<Forum>) => {
-        const updatedForum = action.payload;
-
-        // Update in forums array
-        const index = state.forums.findIndex((f) => f.id === updatedForum.id);
-        if (index !== -1) {
-          state.forums[index] = updatedForum;
-        }
-
-        // Update current forum if matching
-        if (state.currentForum?.id === updatedForum.id) {
-          state.currentForum = updatedForum;
-        }
+      // Get user like forum reducers
+      .addCase(getUserLikeForum.pending, (state) => {
+        state.status = "loading";
       })
-      .addCase(unlikeForum.fulfilled, (state, action: PayloadAction<Forum>) => {
-        const updatedForum = action.payload;
-
-        // Update in forums array
-        const index = state.forums.findIndex((f) => f.id === updatedForum.id);
-        if (index !== -1) {
-          state.forums[index] = updatedForum;
+      .addCase(
+        getUserLikeForum.fulfilled,
+        (state, action: PayloadAction<UserLikeForum[]>) => {
+          state.status = "succeeded";
+          state.userLikeForum = action.payload;
         }
-
-        // Update current forum if matching
-        if (state.currentForum?.id === updatedForum.id) {
-          state.currentForum = updatedForum;
-        }
+      )
+      .addCase(getUserLikeForum.rejected, (state, action) => {
+        state.status = "failed";
       })
+
+      // Toggle like forum reducers
+      .addCase(
+        toggleLikeForum.fulfilled,
+        (state, action: PayloadAction<Forum>) => {
+          const updatedForum = action.payload;
+
+          // Update in forums array
+          const index = state.forums.findIndex((f) => f.id === updatedForum.id);
+          if (index !== -1) {
+            state.forums[index] = updatedForum;
+          }
+
+          // Update current forum if matching
+          if (state.currentForum?.id === updatedForum.id) {
+            state.currentForum = updatedForum;
+          }
+        }
+      )
 
       // Mark as solution reducers
       .addCase(

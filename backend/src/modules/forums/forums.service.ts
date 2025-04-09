@@ -122,6 +122,7 @@ export class ForumsService {
         'user.id',
         'user.username',
         'user.avatarUrl',
+        'user.role',
         'course.id',
         'course.title',
         'replies.id',
@@ -132,6 +133,7 @@ export class ForumsService {
         'replyUser.id',
         'replyUser.username',
         'replyUser.avatarUrl',
+        'replyUser.role',
       ])
       .getOne();
 
@@ -385,8 +387,19 @@ export class ForumsService {
   }
 
   // ===== FORUM LIKE METHODS =====
+  async getUserLikeForum(forumId: number): Promise<Partial<User>[]> {
+    const likes = await this.forumLikeRepository.find({
+      where: { forumId },
+      relations: ['user'],
+    });
+    return likes.map((like) => ({
+      id: like.user.id,
+      username: like.user.username,
+      email: like.user.email,
+    }));
+  }
 
-  async likeForum(forumId: number, userId: number): Promise<Forum> {
+  async toggleLikeForum(forumId: number, userId: number): Promise<Forum> {
     const forum = await this.findOne(forumId);
 
     // Check if already liked
@@ -395,36 +408,16 @@ export class ForumsService {
     });
 
     if (existingLike) {
-      throw new BadRequestException('Bạn đã thích diễn đàn này rồi');
+      // Unlike - remove the like
+      await this.forumLikeRepository.remove(existingLike);
+    } else {
+      // Like - create new like
+      const newLike = this.forumLikeRepository.create({
+        forumId,
+        userId,
+      });
+      await this.forumLikeRepository.save(newLike);
     }
-
-    // Create like
-    const newLike = this.forumLikeRepository.create({
-      forumId,
-      userId,
-    });
-
-    await this.forumLikeRepository.save(newLike);
-    return this.findOne(forumId, userId);
-  }
-
-  async unlikeForum(forumId: number, userId: number): Promise<Forum> {
-    const forum = await this.findOne(forumId);
-
-    // Check if liked
-    const existingLike = await this.forumLikeRepository.findOne({
-      where: { forumId, userId },
-    });
-
-    if (!existingLike) {
-      throw new BadRequestException('Bạn chưa thích diễn đàn này');
-    }
-
-    // Remove like
-    await this.forumLikeRepository.delete({
-      forumId,
-      userId,
-    });
 
     return this.findOne(forumId, userId);
   }

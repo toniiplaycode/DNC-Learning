@@ -116,7 +116,7 @@ const CardCourse: React.FC<CardCourseProps> = ({
             sx={{ width: 24, height: 24, mr: 1 }}
           />
           <Typography variant="body2" color="text.secondary">
-            {instructor.fullName}
+            {instructor.fullName || instructor.name}
           </Typography>
         </Box>
 

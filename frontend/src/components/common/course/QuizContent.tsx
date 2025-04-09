@@ -139,8 +139,6 @@ const QuizContent: React.FC<QuizContentProps> = ({
     }
   }, [currentUser, dispatch, location, quizById, lessonQuizzes, userAttempts]);
 
-  console.log("latestAttempt", latestAttempt);
-
   useEffect(() => {
     // Initialize time limit if the quiz has one and has been started
     if (activeQuiz && activeQuiz.timeLimit && !timeRemaining && quizStarted) {
@@ -173,9 +171,9 @@ const QuizContent: React.FC<QuizContentProps> = ({
     setQuizStarted(true);
   };
 
-  const handleAnswerChange = (questionIndex: number, optionIndex: number) => {
+  const handleAnswerChange = (questionIndex: number, optionId: number) => {
     const newAnswers = [...answers];
-    newAnswers[questionIndex] = optionIndex;
+    newAnswers[questionIndex] = optionId;
     setAnswers(newAnswers);
   };
 
@@ -184,25 +182,31 @@ const QuizContent: React.FC<QuizContentProps> = ({
 
     let correctCount = 0;
 
-    answers.forEach((answer, index) => {
-      const question = activeQuiz?.questions?.[index];
-      const correctOption = question?.options?.findIndex(
-        (option) => option.isCorrect
-      );
-      if (answer === correctOption) {
-        correctCount++;
-      }
-    });
+    const questionIds =
+      activeQuiz?.questions?.map((question) => Number(question.id)) || [];
 
-    const finalScore = Math.round(
-      (correctCount / activeQuiz?.questions?.length) * 100
-    );
-    setScore(finalScore);
-    setQuizSubmitted(true);
-    if (!isAssessmentQuiz) {
-      setShowDiscussion(true);
-    }
-    onComplete(finalScore);
+    console.log(questionIds);
+    console.log(answers);
+
+    // answers.forEach((answer, index) => {
+    //   const question = activeQuiz?.questions?.[index];
+    //   const correctOption = question?.options?.findIndex(
+    //     (option) => option.isCorrect
+    //   );
+    //   if (answer === correctOption) {
+    //     correctCount++;
+    //   }
+    // });
+
+    // const finalScore = Math.round(
+    //   (correctCount / activeQuiz?.questions?.length) * 100
+    // );
+    // setScore(finalScore);
+    // setQuizSubmitted(true);
+    // if (!isAssessmentQuiz) {
+    //   setShowDiscussion(true);
+    // }
+    // onComplete(finalScore);
   };
 
   const formatTime = (seconds: number) => {
@@ -755,7 +759,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
                 {question?.options?.map((option, optionIndex) => (
                   <FormControlLabel
                     key={option.id}
-                    value={optionIndex}
+                    value={option.id}
                     control={<Radio />}
                     label={`${String.fromCharCode(65 + optionIndex)}. ${
                       option.optionText
