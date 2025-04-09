@@ -1,13 +1,12 @@
 import {
   Injectable,
   NotFoundException,
-  BadRequestException,
   ConflictException,
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Review, ReviewStatus, ReviewType } from '../../entities/Review';
+import { Review, ReviewType } from '../../entities/Review';
 import { CreateReviewDto } from './dto/create-review.dto';
 import { UpdateReviewDto } from './dto/update-review.dto';
 import { Course } from '../../entities/Course';
@@ -67,7 +66,6 @@ export class ReviewsService {
     // Tạo review mới
     const newReview = this.reviewsRepository.create({
       ...createReviewDto,
-      status: createReviewDto.status || ReviewStatus.PENDING, // Mặc định là PENDING
     });
 
     return this.reviewsRepository.save(newReview);
@@ -154,7 +152,6 @@ export class ReviewsService {
     const reviews = await this.reviewsRepository.find({
       where: {
         courseId,
-        status: ReviewStatus.APPROVED,
         reviewType: ReviewType.COURSE,
       },
     });
@@ -191,44 +188,43 @@ export class ReviewsService {
     return plainToClass(ReviewStatsDto, stats);
   }
 
-  async update(id: number, updateReviewDto: UpdateReviewDto): Promise<Review> {
+  async update(
+    id: number,
+    updateReviewDto: UpdateReviewDto,
+    user: any,
+  ): Promise<Review> {
     const review = await this.findOne(id);
 
     // Cập nhật thông tin đánh giá
-    Object.assign(review, updateReviewDto);
+    if (updateReviewDto.rating) {
+      review.rating = updateReviewDto.rating;
+    }
 
-    return this.reviewsRepository.save(review);
+    if (updateReviewDto.reviewText !== undefined) {
+      review.reviewText = updateReviewDto.reviewText;
+    }
+
+    // Lưu và trả về review đã cập nhật với relations
+    await this.reviewsRepository.save(review);
+
+    // Truy vấn lại để lấy đầy đủ relations
+    return this.findOne(id);
   }
 
   async approve(id: number): Promise<Review> {
     const review = await this.findOne(id);
 
-    if (review.status === ReviewStatus.APPROVED) {
-      throw new BadRequestException('Đánh giá này đã được phê duyệt');
-    }
-
-    review.status = ReviewStatus.APPROVED;
     return this.reviewsRepository.save(review);
   }
 
   async reject(id: number): Promise<Review> {
     const review = await this.findOne(id);
 
-    if (review.status === ReviewStatus.REJECTED) {
-      throw new BadRequestException('Đánh giá này đã bị từ chối');
-    }
-
-    review.status = ReviewStatus.REJECTED;
     return this.reviewsRepository.save(review);
   }
 
   async remove(id: number, isAdmin: boolean = false): Promise<void> {
     const review = await this.findOne(id);
-
-    // Chỉ cho phép Admin xóa các đánh giá đã được phê duyệt
-    if (review.status === ReviewStatus.APPROVED && !isAdmin) {
-      throw new ForbiddenException('Không thể xóa đánh giá đã được phê duyệt');
-    }
 
     await this.reviewsRepository.remove(review);
   }

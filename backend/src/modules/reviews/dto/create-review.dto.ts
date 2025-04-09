@@ -7,7 +7,7 @@ import {
   Max,
   Min,
 } from 'class-validator';
-import { ReviewStatus, ReviewType } from '../../../entities/Review';
+import { ReviewType } from '../../../entities/Review';
 import { Type } from 'class-transformer';
 
 export class CreateReviewDto {
@@ -31,8 +31,4 @@ export class CreateReviewDto {
   @IsString()
   @IsOptional()
   reviewText?: string;
-
-  @IsEnum(ReviewStatus)
-  @IsOptional()
-  status?: ReviewStatus;
 }

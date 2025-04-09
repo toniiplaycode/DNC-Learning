@@ -73,12 +73,7 @@ export class ReviewsController {
     @Body() updateReviewDto: UpdateReviewDto,
     @GetUser() user,
   ) {
-    // Chỉ cho phép admin cập nhật trạng thái, người dùng chỉ có thể cập nhật nội dung
-    if (updateReviewDto.status && user.role !== UserRole.ADMIN) {
-      delete updateReviewDto.status;
-    }
-
-    return this.reviewsService.update(id, updateReviewDto);
+    return this.reviewsService.update(id, updateReviewDto, user);
   }
 
   @Patch(':id/approve')

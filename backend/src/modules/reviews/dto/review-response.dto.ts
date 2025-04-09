@@ -1,5 +1,5 @@
 import { Exclude, Expose, Type } from 'class-transformer';
-import { ReviewStatus, ReviewType } from '../../../entities/Review';
+import { ReviewType } from '../../../entities/Review';
 
 class StudentInfo {
   id: number;
@@ -42,9 +42,6 @@ export class ReviewResponseDto {
 
   @Expose()
   reviewText: string;
-
-  @Expose()
-  status: ReviewStatus;
 
   @Expose()
   createdAt: Date;
