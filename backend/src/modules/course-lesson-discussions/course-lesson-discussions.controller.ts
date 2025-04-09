@@ -14,8 +14,6 @@ import { CourseLessonDiscussionsService } from './course-lesson-discussions.serv
 import { CreateDiscussionDto } from './dto/create-discussion.dto';
 import { UpdateDiscussionDto } from './dto/update-discussion.dto';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
-import { RolesGuard } from '../auth/guards/roles.guard';
-import { Roles } from '../auth/decorators/roles.decorator';
 import { UserRole } from '../../entities/User';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 
@@ -74,7 +72,12 @@ export class CourseLessonDiscussionsController {
   @Patch(':id/hide')
   @UseGuards(JwtAuthGuard)
   hideDiscussion(@Param('id', ParseIntPipe) id: number, @GetUser() user) {
-    const isAdmin = user.role === UserRole.ADMIN;
-    return this.discussionsService.hideDiscussion(id, user.id, isAdmin);
+    const isAdminInstructor =
+      user.role === UserRole.ADMIN || user.role === UserRole.INSTRUCTOR;
+    return this.discussionsService.hideDiscussion(
+      id,
+      user.id,
+      isAdminInstructor,
+    );
   }
 }

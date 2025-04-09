@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Box,
   Container,
@@ -98,18 +98,25 @@ const ForumDiscussionDetail = ({
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const commentsPerPage = 5;
 
-  const discussion = propDiscussion || currentForum;
+  const discussion = useMemo(
+    () => propDiscussion || currentForum,
+    [propDiscussion, currentForum]
+  );
+
+  console.log("discussion", discussion);
 
   useEffect(() => {
     if (id && !propDiscussion) {
       dispatch(fetchForumById(Number(id)));
     }
-    // Khởi tạo trạng thái like từ discussion
+  }, [id, dispatch, propDiscussion]);
+
+  useEffect(() => {
     if (discussion) {
       setIsLiked(discussion.isLiked || false);
       setLikeCount(discussion.likeCount || 0);
     }
-  }, [id, dispatch, propDiscussion, discussion]);
+  }, [discussion?.id, discussion?.isLiked, discussion?.likeCount]);
 
   if (!discussion && status === "loading") {
     return <Typography>Đang tải thảo luận...</Typography>;
@@ -649,4 +656,4 @@ const ForumDiscussionDetail = ({
   );
 };
 
-export default ForumDiscussionDetail;
+export default React.memo(ForumDiscussionDetail);

@@ -49,6 +49,10 @@ const ContentDiscussion: React.FC<ContentDiscussionProps> = ({
   const status = useSelector(selectDiscussionsStatus);
   const error = useSelector(selectDiscussionsError);
   const currentUser = useSelector(selectCurrentUser);
+  const [sortedDiscussions, setSortedDiscussions] = useState<Discussion[]>([]);
+
+  // Thêm state để kiểm soát số lượng thảo luận hiển thị
+  const [visibleCount, setVisibleCount] = useState(5);
 
   // Menu state for each discussion
   const [menuAnchorEl, setMenuAnchorEl] = useState<{
@@ -61,6 +65,13 @@ const ContentDiscussion: React.FC<ContentDiscussionProps> = ({
   );
   const [newDiscussionContent, setNewDiscussionContent] = useState("");
   const [replyingTo, setReplyingTo] = useState<number | null>(null);
+
+  useEffect(() => {
+    const sortedDiscussions = [...(discussions || [])].sort((a, b) => {
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+    setSortedDiscussions(sortedDiscussions);
+  }, [dispatch, discussions, status]);
 
   // Load discussions for this lesson if not provided via props
   useEffect(() => {
@@ -156,15 +167,18 @@ const ContentDiscussion: React.FC<ContentDiscussionProps> = ({
 
   // Check if current user is the author of the discussion
   const isAuthor = (userId: number) => {
-    return currentUser?.id === userId;
+    return Number(currentUser?.id) == userId;
   };
 
-  // Sort discussions by date (newest first)
-  const sortedDiscussions = [...(discussions || [])].sort((a, b) => {
-    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
-  });
-
   const isLoading = propLoading || status === "loading";
+
+  // Hàm để hiển thị thêm thảo luận
+  const handleShowMore = () => {
+    setVisibleCount((prevCount) => prevCount + 5);
+  };
+
+  // Lọc thảo luận hiển thị dựa trên visibleCount
+  const visibleDiscussions = sortedDiscussions.slice(0, visibleCount);
 
   if (isLoading) {
     return (
@@ -181,6 +195,8 @@ const ContentDiscussion: React.FC<ContentDiscussionProps> = ({
       </Box>
     );
   }
+
+  console.log(sortedDiscussions);
 
   return (
     <Box>
@@ -211,13 +227,13 @@ const ContentDiscussion: React.FC<ContentDiscussionProps> = ({
       </Paper>
 
       {/* List of discussions */}
-      {sortedDiscussions.length === 0 ? (
+      {visibleDiscussions.length === 0 ? (
         <Typography variant="body1" color="textSecondary" sx={{ my: 2 }}>
           Chưa có thảo luận nào cho bài học này. Hãy là người đầu tiên bình
           luận!
         </Typography>
       ) : (
-        sortedDiscussions.map((discussion) => (
+        visibleDiscussions.map((discussion) => (
           <Paper key={discussion.id} elevation={1} sx={{ p: 2, mb: 3 }}>
             {/* Discussion header */}
             <Grid container spacing={2} alignItems="center">
@@ -237,7 +253,7 @@ const ContentDiscussion: React.FC<ContentDiscussionProps> = ({
                   {formatDate(discussion.createdAt)}
                 </Typography>
               </Grid>
-              {(isAuthor(discussion.userId) ||
+              {(isAuthor(Number(discussion?.user?.id)) ||
                 currentUser?.role === "admin") && (
                 <Grid item>
                   <IconButton
@@ -251,11 +267,13 @@ const ContentDiscussion: React.FC<ContentDiscussionProps> = ({
                     open={Boolean(menuAnchorEl[discussion.id])}
                     onClose={() => handleMenuClose(discussion.id)}
                   >
-                    <MenuItem
-                      onClick={() => handleHideDiscussion(discussion.id)}
-                    >
-                      Ẩn thảo luận
-                    </MenuItem>
+                    {currentUser?.role === "instructor" && (
+                      <MenuItem
+                        onClick={() => handleHideDiscussion(discussion.id)}
+                      >
+                        Ẩn thảo luận
+                      </MenuItem>
+                    )}
                     <MenuItem
                       onClick={() => handleDeleteDiscussion(discussion.id)}
                     >
@@ -335,7 +353,7 @@ const ContentDiscussion: React.FC<ContentDiscussionProps> = ({
                           {formatDate(reply.createdAt)}
                         </Typography>
                       </Grid>
-                      {(isAuthor(reply.userId) ||
+                      {(isAuthor(Number(reply?.user?.id)) ||
                         currentUser?.role === "admin") && (
                         <Grid item>
                           <IconButton
@@ -349,11 +367,13 @@ const ContentDiscussion: React.FC<ContentDiscussionProps> = ({
                             open={Boolean(menuAnchorEl[reply.id])}
                             onClose={() => handleMenuClose(reply.id)}
                           >
-                            <MenuItem
-                              onClick={() => handleHideDiscussion(reply.id)}
-                            >
-                              Ẩn trả lời
-                            </MenuItem>
+                            {currentUser?.role === "instructor" && (
+                              <MenuItem
+                                onClick={() => handleHideDiscussion(reply.id)}
+                              >
+                                Ẩn trả lời
+                              </MenuItem>
+                            )}
                             <MenuItem
                               onClick={() => handleDeleteDiscussion(reply.id)}
                             >
@@ -372,6 +392,15 @@ const ContentDiscussion: React.FC<ContentDiscussionProps> = ({
             )}
           </Paper>
         ))
+      )}
+
+      {/* Show more button */}
+      {sortedDiscussions.length > visibleCount && (
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 2, mb: 4 }}>
+          <Button variant="outlined" onClick={handleShowMore}>
+            Xem thêm thảo luận
+          </Button>
+        </Box>
       )}
     </Box>
   );

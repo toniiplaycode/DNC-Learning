@@ -71,7 +71,22 @@ export class CourseLessonDiscussionsService {
       status: createDiscussionDto.status || DiscussionStatus.ACTIVE,
     });
 
-    return this.discussionsRepository.save(discussion);
+    // Lưu thảo luận
+    const savedDiscussion = await this.discussionsRepository.save(discussion);
+
+    // Lấy lại thảo luận với các mối quan hệ đầy đủ
+    const fullDiscussion = await this.discussionsRepository.findOne({
+      where: { id: savedDiscussion.id },
+      relations: ['user', 'replies'],
+    });
+
+    if (!fullDiscussion) {
+      throw new NotFoundException(
+        `Không tìm thấy thảo luận vừa tạo với ID ${savedDiscussion.id}`,
+      );
+    }
+
+    return fullDiscussion;
   }
 
   async findAll(lessonId?: number): Promise<CourseLessonDiscussion[]> {
@@ -180,12 +195,12 @@ export class CourseLessonDiscussionsService {
   async hideDiscussion(
     id: number,
     userId: number,
-    isAdmin: boolean = false,
+    isAdminInstructor: boolean = false,
   ): Promise<CourseLessonDiscussion> {
     const discussion = await this.findOne(id);
 
-    // Người dùng chỉ có thể ẩn thảo luận của chính họ, trừ khi là admin
-    if (discussion.userId !== userId && !isAdmin) {
+    // Người dùng chỉ có thể ẩn thảo luận của chính họ, trừ khi là admin hoặc instructor
+    if (discussion.userId !== userId && !isAdminInstructor) {
       throw new ForbiddenException('Bạn không có quyền ẩn thảo luận này');
     }
 
