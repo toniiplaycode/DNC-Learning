@@ -314,6 +314,7 @@ export class QuizzesService {
   ): Promise<QuizAttempt | null> {
     const attempt = await this.attemptsRepository.findOne({
       where: { userId, quizId },
+      order: { id: 'DESC' }, // lấy lần thử mới nhất
     });
 
     if (!attempt) {

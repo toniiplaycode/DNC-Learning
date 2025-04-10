@@ -176,6 +176,12 @@ const QuizContent: React.FC<QuizContentProps> = ({
     }
   }, [timeRemaining, quizSubmitted]);
 
+  const handleAnswerChange = (questionIndex: number, optionId: number) => {
+    const newAnswers = [...answers];
+    newAnswers[questionIndex] = optionId;
+    setAnswers(newAnswers);
+  };
+
   const handleStartQuizAttempt = () => {
     dispatch(createAttempt(Number(activeQuiz?.id))).then(() => {
       dispatch(
@@ -183,17 +189,15 @@ const QuizContent: React.FC<QuizContentProps> = ({
           userId: Number(currentUser?.id),
           quizId: Number(activeQuiz?.id),
         })
-      );
+      ).then((response) => {
+        console.log(response.payload);
+      });
     });
 
     setQuizStarted(true);
   };
 
-  const handleAnswerChange = (questionIndex: number, optionId: number) => {
-    const newAnswers = [...answers];
-    newAnswers[questionIndex] = optionId;
-    setAnswers(newAnswers);
-  };
+  console.log(currentAttempt);
 
   const handleSubmit = () => {
     if (!activeQuiz) return;
