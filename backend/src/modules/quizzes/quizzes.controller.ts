@@ -121,6 +121,15 @@ export class QuizzesController {
     return this.quizzesService.createAttempt(createAttemptDto, user.id);
   }
 
+  @Get('attempts/user/:userId/quiz/:quizId')
+  @UseGuards(JwtAuthGuard)
+  findAttemptByUserIdAndQuizId(
+    @Param('userId') userId: number,
+    @Param('quizId') quizId: number,
+  ) {
+    return this.quizzesService.findAttemptByUserIdAndQuizId(userId, quizId);
+  }
+
   @Get('attempts/user')
   @UseGuards(JwtAuthGuard)
   findUserAttempts(@GetUser() user) {
@@ -135,8 +144,14 @@ export class QuizzesController {
 
   @Post('submit')
   @UseGuards(JwtAuthGuard)
-  submitQuiz(@Body() submitQuizDto: SubmitQuizDto, @GetUser() user) {
-    return this.quizzesService.submitQuiz(submitQuizDto, user.id);
+  submitQuizResponsesAndUpdateAttempt(
+    @Body() submitQuizDto: SubmitQuizDto,
+    @GetUser() user,
+  ) {
+    return this.quizzesService.submitQuizResponsesAndUpdateAttempt(
+      submitQuizDto,
+      user.id,
+    );
   }
 
   @Get('results/:attemptId')

@@ -6,6 +6,7 @@ import {
   UpdateQuizData,
   CreateQuestionData,
   SubmitQuizData,
+  AttemptStatus,
 } from "../../types/quiz.types";
 import { api } from "../../services/api";
 
@@ -155,11 +156,31 @@ export const createAttempt = createAsyncThunk(
   "quizzes/createAttempt",
   async (quizId: number, { rejectWithValue }) => {
     try {
+      console.log(quizId);
       const response = await api.post("/quizzes/attempts", { quizId });
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Không thể bắt đầu bài kiểm tra"
+      );
+    }
+  }
+);
+
+export const fetchAttemptByUserIdAndQuizId = createAsyncThunk(
+  "quizzes/fetchAttemptByUserIdAndQuizId",
+  async (
+    { userId, quizId }: { userId: number; quizId: number },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await api.get(
+        `/quizzes/attempts/user/${userId}/quiz/${quizId}`
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Không thể tải lần thử bài kiểm tra"
       );
     }
   }
@@ -194,7 +215,7 @@ export const fetchAttempt = createAsyncThunk(
   }
 );
 
-export const submitQuiz = createAsyncThunk(
+export const submitQuizResponsesAndUpdateAttempt = createAsyncThunk(
   "quizzes/submit",
   async (data: SubmitQuizData, { rejectWithValue }) => {
     try {
@@ -424,6 +445,20 @@ const quizzesSlice = createSlice({
         state.error = action.payload as string;
       })
 
+      // Fetch attempt by user id and quiz id
+      .addCase(fetchAttemptByUserIdAndQuizId.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchAttemptByUserIdAndQuizId.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.currentAttempt = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchAttemptByUserIdAndQuizId.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
+
       // Fetch user attempts
       .addCase(fetchUserAttempts.pending, (state) => {
         state.status = "loading";
@@ -452,41 +487,47 @@ const quizzesSlice = createSlice({
         state.error = action.payload as string;
       })
 
-      // Submit quiz
-      .addCase(submitQuiz.pending, (state) => {
+      // Submit quiz responses and update attempt
+      .addCase(submitQuizResponsesAndUpdateAttempt.pending, (state) => {
         state.status = "loading";
       })
-      .addCase(submitQuiz.fulfilled, (state, action) => {
-        state.status = "succeeded";
+      .addCase(
+        submitQuizResponsesAndUpdateAttempt.fulfilled,
+        (state, action) => {
+          state.status = "succeeded";
 
-        // Update the current attempt with the submitted responses
-        if (state.currentAttempt) {
-          state.currentAttempt = {
-            ...state.currentAttempt,
-            status: "completed",
-            endTime: new Date().toISOString(),
-          };
-        }
-
-        // Update the attempt in userAttempts array
-        state.userAttempts = state.userAttempts.map((attempt) => {
-          if (attempt.id === action.payload.attemptId) {
-            return {
-              ...attempt,
-              status: "completed",
+          // Update the current attempt with the submitted responses
+          if (state.currentAttempt) {
+            state.currentAttempt = {
+              ...state.currentAttempt,
+              status: AttemptStatus.COMPLETED,
               endTime: new Date().toISOString(),
             };
           }
-          return attempt;
-        });
 
-        state.quizResult = action.payload;
-        state.error = null;
-      })
-      .addCase(submitQuiz.rejected, (state, action) => {
-        state.status = "failed";
-        state.error = action.payload as string;
-      })
+          // Update the attempt in userAttempts array
+          state.userAttempts = state.userAttempts.map((attempt) => {
+            if (attempt.id === action.payload.attemptId) {
+              return {
+                ...attempt,
+                status: AttemptStatus.COMPLETED,
+                endTime: new Date().toISOString(),
+              };
+            }
+            return attempt;
+          });
+
+          state.quizResult = action.payload;
+          state.error = null;
+        }
+      )
+      .addCase(
+        submitQuizResponsesAndUpdateAttempt.rejected,
+        (state, action) => {
+          state.status = "failed";
+          state.error = action.payload as string;
+        }
+      )
 
       // Fetch quiz results
       .addCase(fetchQuizResults.pending, (state) => {

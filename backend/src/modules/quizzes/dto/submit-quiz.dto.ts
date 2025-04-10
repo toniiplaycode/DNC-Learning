@@ -1,4 +1,10 @@
-import { IsInt, IsOptional, ValidateNested, IsArray } from 'class-validator';
+import {
+  IsInt,
+  IsOptional,
+  ValidateNested,
+  IsArray,
+  IsNumber,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 class ResponseDto {
@@ -13,12 +19,15 @@ class ResponseDto {
 }
 
 export class SubmitQuizDto {
+  @IsNumber()
   @IsInt()
-  @Type(() => Number)
   attemptId: number;
 
   @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => ResponseDto)
-  responses: ResponseDto[];
+  @IsNumber({}, { each: true })
+  questionIds: number[];
+
+  @IsArray()
+  @IsNumber({}, { each: true })
+  responses: number[];
 }

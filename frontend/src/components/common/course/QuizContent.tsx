@@ -15,12 +15,16 @@ import {
 } from "@mui/material";
 import { Timer, CheckCircle, Cancel, PlayArrow } from "@mui/icons-material";
 import {
+  createAttempt,
+  fetchAttemptByUserIdAndQuizId,
   fetchQuizById,
   fetchQuizzesByLesson,
   fetchUserAttempts,
+  submitQuizResponsesAndUpdateAttempt,
 } from "../../../features/quizzes/quizzesSlice";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import {
+  selectCurrentAttempt,
   selectCurrentQuiz,
   selectLessonQuizzes,
   selectUserAttempts,
@@ -49,6 +53,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
   const lessonQuizzes = useAppSelector(selectLessonQuizzes);
   const quizById = useAppSelector(selectCurrentQuiz);
   const userAttempts = useAppSelector(selectUserAttempts);
+  const currentAttempt = useAppSelector(selectCurrentAttempt);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [activeQuiz, setActiveQuiz] = useState();
@@ -167,7 +172,16 @@ const QuizContent: React.FC<QuizContentProps> = ({
     }
   }, [timeRemaining, quizSubmitted]);
 
-  const handleStartQuiz = () => {
+  const handleStartQuizAttempt = () => {
+    dispatch(createAttempt(Number(activeQuiz?.id))).then(() => {
+      dispatch(
+        fetchAttemptByUserIdAndQuizId({
+          userId: Number(currentUser?.id),
+          quizId: Number(activeQuiz?.id),
+        })
+      );
+    });
+
     setQuizStarted(true);
   };
 
@@ -185,8 +199,25 @@ const QuizContent: React.FC<QuizContentProps> = ({
     const questionIds =
       activeQuiz?.questions?.map((question) => Number(question.id)) || [];
 
-    console.log(questionIds);
-    console.log(answers);
+    console.log({
+      questionIds,
+      responses: answers,
+      attemptId: currentAttempt?.id,
+    });
+
+    dispatch(
+      submitQuizResponsesAndUpdateAttempt({
+        questionIds,
+        responses: answers,
+        attemptId: Number(currentAttempt?.id),
+      })
+    ).then(() => {
+      // dispatch(fetchAttemptByUserIdAndQuizId({
+      //   userId: Number(currentUser?.id),
+      //   quizId: Number(activeQuiz?.id),
+      // })
+      // );
+    });
 
     // answers.forEach((answer, index) => {
     //   const question = activeQuiz?.questions?.[index];
@@ -538,7 +569,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
               variant="contained"
               size="large"
               startIcon={<PlayArrow />}
-              onClick={handleStartQuiz}
+              onClick={handleStartQuizAttempt}
               sx={{ px: 4, py: 1.5, borderRadius: 2 }}
             >
               Bắt đầu làm bài
