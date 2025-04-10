@@ -88,32 +88,36 @@ const QuizContent: React.FC<QuizContentProps> = ({
     }
   }, [currentUser, dispatch, id, pathname]);
 
+  const handleAttempt = (userAttempts: any) => {
+    if (quizById) {
+      const quizAttempts = userAttempts.filter(
+        (attempt: any) => attempt.quizId === quizById.id
+      );
+
+      if (quizAttempts.length > 0) {
+        // Sắp xếp attempts theo thời gian tạo giảm dần (mới nhất lên đầu)
+        const sortedAttempts = [...quizAttempts].sort((a, b) => {
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        });
+
+        // Lấy lần thử gần nhất
+        setLatestAttempt(sortedAttempts[0]);
+      }
+    } else {
+      // Nếu không có quizById, giữ nguyên logic cũ
+      setLatestAttempt(userAttempts[0]);
+    }
+  };
+
   // useEffect để lấy lần thử gần nhất, dùng cho quiz assessment bên trang assessment
   useEffect(() => {
     if (userAttempts?.length > 0 && isAssessmentQuiz) {
       // Lọc các attempts cho quiz hiện tại (nếu quizById có)
-      if (quizById) {
-        const quizAttempts = userAttempts.filter(
-          (attempt) => attempt.quizId === quizById.id
-        );
-
-        if (quizAttempts.length > 0) {
-          // Sắp xếp attempts theo thời gian tạo giảm dần (mới nhất lên đầu)
-          const sortedAttempts = [...quizAttempts].sort((a, b) => {
-            return (
-              new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-            );
-          });
-
-          // Lấy lần thử gần nhất
-          setLatestAttempt(sortedAttempts[0]);
-        }
-      } else {
-        // Nếu không có quizById, giữ nguyên logic cũ
-        setLatestAttempt(userAttempts[0]);
-      }
+      handleAttempt(userAttempts);
     }
-  }, [userAttempts, isAssessmentQuiz, quizById]);
+  }, [userAttempts, isAssessmentQuiz, quizById, quizSubmitted]);
 
   // useEffect để lấy quiz hiện tại, dùng cho quiz bên trang course trong lesson
   useEffect(() => {
@@ -194,16 +198,8 @@ const QuizContent: React.FC<QuizContentProps> = ({
   const handleSubmit = () => {
     if (!activeQuiz) return;
 
-    let correctCount = 0;
-
     const questionIds =
       activeQuiz?.questions?.map((question) => Number(question.id)) || [];
-
-    console.log({
-      questionIds,
-      responses: answers,
-      attemptId: currentAttempt?.id,
-    });
 
     dispatch(
       submitQuizResponsesAndUpdateAttempt({
@@ -212,32 +208,16 @@ const QuizContent: React.FC<QuizContentProps> = ({
         attemptId: Number(currentAttempt?.id),
       })
     ).then(() => {
-      // dispatch(fetchAttemptByUserIdAndQuizId({
-      //   userId: Number(currentUser?.id),
-      //   quizId: Number(activeQuiz?.id),
-      // })
-      // );
+      dispatch(fetchUserAttempts(Number(currentUser?.id)));
+
+      // Khi đã có dữ liệu mới, set state để hiển thị kết quả
+      setQuizSubmitted(true);
+      setActiveShowExplanations(true);
     });
 
-    // answers.forEach((answer, index) => {
-    //   const question = activeQuiz?.questions?.[index];
-    //   const correctOption = question?.options?.findIndex(
-    //     (option) => option.isCorrect
-    //   );
-    //   if (answer === correctOption) {
-    //     correctCount++;
-    //   }
-    // });
-
-    // const finalScore = Math.round(
-    //   (correctCount / activeQuiz?.questions?.length) * 100
-    // );
-    // setScore(finalScore);
-    // setQuizSubmitted(true);
-    // if (!isAssessmentQuiz) {
-    //   setShowDiscussion(true);
-    // }
-    // onComplete(finalScore);
+    if (!isAssessmentQuiz) {
+      setShowDiscussion(true);
+    }
   };
 
   const formatTime = (seconds: number) => {

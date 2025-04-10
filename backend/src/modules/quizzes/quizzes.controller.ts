@@ -154,15 +154,6 @@ export class QuizzesController {
     );
   }
 
-  @Get('results/:attemptId')
-  @UseGuards(JwtAuthGuard)
-  getResults(
-    @Param('attemptId', ParseIntPipe) attemptId: number,
-    @GetUser() user,
-  ) {
-    return this.quizzesService.getResults(attemptId, user.id);
-  }
-
   // Quản lý Attempts
   @Get('attempts/:id')
   findAttemptById(@Param('id') id: number) {

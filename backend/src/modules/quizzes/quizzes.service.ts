@@ -370,6 +370,8 @@ export class QuizzesService {
     submitQuizDto: SubmitQuizDto,
     userId: number,
   ): Promise<any> {
+    console.log(submitQuizDto);
+
     // Kiểm tra lần thử tồn tại và thuộc về người dùng
     const attempt = await this.attemptsRepository.findOne({
       where: { id: submitQuizDto.attemptId },
@@ -384,10 +386,6 @@ export class QuizzesService {
 
     if (attempt.userId !== userId) {
       throw new ForbiddenException('Bạn không có quyền nộp bài kiểm tra này');
-    }
-
-    if (attempt.status === AttemptStatus.COMPLETED) {
-      throw new BadRequestException('Bài kiểm tra này đã được nộp trước đó');
     }
 
     // Lưu các câu trả lời
@@ -435,131 +433,31 @@ export class QuizzesService {
     // Lưu tất cả responses
     await this.responsesRepository.save(responses);
 
+    // Tính tổng điểm và điểm tối đa (lấy từ responses sau khi đã tính bởi trigger)
+    const quizResponses = await this.responsesRepository.find({
+      where: { attemptId: attempt.id },
+    });
+
+    const totalPoints = quizResponses.reduce(
+      (sum, response) => sum + (Number(response.score) || 0),
+      0,
+    );
+
+    // Tính tổng điểm tối đa từ tất cả các câu hỏi
+    // Giả sử mỗi câu trả lời đúng có giá trị là 1 điểm
+    const totalQuestions = quizResponses.length;
+
+    // Tính điểm theo thang điểm 100
+    const scorePercentage =
+      totalQuestions > 0 ? Math.round((totalPoints / totalQuestions) * 100) : 0;
+
     // Cập nhật attempt
     attempt.endTime = new Date();
+    attempt.score = scorePercentage;
     attempt.status = AttemptStatus.COMPLETED;
 
     // Lưu attempt
-    const updatedAttempt = await this.attemptsRepository.save(attempt);
-
-    // // Tạo điểm cho user nếu là bài kiểm tra chính thức
-    // if (attempt.quiz.quizType !== QuizType.PRACTICE) {
-    //   let lesson;
-    //   if (attempt.quiz.lessonId) {
-    //     lesson = await this.lessonsRepository.findOne({
-    //       where: { id: attempt.quiz.lessonId },
-    //       relations: ['section', 'section.course'],
-    //     });
-    //   }
-
-    //   if (lesson && lesson.section && lesson.section.course) {
-    //     // Tìm instructor cho quiz này
-    //     let gradedBy = 1; // Default admin ID
-
-    //     // Tính tổng điểm và điểm tối đa (lấy từ responses sau khi đã tính bởi trigger)
-    //     const quizResponses = await this.responsesRepository.find({
-    //       where: { attemptId: attempt.id },
-    //     });
-
-    //     const totalScore = quizResponses.reduce(
-    //       (sum, response) => sum + (response.score || 0),
-    //       0,
-    //     );
-
-    //     const totalPoints = attempt.quiz.questions.length;
-
-    //     // Tạo user grade
-    //     await this.userGradesService.create({
-    //       userId,
-    //       courseId: lesson.section.course.id,
-    //       gradedBy,
-    //       quizId: attempt.quiz.id,
-    //       gradeType: this.mapQuizTypeToGradeType(attempt.quiz.quizType),
-    //       score: totalScore,
-    //       maxScore: totalPoints,
-    //       weight: 10, // Cần điều chỉnh theo từng loại quiz
-    //       feedback: `Điểm tự động từ bài kiểm tra: ${attempt.quiz.title}`,
-    //     });
-    //   }
-    // }
-
-    // return this.getResults(updatedAttempt.id, userId);
-  }
-
-  async getResults(attemptId: number, userId: number): Promise<any> {
-    const attempt = await this.attemptsRepository.findOne({
-      where: { id: attemptId },
-      relations: [
-        'quiz',
-        'responses',
-        'responses.question',
-        'responses.selectedOption',
-        'responses.question.options',
-      ],
-    });
-
-    if (!attempt) {
-      throw new NotFoundException(`Không tìm thấy lần thử với ID ${attemptId}`);
-    }
-
-    if (attempt.userId !== userId) {
-      throw new ForbiddenException('Bạn không có quyền xem kết quả này');
-    }
-
-    // Lấy tất cả câu hỏi trong quiz
-    const questions = await this.questionsRepository.find({
-      where: { quizId: attempt.quiz.id },
-      relations: ['options'],
-    });
-
-    // Tính toán và trả về kết quả
-    const results = {
-      attemptId: attempt.id,
-      quizId: attempt.quiz.id,
-      quizTitle: attempt.quiz.title,
-      startTime: attempt.startTime,
-      endTime: attempt.endTime,
-      score: attempt.score,
-      status: attempt.status,
-      timeSpent: attempt.endTime
-        ? Math.round(
-            (attempt.endTime.getTime() - attempt.startTime.getTime()) / 1000,
-          )
-        : 0,
-      passingScore: attempt.quiz.passingScore,
-      passed: attempt.quiz.passingScore
-        ? (attempt.score ?? 0) >= attempt.quiz.passingScore
-        : true,
-      questions: questions.map((question) => {
-        const response = attempt.responses.find(
-          (r) => r.questionId === question.id,
-        );
-        const correctOption = question.options.find((o) => o.isCorrect);
-
-        return {
-          id: question.id,
-          questionText: question.questionText,
-          points: question.points,
-          selectedOption: response?.selectedOption
-            ? {
-                id: response.selectedOption.id,
-                text: response.selectedOption.optionText,
-                isCorrect: response.selectedOption.isCorrect,
-              }
-            : null,
-          correctOption: correctOption
-            ? {
-                id: correctOption.id,
-                text: correctOption.optionText,
-              }
-            : null,
-          score: response?.score || 0,
-          explanation: question.correctExplanation,
-        };
-      }),
-    };
-
-    return results;
+    await this.attemptsRepository.save(attempt);
   }
 
   // Helper methods
