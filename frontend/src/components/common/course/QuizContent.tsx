@@ -30,7 +30,7 @@ import {
   selectUserAttempts,
 } from "../../../features/quizzes/quizzesSelectors";
 import { selectCurrentUser } from "../../../features/auth/authSelectors";
-import { useLocation, useNavigate, useParams } from "react-router-dom";
+import { useLocation, useParams } from "react-router-dom";
 
 interface QuizContentProps {
   quizId: number;
@@ -65,7 +65,6 @@ const QuizContent: React.FC<QuizContentProps> = ({
   const [score, setScore] = useState(0);
   const [activeShowExplanations, setActiveShowExplanations] = useState(false);
   const [isAssessmentQuiz, setIsAssessmentQuiz] = useState(false);
-
   // Tạo state cho lần thử gần nhất
   const [latestAttempt, setLatestAttempt] = useState(null);
 
@@ -197,8 +196,6 @@ const QuizContent: React.FC<QuizContentProps> = ({
     setQuizStarted(true);
   };
 
-  console.log(currentAttempt);
-
   const handleSubmit = () => {
     if (!activeQuiz) return;
 
@@ -216,7 +213,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
 
       // Khi đã có dữ liệu mới, set state để hiển thị kết quả
       setQuizSubmitted(true);
-      setActiveShowExplanations(true);
+      // setActiveShowExplanations(true);
     });
 
     if (!isAssessmentQuiz) {
@@ -269,14 +266,24 @@ const QuizContent: React.FC<QuizContentProps> = ({
         setAnswers(userAnswers);
       }
     }
-  }, [latestAttempt, activeQuiz]);
+  }, [latestAttempt, activeQuiz, quizSubmitted]);
+
+  // Kiểm tra loading
+  if (!activeQuiz) {
+    return (
+      <Box sx={{ p: 3 }}>
+        <Typography>Đang tải bài quiz...</Typography>
+      </Box>
+    );
+  }
 
   // Tách phần render ra khỏi phần kiểm tra latestAttempt
   if (
+    activeQuiz &&
     latestAttempt &&
     latestAttempt.status === "completed" &&
-    quizSubmitted &&
-    activeShowExplanations
+    Number(latestAttempt.quizId) === Number(activeQuiz.id) &&
+    quizSubmitted
   ) {
     return (
       <Box sx={{ p: 3 }}>
@@ -298,7 +305,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
               <Typography
                 variant="h3"
                 color={
-                  score >= (activeQuiz?.passingScore || 70)
+                  score >= (activeQuiz.passingScore || 70)
                     ? "success.main"
                     : "error.main"
                 }
@@ -309,38 +316,43 @@ const QuizContent: React.FC<QuizContentProps> = ({
                     ).length
                   : answers.filter((answer) => {
                       // Đếm số câu trả lời đúng dựa vào mảng answers
-                      const questionIndex = activeQuiz?.questions?.findIndex(
+                      const questionIndex = activeQuiz.questions?.findIndex(
                         (_, idx) => idx === answer
                       );
                       return (
                         questionIndex !== -1 && questionIndex !== undefined
                       );
                     }).length}
-                /{activeQuiz?.questions?.length} câu
+                /{activeQuiz.questions?.length} câu
               </Typography>
-              <Typography variant="subtitle1">
-                {latestAttempt?.responses
-                  ? (latestAttempt.responses.filter(
-                      (r) => parseFloat(r.score) > 0
-                    ).length /
-                      activeQuiz?.questions?.length) *
-                      100 >=
-                    50
-                    ? "Đạt"
-                    : "Chưa đạt"
-                  : (activeQuiz?.questions?.filter(
-                      (_, i) =>
-                        answers[i] ===
-                        activeQuiz.questions?.[i].options?.findIndex(
-                          (o) => o.isCorrect
-                        )
-                    ).length /
-                      activeQuiz?.questions?.length) *
-                      100 >=
-                    50
-                  ? "Đạt"
-                  : "Chưa đạt"}
-              </Typography>
+              {latestAttempt && latestAttempt.score !== undefined ? (
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    gap: 1,
+                  }}
+                >
+                  {latestAttempt.score >= (activeQuiz.passingScore || 50) ? (
+                    <>
+                      <Typography variant="subtitle1" color="success.main">
+                        Đạt
+                      </Typography>
+                      <CheckCircle color="success" />
+                    </>
+                  ) : (
+                    <>
+                      <Typography variant="subtitle1" color="error.main">
+                        Chưa đạt
+                      </Typography>
+                      <Cancel color="error" />
+                    </>
+                  )}
+                </Box>
+              ) : (
+                ""
+              )}
             </Box>
 
             {activeShowExplanations && (
@@ -349,7 +361,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
                   Chi tiết câu trả lời:
                 </Typography>
 
-                {activeQuiz?.questions?.map((question, index) => {
+                {activeQuiz.questions?.map((question, index) => {
                   const userAnswer =
                     answers[index] !== undefined ? answers[index] : -1;
                   const correctOptionIndex = question?.options?.findIndex(
@@ -450,21 +462,29 @@ const QuizContent: React.FC<QuizContentProps> = ({
               activeQuiz.attemptsAllowed >
                 (userAttempts?.filter((a) => a.quizId === activeQuiz.id)
                   ?.length || 0) && (
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={() => {
-                    // Reset state để làm bài mới
-                    setQuizSubmitted(false);
-                    setQuizStarted(false);
-                    setAnswers([]);
-                    setScore(0);
-                    setTimeRemaining(null);
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    width: "100%",
+                    mt: 2,
                   }}
-                  sx={{ mt: 2 }}
                 >
-                  Làm lại bài
-                </Button>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={() => {
+                      // Reset state để làm bài mới
+                      setQuizSubmitted(false);
+                      setQuizStarted(false);
+                      setAnswers([]);
+                      setScore(0);
+                      setTimeRemaining(null);
+                    }}
+                  >
+                    Làm lại bài
+                  </Button>
+                </Box>
               )}
           </CardContent>
         </Card>
@@ -472,15 +492,8 @@ const QuizContent: React.FC<QuizContentProps> = ({
     );
   }
 
-  if (!activeQuiz) {
-    return (
-      <Box sx={{ p: 3 }}>
-        <Typography>Đang tải bài quiz...</Typography>
-      </Box>
-    );
-  }
-
-  if (!quizStarted) {
+  // Màn hình bắt đầu
+  if (activeQuiz && !quizStarted) {
     return (
       <Box sx={{ p: 3 }}>
         <Card sx={{ maxWidth: 800, mx: "auto" }}>
@@ -564,6 +577,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
     );
   }
 
+  // Nếu đã bắt đầu làm nhưng chưa nộp/chưa hiển thị kết quả
   return (
     <Box sx={{ p: 3, position: "relative" }}>
       <Box sx={{ mb: 2 }}>
