@@ -47,50 +47,61 @@ const EnrolledCourses: React.FC = () => {
           Khóa học của tôi
         </Typography>
 
-        <Grid container spacing={3}>
-          {userEnrollments?.map((course) => {
-            const courseProgress = userProgress?.find(
-              (progress: any) => progress.courseId === course.course?.id
-            );
-
-            const calculateTotalLessons = (course: any) => {
-              if (!course || !course.sections) return 0;
-              return course.sections.reduce(
-                (total: number, section: any) =>
-                  total + (section.lessons?.length || 0),
-                0
+        {userEnrollments?.length > 0 ? (
+          <Grid container spacing={3}>
+            {userEnrollments?.map((course) => {
+              const courseProgress = userProgress?.find(
+                (progress: any) => progress.courseId === course.course?.id
               );
-            };
 
-            const courseEnrolled = {
-              id: course.course?.id,
-              title: course.course?.title,
-              instructor: {
-                fullName: course.course?.instructor?.fullName,
-                avatar: course.course?.instructor?.user?.avatarUrl,
-              },
-              totalLessons: calculateTotalLessons(course.course),
-              price: course.course?.price,
-              image: course.course?.thumbnailUrl,
-              progress: courseProgress?.completionPercentage,
-              isEnrolled: true,
-              category: course.course?.category?.name,
-            };
+              const calculateTotalLessons = (course: any) => {
+                if (!course || !course.sections) return 0;
+                return course.sections.reduce(
+                  (total: number, section: any) =>
+                    total + (section.lessons?.length || 0),
+                  0
+                );
+              };
 
-            return (
-              <Grid
-                item
-                xs={12} // 1 cột trên mobile nhỏ (<600px)
-                sm={6} // 2 cột trên mobile lớn (>=600px)
-                md={4} // 3 cột trên tablet (>=900px)
-                lg={3} // 4 cột trên desktop (> =1200px)
-                key={course.id}
-              >
-                <CardCourse {...courseEnrolled} />
-              </Grid>
-            );
-          })}
-        </Grid>
+              const courseEnrolled = {
+                id: course.course?.id,
+                title: course.course?.title,
+                instructor: {
+                  fullName: course.course?.instructor?.fullName,
+                  avatar: course.course?.instructor?.user?.avatarUrl,
+                },
+                totalLessons: calculateTotalLessons(course.course),
+                price: course.course?.price,
+                image: course.course?.thumbnailUrl,
+                progress: courseProgress?.completionPercentage,
+                isEnrolled: true,
+                category: course.course?.category?.name,
+              };
+
+              return (
+                <Grid
+                  item
+                  xs={12} // 1 cột trên mobile nhỏ (<600px)
+                  sm={6} // 2 cột trên mobile lớn (>=600px)
+                  md={4} // 3 cột trên tablet (>=900px)
+                  lg={3} // 4 cột trên desktop (> =1200px)
+                  key={course.id}
+                >
+                  <CardCourse {...courseEnrolled} />
+                </Grid>
+              );
+            })}
+          </Grid>
+        ) : (
+          <Typography
+            variant="h6"
+            textAlign="center"
+            color="text.secondary"
+            py={2}
+          >
+            Bạn chưa đăng ký khóa học nào
+          </Typography>
+        )}
       </Box>
     </CustomContainer>
   );

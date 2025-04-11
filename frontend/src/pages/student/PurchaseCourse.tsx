@@ -37,7 +37,10 @@ import { fetchCourseById } from "../../features/courses/coursesApiSlice";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { selectCourseById } from "../../features/courses/coursesSelector";
 import { selectCurrentUser } from "../../features/auth/authSelectors";
-import { enrollInCourse } from "../../features/enrollments/enrollmentsApiSlice";
+import {
+  enrollInCourse,
+  fetchUserEnrollments,
+} from "../../features/enrollments/enrollmentsApiSlice";
 import { toast } from "react-toastify";
 
 // Thêm interface cho thông tin ngân hàng
@@ -168,9 +171,10 @@ const PurchaseCourse = () => {
         userId: Number(currentUser?.id),
         courseId: Number(courseId),
       })
-    );
-
-    navigate(`/course/${courseId}/learn`);
+    ).then(() => {
+      dispatch(fetchUserEnrollments(Number(currentUser?.id)));
+      navigate(`/course/${courseId}/learn`);
+    });
   };
 
   return (

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import {
   Box,
   Drawer,
@@ -38,6 +38,8 @@ import {
 } from "@mui/icons-material";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import Logo from "../../../assets/logo.png";
+import { useAppSelector } from "../../../app/hooks";
+import { selectCurrentUser } from "../../../features/auth/authSelectors";
 
 const DRAWER_WIDTH = 280;
 const COLLAPSED_DRAWER_WIDTH = 70;
@@ -86,11 +88,18 @@ const InstructorLayout = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const navigate = useNavigate();
   const location = useLocation();
+  const currentUser = useAppSelector(selectCurrentUser);
 
   // Thêm state kiểm tra xem có phải admin đang impersonate không
   const [adminImpersonating, setAdminImpersonating] = useState(false);
   const [impersonatedInstructorName, setImpersonatedInstructorName] =
     useState("");
+
+  useEffect(() => {
+    if (currentUser?.role !== "instructor") {
+      navigate("/instructor/login");
+    }
+  }, [currentUser, navigate]);
 
   useEffect(() => {
     // Kiểm tra xem có phải admin đang impersonate không
@@ -233,89 +242,93 @@ const InstructorLayout = () => {
   return (
     <Box sx={{ display: "flex" }}>
       {/* Mobile AppBar */}
-      <AppBar
-        position="fixed"
-        sx={{
-          display: { md: "none" },
-          bgcolor: "primary.main",
-        }}
-      >
-        <Toolbar sx={{ justifyContent: "space-between" }}>
-          <IconButton
-            color="inherit"
-            edge="start"
-            onClick={handleDrawerToggle}
-            sx={{ mr: 2 }}
-          >
-            <MenuIcon />
-          </IconButton>
-          <Box
-            sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              flex: 1,
-            }}
-          >
-            <img
-              src={Logo}
-              alt="Logo"
-              style={{
-                width: 80,
-                height: 80,
-                objectFit: "contain",
+      {currentUser?.role === "instructor" && (
+        <AppBar
+          position="fixed"
+          sx={{
+            display: { md: "none" },
+            bgcolor: "primary.main",
+          }}
+        >
+          <Toolbar sx={{ justifyContent: "space-between" }}>
+            <IconButton
+              color="inherit"
+              edge="start"
+              onClick={handleDrawerToggle}
+              sx={{ mr: 2 }}
+            >
+              <MenuIcon />
+            </IconButton>
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                flex: 1,
               }}
-            />
-          </Box>
-          <Box sx={{ width: 48 }} />
-        </Toolbar>
-      </AppBar>
+            >
+              <img
+                src={Logo}
+                alt="Logo"
+                style={{
+                  width: 80,
+                  height: 80,
+                  objectFit: "contain",
+                }}
+              />
+            </Box>
+            <Box sx={{ width: 48 }} />
+          </Toolbar>
+        </AppBar>
+      )}
 
       {/* Sidebar */}
-      <Box
-        component="nav"
-        sx={{
-          width: { md: isExpanded ? DRAWER_WIDTH : COLLAPSED_DRAWER_WIDTH },
-          flexShrink: { md: 0 },
-          transition: `width ${TRANSITION_DURATION} ease`,
-        }}
-      >
-        {/* Mobile drawer */}
-        <Drawer
-          variant="temporary"
-          open={mobileOpen}
-          onClose={handleDrawerToggle}
-          ModalProps={{ keepMounted: true }}
+      {currentUser?.role === "instructor" && (
+        <Box
+          component="nav"
           sx={{
-            display: { xs: "block", md: "none" },
-            "& .MuiDrawer-paper": {
-              boxSizing: "border-box",
-              width: DRAWER_WIDTH,
-              bgcolor: "primary.main",
-            },
+            width: { md: isExpanded ? DRAWER_WIDTH : COLLAPSED_DRAWER_WIDTH },
+            flexShrink: { md: 0 },
+            transition: `width ${TRANSITION_DURATION} ease`,
           }}
         >
-          {drawer(true)}
-        </Drawer>
+          {/* Mobile drawer */}
+          <Drawer
+            variant="temporary"
+            open={mobileOpen}
+            onClose={handleDrawerToggle}
+            ModalProps={{ keepMounted: true }}
+            sx={{
+              display: { xs: "block", md: "none" },
+              "& .MuiDrawer-paper": {
+                boxSizing: "border-box",
+                width: DRAWER_WIDTH,
+                bgcolor: "primary.main",
+              },
+            }}
+          >
+            {drawer(true)}
+          </Drawer>
 
-        {/* Desktop drawer */}
-        <Drawer
-          variant="permanent"
-          sx={{
-            display: { xs: "none", md: "block" },
-            "& .MuiDrawer-paper": {
-              boxSizing: "border-box",
-              width: isExpanded ? DRAWER_WIDTH : COLLAPSED_DRAWER_WIDTH,
-              bgcolor: "primary.main",
-              transition: `all ${TRANSITION_DURATION} ease`,
-              overflowX: "hidden",
-            },
-          }}
-          open
-        >
-          {drawer(false)}
-        </Drawer>
-      </Box>
+          {/* Desktop drawer */}
+          <Drawer
+            variant="permanent"
+            sx={{
+              display: { xs: "none", md: "block" },
+              "& .MuiDrawer-paper": {
+                boxSizing: "border-box",
+                width: isExpanded ? DRAWER_WIDTH : COLLAPSED_DRAWER_WIDTH,
+                bgcolor: "primary.main",
+                transition: `all ${TRANSITION_DURATION} ease`,
+                overflowX: "hidden",
+              },
+            }}
+            open
+          >
+            {drawer(false)}
+          </Drawer>
+        </Box>
+      )}
 
       {/* Main content */}
       <Box

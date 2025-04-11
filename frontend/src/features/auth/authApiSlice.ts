@@ -59,6 +59,7 @@ export const registerStudent = createAsyncThunk(
 // Đăng nhập
 export const login = createAsyncThunk("auth/login", async (data: LoginData) => {
   try {
+    console.log(data);
     const response = await api.post("/auth/login", data);
 
     if (

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Card,
@@ -27,17 +27,28 @@ import {
   Facebook,
 } from "@mui/icons-material";
 import CustomContainer from "../../components/common/CustomContainer";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import { login } from "../../features/auth/authApiSlice";
+import { toast, ToastContainer } from "react-toastify";
+import { selectCurrentUser } from "../../features/auth/authSelectors";
 
 const InstructorLogin = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const dispatch = useAppDispatch();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+  const currentUser = useAppSelector(selectCurrentUser);
+
+  useEffect(() => {
+    if (currentUser) {
+      navigate("/instructor");
+    }
+  }, [currentUser]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -54,27 +65,16 @@ const InstructorLogin = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setLoginError(null);
-
-    try {
-      // Mock API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
-      // Kiểm tra đăng nhập (mock)
-      if (
-        formData.email === "instructor@example.com" &&
-        formData.password === "password"
-      ) {
-        navigate("/instructor");
-      } else {
-        setLoginError("Email hoặc mật khẩu không chính xác");
+    dispatch(login(formData)).then((res) => {
+      if (res.payload.error) {
+        toast.error("Sai email hoặc mật khẩu !");
       }
-    } catch (error) {
-      setLoginError("Đã xảy ra lỗi khi đăng nhập. Vui lòng thử lại sau.");
-    } finally {
-      setIsLoading(false);
-    }
+
+      if (res.payload.user.role == "instructor") {
+        navigate("/instructor");
+      }
+    });
   };
 
   return (
@@ -87,6 +87,7 @@ const InstructorLogin = () => {
         py: 4,
       }}
     >
+      <ToastContainer position="top-right" autoClose={2000} />
       <CustomContainer maxWidth="sm">
         <Card
           sx={{
@@ -198,10 +199,9 @@ const InstructorLogin = () => {
                   variant="contained"
                   fullWidth
                   size="large"
-                  disabled={isLoading}
                   sx={{ py: 1.5 }}
                 >
-                  {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
+                  Đăng nhập
                 </Button>
               </Stack>
             </form>
@@ -221,27 +221,9 @@ const InstructorLogin = () => {
               >
                 Đăng nhập với Google
               </Button>
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<Facebook />}
-                sx={{ py: 1.5 }}
-              >
-                Đăng nhập với Facebook
-              </Button>
             </Stack>
 
             <Box sx={{ mt: 3, textAlign: "center" }}>
-              <Typography variant="body2" color="text.secondary">
-                Chưa phải giảng viên?{" "}
-                <Link
-                  component={RouterLink}
-                  to="/instructor/register"
-                  color="primary"
-                >
-                  Đăng ký ngay
-                </Link>
-              </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                 <Link component={RouterLink} to="/login" color="primary">
                   Đăng nhập với tài khoản học viên
