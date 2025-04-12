@@ -1,3 +1,5 @@
+import { Course } from "./course.types";
+
 // Các enum đã sử dụng trong entities backend
 export enum UserRole {
   STUDENT = "student",
@@ -107,24 +109,6 @@ export interface Enrollment {
   createdAt: Date;
   updatedAt: Date;
   course?: Course;
-}
-
-// Course interface cho frontend
-export interface Course {
-  id: number;
-  title: string;
-  slug: string;
-  description?: string;
-  price?: number;
-  instructorId: number;
-  categoryId?: number;
-  thumbnail?: string;
-  status: string;
-  createdAt: Date;
-  updatedAt: Date;
-  totalLessons?: number;
-  totalDuration?: number;
-  rating?: number;
 }
 
 // AcademicClass interface

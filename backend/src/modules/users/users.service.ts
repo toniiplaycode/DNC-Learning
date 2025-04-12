@@ -29,7 +29,7 @@ export class UsersService {
   async findStudentsByInstructorId(instructorId: number): Promise<User[]> {
     // 1. Tìm tất cả khóa học mà instructor dạy
     // 2. Sau đó tìm tất cả học sinh đã đăng ký các khóa học đó
-    // 3. Hiển thị cả thông tin khóa học đã đăng ký
+    // 3. Hiển thị cả thông tin khóa học đã đăng ký và điểm số
 
     const students = await this.userRepository
       .createQueryBuilder('user')
@@ -49,6 +49,17 @@ export class UsersService {
       .leftJoinAndSelect('userStudentAcademic.academicClass', 'academicClass')
       .leftJoinAndSelect('user.enrollments', 'userEnrollments')
       .leftJoinAndSelect('userEnrollments.course', 'enrolledCourse')
+      // Thêm relation grades cho mỗi enrollment
+      .leftJoinAndMapMany(
+        'userEnrollments.grades',
+        'user_grades',
+        'grades',
+        'user.id = grades.user_id AND userEnrollments.course_id = grades.course_id',
+      )
+      // Lấy thêm thông tin liên quan đến điểm
+      .leftJoinAndSelect('grades.lesson', 'gradeLesson')
+      .leftJoinAndSelect('grades.assignmentSubmission', 'gradeAssignment')
+      .leftJoinAndSelect('grades.quizAttempt', 'gradeQuiz')
       .distinct(true)
       .getMany();
 

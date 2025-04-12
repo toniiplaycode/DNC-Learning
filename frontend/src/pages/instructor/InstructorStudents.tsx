@@ -57,11 +57,20 @@ import {
   AccessTime,
   MenuBook,
   Close,
+  LocationCity,
+  Work,
+  BubbleChart,
+  CheckCircle,
+  Badge,
+  AccountBalance,
+  Class,
+  Info,
 } from "@mui/icons-material";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { fetchStudentsByInstructor } from "../../features/users/usersApiSlice";
 import { selectCurrentUser } from "../../features/auth/authSelectors";
 import { selectInstructorStudents } from "../../features/users/usersSelectors";
+import React from "react";
 
 // Add these interfaces near the top of the file
 interface Assignment {
@@ -87,364 +96,6 @@ interface CourseGrade {
   quizzes: Quiz[];
   finalGrade: number;
 }
-
-// Cập nhật interface cho student
-interface Student {
-  id: number;
-  name: string;
-  avatar: string;
-  email: string;
-  phone: string;
-  address: string;
-  enrolledCourses: number;
-  lastActive: string;
-  status: string;
-  joinDate: string;
-  courses: any[]; // Có thể tạo interface riêng nếu cần
-  payments: any[]; // Có thể tạo interface riêng nếu cần
-  grades?: CourseGrade[]; // Thêm dấu ? để đánh dấu optional
-  type: string; // Added type field
-  completedCourses: number;
-  certificates: number;
-  studentId?: string;
-  faculty?: string;
-  major?: string;
-  academicYear?: string;
-  year?: number;
-  className?: string;
-}
-
-// Mock data
-const mockStudents = [
-  {
-    id: 1,
-    name: "Nguyễn Văn A",
-    avatar: "/src/assets/logo.png",
-    email: "nguyenvana@gmail.com",
-    phone: "0987654321",
-    address: "Hà Nội, Việt Nam",
-    enrolledCourses: 3,
-    lastActive: "2024-03-15",
-    status: "active",
-    joinDate: "2024-01-15",
-    courses: [
-      {
-        id: 1,
-        name: "React & TypeScript Masterclass",
-        progress: 75,
-        enrollDate: "2024-01-20",
-        completedLessons: 36,
-        totalLessons: 48,
-      },
-      {
-        id: 2,
-        name: "Node.js Advanced Concepts",
-        progress: 30,
-        enrollDate: "2024-02-15",
-        completedLessons: 12,
-        totalLessons: 40,
-      },
-    ],
-    payments: [
-      {
-        id: 1,
-        courseId: 1,
-        courseName: "React & TypeScript Masterclass",
-        amount: 899000,
-        date: "2024-01-20",
-      },
-      {
-        id: 2,
-        courseId: 2,
-        courseName: "Node.js Advanced Concepts",
-        amount: 699000,
-        date: "2024-02-15",
-      },
-    ],
-    grades: [
-      {
-        courseId: 1,
-        courseName: "React & TypeScript Masterclass",
-        assignments: [
-          {
-            id: 1,
-            name: "Assignment 1: React Hooks",
-            score: 85,
-            maxScore: 100,
-            submittedDate: "2024-02-01",
-          },
-          {
-            id: 2,
-            name: "Assignment 2: TypeScript Basics",
-            score: 90,
-            maxScore: 100,
-            submittedDate: "2024-02-15",
-          },
-          {
-            id: 3,
-            name: "Mid-term Project",
-            score: 88,
-            maxScore: 100,
-            submittedDate: "2024-03-01",
-          },
-        ],
-        quizzes: [
-          {
-            id: 1,
-            name: "Quiz 1: React Fundamentals",
-            score: 8,
-            maxScore: 10,
-            submittedDate: "2024-01-25",
-          },
-          {
-            id: 2,
-            name: "Quiz 2: TypeScript Types",
-            score: 9,
-            maxScore: 10,
-            submittedDate: "2024-02-10",
-          },
-        ],
-        finalGrade: 87.5,
-      },
-    ],
-    type: "student",
-    completedCourses: 1,
-    certificates: 1,
-  },
-  {
-    id: 2,
-    name: "Trần Thị B",
-    avatar: "/src/assets/logo.png",
-    email: "tranthib@gmail.com",
-    phone: "0987654322",
-    address: "Hà Nội, Việt Nam",
-    enrolledCourses: 2,
-    lastActive: "2024-03-14",
-    status: "inactive",
-    joinDate: "2024-01-14",
-    courses: [],
-    payments: [],
-    type: "student",
-    completedCourses: 0,
-    certificates: 0,
-  },
-  {
-    id: 3,
-    name: "Phạm Văn C",
-    email: "phamvanc@university.edu.vn",
-    phone: "0903456789",
-    avatar: "/src/assets/logo.png",
-    enrolledCourses: 4,
-    lastActive: "5 giờ trước",
-    status: "active",
-    joinDate: "2024-01-15",
-    courses: [
-      {
-        id: 1,
-        name: "React & TypeScript Masterclass",
-        progress: 75,
-        enrollDate: "2024-01-20",
-        completedLessons: 36,
-        totalLessons: 48,
-      },
-      {
-        id: 2,
-        name: "Node.js Advanced Concepts",
-        progress: 30,
-        enrollDate: "2024-02-15",
-        completedLessons: 12,
-        totalLessons: 40,
-      },
-    ],
-    payments: [
-      {
-        id: 1,
-        courseId: 1,
-        courseName: "React & TypeScript Masterclass",
-        amount: 899000,
-        date: "2024-01-20",
-      },
-      {
-        id: 2,
-        courseId: 2,
-        courseName: "Node.js Advanced Concepts",
-        amount: 699000,
-        date: "2024-02-15",
-      },
-    ],
-    grades: [
-      {
-        courseId: 1,
-        courseName: "React & TypeScript Masterclass",
-        assignments: [
-          {
-            id: 1,
-            name: "Assignment 1: React Hooks",
-            score: 85,
-            maxScore: 100,
-            submittedDate: "2024-02-01",
-          },
-          {
-            id: 2,
-            name: "Assignment 2: TypeScript Basics",
-            score: 90,
-            maxScore: 100,
-            submittedDate: "2024-02-15",
-          },
-          {
-            id: 3,
-            name: "Mid-term Project",
-            score: 88,
-            maxScore: 100,
-            submittedDate: "2024-03-01",
-          },
-        ],
-        quizzes: [
-          {
-            id: 1,
-            name: "Quiz 1: React Fundamentals",
-            score: 8,
-            maxScore: 10,
-            submittedDate: "2024-01-25",
-          },
-          {
-            id: 2,
-            name: "Quiz 2: TypeScript Types",
-            score: 9,
-            maxScore: 10,
-            submittedDate: "2024-02-10",
-          },
-        ],
-        finalGrade: 87.5,
-      },
-    ],
-    type: "student_academic",
-    completedCourses: 2,
-    certificates: 2,
-    studentId: "SV001",
-    faculty: "Công nghệ thông tin",
-    major: "Khoa học máy tính",
-    academicYear: "2021-2025",
-    year: 3,
-  },
-  {
-    id: 4,
-    name: "Lê Thị D",
-    email: "lethid@university.edu.vn",
-    phone: "0904567890",
-    avatar: "/src/assets/logo.png",
-    enrolledCourses: 5,
-    lastActive: "12 giờ trước",
-    status: "active",
-    joinDate: "2024-01-15",
-    courses: [
-      {
-        id: 1,
-        name: "React & TypeScript Masterclass",
-        progress: 75,
-        enrollDate: "2024-01-20",
-        completedLessons: 36,
-        totalLessons: 48,
-      },
-      {
-        id: 2,
-        name: "Node.js Advanced Concepts",
-        progress: 30,
-        enrollDate: "2024-02-15",
-        completedLessons: 12,
-        totalLessons: 40,
-      },
-    ],
-    payments: [
-      {
-        id: 1,
-        courseId: 1,
-        courseName: "React & TypeScript Masterclass",
-        amount: 899000,
-        date: "2024-01-20",
-      },
-      {
-        id: 2,
-        courseId: 2,
-        courseName: "Node.js Advanced Concepts",
-        amount: 699000,
-        date: "2024-02-15",
-      },
-    ],
-    grades: [
-      {
-        courseId: 1,
-        courseName: "React & TypeScript Masterclass",
-        assignments: [
-          {
-            id: 1,
-            name: "Assignment 1: React Hooks",
-            score: 85,
-            maxScore: 100,
-            submittedDate: "2024-02-01",
-          },
-          {
-            id: 2,
-            name: "Assignment 2: TypeScript Basics",
-            score: 90,
-            maxScore: 100,
-            submittedDate: "2024-02-15",
-          },
-          {
-            id: 3,
-            name: "Mid-term Project",
-            score: 88,
-            maxScore: 100,
-            submittedDate: "2024-03-01",
-          },
-        ],
-        quizzes: [
-          {
-            id: 1,
-            name: "Quiz 1: React Fundamentals",
-            score: 8,
-            maxScore: 10,
-            submittedDate: "2024-01-25",
-          },
-          {
-            id: 2,
-            name: "Quiz 2: TypeScript Types",
-            score: 9,
-            maxScore: 10,
-            submittedDate: "2024-02-10",
-          },
-        ],
-        finalGrade: 87.5,
-      },
-    ],
-    type: "student_academic",
-    completedCourses: 4,
-    certificates: 3,
-    studentId: "SV002",
-    faculty: "Công nghệ thông tin",
-    major: "Kỹ thuật phần mềm",
-    academicYear: "2020-2024",
-    year: 4,
-  },
-];
-
-// Mock data cho các khoa
-const faculties = [
-  "Tất cả",
-  "Công nghệ thông tin",
-  "Kỹ thuật điện tử",
-  "Quản trị kinh doanh",
-  "Ngoại ngữ",
-];
-
-// Mock data cho các ngành học
-const majors = [
-  "Tất cả",
-  "Khoa học máy tính",
-  "Kỹ thuật phần mềm",
-  "Hệ thống thông tin",
-  "An toàn thông tin",
-];
 
 // Tab Panel component
 interface TabPanelProps {
@@ -488,9 +139,7 @@ const InstructorStudents = () => {
   >("student");
   const [sortBy, setSortBy] = useState("name");
   const [filterFaculty, setFilterFaculty] = useState("Tất cả");
-  const [filterMajor, setFilterMajor] = useState("Tất cả");
-  const [classFilter, setClassFilter] = useState("all");
-  const [facultyFilter, setFacultyFilter] = useState("all");
+  const [filterClassId, setFilterClassId] = useState<string>("Tất cả");
 
   useEffect(() => {
     dispatch(fetchStudentsByInstructor(currentUser?.userInstructor?.id));
@@ -529,32 +178,135 @@ const InstructorStudents = () => {
     }
   };
 
-  const filteredStudents = mockStudents
+  // Tạo danh sách các lớp học duy nhất dựa trên academicClassId
+  const classOptions = React.useMemo(() => {
+    const uniqueClasses = new Map<string, string>();
+
+    // Thêm tùy chọn "Tất cả"
+    uniqueClasses.set("Tất cả", "Tất cả");
+
+    // Thu thập các lớp học từ dữ liệu sinh viên học thuật
+    instructorStudents.forEach((student) => {
+      if (
+        student.role === "student_academic" &&
+        student.userStudentAcademic?.academicClassId &&
+        student.userStudentAcademic?.academicClass?.className
+      ) {
+        uniqueClasses.set(
+          student.userStudentAcademic.academicClassId,
+          student.userStudentAcademic.academicClass.className
+        );
+      }
+    });
+
+    // Chuyển đổi Map thành mảng các object để dễ dàng sử dụng trong UI
+    return Array.from(uniqueClasses.entries()).map(([id, name]) => ({
+      id: id,
+      name: name,
+    }));
+  }, [instructorStudents]);
+
+  // Thu thập các khóa học cho sinh viên thường
+  const courseOptions = React.useMemo(() => {
+    const uniqueCourses = new Map<string, string>();
+
+    // Thêm tùy chọn "Tất cả"
+    uniqueCourses.set("Tất cả", "Tất cả");
+
+    // Thu thập các khóa học từ dữ liệu sinh viên thường
+    instructorStudents.forEach((student) => {
+      if (student.role === "student" && student.enrollments) {
+        student.enrollments.forEach((enrollment) => {
+          if (enrollment.courseId && enrollment.course?.title) {
+            uniqueCourses.set(enrollment.courseId, enrollment.course.title);
+          }
+        });
+      }
+    });
+
+    return Array.from(uniqueCourses.entries()).map(([id, title]) => ({
+      id: id,
+      name: title,
+    }));
+  }, [instructorStudents]);
+
+  const filteredStudents = instructorStudents
     .filter((student) => {
-      if (studentType === "all") return true;
-      return student.type === studentType;
-    })
-    .filter((student) => {
-      if (student.type === "student_academic") {
-        if (filterFaculty !== "Tất cả" && student.faculty !== filterFaculty)
-          return false;
-        if (filterMajor !== "Tất cả" && student.major !== filterMajor)
-          return false;
+      // Lọc theo loại học viên (student hoặc student_academic)
+      if (studentType === "student" && student.role !== "student") return false;
+      if (
+        studentType === "student_academic" &&
+        student.role !== "student_academic"
+      )
+        return false;
+
+      // Lọc theo trạng thái
+      if (statusFilter !== "all" && student.status !== statusFilter)
+        return false;
+
+      // Lọc theo khoa (chỉ áp dụng cho sinh viên học thuật)
+      if (
+        student.role === "student_academic" &&
+        filterFaculty !== "Tất cả" &&
+        student.userStudentAcademic?.major !== filterFaculty
+      )
+        return false;
+
+      // Lọc theo lớp học dựa trên academicClassId
+      if (filterClassId !== "Tất cả") {
+        if (student.role === "student_academic") {
+          // Lọc sinh viên học thuật theo ID lớp
+          if (student.userStudentAcademic?.academicClassId !== filterClassId) {
+            return false;
+          }
+        } else if (student.role === "student") {
+          // Lọc sinh viên thường theo ID khóa học
+          const isInCourse = student.enrollments?.some(
+            (enrollment) => enrollment.courseId === filterClassId
+          );
+          if (!isInCourse) {
+            return false;
+          }
+        }
       }
 
+      // Tìm kiếm theo tên, email hoặc mã sinh viên
       return (
-        student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         student.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (student.type === "student_academic" &&
-          student.studentId?.toLowerCase().includes(searchQuery.toLowerCase()))
+        (student.role === "student" &&
+          student.userStudent?.fullName
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase())) ||
+        (student.role === "student_academic" &&
+          student.userStudentAcademic?.fullName
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase())) ||
+        (student.role === "student_academic" &&
+          student.userStudentAcademic?.studentCode
+            .toLowerCase()
+            .includes(searchQuery.toLowerCase()))
       );
     })
     .sort((a, b) => {
-      if (sortBy === "name") return a.name.localeCompare(b.name);
-      if (sortBy === "lastActive") {
-        return a.lastActive.localeCompare(b.lastActive);
+      if (sortBy === "name") {
+        const nameA =
+          a.role === "student"
+            ? a.userStudent?.fullName
+            : a.userStudentAcademic?.fullName;
+        const nameB =
+          b.role === "student"
+            ? b.userStudent?.fullName
+            : b.userStudentAcademic?.fullName;
+        return nameA.localeCompare(nameB);
       }
-      if (sortBy === "progress") return b.progress - a.progress;
+      if (sortBy === "joinDate") {
+        return (
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+      }
+      if (sortBy === "enrolledCourses") {
+        return (b.enrollments?.length || 0) - (a.enrollments?.length || 0);
+      }
       return 0;
     });
 
@@ -666,6 +418,56 @@ const InstructorStudents = () => {
               </Select>
             </FormControl>
 
+            {/* Hiển thị bộ lọc khoa và ngành chỉ cho sinh viên học thuật */}
+            {studentType === "student_academic" && (
+              <>
+                <FormControl size="small" sx={{ minWidth: 150 }}>
+                  <InputLabel id="faculty-filter-label">Khoa</InputLabel>
+                  <Select
+                    labelId="faculty-filter-label"
+                    value={filterFaculty}
+                    onChange={(e) => setFilterFaculty(e.target.value)}
+                    label="Khoa"
+                  >
+                    <MenuItem value="Tất cả">Tất cả</MenuItem>
+                    {/* Add faculty options here */}
+                  </Select>
+                </FormControl>
+              </>
+            )}
+
+            {/* Hiển thị bộ lọc lớp học dựa theo loại sinh viên */}
+            <FormControl size="small" sx={{ minWidth: 200 }}>
+              <InputLabel id="class-filter-label">
+                {studentType === "student_academic" ? "Lớp học" : "Khóa học"}
+              </InputLabel>
+              <Select
+                labelId="class-filter-label"
+                value={filterClassId}
+                onChange={(e) => setFilterClassId(e.target.value)}
+                label={
+                  studentType === "student_academic" ? "Lớp học" : "Khóa học"
+                }
+              >
+                <MenuItem value="Tất cả">Tất cả</MenuItem>
+                {studentType === "student_academic"
+                  ? classOptions
+                      .filter((option) => option.id !== "Tất cả")
+                      .map((option) => (
+                        <MenuItem key={option.id} value={option.id}>
+                          {option.name}
+                        </MenuItem>
+                      ))
+                  : courseOptions
+                      .filter((option) => option.id !== "Tất cả")
+                      .map((option) => (
+                        <MenuItem key={option.id} value={option.id}>
+                          {option.name}
+                        </MenuItem>
+                      ))}
+              </Select>
+            </FormControl>
+
             <FormControl size="small" sx={{ minWidth: 200 }}>
               <InputLabel>Sắp xếp theo</InputLabel>
               <Select
@@ -678,32 +480,6 @@ const InstructorStudents = () => {
                 <MenuItem value="enrolledCourses">Số khóa học</MenuItem>
               </Select>
             </FormControl>
-
-            {studentType === "student_academic" && (
-              <FormControl size="small" sx={{ minWidth: 200 }}>
-                <InputLabel>Lớp</InputLabel>
-                <Select
-                  value={classFilter}
-                  label="Lớp"
-                  onChange={(e) => setClassFilter(e.target.value as string)}
-                >
-                  <MenuItem value="all">Tất cả lớp</MenuItem>
-                </Select>
-              </FormControl>
-            )}
-
-            {studentType === "student_academic" && (
-              <FormControl size="small" sx={{ minWidth: 200 }}>
-                <InputLabel>Khoa</InputLabel>
-                <Select
-                  value={facultyFilter}
-                  label="Khoa"
-                  onChange={(e) => setFacultyFilter(e.target.value as string)}
-                >
-                  <MenuItem value="all">Tất cả khoa</MenuItem>
-                </Select>
-              </FormControl>
-            )}
           </Stack>
 
           <TableContainer>
@@ -711,112 +487,90 @@ const InstructorStudents = () => {
               <TableHead>
                 <TableRow>
                   <TableCell>Học viên</TableCell>
-                  {studentType === "student_academic" && (
-                    <>
-                      <TableCell>Mã SV</TableCell>
-                      <TableCell>Lớp</TableCell>
-                      <TableCell>Khoa</TableCell>
-                    </>
-                  )}
                   <TableCell>Email</TableCell>
-                  <TableCell>Khóa học</TableCell>
-                  <TableCell>Ngày tham gia</TableCell>
                   <TableCell>Trạng thái</TableCell>
+                  <TableCell>Ngày tham gia</TableCell>
+                  <TableCell>Khóa học đã đăng ký</TableCell>
                   <TableCell align="right">Thao tác</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {paginatedStudents.length > 0 ? (
-                  paginatedStudents.map((student) => (
+                {paginatedStudents.map((student) => {
+                  // Xác định thông tin người dùng dựa trên loại học viên
+                  const fullName =
+                    student.role === "student"
+                      ? student.userStudent?.fullName
+                      : student.userStudentAcademic?.fullName;
+
+                  const avatar = student.avatarUrl || "/default-avatar.png";
+
+                  // Đếm số khóa học đã đăng ký
+                  const totalEnrolled = student.enrollments?.length || 0;
+
+                  // Thông tin bổ sung cho sinh viên học thuật
+                  const academicInfo =
+                    student.role === "student_academic" ? (
+                      <>
+                        <div>
+                          Mã SV: {student.userStudentAcademic?.studentCode}
+                        </div>
+                        <div>Khoa: {student.userStudentAcademic?.major}</div>
+                        <div>
+                          Lớp:{" "}
+                          {
+                            student.userStudentAcademic?.academicClass
+                              ?.className
+                          }
+                        </div>
+                      </>
+                    ) : null;
+
+                  return (
                     <TableRow
                       key={student.id}
+                      hover
                       onClick={() => handleRowClick(student)}
-                      sx={{
-                        cursor: "pointer",
-                        "&:hover": { bgcolor: "action.hover" },
-                      }}
+                      sx={{ cursor: "pointer" }}
                     >
                       <TableCell>
-                        <Stack direction="row" spacing={2} alignItems="center">
-                          <Avatar src={student.avatar}>
-                            {student.name ? student.name.charAt(0) : ""}
-                          </Avatar>
+                        <Stack direction="row" alignItems="center" spacing={2}>
+                          <Avatar src={avatar} />
                           <Box>
-                            <Typography variant="body1">
-                              {student.name}
+                            <Typography variant="subtitle2">
+                              {fullName}
                             </Typography>
-                            {student.type === "student_academic" && (
-                              <Chip
-                                icon={<School fontSize="small" />}
-                                label="SV"
-                                size="small"
-                                color="primary"
-                                variant="outlined"
-                                sx={{ mr: 1 }}
-                              />
-                            )}
-                            {student.type === "student" && (
-                              <Chip
-                                icon={<MenuBook fontSize="small" />}
-                                label="HV"
-                                size="small"
-                                color="secondary"
-                                variant="outlined"
-                                sx={{ mr: 1 }}
-                              />
-                            )}
+                            {academicInfo}
                           </Box>
                         </Stack>
                       </TableCell>
-                      {student.type === "student_academic" && (
-                        <>
-                          <TableCell>{student.studentId || "-"}</TableCell>
-                          <TableCell>{student.className || "-"}</TableCell>
-                          <TableCell>{student.faculty || "-"}</TableCell>
-                        </>
-                      )}
                       <TableCell>{student.email}</TableCell>
                       <TableCell>
                         <Chip
-                          label={student.enrolledCourses}
+                          label={getStatusLabel(student.status)}
+                          color={getStatusColor(student.status)}
                           size="small"
-                          color="primary"
                         />
                       </TableCell>
-                      <TableCell>{student.joinDate}</TableCell>
                       <TableCell>
-                        <Chip
-                          label={
-                            student.status === "active"
-                              ? "Đang hoạt động"
-                              : "Không hoạt động"
-                          }
-                          color={
-                            student.status === "active" ? "success" : "default"
-                          }
-                          size="small"
-                        />
+                        {new Date(student.createdAt).toLocaleDateString(
+                          "vi-VN"
+                        )}
                       </TableCell>
+                      <TableCell>{totalEnrolled}</TableCell>
                       <TableCell align="right">
                         <IconButton
                           size="small"
-                          onClick={(event) => handleMenuOpen(event, student)}
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleMenuOpen(e, student);
+                          }}
                         >
                           <MoreVert />
                         </IconButton>
                       </TableCell>
                     </TableRow>
-                  ))
-                ) : (
-                  <TableRow>
-                    <TableCell
-                      colSpan={studentType === "student_academic" ? 9 : 8}
-                      align="center"
-                    >
-                      Không tìm thấy học viên nào
-                    </TableCell>
-                  </TableRow>
-                )}
+                  );
+                })}
               </TableBody>
             </Table>
           </TableContainer>
@@ -937,48 +691,99 @@ const InstructorStudents = () => {
                       secondary={selectedStudent?.phone || "-"}
                     />
                   </ListItem>
-                  <ListItem>
-                    <ListItemIcon>
-                      <LocationOn />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="Địa chỉ"
-                      secondary={selectedStudent?.address || "-"}
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemIcon>
-                      <School />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="Số khóa học đã đăng ký"
-                      secondary={selectedStudent?.enrolledCourses || 0}
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemIcon>
-                      <CalendarToday />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="Hoạt động gần đây"
-                      secondary={
-                        selectedStudent?.lastActive
-                          ? new Date(
-                              selectedStudent.lastActive
-                            ).toLocaleDateString("vi-VN")
-                          : "-"
-                      }
-                    />
-                  </ListItem>
-                  {selectedStudent?.type === "student_academic" && (
+
+                  {selectedStudent?.role === "student" ? (
+                    // Thông tin cho sinh viên thường
                     <>
+                      <ListItem>
+                        <ListItemIcon>
+                          <LocationOn />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Địa chỉ"
+                          secondary={
+                            selectedStudent?.userStudent?.address || "-"
+                          }
+                        />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemIcon>
+                          <LocationCity />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Thành phố"
+                          secondary={selectedStudent?.userStudent?.city || "-"}
+                        />
+                      </ListItem>
                       <ListItem>
                         <ListItemIcon>
                           <School />
                         </ListItemIcon>
                         <ListItemText
+                          primary="Trình độ học vấn"
+                          secondary={
+                            selectedStudent?.userStudent?.educationLevel || "-"
+                          }
+                        />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemIcon>
+                          <Work />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Nghề nghiệp"
+                          secondary={
+                            selectedStudent?.userStudent?.occupation || "-"
+                          }
+                        />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemIcon>
+                          <BubbleChart />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Sở thích"
+                          secondary={
+                            selectedStudent?.userStudent?.interests || "-"
+                          }
+                        />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemIcon>
+                          <School />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Số khóa học đã đăng ký"
+                          secondary={selectedStudent?.enrollments?.length || 0}
+                        />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemIcon>
+                          <CheckCircle />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Số khóa học đã hoàn thành"
+                          secondary={
+                            selectedStudent?.enrollments?.filter(
+                              (e) => e.status === "completed"
+                            )?.length || 0
+                          }
+                        />
+                      </ListItem>
+                    </>
+                  ) : (
+                    // Thông tin cho sinh viên học thuật
+                    <>
+                      <ListItem>
+                        <ListItemIcon>
+                          <Badge />
+                        </ListItemIcon>
+                        <ListItemText
                           primary="Mã sinh viên"
-                          secondary={selectedStudent?.studentId || "-"}
+                          secondary={
+                            selectedStudent?.userStudentAcademic?.studentCode ||
+                            "-"
+                          }
                         />
                       </ListItem>
                       <ListItem>
@@ -987,7 +792,48 @@ const InstructorStudents = () => {
                         </ListItemIcon>
                         <ListItemText
                           primary="Lớp"
-                          secondary={selectedStudent?.className || "-"}
+                          secondary={
+                            selectedStudent?.userStudentAcademic?.academicClass
+                              ?.className || "-"
+                          }
+                        />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemIcon>
+                          <AccountBalance />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Khoa"
+                          secondary={
+                            selectedStudent?.userStudentAcademic?.major || "-"
+                          }
+                        />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemIcon>
+                          <Class />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Khóa"
+                          secondary={
+                            selectedStudent?.userStudentAcademic
+                              ?.academicYear || "-"
+                          }
+                        />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemIcon>
+                          <Info />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Trạng thái học tập"
+                          secondary={
+                            selectedStudent?.userStudentAcademic?.status ===
+                            "studying"
+                              ? "Đang học"
+                              : selectedStudent?.userStudentAcademic?.status ||
+                                "-"
+                          }
                         />
                       </ListItem>
                       <ListItem>
@@ -995,63 +841,197 @@ const InstructorStudents = () => {
                           <School />
                         </ListItemIcon>
                         <ListItemText
-                          primary="Khoa"
-                          secondary={selectedStudent?.faculty || "-"}
+                          primary="Số khóa học đã đăng ký"
+                          secondary={selectedStudent?.enrollments?.length || 0}
+                        />
+                      </ListItem>
+                      <ListItem>
+                        <ListItemIcon>
+                          <CheckCircle />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Số khóa học đã hoàn thành"
+                          secondary={
+                            selectedStudent?.enrollments?.filter(
+                              (e) => e.status === "completed"
+                            )?.length || 0
+                          }
                         />
                       </ListItem>
                     </>
                   )}
+
+                  <ListItem>
+                    <ListItemIcon>
+                      <CalendarToday />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Ngày tham gia"
+                      secondary={
+                        selectedStudent?.createdAt
+                          ? new Date(
+                              selectedStudent.createdAt
+                            ).toLocaleDateString("vi-VN")
+                          : "-"
+                      }
+                    />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemIcon>
+                      <AccessTime />
+                    </ListItemIcon>
+                    <ListItemText
+                      primary="Hoạt động gần đây"
+                      secondary={
+                        selectedStudent?.lastLogin
+                          ? new Date(
+                              selectedStudent.lastLogin
+                            ).toLocaleDateString("vi-VN")
+                          : "-"
+                      }
+                    />
+                  </ListItem>
                 </List>
               </TabPanel>
 
               <TabPanel value={tabValue} index={1}>
-                {selectedStudent?.courses?.length > 0 ? (
-                  selectedStudent.courses.map((course: any) => (
-                    <Card key={course.id} sx={{ mb: 2 }}>
-                      <CardContent>
-                        <Stack
-                          direction="row"
-                          spacing={2}
-                          alignItems="flex-start"
-                        >
-                          <Avatar src={course.image}>
-                            {course.name || course.title
-                              ? (course.name || course.title).charAt(0)
-                              : ""}
-                          </Avatar>
-                          <Stack spacing={1} sx={{ flex: 1 }}>
-                            <Typography variant="h6">
-                              {course.name || course.title}
-                            </Typography>
-                            <Typography variant="body2" color="text.secondary">
-                              Ngày đăng ký:{" "}
-                              {new Date(course.enrollDate).toLocaleDateString(
-                                "vi-VN"
-                              )}
-                            </Typography>
-                            <Box>
-                              <LinearProgress
-                                variant="determinate"
-                                value={course.progress}
-                                sx={{ height: 6, borderRadius: 1 }}
-                              />
-                              <Typography
-                                variant="caption"
-                                color="text.secondary"
-                                sx={{ mt: 0.5, display: "block" }}
-                              >
-                                {course.progress}% hoàn thành
+                {selectedStudent?.enrollments?.length > 0 ? (
+                  <div>
+                    {/* Tiêu đề phần */}
+                    <Typography
+                      variant="subtitle1"
+                      sx={{ mb: 2, fontWeight: "medium" }}
+                    >
+                      Có {selectedStudent.enrollments.length} khóa học
+                    </Typography>
+
+                    {/* Danh sách khóa học */}
+                    {selectedStudent.enrollments.map((enrollment: any) => (
+                      <Card key={enrollment.id} sx={{ mb: 2 }}>
+                        <CardContent>
+                          <Stack
+                            direction="row"
+                            spacing={2}
+                            alignItems="flex-start"
+                          >
+                            <Avatar
+                              src={enrollment.course?.thumbnailUrl}
+                              variant="rounded"
+                              sx={{ width: 60, height: 60 }}
+                            >
+                              {enrollment.course?.title
+                                ? enrollment.course.title.charAt(0)
+                                : "C"}
+                            </Avatar>
+
+                            <Stack spacing={1} sx={{ flex: 1 }}>
+                              <Typography variant="h6">
+                                {enrollment.course?.title || "Không có tiêu đề"}
                               </Typography>
-                            </Box>
-                            <Typography variant="body2">
-                              Hoàn thành {course.completedLessons}/
-                              {course.totalLessons} bài học
-                            </Typography>
+
+                              <Stack
+                                direction="row"
+                                justifyContent="space-between"
+                                alignItems="center"
+                              >
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
+                                  Ngày đăng ký:{" "}
+                                  {new Date(
+                                    enrollment.enrollmentDate
+                                  ).toLocaleDateString("vi-VN")}
+                                </Typography>
+
+                                <Chip
+                                  label={
+                                    enrollment.status === "active"
+                                      ? "Đang học"
+                                      : enrollment.status === "completed"
+                                      ? "Đã hoàn thành"
+                                      : enrollment.status === "dropped"
+                                      ? "Đã hủy"
+                                      : "Không xác định"
+                                  }
+                                  color={
+                                    enrollment.status === "active"
+                                      ? "primary"
+                                      : enrollment.status === "completed"
+                                      ? "success"
+                                      : enrollment.status === "dropped"
+                                      ? "error"
+                                      : "default"
+                                  }
+                                  size="small"
+                                />
+                              </Stack>
+
+                              {enrollment.status === "completed" &&
+                                enrollment.completionDate && (
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                  >
+                                    Ngày hoàn thành:{" "}
+                                    {new Date(
+                                      enrollment.completionDate
+                                    ).toLocaleDateString("vi-VN")}
+                                  </Typography>
+                                )}
+
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{
+                                  display: "-webkit-box",
+                                  overflow: "hidden",
+                                  WebkitBoxOrient: "vertical",
+                                  WebkitLineClamp: 2,
+                                  mt: 1,
+                                }}
+                              >
+                                {enrollment.course?.description ||
+                                  "Không có mô tả"}
+                              </Typography>
+
+                              <Box sx={{ mt: 1 }}>
+                                <Stack direction="row" spacing={1}>
+                                  <Chip
+                                    size="small"
+                                    label={
+                                      enrollment.course?.level
+                                        ? enrollment.course.level === "beginner"
+                                          ? "Cơ bản"
+                                          : enrollment.course.level ===
+                                            "intermediate"
+                                          ? "Trung cấp"
+                                          : enrollment.course.level ===
+                                            "advanced"
+                                          ? "Nâng cao"
+                                          : enrollment.course.level
+                                        : "Không xác định"
+                                    }
+                                    variant="outlined"
+                                  />
+
+                                  {enrollment.course?.price && (
+                                    <Chip
+                                      size="small"
+                                      label={`${parseInt(
+                                        enrollment.course.price
+                                      ).toLocaleString("vi-VN")}đ`}
+                                      variant="outlined"
+                                    />
+                                  )}
+                                </Stack>
+                              </Box>
+                            </Stack>
                           </Stack>
-                        </Stack>
-                      </CardContent>
-                    </Card>
-                  ))
+                        </CardContent>
+                      </Card>
+                    ))}
+                  </div>
                 ) : (
                   <Typography
                     color="text.secondary"
@@ -1064,101 +1044,142 @@ const InstructorStudents = () => {
               </TabPanel>
 
               <TabPanel value={tabValue} index={2}>
-                {selectedStudent?.grades?.length > 0 ? (
-                  selectedStudent.grades.map((courseGrade: CourseGrade) => (
-                    <Card key={courseGrade.courseId} sx={{ mb: 2 }}>
-                      <CardContent>
-                        <Typography variant="h6" gutterBottom>
-                          {courseGrade.courseName}
-                        </Typography>
-                        <Typography variant="body2" gutterBottom>
-                          Điểm tổng: {courseGrade.finalGrade}/100
-                        </Typography>
+                {selectedStudent?.enrollments?.some(
+                  (enrollment) => enrollment.grades?.length > 0
+                ) ? (
+                  selectedStudent.enrollments
+                    .filter((enrollment) => enrollment.grades?.length > 0)
+                    .map((enrollment) => {
+                      // Tính điểm tổng dựa trên trọng số và thang điểm tối đa - PHƯƠNG PHÁP ĐỒNG NHẤT
+                      let totalWeightedScore = 0;
+                      let totalWeight = 0;
 
-                        <Typography variant="subtitle2" sx={{ mt: 2 }}>
-                          Bài tập
-                        </Typography>
-                        <TableContainer>
-                          <Table size="small">
-                            <TableHead>
-                              <TableRow>
-                                <TableCell>Tên bài tập</TableCell>
-                                <TableCell align="center">Điểm</TableCell>
-                                <TableCell align="right">Ngày nộp</TableCell>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {courseGrade.assignments.map(
-                                (assignment: Assignment) => (
-                                  <TableRow key={assignment.id}>
-                                    <TableCell>{assignment.name}</TableCell>
-                                    <TableCell align="center">
-                                      {assignment.score}/{assignment.maxScore}
-                                    </TableCell>
-                                    <TableCell align="right">
-                                      {new Date(
-                                        assignment.submittedDate
-                                      ).toLocaleDateString("vi-VN")}
-                                    </TableCell>
-                                  </TableRow>
-                                )
-                              )}
-                            </TableBody>
-                          </Table>
-                        </TableContainer>
+                      enrollment.grades.forEach((grade) => {
+                        const score = parseFloat(grade.score);
+                        const maxScore = parseFloat(grade.maxScore);
+                        const weight = parseFloat(grade.weight);
 
-                        <Typography variant="subtitle2" sx={{ mt: 2 }}>
-                          Bài kiểm tra
-                        </Typography>
-                        <TableContainer>
-                          <Table size="small">
-                            <TableHead>
-                              <TableRow>
-                                <TableCell>Tên bài kiểm tra</TableCell>
-                                <TableCell align="center">Điểm</TableCell>
-                                <TableCell align="right">Ngày làm</TableCell>
-                              </TableRow>
-                            </TableHead>
-                            <TableBody>
-                              {courseGrade.quizzes?.map((quiz: Quiz) => (
-                                <TableRow key={quiz.id}>
-                                  <TableCell>{quiz.name}</TableCell>
-                                  <TableCell align="center">
-                                    {quiz.score}/{quiz.maxScore}
-                                  </TableCell>
-                                  <TableCell align="right">
-                                    {new Date(
-                                      quiz.submittedDate
-                                    ).toLocaleDateString("vi-VN")}
-                                  </TableCell>
-                                </TableRow>
-                              ))}
-                            </TableBody>
-                          </Table>
-                        </TableContainer>
+                        // Chuẩn hóa điểm theo thang 100 trước khi nhân với trọng số
+                        const weightedScore = (score / maxScore) * 100 * weight;
 
-                        <Box sx={{ mt: 2 }}>
-                          <LinearProgress
-                            variant="determinate"
-                            value={(courseGrade.finalGrade / 100) * 100}
-                            sx={{
-                              height: 8,
-                              borderRadius: 1,
-                              bgcolor: "grey.200",
-                              "& .MuiLinearProgress-bar": {
-                                bgcolor:
-                                  courseGrade.finalGrade >= 80
-                                    ? "success.main"
-                                    : courseGrade.finalGrade >= 60
-                                    ? "warning.main"
-                                    : "error.main",
-                              },
-                            }}
-                          />
-                        </Box>
-                      </CardContent>
-                    </Card>
-                  ))
+                        totalWeightedScore += weightedScore;
+                        totalWeight += weight;
+                      });
+
+                      // Chuẩn hóa điểm cuối cùng - sử dụng toFixed(2) để đảm bảo hiển thị 2 chữ số thập phân
+                      const finalGrade =
+                        totalWeight > 0
+                          ? parseFloat(
+                              (totalWeightedScore / totalWeight).toFixed(2)
+                            )
+                          : 0;
+
+                      // Sắp xếp điểm theo trọng số từ cao đến thấp
+                      const sortedGrades = [...enrollment.grades].sort(
+                        (a, b) => parseFloat(b.weight) - parseFloat(a.weight)
+                      );
+
+                      return (
+                        <Card key={enrollment.course?.id} sx={{ mb: 2, p: 3 }}>
+                          <Typography
+                            variant="h6"
+                            fontWeight="bold"
+                            gutterBottom
+                          >
+                            {enrollment.course?.title}
+                          </Typography>
+                          <Typography
+                            variant="caption"
+                            color="text.secondary"
+                            display="block"
+                            gutterBottom
+                          >
+                            Cập nhật: {new Date().toLocaleDateString("vi-VN")}
+                          </Typography>
+
+                          <Divider sx={{ my: 2 }} />
+
+                          <Typography
+                            variant="subtitle1"
+                            fontWeight="bold"
+                            gutterBottom
+                          >
+                            Điểm tổng kết:{" "}
+                            <Box component="span" fontWeight="bold">
+                              {finalGrade}/100
+                            </Box>
+                          </Typography>
+
+                          {sortedGrades.map((grade) => {
+                            const scorePart =
+                              grade.gradeType === "participation"
+                                ? `${parseFloat(grade.score)}/${parseFloat(
+                                    grade.maxScore
+                                  )}`
+                                : `${parseFloat(grade.score)}/100`;
+
+                            const weightPart = `(x${parseFloat(
+                              grade.weight
+                            ).toFixed(2)})`;
+
+                            return (
+                              <Box
+                                key={grade.id}
+                                sx={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  py: 0.5,
+                                }}
+                              >
+                                <Typography>
+                                  {grade.gradeType === "midterm" &&
+                                    "Điểm giữa khóa:"}
+                                  {grade.gradeType === "final" &&
+                                    "Điểm cuối khóa:"}
+                                  {grade.gradeType === "assignment" &&
+                                    (grade.lesson?.title || "Bài tập:")}
+                                  {grade.gradeType === "quiz" &&
+                                    (grade.lesson?.title || "Bài kiểm tra:")}
+                                  {grade.gradeType === "participation" &&
+                                    "Điểm tham gia:"}
+                                  {![
+                                    "midterm",
+                                    "final",
+                                    "assignment",
+                                    "quiz",
+                                    "participation",
+                                  ].includes(grade.gradeType) &&
+                                    grade.gradeType}
+                                </Typography>
+                                <Typography>
+                                  {scorePart} {weightPart}
+                                </Typography>
+                              </Box>
+                            );
+                          })}
+
+                          <Box sx={{ mt: 2 }}>
+                            <LinearProgress
+                              variant="determinate"
+                              value={(finalGrade / 100) * 100}
+                              sx={{
+                                height: 8,
+                                borderRadius: 1,
+                                bgcolor: "grey.200",
+                                "& .MuiLinearProgress-bar": {
+                                  bgcolor:
+                                    finalGrade >= 80
+                                      ? "success.main"
+                                      : finalGrade >= 60
+                                      ? "warning.main"
+                                      : "error.main",
+                                },
+                              }}
+                            />
+                          </Box>
+                        </Card>
+                      );
+                    })
                 ) : (
                   <Typography
                     color="text.secondary"

@@ -1,4 +1,4 @@
-import { UserRole } from "../../types/user";
+import { UserRole } from "../../types/user.types";
 import { RootState } from "../../app/store";
 import { createSelector } from "@reduxjs/toolkit";
 
