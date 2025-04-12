@@ -26,6 +26,35 @@ export class UsersService {
     return this.userRepository.save(newUser);
   }
 
+  async findStudentsByInstructorId(instructorId: number): Promise<User[]> {
+    // 1. Tìm tất cả khóa học mà instructor dạy
+    // 2. Sau đó tìm tất cả học sinh đã đăng ký các khóa học đó
+    // 3. Hiển thị cả thông tin khóa học đã đăng ký
+
+    const students = await this.userRepository
+      .createQueryBuilder('user')
+      .innerJoin('enrollments', 'enrollment', 'user.id = enrollment.user_id')
+      .innerJoin('courses', 'course', 'enrollment.course_id = course.id')
+      .innerJoin(
+        'user_instructors',
+        'instructor',
+        'course.instructor_id = instructor.id',
+      )
+      .where('instructor.id = :instructorId', { instructorId })
+      .andWhere('user.role IN (:...roles)', {
+        roles: ['student', 'student_academic'],
+      })
+      .leftJoinAndSelect('user.userStudent', 'userStudent')
+      .leftJoinAndSelect('user.userStudentAcademic', 'userStudentAcademic')
+      .leftJoinAndSelect('userStudentAcademic.academicClass', 'academicClass')
+      .leftJoinAndSelect('user.enrollments', 'userEnrollments')
+      .leftJoinAndSelect('userEnrollments.course', 'enrolledCourse')
+      .distinct(true)
+      .getMany();
+
+    return students;
+  }
+
   async findById(id: number): Promise<User | null> {
     return this.userRepository.findOne({
       where: { id },

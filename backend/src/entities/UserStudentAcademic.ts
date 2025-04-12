@@ -7,6 +7,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToOne,
+  ManyToMany,
 } from 'typeorm';
 import { User } from './User';
 import { AcademicClass } from './AcademicClass';
@@ -60,7 +61,10 @@ export class UserStudentAcademic {
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @ManyToOne(() => AcademicClass)
+  @ManyToOne(
+    () => AcademicClass,
+    (academicClass) => academicClass.studentsAcademic,
+  )
   @JoinColumn({ name: 'academic_class_id' })
   academicClass: AcademicClass;
 }

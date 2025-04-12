@@ -12,6 +12,7 @@ import quizzesReducer from "../features/quizzes/quizzesSlice";
 import assignmentsReducer from "../features/assignments/assignmentsSlice";
 import quizAttemptsReducer from "../features/quizAttempts/quizAttemptsSlice";
 import assignmentSubmissionsReducer from "../features/assignment-submissions/assignmentSubmissionsSlice";
+import usersReducer from "../features/users/usersApiSlice";
 // Import other reducers...
 
 export const store = configureStore({
@@ -29,6 +30,7 @@ export const store = configureStore({
     assignments: assignmentsReducer,
     quizAttempts: quizAttemptsReducer,
     assignmentSubmissions: assignmentSubmissionsReducer,
+    users: usersReducer,
     // Add other reducers...
   },
 });

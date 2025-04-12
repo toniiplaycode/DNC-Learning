@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Card,
@@ -58,6 +58,10 @@ import {
   MenuBook,
   Close,
 } from "@mui/icons-material";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import { fetchStudentsByInstructor } from "../../features/users/usersApiSlice";
+import { selectCurrentUser } from "../../features/auth/authSelectors";
+import { selectInstructorStudents } from "../../features/users/usersSelectors";
 
 // Add these interfaces near the top of the file
 interface Assignment {
@@ -93,7 +97,6 @@ interface Student {
   phone: string;
   address: string;
   enrolledCourses: number;
-  totalSpent: number;
   lastActive: string;
   status: string;
   joinDate: string;
@@ -121,7 +124,6 @@ const mockStudents = [
     phone: "0987654321",
     address: "Hà Nội, Việt Nam",
     enrolledCourses: 3,
-    totalSpent: 1500000,
     lastActive: "2024-03-15",
     status: "active",
     joinDate: "2024-01-15",
@@ -217,7 +219,6 @@ const mockStudents = [
     phone: "0987654322",
     address: "Hà Nội, Việt Nam",
     enrolledCourses: 2,
-    totalSpent: 1000000,
     lastActive: "2024-03-14",
     status: "inactive",
     joinDate: "2024-01-14",
@@ -234,7 +235,6 @@ const mockStudents = [
     phone: "0903456789",
     avatar: "/src/assets/logo.png",
     enrolledCourses: 4,
-    totalSpent: 1000000,
     lastActive: "5 giờ trước",
     status: "active",
     joinDate: "2024-01-15",
@@ -334,7 +334,6 @@ const mockStudents = [
     phone: "0904567890",
     avatar: "/src/assets/logo.png",
     enrolledCourses: 5,
-    totalSpent: 1000000,
     lastActive: "12 giờ trước",
     status: "active",
     joinDate: "2024-01-15",
@@ -472,6 +471,9 @@ const TabPanel = (props: TabPanelProps) => {
 };
 
 const InstructorStudents = () => {
+  const dispatch = useAppDispatch();
+  const currentUser = useAppSelector(selectCurrentUser);
+  const instructorStudents = useAppSelector(selectInstructorStudents);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -489,6 +491,12 @@ const InstructorStudents = () => {
   const [filterMajor, setFilterMajor] = useState("Tất cả");
   const [classFilter, setClassFilter] = useState("all");
   const [facultyFilter, setFacultyFilter] = useState("all");
+
+  useEffect(() => {
+    dispatch(fetchStudentsByInstructor(currentUser?.userInstructor?.id));
+  }, [dispatch, currentUser]);
+
+  console.log(instructorStudents);
 
   const handleStatusFilterChange = (event: any) => {
     setStatusFilter(event.target.value);
@@ -668,9 +676,6 @@ const InstructorStudents = () => {
                 <MenuItem value="name">Tên</MenuItem>
                 <MenuItem value="joinDate">Ngày tham gia</MenuItem>
                 <MenuItem value="enrolledCourses">Số khóa học</MenuItem>
-                {studentType !== "student_academic" && (
-                  <MenuItem value="totalSpent">Chi tiêu</MenuItem>
-                )}
               </Select>
             </FormControl>
 
@@ -716,9 +721,6 @@ const InstructorStudents = () => {
                   <TableCell>Email</TableCell>
                   <TableCell>Khóa học</TableCell>
                   <TableCell>Ngày tham gia</TableCell>
-                  {studentType !== "student_academic" && (
-                    <TableCell>Tổng chi tiêu</TableCell>
-                  )}
                   <TableCell>Trạng thái</TableCell>
                   <TableCell align="right">Thao tác</TableCell>
                 </TableRow>
@@ -782,11 +784,6 @@ const InstructorStudents = () => {
                         />
                       </TableCell>
                       <TableCell>{student.joinDate}</TableCell>
-                      {studentType !== "student_academic" && (
-                        <TableCell>
-                          {student.totalSpent?.toLocaleString() || "-"}đ
-                        </TableCell>
-                      )}
                       <TableCell>
                         <Chip
                           label={
@@ -918,7 +915,6 @@ const InstructorStudents = () => {
                 <Tab label="Thông tin cá nhân" />
                 <Tab label="Khóa học" />
                 <Tab label="Điểm số" />
-                <Tab label="Lịch sử thanh toán" />
               </Tabs>
 
               <TabPanel value={tabValue} index={0}>
@@ -957,21 +953,6 @@ const InstructorStudents = () => {
                     <ListItemText
                       primary="Số khóa học đã đăng ký"
                       secondary={selectedStudent?.enrolledCourses || 0}
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemIcon>
-                      <Payment />
-                    </ListItemIcon>
-                    <ListItemText
-                      primary="Tổng chi tiêu"
-                      secondary={
-                        selectedStudent?.totalSpent !== undefined
-                          ? `${selectedStudent.totalSpent.toLocaleString(
-                              "vi-VN"
-                            )}đ`
-                          : "-"
-                      }
                     />
                   </ListItem>
                   <ListItem>
@@ -1185,47 +1166,6 @@ const InstructorStudents = () => {
                     sx={{ py: 3 }}
                   >
                     Chưa có thông tin điểm
-                  </Typography>
-                )}
-              </TabPanel>
-
-              <TabPanel value={tabValue} index={3}>
-                {selectedStudent?.payments?.length > 0 ? (
-                  <TableContainer>
-                    <Table>
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>Khóa học</TableCell>
-                          <TableCell align="right">Số tiền</TableCell>
-                          <TableCell>Ngày thanh toán</TableCell>
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {selectedStudent.payments.map((payment: any) => (
-                          <TableRow key={payment.id}>
-                            <TableCell>{payment.courseName}</TableCell>
-                            <TableCell align="right">
-                              {payment.amount?.toLocaleString("vi-VN") || "-"}đ
-                            </TableCell>
-                            <TableCell>
-                              {payment.date
-                                ? new Date(payment.date).toLocaleDateString(
-                                    "vi-VN"
-                                  )
-                                : "-"}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </TableContainer>
-                ) : (
-                  <Typography
-                    color="text.secondary"
-                    align="center"
-                    sx={{ py: 3 }}
-                  >
-                    Chưa có lịch sử thanh toán
                   </Typography>
                 )}
               </TabPanel>

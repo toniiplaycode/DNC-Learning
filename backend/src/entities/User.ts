@@ -14,6 +14,7 @@ import { UserGrade } from './UserGrade';
 import { CourseProgress } from './CourseProgress';
 import { CourseLessonDiscussion } from './CourseLessonDiscussion';
 import { UserStudentAcademic } from './UserStudentAcademic';
+import { Enrollment } from './Enrollment';
 
 // Tạo enum cho role
 export enum UserRole {
@@ -111,4 +112,7 @@ export class User {
 
   @OneToMany(() => CourseLessonDiscussion, (discussion) => discussion.user)
   lessonDiscussions: CourseLessonDiscussion[];
+
+  @OneToMany(() => Enrollment, (enrollment) => enrollment.user)
+  enrollments: Enrollment[];
 }
