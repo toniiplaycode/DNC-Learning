@@ -6,10 +6,12 @@ import {
   createCourse,
   updateCourse,
   deleteCourse,
+  fetchCoursesByInstructor,
 } from "./coursesApiSlice";
 
 interface CoursesState {
   courses: Course[];
+  coursesByInstructor: Course[];
   currentCourse: Course | null;
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
@@ -17,6 +19,7 @@ interface CoursesState {
 
 const initialState: CoursesState = {
   courses: [],
+  coursesByInstructor: [],
   currentCourse: null,
   status: "idle",
   error: null,
@@ -73,6 +76,23 @@ const coursesSlice = createSlice({
         state.error =
           (action.payload as string) ||
           "Đã xảy ra lỗi khi tải thông tin khóa học";
+      });
+
+    // Xử lý fetchCoursesByInstructor
+    builder
+      .addCase(fetchCoursesByInstructor.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchCoursesByInstructor.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.coursesByInstructor = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchCoursesByInstructor.rejected, (state, action) => {
+        state.status = "failed";
+        state.error =
+          (action.payload as string) ||
+          "Đã xảy ra lỗi khi tải danh sách khóa học";
       });
 
     // Xử lý createCourse

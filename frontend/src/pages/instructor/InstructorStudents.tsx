@@ -71,6 +71,8 @@ import { fetchStudentsByInstructor } from "../../features/users/usersApiSlice";
 import { selectCurrentUser } from "../../features/auth/authSelectors";
 import { selectInstructorStudents } from "../../features/users/usersSelectors";
 import React from "react";
+import { fetchCoursesByInstructor } from "../../features/courses/coursesApiSlice";
+import { selectCoursesByInstructor } from "../../features/courses/coursesSelector";
 
 // Add these interfaces near the top of the file
 interface Assignment {
@@ -87,14 +89,6 @@ interface Quiz {
   score: number;
   maxScore: number;
   submittedDate: string;
-}
-
-interface CourseGrade {
-  courseId: number;
-  courseName: string;
-  assignments: Assignment[];
-  quizzes: Quiz[];
-  finalGrade: number;
 }
 
 // Tab Panel component
@@ -125,6 +119,7 @@ const InstructorStudents = () => {
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector(selectCurrentUser);
   const instructorStudents = useAppSelector(selectInstructorStudents);
+  const instructorCourses = useAppSelector(selectCoursesByInstructor);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -140,12 +135,23 @@ const InstructorStudents = () => {
   const [sortBy, setSortBy] = useState("name");
   const [filterFaculty, setFilterFaculty] = useState("Tất cả");
   const [filterClassId, setFilterClassId] = useState<string>("Tất cả");
+  const [newStudentDialogOpen, setNewStudentDialogOpen] = useState(false);
+  const [newStudentData, setNewStudentData] = useState({
+    email: "",
+    fullName: "",
+    phone: "",
+    studentCode: "",
+    academicYear: "",
+    major: "",
+    academicClassId: "",
+  });
 
   useEffect(() => {
     dispatch(fetchStudentsByInstructor(currentUser?.userInstructor?.id));
+    dispatch(fetchCoursesByInstructor(currentUser?.userInstructor?.id));
   }, [dispatch, currentUser]);
 
-  console.log(instructorStudents);
+  console.log(instructorCourses);
 
   const handleStatusFilterChange = (event: any) => {
     setStatusFilter(event.target.value);
@@ -206,21 +212,17 @@ const InstructorStudents = () => {
     }));
   }, [instructorStudents]);
 
-  // Thu thập các khóa học cho sinh viên thường
+  // Thu thập các khóa học mà giảng viên đang giảng dạy
   const courseOptions = React.useMemo(() => {
     const uniqueCourses = new Map<string, string>();
 
     // Thêm tùy chọn "Tất cả"
     uniqueCourses.set("Tất cả", "Tất cả");
 
-    // Thu thập các khóa học từ dữ liệu sinh viên thường
-    instructorStudents.forEach((student) => {
-      if (student.role === "student" && student.enrollments) {
-        student.enrollments.forEach((enrollment) => {
-          if (enrollment.courseId && enrollment.course?.title) {
-            uniqueCourses.set(enrollment.courseId, enrollment.course.title);
-          }
-        });
+    // Thu thập các khóa học từ instructorCourses thay vì từ dữ liệu sinh viên
+    instructorCourses.forEach((course) => {
+      if (course.id && course.title) {
+        uniqueCourses.set(course.id, course.title);
       }
     });
 
@@ -228,7 +230,7 @@ const InstructorStudents = () => {
       id: id,
       name: title,
     }));
-  }, [instructorStudents]);
+  }, [instructorCourses]);
 
   const filteredStudents = instructorStudents
     .filter((student) => {
@@ -364,11 +366,67 @@ const InstructorStudents = () => {
     setDialogOpen(true);
   };
 
+  const handleOpenNewStudentDialog = () => {
+    setNewStudentData({
+      email: "",
+      fullName: "",
+      phone: "",
+      studentCode: "",
+      academicYear: "",
+      major: "",
+      academicClassId: "",
+    });
+    setNewStudentDialogOpen(true);
+  };
+
+  const handleCloseNewStudentDialog = () => {
+    setNewStudentDialogOpen(false);
+  };
+
+  const handleNewStudentChange = (
+    e: React.ChangeEvent<HTMLInputElement | { name?: string; value: unknown }>
+  ) => {
+    const { name, value } = e.target;
+    setNewStudentData({
+      ...newStudentData,
+      [name as string]: value,
+    });
+  };
+
+  const handleSubmitNewStudent = async () => {
+    // Prepare data for API call - ensure it includes role="student_academic"
+    const studentData = {
+      ...newStudentData,
+      role: "student_academic",
+    };
+
+    // TODO: Add API call to create new student
+    // Example:
+    // await dispatch(createNewAcademicStudent(studentData));
+
+    console.log("Creating new academic student:", studentData);
+    handleCloseNewStudentDialog();
+    // After successful creation, refresh the student list
+    // dispatch(fetchStudentsByInstructor(currentUser?.userInstructor?.id));
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h5" gutterBottom fontWeight="bold">
         Quản lý học viên
       </Typography>
+
+      {/* Add New Student Button */}
+      <Box sx={{ display: "flex", justifyContent: "flex-end", mb: 2 }}>
+        <Button
+          variant="contained"
+          color="primary"
+          startIcon={<Person />}
+          onClick={handleOpenNewStudentDialog}
+        >
+          Thêm sinh viên mới
+        </Button>
+      </Box>
 
       <Card sx={{ mb: 3 }}>
         <CardContent>
@@ -1193,6 +1251,125 @@ const InstructorStudents = () => {
             </Box>
           )}
         </DialogContent>
+      </Dialog>
+
+      {/* New Academic Student Dialog */}
+      <Dialog
+        open={newStudentDialogOpen}
+        onClose={handleCloseNewStudentDialog}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Stack
+            direction="row"
+            justifyContent="space-between"
+            alignItems="center"
+          >
+            <Typography variant="h6">Thêm sinh viên mới</Typography>
+            <IconButton onClick={handleCloseNewStudentDialog}>
+              <Close />
+            </IconButton>
+          </Stack>
+        </DialogTitle>
+        <DialogContent dividers>
+          <Box component="form" noValidate sx={{ mt: 1 }}>
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="email"
+              label="Email"
+              name="email"
+              autoComplete="email"
+              value={newStudentData.email}
+              onChange={handleNewStudentChange}
+            />
+
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="fullName"
+              label="Họ và tên"
+              name="fullName"
+              value={newStudentData.fullName}
+              onChange={handleNewStudentChange}
+            />
+
+            <TextField
+              margin="normal"
+              fullWidth
+              id="phone"
+              label="Số điện thoại"
+              name="phone"
+              value={newStudentData.phone}
+              onChange={handleNewStudentChange}
+            />
+
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="studentCode"
+              label="Mã sinh viên"
+              name="studentCode"
+              value={newStudentData.studentCode}
+              onChange={handleNewStudentChange}
+            />
+
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="academicYear"
+              label="Niên khóa"
+              name="academicYear"
+              value={newStudentData.academicYear}
+              onChange={handleNewStudentChange}
+            />
+
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="major"
+              label="Ngành học/Khoa"
+              name="major"
+              value={newStudentData.major}
+              onChange={handleNewStudentChange}
+            />
+
+            <FormControl fullWidth margin="normal">
+              <InputLabel id="academic-class-label">Lớp học</InputLabel>
+              <Select
+                labelId="academic-class-label"
+                name="academicClassId"
+                value={newStudentData.academicClassId}
+                label="Lớp học"
+                onChange={handleNewStudentChange}
+              >
+                {classOptions
+                  .filter((option) => option.id !== "Tất cả")
+                  .map((option) => (
+                    <MenuItem key={option.id} value={option.id}>
+                      {option.name}
+                    </MenuItem>
+                  ))}
+              </Select>
+            </FormControl>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseNewStudentDialog}>Hủy</Button>
+          <Button
+            onClick={handleSubmitNewStudent}
+            variant="contained"
+            color="primary"
+          >
+            Thêm sinh viên
+          </Button>
+        </DialogActions>
       </Dialog>
     </Box>
   );

@@ -25,6 +25,12 @@ export class CoursesController {
   findOne(@Param('id') id: string): Promise<Course | null> {
     return this.coursesService.findOne(+id);
   }
+
+  @Get('instructor/:id')
+  findCoursesByInstructor(@Param('id') id: string): Promise<Course[]> {
+    return this.coursesService.findCoursesByInstructor(+id);
+  }
+
   @Post()
   create(@Body() course: CreateCoursesDto): Promise<Course> {
     return this.coursesService.create(course);

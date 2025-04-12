@@ -103,6 +103,12 @@ export class CoursesService {
     return course;
   }
 
+  async findCoursesByInstructor(instructorId: number): Promise<Course[]> {
+    return await this.courseRepository.find({
+      where: { instructor: { id: instructorId } },
+    });
+  }
+
   async create(course: any): Promise<Course> {
     this.courseRepository.create(course);
     return this.courseRepository.save(course);

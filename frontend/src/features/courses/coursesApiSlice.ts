@@ -64,6 +64,20 @@ export const fetchCourseById = createAsyncThunk(
   }
 );
 
+export const fetchCoursesByInstructor = createAsyncThunk(
+  "courses/fetchCoursesByInstructor",
+  async (instructorId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/courses/instructor/${instructorId}`);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data || "Không thể tải danh sách khóa học"
+      );
+    }
+  }
+);
+
 // Create a new course
 export const createCourse = createAsyncThunk(
   "courses/createCourse",

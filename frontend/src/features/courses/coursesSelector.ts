@@ -7,6 +7,10 @@ export const selectAllCourses = (state: RootState) => state.courses.courses;
 export const selectCourseById = (state: RootState) =>
   state.courses.currentCourse;
 
+// Lấy khóa học theo giảng viên
+export const selectCoursesByInstructor = (state: RootState) =>
+  state.courses.coursesByInstructor;
+
 // Lấy trạng thái loading
 export const selectCoursesLoading = (state: RootState) => state.courses.status;
 
