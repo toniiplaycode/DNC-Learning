@@ -107,7 +107,6 @@ const Login = () => {
         py: 4,
       }}
     >
-      <ToastContainer position="top-right" autoClose={5000} />
       <Card sx={{ maxWidth: 480, width: "100%", mx: 2 }}>
         <CardContent sx={{ p: 4 }}>
           <Box sx={{ mb: 4, textAlign: "center" }}>

@@ -18,6 +18,21 @@ const initialState: UsersState = {
   error: null,
 };
 
+// Create many students academic for a academic class
+export const createManyStudentsAcademic = createAsyncThunk(
+  "users/createManyStudentsAcademic",
+  async (studentsData: any[], { rejectWithValue }) => {
+    try {
+      const response = await api.post("/users/student-academic", studentsData);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to create students"
+      );
+    }
+  }
+);
+
 // Fetch all users
 export const fetchUsers = createAsyncThunk(
   "users/fetchAll",

@@ -39,13 +39,38 @@ const TabPanel = (props: TabPanelProps) => {
   );
 };
 
+interface StudentData {
+  studentCode: string;
+  fullName: string;
+  email: string;
+  phone: string;
+  academicYear: string;
+}
+
+interface FormattedStudentData {
+  user: {
+    username: string;
+    email: string;
+    password: string;
+    role: string;
+    phone?: string;
+  };
+  userStudentAcademic: {
+    academicClassId: string;
+    studentCode: string;
+    fullName: string;
+    academicYear: string;
+  };
+}
+
 export const AddStudentsDialog = ({ open, onClose, classData, onSubmit }) => {
   const [tabValue, setTabValue] = useState(0);
-  const [singleStudent, setSingleStudent] = useState({
+  const [singleStudent, setSingleStudent] = useState<StudentData>({
     studentCode: "",
     fullName: "",
     email: "",
     phone: "",
+    academicYear: "K71", // Default value
   });
   const [importedStudents, setImportedStudents] = useState([]);
   const [errors, setErrors] = useState([]);
@@ -54,9 +79,42 @@ export const AddStudentsDialog = ({ open, onClose, classData, onSubmit }) => {
     setTabValue(newValue);
   };
 
+  const formatStudentForSubmission = (
+    student: StudentData
+  ): FormattedStudentData => {
+    // Create username from email (e.g., john.doe@example.com -> johndoe)
+    const username = student.email
+      .split("@")[0]
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, "");
+
+    return {
+      user: {
+        username,
+        email: student.email,
+        password: "dnc123", // Default password
+        role: "student_academic",
+        phone: student.phone,
+      },
+      userStudentAcademic: {
+        academicClassId: classData.id,
+        studentCode: student.studentCode,
+        fullName: student.fullName,
+        academicYear: student.academicYear,
+      },
+    };
+  };
+
   const handleSingleStudentSubmit = () => {
-    onSubmit([singleStudent]);
-    setSingleStudent({ studentCode: "", fullName: "", email: "", phone: "" });
+    const formattedStudent = formatStudentForSubmission(singleStudent);
+    onSubmit([formattedStudent]);
+    setSingleStudent({
+      studentCode: "",
+      fullName: "",
+      email: "",
+      phone: "",
+      academicYear: "K71",
+    });
   };
 
   const handleFileUpload = (event) => {
@@ -74,6 +132,7 @@ export const AddStudentsDialog = ({ open, onClose, classData, onSubmit }) => {
         fullName: row["Họ và tên"],
         email: row["Email"],
         phone: row["Số điện thoại"],
+        academicYear: row["Khóa"] || "K71",
       }));
 
       setImportedStudents(formattedData);
@@ -83,13 +142,38 @@ export const AddStudentsDialog = ({ open, onClose, classData, onSubmit }) => {
     reader.readAsArrayBuffer(file);
   };
 
-  const validateData = (data) => {
+  const validateData = (data: StudentData[]) => {
     const newErrors = data
       .map((student, index) => {
         const errors = [];
+
+        // Required fields validation
         if (!student.studentCode) errors.push("Thiếu mã sinh viên");
         if (!student.fullName) errors.push("Thiếu họ tên");
         if (!student.email) errors.push("Thiếu email");
+
+        // Format validations
+        const studentCodeRegex = /^SV\d{6}$/;
+        if (
+          student.studentCode &&
+          !studentCodeRegex.test(student.studentCode)
+        ) {
+          errors.push("Mã sinh viên không hợp lệ (VD: SV202501)");
+        }
+
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (student.email && !emailRegex.test(student.email)) {
+          errors.push("Email không hợp lệ");
+        }
+
+        const academicYearRegex = /^K\d{2}$/;
+        if (
+          student.academicYear &&
+          !academicYearRegex.test(student.academicYear)
+        ) {
+          errors.push("Khóa không hợp lệ (VD: K71)");
+        }
+
         return errors.length > 0 ? { row: index + 1, errors } : null;
       })
       .filter(Boolean);
@@ -100,10 +184,11 @@ export const AddStudentsDialog = ({ open, onClose, classData, onSubmit }) => {
   const downloadTemplate = () => {
     const template = [
       {
-        "Mã sinh viên": "SV001",
+        "Mã sinh viên": "SV202501",
         "Họ và tên": "Nguyễn Văn A",
         Email: "example@gmail.com",
         "Số điện thoại": "0123456789",
+        Khóa: "K71",
       },
     ];
 
@@ -149,6 +234,7 @@ export const AddStudentsDialog = ({ open, onClose, classData, onSubmit }) => {
                 })
               }
               required
+              helperText="Định dạng: SV + 6 số (VD: SV202501)"
             />
             <TextField
               label="Họ và tên"
@@ -174,13 +260,26 @@ export const AddStudentsDialog = ({ open, onClose, classData, onSubmit }) => {
                 setSingleStudent({ ...singleStudent, phone: e.target.value })
               }
             />
+            <TextField
+              label="Khóa"
+              value={singleStudent.academicYear}
+              onChange={(e) =>
+                setSingleStudent({
+                  ...singleStudent,
+                  academicYear: e.target.value,
+                })
+              }
+              required
+              helperText="VD: K71"
+            />
             <Button
               variant="contained"
               onClick={handleSingleStudentSubmit}
               disabled={
                 !singleStudent.studentCode ||
                 !singleStudent.fullName ||
-                !singleStudent.email
+                !singleStudent.email ||
+                !singleStudent.academicYear
               }
             >
               Thêm sinh viên
@@ -235,6 +334,7 @@ export const AddStudentsDialog = ({ open, onClose, classData, onSubmit }) => {
                     <TableCell>Họ và tên</TableCell>
                     <TableCell>Email</TableCell>
                     <TableCell>Số điện thoại</TableCell>
+                    <TableCell>Khóa</TableCell>
                     <TableCell></TableCell>
                   </TableRow>
                 </TableHead>
@@ -245,6 +345,7 @@ export const AddStudentsDialog = ({ open, onClose, classData, onSubmit }) => {
                       <TableCell>{student.fullName}</TableCell>
                       <TableCell>{student.email}</TableCell>
                       <TableCell>{student.phone}</TableCell>
+                      <TableCell>{student.academicYear}</TableCell>
                       <TableCell>
                         <IconButton
                           size="small"
@@ -271,7 +372,9 @@ export const AddStudentsDialog = ({ open, onClose, classData, onSubmit }) => {
         {tabValue === 1 && (
           <Button
             variant="contained"
-            onClick={() => onSubmit(importedStudents)}
+            onClick={() =>
+              onSubmit(importedStudents.map(formatStudentForSubmission))
+            }
             disabled={importedStudents.length === 0 || errors.length > 0}
           >
             Thêm {importedStudents.length} sinh viên

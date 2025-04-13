@@ -87,7 +87,6 @@ const InstructorLogin = () => {
         py: 4,
       }}
     >
-      <ToastContainer position="top-right" autoClose={2000} />
       <CustomContainer maxWidth="sm">
         <Card
           sx={{

@@ -1,14 +1,33 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User } from 'src/entities/User';
+import { User, UserRole } from 'src/entities/User';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
+import { UserStudentAcademic } from '../../entities/UserStudentAcademic';
+
+interface StudentUserData {
+  user: {
+    username: string;
+    email: string;
+    password: string;
+    role: UserRole;
+    phone: string;
+  };
+  userStudentAcademic: {
+    academicClassId: string;
+    studentCode: string;
+    fullName: string;
+    academicYear: string;
+  };
+}
 
 @Injectable()
 export class UsersService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(UserStudentAcademic)
+    private userStudentAcademic: Repository<UserStudentAcademic>,
   ) {}
   findAll(): Promise<User[]> {
     return this.userRepository.find({
@@ -24,6 +43,63 @@ export class UsersService {
     const newUser = this.userRepository.create(userData);
     newUser.password = hashedPassword;
     return this.userRepository.save(newUser);
+  }
+
+  async createManyStudentAcademic(
+    studentsData: StudentUserData[],
+  ): Promise<UserStudentAcademic[]> {
+    // Use transaction to ensure data consistency
+    return this.userRepository.manager.transaction(
+      async (transactionalEntityManager) => {
+        try {
+          const createdStudentAcademics: UserStudentAcademic[] = [];
+
+          // Process each student data
+          for (const studentData of studentsData) {
+            // 1. Create user first
+            const hashedPassword = await bcrypt.hash(
+              studentData.user.password,
+              10,
+            );
+            const newUser = this.userRepository.create({
+              ...studentData.user,
+              password: hashedPassword,
+            });
+
+            // Save user
+            const savedUser = await transactionalEntityManager.save(
+              User,
+              newUser,
+            );
+
+            // 2. Create student academic record with the new user ID
+            const studentAcademic = this.userStudentAcademic.create({
+              ...studentData.userStudentAcademic,
+              academicClassId: Number(
+                studentData.userStudentAcademic.academicClassId,
+              ),
+              userId: savedUser.id,
+            });
+
+            // Save student academic record
+            const savedStudentAcademic = await transactionalEntityManager.save(
+              UserStudentAcademic,
+              {
+                ...studentAcademic,
+                userId: savedUser.id,
+              },
+            );
+
+            createdStudentAcademics.push(savedStudentAcademic);
+          }
+
+          return createdStudentAcademics;
+        } catch (error) {
+          // If any error occurs, the transaction will rollback
+          throw new Error(`Failed to create students: ${error.message}`);
+        }
+      },
+    );
   }
 
   async findStudentsByInstructorId(instructorId: number): Promise<User[]> {
@@ -111,5 +187,15 @@ export class UsersService {
       return user;
     }
     return false;
+  }
+
+  // Optional: Add a method to check for existing users before creation
+  private async checkExistingUsers(emails: string[]): Promise<string[]> {
+    const existingUsers = await this.userRepository.find({
+      where: emails.map((email) => ({ email })),
+      select: ['email'],
+    });
+
+    return existingUsers.map((user) => user.email);
   }
 }

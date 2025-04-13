@@ -134,7 +134,6 @@ const Register = () => {
         padding: 2,
       }}
     >
-      <ToastContainer position="top-right" autoClose={5000} />
       <Card sx={{ maxWidth: 480, width: "100%" }}>
         <CardContent sx={{ padding: 4 }}>
           <Typography

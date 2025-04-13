@@ -43,7 +43,8 @@ import { AddStudentsDialog } from "./component/AddStudentsDialog";
 import { selectCurrentUser } from "../../features/auth/authSelectors";
 import { selectCurrentClassInstructor } from "../../features/academic-class-instructors/academicClassInstructorsSelectors";
 import { fetchClassInstructorById } from "../../features/academic-class-instructors/academicClassInstructorsSlice";
-import { fetchStudentsByInstructor } from "../../features/users/usersApiSlice";
+import { createManyStudentsAcademic } from "../../features/users/usersApiSlice";
+import { toast, ToastContainer } from "react-toastify";
 
 const InstructorStudentsAcademic = () => {
   const dispatch = useAppDispatch();
@@ -60,7 +61,6 @@ const InstructorStudentsAcademic = () => {
 
   useEffect(() => {
     dispatch(fetchClassInstructorById(Number(currentUser?.userInstructor?.id)));
-    dispatch(fetchStudentsByInstructor(currentUser?.userInstructor?.id));
   }, [dispatch, currentUser]);
 
   const handleOpenMenu = (event, classData) => {
@@ -84,12 +84,27 @@ const InstructorStudentsAcademic = () => {
 
   const handleAddStudents = async (students) => {
     try {
-      // Add your API call here to add students
-      console.log("Adding students:", students);
-      // After successful addition
+      await dispatch(createManyStudentsAcademic(students)).then((response) => {
+        if (response.error) {
+          toast.error("Không đúng định dạng thêm hoặc sinh viên đã tồn tại !");
+        } else {
+          toast.success("Thêm sinh viên thành công!");
+        }
+      });
+
+      await dispatch(
+        fetchClassInstructorById(Number(currentUser?.userInstructor?.id))
+      )
+        .unwrap()
+        .then((updatedClasses) => {
+          // Find and update the selected class with new data
+          const updatedClass = updatedClasses.find(
+            (cls) => cls.id === selectedClass.id
+          );
+          setSelectedClass(updatedClass);
+        });
+
       setOpenAddStudents(false);
-      // Refresh the students list
-      dispatch(fetchStudentsByInstructor(currentUser?.userInstructor?.id));
     } catch (error) {
       console.error("Error adding students:", error);
     }
@@ -141,7 +156,6 @@ const InstructorStudentsAcademic = () => {
           Quản lý thông tin lớp học và sinh viên của bạn
         </Typography>
       </Box>
-
       {/* Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} md={4}>
@@ -183,7 +197,6 @@ const InstructorStudentsAcademic = () => {
           </Card>
         </Grid>
       </Grid>
-
       {/* Filters Section */}
       <Paper sx={{ p: 2, mb: 3 }}>
         <Stack direction="row" spacing={2} alignItems="center">
@@ -295,7 +308,6 @@ const InstructorStudentsAcademic = () => {
           </Stack>
         </Box>
       </Paper>
-
       {/* Classes List */}
       <TableContainer component={Paper} variant="outlined">
         <Table>
@@ -367,7 +379,6 @@ const InstructorStudentsAcademic = () => {
           </TableBody>
         </Table>
       </TableContainer>
-
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
@@ -392,7 +403,6 @@ const InstructorStudentsAcademic = () => {
           Xóa
         </MenuItemMUI>
       </Menu>
-
       <Dialog
         open={openDialog}
         onClose={handleCloseDialog}
@@ -506,7 +516,6 @@ const InstructorStudentsAcademic = () => {
           </TableContainer>
         </DialogContent>
       </Dialog>
-
       <AddStudentsDialog
         open={openAddStudents}
         onClose={() => setOpenAddStudents(false)}

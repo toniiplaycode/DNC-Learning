@@ -1,4 +1,6 @@
 import { Routes, Route } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 import HomePage from "./pages/student/HomePage";
 import EnrolledCourses from "./pages/student/EnrolledCourses";
 import CourseDetail from "./pages/student/CourseDetail";
@@ -48,78 +50,98 @@ import InstructorStudentsAcademic from "./pages/instructor/InstructorStudentsAca
 
 const App = () => {
   return (
-    <Routes>
-      {/* Public routes */}
-      <Route element={<MainLayout />}>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/enrolled-courses" element={<EnrolledCourses />} />
-        <Route path="/profile" element={<ProfileAccount />} />
-        <Route path="/courses" element={<Courses />} />
-        <Route path="/list-instructors" element={<Instructors />} />
-        <Route path="/view-instructor/:id" element={<InstructorProfile />} />
-        <Route path="/forum" element={<ForumDiscussions />} />
-        <Route path="/forum/:id" element={<ForumDiscussionDetail />} />
-        <Route path="/course/:id" element={<CourseDetail />} />
-        <Route path="/course/:id/learn" element={<CourseContent />} />
-        <Route path="/purchase/:id" element={<PurchaseCourse />} />
-        <Route path="/assessment" element={<Assessment />} />
-        <Route path="/assessment/quiz/:id" element={<AssessmentQuiz />} />
-        <Route
-          path="/assessment/assignment/:id"
-          element={<AssessmentAssignment />}
-        />
-      </Route>
+    <>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="light"
+      />
+      <Routes>
+        {/* Public routes */}
+        <Route element={<MainLayout />}>
+          <Route path="/" element={<HomePage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/enrolled-courses" element={<EnrolledCourses />} />
+          <Route path="/profile" element={<ProfileAccount />} />
+          <Route path="/courses" element={<Courses />} />
+          <Route path="/list-instructors" element={<Instructors />} />
+          <Route path="/view-instructor/:id" element={<InstructorProfile />} />
+          <Route path="/forum" element={<ForumDiscussions />} />
+          <Route path="/forum/:id" element={<ForumDiscussionDetail />} />
+          <Route path="/course/:id" element={<CourseDetail />} />
+          <Route path="/course/:id/learn" element={<CourseContent />} />
+          <Route path="/purchase/:id" element={<PurchaseCourse />} />
+          <Route path="/assessment" element={<Assessment />} />
+          <Route path="/assessment/quiz/:id" element={<AssessmentQuiz />} />
+          <Route
+            path="/assessment/assignment/:id"
+            element={<AssessmentAssignment />}
+          />
+        </Route>
 
-      {/* Instructor routes */}
-      <Route element={<InstructorLayout />}>
-        <Route path="/instructor" element={<InstructorDashboard />} />
-        <Route path="/instructor/login" element={<InstructorLogin />} />
-        <Route path="/instructor/courses" element={<InstructorCourses />} />
-        <Route
-          path="/instructor/courses/:id"
-          element={<InstructorCourseView />}
-        />
-        <Route path="/instructor/students" element={<InstructorStudents />} />
-        <Route
-          path="/instructor/studentsAcademic"
-          element={<InstructorStudentsAcademic />}
-        />
-        <Route
-          path="/instructor/assignments"
-          element={<InstructorAssignments />}
-        />
-        <Route path="/instructor/quiz" element={<InstructorQuizs />} />
-        <Route path="/instructor/analytics" element={<InstructorAnalytics />} />
-        <Route path="/instructor/chats" element={<ChatCommon />} />
-        <Route path="/instructor/schedules" element={<InstructorSchedules />} />
-        <Route path="/instructor/tasks" element={<InstructorTasks />} />
-        <Route path="/instructor/forum" element={<InstructorForum />} />
-        <Route
-          path="/instructor/notifications"
-          element={<InstructorNotifications />}
-        />
-        <Route path="/instructor/settings" element={<InstructorSettings />} />
-        <Route path="/instructor/reviews" element={<InstructorReviews />} />
-      </Route>
+        {/* Instructor routes */}
+        <Route element={<InstructorLayout />}>
+          <Route path="/instructor" element={<InstructorDashboard />} />
+          <Route path="/instructor/login" element={<InstructorLogin />} />
+          <Route path="/instructor/courses" element={<InstructorCourses />} />
+          <Route
+            path="/instructor/courses/:id"
+            element={<InstructorCourseView />}
+          />
+          <Route path="/instructor/students" element={<InstructorStudents />} />
+          <Route
+            path="/instructor/studentsAcademic"
+            element={<InstructorStudentsAcademic />}
+          />
+          <Route
+            path="/instructor/assignments"
+            element={<InstructorAssignments />}
+          />
+          <Route path="/instructor/quiz" element={<InstructorQuizs />} />
+          <Route
+            path="/instructor/analytics"
+            element={<InstructorAnalytics />}
+          />
+          <Route path="/instructor/chats" element={<ChatCommon />} />
+          <Route
+            path="/instructor/schedules"
+            element={<InstructorSchedules />}
+          />
+          <Route path="/instructor/tasks" element={<InstructorTasks />} />
+          <Route path="/instructor/forum" element={<InstructorForum />} />
+          <Route
+            path="/instructor/notifications"
+            element={<InstructorNotifications />}
+          />
+          <Route path="/instructor/settings" element={<InstructorSettings />} />
+          <Route path="/instructor/reviews" element={<InstructorReviews />} />
+        </Route>
 
-      {/* Admin routes */}
-      <Route element={<AdminLayout />}>
-        <Route path="/admin" element={<AdminDashboard />} />
-        <Route path="/admin/login" element={<AdminLogin />} />
-        <Route path="/admin/courses" element={<AdminCourses />} />
-        <Route path="/admin/instructors" element={<AdminInstructors />} />
-        <Route path="/admin/students" element={<AdminStudents />} />
-        <Route path="/admin/chats" element={<ChatCommon />} />
-        <Route path="/admin/categories" element={<AdminCategories />} />
-        <Route path="/admin/payments" element={<AdminPayments />} />
-        <Route path="/admin/assignments" element={<AdminAssignments />} />
-        <Route path="/admin/analytics" element={<AdminAnalytics />} />
-        <Route path="/admin/reviews" element={<AdminReviews />} />
-        <Route path="/admin/settings" element={<AdminSettings />} />
-      </Route>
-    </Routes>
+        {/* Admin routes */}
+        <Route element={<AdminLayout />}>
+          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin/login" element={<AdminLogin />} />
+          <Route path="/admin/courses" element={<AdminCourses />} />
+          <Route path="/admin/instructors" element={<AdminInstructors />} />
+          <Route path="/admin/students" element={<AdminStudents />} />
+          <Route path="/admin/chats" element={<ChatCommon />} />
+          <Route path="/admin/categories" element={<AdminCategories />} />
+          <Route path="/admin/payments" element={<AdminPayments />} />
+          <Route path="/admin/assignments" element={<AdminAssignments />} />
+          <Route path="/admin/analytics" element={<AdminAnalytics />} />
+          <Route path="/admin/reviews" element={<AdminReviews />} />
+          <Route path="/admin/settings" element={<AdminSettings />} />
+        </Route>
+      </Routes>
+    </>
   );
 };
 
