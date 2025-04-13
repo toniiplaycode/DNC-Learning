@@ -9,6 +9,7 @@ import {
 import { Assignment } from './Assignment';
 import { Quiz } from './Quiz';
 import { UserStudentAcademic } from './UserStudentAcademic';
+import { AcademicClassInstructor } from './AcademicClassInstructor';
 
 export enum AcademicClassStatus {
   ACTIVE = 'active',
@@ -65,4 +66,10 @@ export class AcademicClass {
     (userStudentAcademic) => userStudentAcademic.academicClass,
   )
   studentsAcademic: UserStudentAcademic[];
+
+  @OneToMany(
+    () => AcademicClassInstructor,
+    (classInstructor) => classInstructor.academicClass,
+  )
+  instructors: AcademicClassInstructor[];
 }

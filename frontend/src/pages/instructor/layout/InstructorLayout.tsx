@@ -35,6 +35,7 @@ import {
   Quiz,
   Forum,
   Comment,
+  PeopleAltTwoTone,
 } from "@mui/icons-material";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import Logo from "../../../assets/logo.png";
@@ -48,7 +49,16 @@ const TRANSITION_DURATION = "0.3s";
 const menuItems = [
   { text: "Tổng quan", icon: <Dashboard />, path: "/instructor" },
   { text: "Khóa học", icon: <LibraryBooks />, path: "/instructor/courses" },
-  { text: "Học viên", icon: <People />, path: "/instructor/students" },
+  {
+    text: "Học viên/sinh viên",
+    icon: <People />,
+    path: "/instructor/students",
+  },
+  {
+    text: "Lớp học thuật",
+    icon: <PeopleAltTwoTone />,
+    path: "/instructor/studentsAcademic",
+  },
   { text: "Bài tập", icon: <Assignment />, path: "/instructor/assignments" },
   { text: "Kiểm tra", icon: <Quiz />, path: "/instructor/quiz" },
   { text: "Thống kê", icon: <Assessment />, path: "/instructor/analytics" },

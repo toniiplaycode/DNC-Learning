@@ -40,9 +40,6 @@ export class UserStudentAcademic {
   @Column({ name: 'academic_year', length: 20 })
   academicYear: string;
 
-  @Column({ length: 100, nullable: true })
-  major: string;
-
   @Column({
     type: 'enum',
     enum: StudentStatus,

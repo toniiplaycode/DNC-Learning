@@ -44,6 +44,7 @@ import AdminAssignments from "./pages/admin/AdminAssignments";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminReviews from "./pages/admin/AdminReviews";
 import AdminSettings from "./pages/admin/AdminSettings";
+import InstructorStudentsAcademic from "./pages/instructor/InstructorStudentsAcademic";
 
 const App = () => {
   return (
@@ -81,6 +82,10 @@ const App = () => {
           element={<InstructorCourseView />}
         />
         <Route path="/instructor/students" element={<InstructorStudents />} />
+        <Route
+          path="/instructor/studentsAcademic"
+          element={<InstructorStudentsAcademic />}
+        />
         <Route
           path="/instructor/assignments"
           element={<InstructorAssignments />}

@@ -267,7 +267,7 @@ const ProfileAccount: React.FC = () => {
             name="bio"
             multiline
             rows={3}
-            value={user?.userStudent?.bio || user?.userStudentAcademic?.major}
+            value={user?.userStudent?.bio}
             onChange={handleFormChange}
           />
           {user?.userStudent?.gender && (
@@ -490,20 +490,6 @@ const ProfileAccount: React.FC = () => {
               InputLabelProps={{
                 shrink: true,
               }}
-            />
-          </Stack>
-        </DialogContent>
-      )}
-
-      {(currentUser?.role as string) == "student_academic" && (
-        <DialogContent dividers>
-          <Stack spacing={2} sx={{ mt: 1 }}>
-            <TextField
-              fullWidth
-              label="Ngành học"
-              name="major"
-              value={user?.userStudentAcademic?.major}
-              onChange={handleFormChange}
             />
           </Stack>
         </DialogContent>
@@ -856,8 +842,7 @@ const ProfileAccount: React.FC = () => {
                       Giới thiệu
                     </Typography>
                     <Typography variant="body1">
-                      {user?.userStudent?.bio ||
-                        user?.userStudentAcademic?.major}
+                      {user?.userStudent?.bio}
                     </Typography>
                   </Box>
 

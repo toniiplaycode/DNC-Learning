@@ -73,7 +73,6 @@ export interface UserStudentAcademic {
   studentCode: string;
   fullName: string;
   academicYear: string;
-  major?: string;
   status: StudentStatus;
   createdAt: Date;
   updatedAt: Date;

@@ -52,6 +52,8 @@ import { UserStudentAcademic } from './entities/UserStudentAcademic';
 import { AssignmentsModule } from './modules/assignments/assignments.module';
 import { AssignmentSubmission } from './entities/AssignmentSubmission';
 import { AssignmentSubmissionsModule } from './modules/assignment-submissions/assignment-submissions.module';
+import { AcademicClassInstructorsModule } from './modules/academic-class-instructors/academic-class-instructors.module';
+import { AcademicClassInstructor } from './entities/AcademicClassInstructor';
 
 @Module({
   imports: [
@@ -102,6 +104,7 @@ import { AssignmentSubmissionsModule } from './modules/assignment-submissions/as
           QuizResponse,
           UserStudentAcademic,
           AssignmentSubmission,
+          AcademicClassInstructor,
         ],
         // synchronize: true, // tự động tạo bảng trong entity (chỉ dùng trong môi tường dev)
       }),
@@ -122,6 +125,7 @@ import { AssignmentSubmissionsModule } from './modules/assignment-submissions/as
     QuizzesModule,
     AssignmentsModule,
     AssignmentSubmissionsModule,
+    AcademicClassInstructorsModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthMiddleware, InstructorMiddleware],
