@@ -30,6 +30,8 @@ import {
   MenuItem as MenuItemMUI,
   ListItemIcon,
   Button,
+  DialogActions,
+  TablePagination,
 } from "@mui/material";
 import SearchIcon from "@mui/icons-material/Search";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
@@ -43,8 +45,14 @@ import { AddStudentsDialog } from "./component/AddStudentsDialog";
 import { selectCurrentUser } from "../../features/auth/authSelectors";
 import { selectCurrentClassInstructor } from "../../features/academic-class-instructors/academicClassInstructorsSelectors";
 import { fetchClassInstructorById } from "../../features/academic-class-instructors/academicClassInstructorsSlice";
-import { createManyStudentsAcademic } from "../../features/users/usersApiSlice";
-import { toast, ToastContainer } from "react-toastify";
+import {
+  createManyStudentsAcademic,
+  updateStudentAcademic,
+  deleteStudentAcademic,
+} from "../../features/users/usersApiSlice";
+import { toast } from "react-toastify";
+import { EditStudentDialog } from "./component/EditStudentDialog";
+import { Add } from "@mui/icons-material";
 
 const InstructorStudentsAcademic = () => {
   const dispatch = useAppDispatch();
@@ -58,6 +66,12 @@ const InstructorStudentsAcademic = () => {
   const [anchorEl, setAnchorEl] = useState(null);
   const [studentCountFilter, setStudentCountFilter] = useState("all");
   const [openAddStudents, setOpenAddStudents] = useState(false);
+  const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+  const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
+  const [studentToDelete, setStudentToDelete] = useState(null);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
 
   useEffect(() => {
     dispatch(fetchClassInstructorById(Number(currentUser?.userInstructor?.id)));
@@ -74,12 +88,14 @@ const InstructorStudentsAcademic = () => {
 
   const handleViewStudents = () => {
     setOpenDialog(true);
+    setPage(0); // Reset to first page
     handleCloseMenu();
   };
 
   const handleCloseDialog = () => {
     setOpenDialog(false);
     setSelectedClass(null);
+    setPage(0); // Reset pagination
   };
 
   const handleAddStudents = async (students) => {
@@ -108,6 +124,85 @@ const InstructorStudentsAcademic = () => {
     } catch (error) {
       console.error("Error adding students:", error);
     }
+  };
+
+  const handleEditStudent = (student) => {
+    setSelectedStudent(student);
+    setOpenEditDialog(true);
+  };
+
+  // Add handler for edit submission
+  const handleEditSubmit = async (updatedStudent) => {
+    try {
+      // Add your updateStudent API call
+      await dispatch(
+        updateStudentAcademic({
+          user: {
+            id: updatedStudent.userId,
+            username: updatedStudent.username,
+            email: updatedStudent.email,
+            phone: updatedStudent.phone,
+          },
+          userStudentAcademic: {
+            id: updatedStudent.id,
+            fullName: updatedStudent.fullName,
+            studentCode: updatedStudent.studentCode,
+            academicYear: updatedStudent.academicYear,
+            status: updatedStudent.status,
+          },
+        })
+      ).unwrap();
+
+      // Refresh the class data
+      await dispatch(
+        fetchClassInstructorById(Number(currentUser?.userInstructor?.id))
+      )
+        .unwrap()
+        .then((updatedClasses) => {
+          const updatedClass = updatedClasses.find(
+            (cls) => cls.id === selectedClass.id
+          );
+          setSelectedClass(updatedClass);
+        });
+
+      setOpenEditDialog(false);
+      toast.success("Cập nhật thông tin sinh viên thành công!");
+    } catch (error) {
+      toast.error(
+        error.message || "Có lỗi xảy ra khi cập nhật thông tin sinh viên!"
+      );
+    }
+  };
+
+  const handleDeleteConfirm = async () => {
+    try {
+      await dispatch(deleteStudentAcademic(studentToDelete.user.id)).unwrap();
+      // Refresh the class data
+      await dispatch(
+        fetchClassInstructorById(Number(currentUser?.userInstructor?.id))
+      )
+        .unwrap()
+        .then((updatedClasses) => {
+          const updatedClass = updatedClasses.find(
+            (cls) => cls.id === selectedClass.id
+          );
+          setSelectedClass(updatedClass);
+        });
+      setOpenDeleteDialog(false);
+      setStudentToDelete(null);
+      toast.success("Xóa sinh viên thành công!");
+    } catch (error) {
+      toast.error("Có lỗi xảy ra khi xóa sinh viên!");
+    }
+  };
+
+  const handleChangePage = (event, newPage) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
   };
 
   const filteredClasses = currentClassInstructor?.filter((classInstructor) => {
@@ -149,11 +244,8 @@ const InstructorStudentsAcademic = () => {
     <Box sx={{ p: 3 }}>
       {/* Header Section */}
       <Box sx={{ mb: 4 }}>
-        <Typography variant="h4" fontWeight="bold" gutterBottom>
+        <Typography variant="h5" fontWeight="bold" gutterBottom>
           Quản Lý Lớp Học
-        </Typography>
-        <Typography color="text.secondary">
-          Quản lý thông tin lớp học và sinh viên của bạn
         </Typography>
       </Box>
       {/* Stats Cards */}
@@ -390,11 +482,11 @@ const InstructorStudentsAcademic = () => {
           </ListItemIcon>
           Xem danh sách sinh viên
         </MenuItemMUI>
-        <MenuItemMUI>
+        <MenuItemMUI onClick={() => setOpenAddStudents(true)}>
           <ListItemIcon>
-            <EditIcon fontSize="small" />
+            <Add fontSize="small" />
           </ListItemIcon>
-          Chỉnh sửa
+          Thêm sinh viên
         </MenuItemMUI>
         <MenuItemMUI>
           <ListItemIcon>
@@ -459,8 +551,12 @@ const InstructorStudentsAcademic = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  selectedClass?.academicClass.studentsAcademic?.map(
-                    (student) => (
+                  selectedClass?.academicClass.studentsAcademic
+                    ?.slice(
+                      page * rowsPerPage,
+                      page * rowsPerPage + rowsPerPage
+                    )
+                    ?.map((student) => (
                       <TableRow key={student.id}>
                         <TableCell>
                           <Box
@@ -493,35 +589,106 @@ const InstructorStudentsAcademic = () => {
                         <TableCell>{student.academicYear}</TableCell>
                         <TableCell>{student.user.email}</TableCell>
                         <TableCell>
-                          <Chip
-                            label={
-                              student.status === "studying"
-                                ? "Đang học"
-                                : "Nghỉ học"
-                            }
-                            color={
-                              student.status === "studying"
-                                ? "success"
-                                : "error"
-                            }
-                            size="small"
-                          />
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
+                            <Chip
+                              label={
+                                student.status === "studying"
+                                  ? "Đang học"
+                                  : "Nghỉ học"
+                              }
+                              color={
+                                student.status === "studying"
+                                  ? "success"
+                                  : "error"
+                              }
+                              size="small"
+                            />
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditStudent(student);
+                              }}
+                            >
+                              <EditIcon fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setStudentToDelete(student);
+                                setOpenDeleteDialog(true);
+                              }}
+                            >
+                              <DeleteIcon fontSize="small" color="error" />
+                            </IconButton>
+                          </Box>
                         </TableCell>
                       </TableRow>
-                    )
-                  )
+                    ))
                 )}
               </TableBody>
             </Table>
           </TableContainer>
+
+          <TablePagination
+            component="div"
+            count={selectedClass?.academicClass.studentsAcademic?.length || 0}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[5, 10, 25]}
+            labelRowsPerPage="Số hàng mỗi trang:"
+            labelDisplayedRows={({ from, to, count }) =>
+              `${from}-${to} của ${count}`
+            }
+          />
         </DialogContent>
       </Dialog>
+      {/* Add the dialog component to your JSX */}
       <AddStudentsDialog
         open={openAddStudents}
         onClose={() => setOpenAddStudents(false)}
         classData={selectedClass}
         onSubmit={handleAddStudents}
       />
+      {/* Edit the dialog component to your JSX */}
+      <EditStudentDialog
+        open={openEditDialog}
+        onClose={() => setOpenEditDialog(false)}
+        student={selectedStudent}
+        onSubmit={handleEditSubmit}
+      />
+      {/* Delete the dialog component to your JSX */}
+      <Dialog
+        open={openDeleteDialog}
+        onClose={() => setOpenDeleteDialog(false)}
+      >
+        <DialogTitle>Xác nhận xóa sinh viên</DialogTitle>
+        <DialogContent>
+          <Typography>
+            Bạn có chắc chắn muốn xóa sinh viên {studentToDelete?.fullName}?
+            Hành động này không thể hoàn tác.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDeleteDialog(false)}>Hủy</Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            color="error"
+            variant="contained"
+          >
+            Xóa
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

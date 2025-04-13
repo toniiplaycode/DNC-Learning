@@ -33,6 +33,36 @@ export const createManyStudentsAcademic = createAsyncThunk(
   }
 );
 
+// Update student academic
+export const updateStudentAcademic = createAsyncThunk(
+  "users/updateStudentAcademic",
+  async (updateData: any, { rejectWithValue }) => {
+    try {
+      const response = await api.patch("/users/student-academic", updateData);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update student"
+      );
+    }
+  }
+);
+
+// Delete student academic
+export const deleteStudentAcademic = createAsyncThunk(
+  "users/deleteStudentAcademic",
+  async (userId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.delete(`/users/student-academic/${userId}`);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to delete student academic"
+      );
+    }
+  }
+);
+
 // Fetch all users
 export const fetchUsers = createAsyncThunk(
   "users/fetchAll",

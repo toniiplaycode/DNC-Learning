@@ -556,7 +556,7 @@ const InstructorStudents = () => {
         open={Boolean(anchorEl)}
         onClose={handleMenuClose}
       >
-        <MenuItem onClick={handleOpenDialog}>
+        <MenuItem onClick={() => handleOpenDialog(selectedStudent)}>
           <Person sx={{ mr: 1 }} fontSize="small" />
           Xem thông tin
         </MenuItem>

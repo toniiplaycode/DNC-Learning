@@ -102,6 +102,81 @@ export class UsersService {
     );
   }
 
+  async updateStudentAcademic(updateData: any): Promise<any> {
+    return this.userRepository.manager.transaction(
+      async (transactionalEntityManager) => {
+        try {
+          // Update user information
+          const user = await transactionalEntityManager.update(
+            User,
+            { id: updateData.user.id },
+            {
+              username: updateData.user.username,
+              email: updateData.user.email,
+              phone: updateData.user.phone,
+            },
+          );
+
+          // Update student academic information
+          const studentAcademic = await transactionalEntityManager.update(
+            UserStudentAcademic,
+            { id: updateData.userStudentAcademic.id },
+            {
+              fullName: updateData.userStudentAcademic.fullName,
+              studentCode: updateData.userStudentAcademic.studentCode,
+              academicYear: updateData.userStudentAcademic.academicYear,
+              status: updateData.userStudentAcademic.status,
+            },
+          );
+
+          // Return updated data
+          return updateData;
+        } catch (error) {
+          // Check for specific errors
+          if (error.code === '23505') {
+            if (error.detail.includes('email')) {
+              throw new Error('Email already exists');
+            }
+            if (error.detail.includes('studentCode')) {
+              throw new Error('Student code already exists');
+            }
+          }
+          throw new Error(`Failed to update student: ${error.message}`);
+        }
+      },
+    );
+  }
+
+  async deleteStudentAcademic(userId: number): Promise<void> {
+    return this.userRepository.manager.transaction(
+      async (transactionalEntityManager) => {
+        try {
+          await transactionalEntityManager.delete(UserStudentAcademic, {
+            userId: userId,
+          });
+
+          const remainingAcademics = await transactionalEntityManager.count(
+            UserStudentAcademic,
+            {
+              where: { userId },
+            },
+          );
+
+          if (remainingAcademics === 0) {
+            const user = await transactionalEntityManager.findOne(User, {
+              where: { id: userId },
+            });
+            await transactionalEntityManager.delete(User, { id: userId });
+          }
+        } catch (error) {
+          throw new Error(
+            `Failed to delete student academic record for user ${userId}: ${error.message}`,
+          );
+        }
+      },
+    );
+  }
+
   async findStudentsByInstructorId(instructorId: number): Promise<User[]> {
     // 1. Tìm tất cả khóa học mà instructor dạy
     // 2. Sau đó tìm tất cả học sinh đã đăng ký các khóa học đó

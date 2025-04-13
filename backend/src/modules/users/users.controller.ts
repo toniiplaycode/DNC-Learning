@@ -1,4 +1,13 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { UsersService } from './users.service';
 import { User, UserRole } from 'src/entities/User';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
@@ -13,6 +22,20 @@ export class UsersController {
   @Roles(UserRole.INSTRUCTOR)
   createManyStudentAcademic(@Body() studentsData: any[]): Promise<any[]> {
     return this.usersService.createManyStudentAcademic(studentsData);
+  }
+
+  @Patch('student-academic')
+  @UseGuards(JwtAuthGuard)
+  @Roles(UserRole.INSTRUCTOR)
+  async updateStudentAcademic(@Body() updateData: any): Promise<any> {
+    return this.usersService.updateStudentAcademic(updateData);
+  }
+
+  @Delete('student-academic/:userId')
+  @UseGuards(JwtAuthGuard)
+  @Roles(UserRole.INSTRUCTOR)
+  async deleteStudentAcademic(@Param('userId') userId: number): Promise<void> {
+    return this.usersService.deleteStudentAcademic(userId);
   }
 
   @Get()
