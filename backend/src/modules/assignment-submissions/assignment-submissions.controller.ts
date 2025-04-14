@@ -41,8 +41,8 @@ export class AssignmentSubmissionsController {
 
   @Get('assignment/:id')
   @UseGuards(JwtAuthGuard)
-  findByAssignment(@Param('id', ParseIntPipe) id: number) {
-    return this.submissionsService.findByAssignment(id);
+  findByAssignment(@Param('id', ParseIntPipe) id: number, @GetUser() user) {
+    return this.submissionsService.findByAssignment(id, user.id);
   }
 
   @Get('user')

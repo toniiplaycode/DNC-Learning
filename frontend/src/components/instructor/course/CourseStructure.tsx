@@ -1,6 +1,12 @@
 import React, { useState } from "react";
-import { CheckCircle, ExpandMore } from "@mui/icons-material";
-import { Add, Edit, ExpandLess, Delete } from "@mui/icons-material";
+import {
+  CheckCircle,
+  ExpandMore,
+  Add,
+  Edit,
+  ExpandLess,
+  Delete,
+} from "@mui/icons-material";
 import {
   Button,
   CardContent,
@@ -22,6 +28,11 @@ import {
   DialogActions,
 } from "@mui/material";
 import { Box } from "@mui/material";
+import { deleteCourseSection } from "../../../features/course-sections/courseSectionApiSlice";
+import { useAppDispatch } from "../../../app/hooks";
+import { fetchCourseById } from "../../../features/courses/coursesApiSlice";
+import { toast } from "react-toastify";
+import { useParams } from "react-router-dom";
 
 interface CourseStructureProps {
   sections: any[];
@@ -31,11 +42,10 @@ interface CourseStructureProps {
   expandedSections: number[];
   handleEditSection: (sectionId: number) => void;
   selectedContent: any;
-  getContentIcon: (type: string) => React.ReactNode;
+  getContentIcon?: (type: string, fileType?: string) => React.ReactNode; // Updated signature
   handleOpenEditContentModal: (content: any) => void;
   handleOpenAddContentModal: (sectionId: number, type: string) => void;
   onDeleteContent?: (contentId: number, sectionId: number) => void;
-  onDeleteSection?: (sectionId: number) => void;
 }
 
 const CourseStructure: React.FC<CourseStructureProps> = ({
@@ -50,8 +60,11 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
   handleOpenEditContentModal,
   handleOpenAddContentModal,
   onDeleteContent,
-  onDeleteSection,
 }) => {
+  const dispatch = useAppDispatch();
+  const { id } = useParams();
+  const courseID = Number(id);
+
   const [openSections, setOpenSections] = useState<number[]>([]);
   const [actionMenuAnchor, setActionMenuAnchor] = useState<null | HTMLElement>(
     null
@@ -62,8 +75,6 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
   const [selectedContentId, setSelectedContentId] = useState<number | null>(
     null
   );
-
-  // Thêm state cho dialog xác nhận xóa
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [deleteType, setDeleteType] = useState<"section" | "content">(
     "section"
@@ -71,7 +82,27 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
   const [itemToDelete, setItemToDelete] = useState<{
     id: number;
     sectionId?: number;
+    isDocument?: boolean;
   }>({ id: 0 });
+
+  // Transform sections to include lessons and sort them
+  const transformedSections = sections
+    ?.map((section) => ({
+      ...section,
+      contents: [
+        ...section.lessons.map((lesson: any) => ({
+          id: lesson.id,
+          title: lesson.title,
+          type: lesson.contentType,
+          duration: lesson.duration ? `${lesson.duration} phút` : null,
+          completed: false,
+          orderNumber: lesson.orderNumber,
+          isLesson: true,
+          original: lesson,
+        })),
+      ].sort((a, b) => (a.orderNumber ?? 0) - (b.orderNumber ?? 0)), // Sort by orderNumber
+    }))
+    .sort((a, b) => (a.orderNumber ?? 0) - (b.orderNumber ?? 0)); // Sort sections by orderNumber
 
   const handleToggleSection = (sectionId: number) => {
     if (openSections.includes(sectionId)) {
@@ -79,6 +110,7 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
     } else {
       setOpenSections([...openSections, sectionId]);
     }
+    handleSectionToggle(sectionId);
   };
 
   const handleOpenActionMenu = (
@@ -108,7 +140,6 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
     setSelectedContentId(null);
   };
 
-  // Xử lý khi click vào nút xóa section
   const handleDeleteSectionClick = (sectionId: number) => {
     setDeleteType("section");
     setItemToDelete({ id: sectionId });
@@ -116,22 +147,25 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
     handleCloseActionMenu();
   };
 
-  // Xử lý khi click vào nút xóa content
-  const handleDeleteContentClick = (contentId: number, sectionId: number) => {
-    setDeleteType("content");
-    setItemToDelete({ id: contentId, sectionId: sectionId });
+  const handleDeleteContentClick = (
+    contentId: number,
+    sectionId: number,
+    isDocument: boolean
+  ) => {
+    setDeleteType("content Purchased by Tuan Duong from the Noun Project");
+    setItemToDelete({ id: contentId, sectionId, isDocument });
     setOpenDeleteDialog(true);
     handleCloseActionMenu();
   };
 
-  // Xử lý khi xác nhận xóa
   const handleConfirmDelete = () => {
-    // Đóng dialog xác nhận
     setOpenDeleteDialog(false);
-
-    // Xử lý xóa dựa vào deleteType
-    if (deleteType === "section" && onDeleteSection) {
-      onDeleteSection(itemToDelete.id);
+    if (deleteType === "section") {
+      console.log("Delete section with ID:", itemToDelete.id);
+      dispatch(deleteCourseSection(itemToDelete.id)).then(() => {
+        dispatch(fetchCourseById(courseID));
+        toast.success("Xóa phần học thành công");
+      });
     } else if (
       deleteType === "content" &&
       onDeleteContent &&
@@ -164,13 +198,13 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
             </Button>
           </Box>
           <Stack spacing={2}>
-            {sections.map((section: any) => (
+            {transformedSections.map((section: any) => (
               <Box key={section.id}>
                 <Stack
                   direction="row"
                   justifyContent="space-between"
                   alignItems="center"
-                  onClick={() => handleSectionToggle(section.id)}
+                  onClick={() => handleToggleSection(section.id)}
                   sx={{
                     cursor: "pointer",
                     "&:hover": { bgcolor: "action.hover" },
@@ -187,27 +221,16 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
                       {section.title}
                     </Typography>
                   </Box>
-
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                    }}
-                  >
-                    {/* Thêm nút chỉnh sửa section */}
-                    <Box onClick={(e) => e.stopPropagation()}>
-                      <IconButton
-                        size="small"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleEditSection(section.id);
-                        }}
-                      >
-                        <Edit fontSize="small" />
-                      </IconButton>
-                    </Box>
-
-                    {/* Nút xóa section */}
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditSection(section.id);
+                      }}
+                    >
+                      <Edit fontSize="small" />
+                    </IconButton>
                     <Tooltip title="Xóa phần học">
                       <IconButton
                         edge="end"
@@ -224,14 +247,13 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
                   </Box>
                 </Stack>
 
-                {/* Phần nội dung section hiện tại giữ nguyên */}
                 {expandedSections.includes(section.id) && (
                   <List disablePadding>
                     {section.contents.map((content: any) => (
                       <ListItem
                         key={content.id}
                         component="div"
-                        onClick={() => handleContentClick(content)}
+                        onClick={() => handleContentClick(content.original)}
                         sx={{
                           pl: 4,
                           cursor: "pointer",
@@ -248,7 +270,7 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
                           {content.completed ? (
                             <CheckCircle color="success" />
                           ) : (
-                            getContentIcon(content.type)
+                            getContentIcon(content.type, content.fileType)
                           )}
                         </ListItemIcon>
                         <ListItemText
@@ -256,19 +278,17 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
                           secondary={
                             <Typography variant="body2" color="text.secondary">
                               {content.duration
-                                ? `${content.duration} • ${content.type}`
+                                ? `${content.duration}`
                                 : content.type}
                             </Typography>
                           }
                         />
-
-                        {/* Thêm nút edit cho từng bài học */}
                         <Box onClick={(e) => e.stopPropagation()}>
                           <IconButton
                             size="small"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleOpenEditContentModal(content);
+                              handleOpenEditContentModal(content.original);
                             }}
                             sx={{
                               opacity: 0.6,
@@ -278,14 +298,16 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
                             <Edit fontSize="small" />
                           </IconButton>
                         </Box>
-
-                        {/* Nút xóa nội dung */}
                         <Tooltip title="Xóa nội dung">
                           <IconButton
                             edge="end"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDeleteContentClick(content.id, section.id);
+                              handleDeleteContentClick(
+                                content.id,
+                                section.id,
+                                !content.isLesson
+                              );
                             }}
                             size="small"
                             sx={{ color: "error.main" }}
@@ -297,9 +319,10 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
                     ))}
                     <ListItem
                       component="div"
-                      onClick={() =>
-                        handleOpenAddContentModal(section.id, "video")
-                      }
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleOpenActionMenu(e, section.id);
+                      }}
                       sx={{
                         pl: 4,
                         color: "primary.main",
@@ -344,7 +367,7 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
             <MenuItem
               onClick={() => {
                 if (selectedSectionId !== null) {
-                  handleOpenAddContentModal(selectedSectionId, "document");
+                  handleOpenAddContentModal(selectedSectionId, "slide");
                   handleCloseActionMenu();
                 }
               }}
@@ -352,7 +375,7 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
               <ListItemIcon>
                 <Add color="primary" />
               </ListItemIcon>
-              <ListItemText>Thêm tài liệu</ListItemText>
+              <ListItemText>Thêm slide</ListItemText>
             </MenuItem>
             <MenuItem
               onClick={() => {

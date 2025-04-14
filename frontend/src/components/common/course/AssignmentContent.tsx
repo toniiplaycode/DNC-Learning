@@ -101,6 +101,8 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
   const [openPreview, setOpenPreview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  console.log(assignmentSubmissions);
+
   useEffect(() => {
     if (assignmentData.assignmentId !== null) {
       dispatch(

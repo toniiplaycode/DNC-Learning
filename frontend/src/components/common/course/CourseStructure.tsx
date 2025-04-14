@@ -135,9 +135,14 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
     }
   };
 
+  // Sort sections by orderNumber
+  const sortedSections = [...sections].sort(
+    (a, b) => a.orderNumber - b.orderNumber
+  );
+
   return (
     <List sx={{ width: "100%" }}>
-      {sections.map((section) => (
+      {sortedSections.map((section) => (
         <Box
           key={section.id}
           sx={{ mb: 2, border: "1px solid #e0e0e0", borderRadius: 1 }}

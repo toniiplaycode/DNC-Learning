@@ -98,14 +98,17 @@ export class AssignmentSubmissionsService {
     });
   }
 
-  async findByAssignment(id: number): Promise<AssignmentSubmission | {}> {
+  async findByAssignment(
+    id: number,
+    userId?: number,
+  ): Promise<AssignmentSubmission | {}> {
     // Kiểm tra id có hợp lệ không
     if (!id || isNaN(id)) {
       return {};
     }
 
     const submission = await this.submissionsRepository.findOne({
-      where: { assignmentId: id },
+      where: { assignmentId: id, userId },
       relations: ['assignment'],
     });
 

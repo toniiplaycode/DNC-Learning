@@ -25,10 +25,13 @@ import {
   MenuBook,
   Link as LinkIcon,
   Add,
+  PictureAsPdf,
+  TableChart,
+  TextSnippet,
+  Slideshow,
 } from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
 
-import ContentDiscussion from "../../components/common/course/ContentDiscussion";
 import ContentDocuments from "../../components/common/course/ContentDocuments";
 import ContentDetail from "../../components/common/course/ContentDetail";
 
@@ -241,55 +244,6 @@ const mockCourseData = {
   ],
 };
 
-// Mock data for documents
-const mockDocuments = [
-  {
-    id: 1,
-    title: "Tài liệu TypeScript cơ bản",
-    description: "Tổng hợp kiến thức TypeScript cơ bản",
-    fileType: "pdf",
-    fileSize: "2.5 MB",
-    downloadUrl: "https://example.com/typescript-basic.pdf",
-  },
-  {
-    id: 2,
-    title: "TypeScript Types Guide",
-    description: "Hướng dẫn về các kiểu dữ liệu trong TypeScript",
-    fileType: "pdf",
-    fileSize: "1.8 MB",
-    downloadUrl: "https://example.com/docs/ts-types.pdf",
-  },
-];
-
-// Mock data for comments
-const mockComments = [
-  {
-    id: 1,
-    user: {
-      id: 1,
-      name: "Nguyễn Văn A",
-      avatar: "/src/assets/avatar.png",
-      role: "student",
-    },
-    content:
-      "Thầy ơi, em không hiểu phần React Hook lắm, thầy có thể giải thích lại được không ạ?",
-    createdAt: "2024-03-20T10:30:00",
-    replies: [
-      {
-        id: 101,
-        user: {
-          id: 999,
-          name: "Giảng viên",
-          avatar: "/src/assets/avatar.png",
-          role: "instructor",
-        },
-        content: "Chào bạn, mình sẽ giải thích thêm trong buổi học tới nhé!",
-        createdAt: "2024-03-20T11:15:00",
-      },
-    ],
-  },
-];
-
 // Thêm mock data cho quizzes và assignments
 const mockQuizzes = [
   {
@@ -355,30 +309,55 @@ const TabPanel = (props: TabPanelProps) => {
   );
 };
 
-// Thêm hàm helper để lấy nội dung đầu tiên
-const getFirstContent = (sections: any[]) => {
-  return sections[0]?.contents[0] || null;
-};
-
 const InstructorCourseView = () => {
   const { id } = useParams();
   const dispatch = useAppDispatch();
   const courseData = useAppSelector(selectCourseById);
-  const [tabValue, setTabValue] = useState(0);
-  const [expandedSections, setExpandedSections] = useState<number[]>(
-    mockCourseData.sections.map((section) => section.id)
+
+  // Initialize with empty values first
+  const [expandedSections, setExpandedSections] = useState<number[]>([]);
+  const [selectedContent, setSelectedContent] = useState<ContentItem | null>(
+    null
   );
 
+  // Fetch course data
   useEffect(() => {
     dispatch(fetchCourseById(Number(id)));
   }, [dispatch, id]);
 
-  console.log(courseData);
+  // Update expandedSections when courseData changes
+  useEffect(() => {
+    if (courseData?.sections && courseData.sections.length > 0) {
+      // Only set the first section's ID in expandedSections
+      setExpandedSections([courseData.sections[0].id]);
+    }
+  }, [courseData]);
+
+  // Update selectedContent when courseData changes
+  useEffect(() => {
+    if (courseData?.sections && courseData.sections.length > 0) {
+      const firstSection = courseData.sections[0];
+      if (firstSection.lessons && firstSection.lessons.length > 0) {
+        const firstLesson = firstSection.lessons[0];
+        setSelectedContent({
+          id: firstLesson.id,
+          type: firstLesson.contentType,
+          title: firstLesson.title,
+          description: firstLesson.content,
+          duration: firstLesson.duration
+            ? `${firstLesson.duration}:00`
+            : undefined,
+          url: firstLesson.contentUrl || "",
+          completed: false,
+          locked: false,
+        });
+      }
+    }
+  }, [courseData]);
+
+  const [tabValue, setTabValue] = useState(0);
 
   // Khởi tạo selectedContent với nội dung đầu tiên
-  const [selectedContent, setSelectedContent] = useState<ContentItem | null>(
-    getFirstContent(mockCourseData.sections)
-  );
 
   // Thêm state quản lý modal
   const [openAddContentModal, setOpenAddContentModal] = useState(false);
@@ -418,7 +397,7 @@ const InstructorCourseView = () => {
   // Thêm state quản lý section modals
   const [openAddSectionModal, setOpenAddSectionModal] = useState(false);
   const [openEditSectionModal, setOpenEditSectionModal] = useState(false);
-  const [sectionToEdit, setSectionToEdit] = useState<any>(null);
+  const [sectionIdToEdit, setSectionIdToEdit] = useState<any>(null);
 
   // State quản lý document modals
   const [openEditDocumentModal, setOpenEditDocumentModal] = useState(false);
@@ -447,14 +426,25 @@ const InstructorCourseView = () => {
     discountCodes: [],
   });
 
-  const handleContentClick = (content: ContentItem) => {
-    setSelectedContent(content);
-
+  const handleContentClick = (content: any) => {
     // Kích hoạt tab "Nội dung" (giả sử tab nội dung có index là 0)
     setTabValue(0);
 
-    // Hoặc nếu tab được quản lý bằng tên
-    // setActiveTab("content");
+    let selectedLesson = {
+      id: content.id,
+      assignmentId: content?.assignments ? content?.assignments[0]?.id : null,
+      type: content.contentType,
+      title: content.title,
+      description: content.content,
+      duration: content.duration ? `${content.duration}:00` : undefined,
+      url: content?.contentUrl || "",
+      completed: false, // Cần add thêm trường này nếu API có
+      // Các trường khác nếu cần
+    };
+
+    if (selectedLesson) {
+      setSelectedContent(selectedLesson);
+    }
   };
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -469,24 +459,26 @@ const InstructorCourseView = () => {
     );
   };
 
-  const getContentIcon = (type: string) => {
-    switch (type) {
+  const getContentIcon = (contentType: string) => {
+    switch (contentType) {
       case "video":
         return <PlayCircle color="primary" />;
-      case "slide":
-        return <Description color="primary" />;
-      case "meet":
-        return <VideoCall color="primary" />;
       case "quiz":
-        return <Quiz color="primary" />;
+        return <Quiz color="warning" />;
       case "assignment":
-        return <Assignment color="primary" />;
-      case "document":
-        return <MenuBook color="primary" />;
-      case "link":
-        return <LinkIcon color="primary" />;
+        return <Assignment color="warning" />;
+      case "pdf":
+        return <PictureAsPdf color="info" />;
+      case "docx":
+        return <Description color="info" />;
+      case "xlsx":
+        return <TableChart color="info" />;
+      case "txt":
+        return <TextSnippet color="info" />;
+      case "slide":
+        return <Slideshow color="info" />;
       default:
-        return <PlayCircle color="primary" />;
+        return <Description color="info" />;
     }
   };
 
@@ -603,30 +595,10 @@ const InstructorCourseView = () => {
   };
 
   // Hàm mở modal sửa section
-  const handleOpenEditSectionModal = (section: any) => {
-    setSectionToEdit(section);
+  const handleOpenEditSectionModal = (sectionId: any) => {
+    setSectionIdToEdit(sectionId);
     setOpenEditSectionModal(true);
   };
-
-  // Xử lý khi thêm section mới
-  const handleAddSection = (sectionData: any) => {
-    console.log("Thêm phần học mới:", sectionData);
-    // Thực hiện thêm phần học vào state hoặc gọi API
-
-    // Đóng modal
-    setOpenAddSectionModal(false);
-  };
-
-  // Xử lý khi cập nhật section
-  const handleUpdateSection = (sectionData: any) => {
-    console.log("Cập nhật phần học:", sectionData);
-    // Thực hiện cập nhật phần học trong state hoặc gọi API
-
-    // Đóng modal
-    setOpenEditSectionModal(false);
-    setSectionToEdit(null);
-  };
-
   // Hàm mở modal thêm document
   const handleOpenAddDocumentModal = (sectionId?: number) => {
     setCurrentSectionId(sectionId || null);
@@ -742,27 +714,6 @@ const InstructorCourseView = () => {
     setOpenSettingsModal(false);
   };
 
-  // Thêm hàm xử lý xóa section
-  const handleDeleteSection = (sectionId: number) => {
-    console.log("Xóa section:", sectionId);
-    // Cập nhật state để xóa section
-    const updatedSections = mockCourseData.sections.filter(
-      (section) => section.id !== sectionId
-    );
-    setMockCourseData({
-      ...mockCourseData,
-      sections: updatedSections,
-    });
-
-    // Nếu section bị xóa đang được chọn, reset selected content
-    if (selectedContent && selectedContent.sectionId === sectionId) {
-      setSelectedContent(null);
-    }
-
-    // Cũng cần loại bỏ sectionId khỏi danh sách các section đang mở
-    setExpandedSections(expandedSections.filter((id) => id !== sectionId));
-  };
-
   // Thêm hàm xử lý xóa content
   const handleDeleteContent = (contentId: number, sectionId: number) => {
     console.log("Xóa content:", contentId, "từ section:", sectionId);
@@ -797,13 +748,6 @@ const InstructorCourseView = () => {
   // Thêm hàm xử lý xóa tài liệu
   const handleDeleteDocument = (documentId: number) => {
     console.log("Xóa tài liệu:", documentId);
-    // Lọc ra các tài liệu không bị xóa
-    const updatedDocuments = mockDocuments.filter(
-      (doc) => doc.id !== documentId
-    );
-
-    // Cập nhật state (giả sử bạn sẽ chuyển mockDocuments thành state)
-    // setMockDocuments(updatedDocuments);
   };
 
   // Thêm hàm xử lý xóa quiz và assignment
@@ -919,7 +863,7 @@ const InstructorCourseView = () => {
         {/* Left sidebar - Course Structure */}
         <Grid item xs={12} md={3}>
           <CourseStructure
-            sections={mockCourseData?.sections}
+            sections={courseData?.sections || []}
             handleContentClick={handleContentClick}
             handleAddSection={handleOpenAddSectionModal}
             handleSectionToggle={handleSectionToggle}
@@ -930,7 +874,6 @@ const InstructorCourseView = () => {
             handleOpenEditContentModal={handleOpenEditContentModal}
             handleOpenAddContentModal={handleOpenAddContentModal}
             onDeleteContent={handleDeleteContent}
-            onDeleteSection={handleDeleteSection}
           />
         </Grid>
 
@@ -941,7 +884,6 @@ const InstructorCourseView = () => {
               <Tabs value={tabValue} onChange={handleTabChange}>
                 <Tab label="Nội dung" />
                 <Tab label="Tài liệu" />
-                <Tab label="Thảo luận" />
                 <Tab label="Bài tập/Quiz" />
               </Tabs>
             </Box>
@@ -973,17 +915,12 @@ const InstructorCourseView = () => {
                 </Button>
               </Box>
               <ContentDocuments
-                documents={mockDocuments}
                 isInstructor={true}
                 onDeleteDocument={handleDeleteDocument}
               />
             </TabPanel>
 
             <TabPanel value={tabValue} index={2}>
-              <ContentDiscussion comments={mockComments} />
-            </TabPanel>
-
-            <TabPanel value={tabValue} index={3}>
               <Box
                 sx={{
                   display: "flex",
@@ -1109,8 +1046,6 @@ const InstructorCourseView = () => {
       <DialogAddEditSection
         open={openAddSectionModal}
         onClose={() => setOpenAddSectionModal(false)}
-        onSubmit={handleAddSection}
-        sections={mockCourseData.sections}
         editMode={false}
       />
 
@@ -1118,9 +1053,7 @@ const InstructorCourseView = () => {
       <DialogAddEditSection
         open={openEditSectionModal}
         onClose={() => setOpenEditSectionModal(false)}
-        onSubmit={handleUpdateSection}
-        sectionToEdit={sectionToEdit || undefined}
-        sections={mockCourseData.sections}
+        sectionIdToEdit={sectionIdToEdit || undefined}
         editMode={true}
       />
     </Box>
