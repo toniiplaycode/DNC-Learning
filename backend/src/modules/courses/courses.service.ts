@@ -105,7 +105,47 @@ export class CoursesService {
 
   async findCoursesByInstructor(instructorId: number): Promise<Course[]> {
     return await this.courseRepository.find({
-      where: { instructor: { id: instructorId } },
+      where: {
+        instructor: {
+          id: instructorId, // Lọc theo instructorId
+        },
+      },
+      relations: {
+        category: true,
+        instructor: {
+          user: true,
+        },
+        sections: {
+          lessons: {
+            assignments: true,
+          },
+          documents: true,
+        },
+        reviews: true,
+        enrollments: true,
+      },
+      select: {
+        instructor: {
+          id: true,
+          fullName: true,
+          professionalTitle: true,
+          user: {
+            id: true,
+            username: true,
+            email: true,
+            avatarUrl: true,
+            role: true,
+          },
+        },
+        category: {
+          id: true,
+          name: true,
+          description: true,
+        },
+        enrollments: {
+          userId: true,
+        },
+      },
     });
   }
 

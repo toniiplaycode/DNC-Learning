@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   Box,
   Grid,
@@ -12,8 +12,6 @@ import {
   Avatar,
   Button,
   Divider,
-  List,
-  LinearProgress,
 } from "@mui/material";
 import {
   People,
@@ -29,9 +27,11 @@ import {
   Add,
 } from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
+
 import ContentDiscussion from "../../components/common/course/ContentDiscussion";
 import ContentDocuments from "../../components/common/course/ContentDocuments";
 import ContentDetail from "../../components/common/course/ContentDetail";
+
 import CourseStructure from "../../components/instructor/course/CourseStructure";
 import DialogAddEditLesson from "../../components/instructor/course/DialogAddEditLesson";
 import DialogAddEditDocument from "../../components/instructor/course/DialogAddEditDocument";
@@ -40,6 +40,9 @@ import DialogAddEditAssignment from "../../components/instructor/course/DialogAd
 import DialogAddEditSection from "../../components/instructor/course/DialogAddEditSection";
 import DialogSetting from "../../components/instructor/course/DialogSetting";
 import CourseQuizAssignment from "../../components/instructor/course/CourseQuizAssignment";
+import { fetchCourseById } from "../../features/courses/coursesApiSlice";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import { selectCourseById } from "../../features/courses/coursesSelector";
 
 // Định nghĩa interface cho ContentItem
 interface ContentItem {
@@ -359,11 +362,18 @@ const getFirstContent = (sections: any[]) => {
 
 const InstructorCourseView = () => {
   const { id } = useParams();
-  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const courseData = useAppSelector(selectCourseById);
   const [tabValue, setTabValue] = useState(0);
   const [expandedSections, setExpandedSections] = useState<number[]>(
     mockCourseData.sections.map((section) => section.id)
   );
+
+  useEffect(() => {
+    dispatch(fetchCourseById(Number(id)));
+  }, [dispatch, id]);
+
+  console.log(courseData);
 
   // Khởi tạo selectedContent với nội dung đầu tiên
   const [selectedContent, setSelectedContent] = useState<ContentItem | null>(
@@ -813,39 +823,37 @@ const InstructorCourseView = () => {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Grid container spacing={3}>
-            <Grid item xs={12} md={8}>
+            <Grid item xs={12} md={10}>
               <Stack spacing={2}>
                 <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                   <Avatar
                     variant="rounded"
-                    src={mockCourseData.thumbnail}
-                    sx={{ width: 120, height: 120 }}
+                    src={courseData?.thumbnailUrl}
+                    sx={{ width: 120, height: 100 }}
                   />
                   <Box sx={{ flex: 1 }}>
                     <Typography variant="h4" gutterBottom>
-                      {mockCourseData.title}
+                      {courseData?.title}
                     </Typography>
                     <Stack direction="row" spacing={1} alignItems="center">
                       <Chip
                         color="success"
                         label={
-                          mockCourseData.status === "published"
+                          courseData?.status === "published"
                             ? "Đã xuất bản"
                             : "Bản nháp"
                         }
                       />
                       <Typography variant="body2" color="text.secondary">
                         Cập nhật:{" "}
-                        {new Date(
-                          mockCourseData.lastUpdated
-                        ).toLocaleDateString()}
+                        {new Date(courseData?.updatedAt).toLocaleDateString()}
                       </Typography>
                     </Stack>
                   </Box>
                 </Box>
 
                 <Typography variant="body1">
-                  {mockCourseData.description}
+                  {courseData?.description}
                 </Typography>
 
                 <Stack
@@ -856,29 +864,34 @@ const InstructorCourseView = () => {
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <People color="action" />
                     <Typography>
-                      {mockCourseData.totalStudents} học viên
+                      {courseData?.enrollments.length} học viên
                     </Typography>
                   </Box>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <Star sx={{ color: "warning.main" }} />
                     <Typography>
-                      {mockCourseData.rating} ({mockCourseData.totalRatings}{" "}
-                      đánh giá)
+                      {courseData?.reviews.length > 0
+                        ? `${courseData?.reviews[0].rating} (${courseData?.reviews.length} đánh giá)`
+                        : "Chưa có đánh giá"}
                     </Typography>
                   </Box>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <PlayCircle color="action" />
                     <Typography>
-                      {mockCourseData.totalLessons} bài học (
-                      {mockCourseData.totalDuration})
+                      {courseData?.sections.length} bài học (
+                      {courseData?.sections.reduce(
+                        (total, section) => total + section.lessons.length,
+                        0
+                      )}{" "}
+                      bài học)
                     </Typography>
                   </Box>
                 </Stack>
               </Stack>
             </Grid>
 
-            <Grid item xs={12} md={4}>
-              <Stack spacing={2}>
+            <Grid item xs={12} md={2}>
+              <Stack spacing={2} display={"flex"}>
                 <Button
                   variant="contained"
                   startIcon={<Settings />}
@@ -906,7 +919,7 @@ const InstructorCourseView = () => {
         {/* Left sidebar - Course Structure */}
         <Grid item xs={12} md={3}>
           <CourseStructure
-            sections={mockCourseData.sections}
+            sections={mockCourseData?.sections}
             handleContentClick={handleContentClick}
             handleAddSection={handleOpenAddSectionModal}
             handleSectionToggle={handleSectionToggle}

@@ -196,8 +196,6 @@ const ContentDiscussion: React.FC<ContentDiscussionProps> = ({
     );
   }
 
-  console.log(sortedDiscussions);
-
   return (
     <Box>
       <Typography variant="h6" gutterBottom>

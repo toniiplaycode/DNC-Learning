@@ -3,13 +3,10 @@ import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import {
   Box,
   Typography,
-  Card,
-  CardContent,
   TextField,
   InputAdornment,
   Select,
   MenuItem,
-  Grid,
   TableContainer,
   Table,
   TableHead,
@@ -36,7 +33,6 @@ import {
 import SearchIcon from "@mui/icons-material/Search";
 import MoreVertIcon from "@mui/icons-material/MoreVert";
 import ClassIcon from "@mui/icons-material/Class";
-import PersonIcon from "@mui/icons-material/Person";
 import PeopleIcon from "@mui/icons-material/People";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
@@ -52,7 +48,7 @@ import {
 } from "../../features/users/usersApiSlice";
 import { toast } from "react-toastify";
 import { EditStudentDialog } from "./component/EditStudentDialog";
-import { Add } from "@mui/icons-material";
+import { Add, School } from "@mui/icons-material";
 
 const InstructorStudentsAcademic = () => {
   const dispatch = useAppDispatch();
@@ -248,47 +244,6 @@ const InstructorStudentsAcademic = () => {
           Quản Lý Lớp Học
         </Typography>
       </Box>
-      {/* Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={4}>
-          <Card
-            sx={{ bgcolor: "primary.light", color: "primary.contrastText" }}
-          >
-            <CardContent>
-              <Box
-                sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}
-              >
-                <ClassIcon fontSize="large" />
-                <Typography variant="h6">Tổng Số Lớp</Typography>
-              </Box>
-              <Typography variant="h3">
-                {currentClassInstructor?.length || 0}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={4}>
-          <Card
-            sx={{ bgcolor: "secondary.light", color: "secondary.contrastText" }}
-          >
-            <CardContent>
-              <Box
-                sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}
-              >
-                <PersonIcon fontSize="large" />
-                <Typography variant="h6">Tổng Số Sinh Viên</Typography>
-              </Box>
-              <Typography variant="h3">
-                {currentClassInstructor?.reduce(
-                  (acc, curr) =>
-                    acc + (curr.academicClass.studentsAcademic?.length || 0),
-                  0
-                ) || 0}
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
       {/* Filters Section */}
       <Paper sx={{ p: 2, mb: 3 }}>
         <Stack direction="row" spacing={2} alignItems="center">
@@ -426,7 +381,7 @@ const InstructorStudentsAcademic = () => {
                   <TableCell>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                       <Avatar sx={{ bgcolor: "primary.light" }}>
-                        <ClassIcon />
+                        <School />
                       </Avatar>
                       <Typography variant="subtitle1" fontWeight="medium">
                         {classInstructor.academicClass.className}

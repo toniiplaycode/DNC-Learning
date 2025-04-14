@@ -43,6 +43,8 @@ const InstructorProfile = () => {
     (state) => state.instructors
   );
 
+  console.log("Current Instructor:", currentInstructor);
+
   useEffect(() => {
     dispatch(fetchInstructorById(Number(id)));
   }, [dispatch, id]);
