@@ -15,6 +15,7 @@ import assignmentSubmissionsReducer from "../features/assignment-submissions/ass
 import usersReducer from "../features/users/usersApiSlice";
 import academicClassInstructorsReducer from "../features/academic-class-instructors/academicClassInstructorsSlice";
 import courseSectionsReducer from "../features/course-sections/courseSectionSlice";
+import courseLessonsReducer from "../features/course-lessons/courseLessonsSlice";
 // Import other reducers...
 
 export const store = configureStore({
@@ -35,7 +36,7 @@ export const store = configureStore({
     users: usersReducer,
     academicClassInstructors: academicClassInstructorsReducer,
     courseSections: courseSectionsReducer,
-
+    courseLessons: courseLessonsReducer,
     // Add other reducers...
   },
 });

@@ -18,8 +18,6 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
-  Menu,
-  MenuItem,
   Tooltip,
   Dialog,
   DialogTitle,
@@ -33,6 +31,7 @@ import { useAppDispatch } from "../../../app/hooks";
 import { fetchCourseById } from "../../../features/courses/coursesApiSlice";
 import { toast } from "react-toastify";
 import { useParams } from "react-router-dom";
+import { deleteCourseLesson } from "../../../features/course-lessons/courseLessonsApiSlice";
 
 interface CourseStructureProps {
   sections: any[];
@@ -44,8 +43,7 @@ interface CourseStructureProps {
   selectedContent: any;
   getContentIcon?: (type: string, fileType?: string) => React.ReactNode; // Updated signature
   handleOpenEditContentModal: (content: any) => void;
-  handleOpenAddContentModal: (sectionId: number, type: string) => void;
-  onDeleteContent?: (contentId: number, sectionId: number) => void;
+  handleOpenAddContentModal: (sectionId: number) => void;
 }
 
 const CourseStructure: React.FC<CourseStructureProps> = ({
@@ -59,22 +57,12 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
   getContentIcon,
   handleOpenEditContentModal,
   handleOpenAddContentModal,
-  onDeleteContent,
 }) => {
   const dispatch = useAppDispatch();
   const { id } = useParams();
   const courseID = Number(id);
 
   const [openSections, setOpenSections] = useState<number[]>([]);
-  const [actionMenuAnchor, setActionMenuAnchor] = useState<null | HTMLElement>(
-    null
-  );
-  const [selectedSectionId, setSelectedSectionId] = useState<number | null>(
-    null
-  );
-  const [selectedContentId, setSelectedContentId] = useState<number | null>(
-    null
-  );
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [deleteType, setDeleteType] = useState<"section" | "content">(
     "section"
@@ -113,65 +101,33 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
     handleSectionToggle(sectionId);
   };
 
-  const handleOpenActionMenu = (
-    event: React.MouseEvent<HTMLElement>,
-    sectionId: number
-  ) => {
-    event.stopPropagation();
-    setActionMenuAnchor(event.currentTarget);
-    setSelectedSectionId(sectionId);
-    setSelectedContentId(null);
-  };
-
-  const handleOpenContentMenu = (
-    event: React.MouseEvent<HTMLElement>,
-    contentId: number,
-    sectionId: number
-  ) => {
-    event.stopPropagation();
-    setActionMenuAnchor(event.currentTarget);
-    setSelectedContentId(contentId);
-    setSelectedSectionId(sectionId);
-  };
-
-  const handleCloseActionMenu = () => {
-    setActionMenuAnchor(null);
-    setSelectedSectionId(null);
-    setSelectedContentId(null);
-  };
-
   const handleDeleteSectionClick = (sectionId: number) => {
     setDeleteType("section");
     setItemToDelete({ id: sectionId });
     setOpenDeleteDialog(true);
-    handleCloseActionMenu();
   };
 
-  const handleDeleteContentClick = (
-    contentId: number,
-    sectionId: number,
-    isDocument: boolean
-  ) => {
-    setDeleteType("content Purchased by Tuan Duong from the Noun Project");
-    setItemToDelete({ id: contentId, sectionId, isDocument });
+  const handleDeleteContentClick = (contentId: number) => {
+    setDeleteType("content");
+    setItemToDelete({ id: contentId });
     setOpenDeleteDialog(true);
-    handleCloseActionMenu();
   };
 
   const handleConfirmDelete = () => {
     setOpenDeleteDialog(false);
+
     if (deleteType === "section") {
       console.log("Delete section with ID:", itemToDelete.id);
       dispatch(deleteCourseSection(itemToDelete.id)).then(() => {
         dispatch(fetchCourseById(courseID));
         toast.success("Xóa phần học thành công");
       });
-    } else if (
-      deleteType === "content" &&
-      onDeleteContent &&
-      itemToDelete.sectionId
-    ) {
-      onDeleteContent(itemToDelete.id, itemToDelete.sectionId);
+    } else if (deleteType === "content") {
+      console.log("Delete content with ID:", itemToDelete.id);
+      dispatch(deleteCourseLesson(itemToDelete.id)).then(() => {
+        dispatch(fetchCourseById(courseID));
+        toast.success("Xóa nội dung thành công");
+      });
     }
   };
 
@@ -303,11 +259,7 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
                             edge="end"
                             onClick={(e) => {
                               e.stopPropagation();
-                              handleDeleteContentClick(
-                                content.id,
-                                section.id,
-                                !content.isLesson
-                              );
+                              handleDeleteContentClick(content.id);
                             }}
                             size="small"
                             sx={{ color: "error.main" }}
@@ -321,7 +273,7 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
                       component="div"
                       onClick={(e) => {
                         e.stopPropagation();
-                        handleOpenActionMenu(e, section.id);
+                        handleOpenAddContentModal(section.id);
                       }}
                       sx={{
                         pl: 4,
@@ -342,70 +294,6 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
           </Stack>
         </CardContent>
       </Card>
-
-      {/* Menu thêm nội dung */}
-      <Menu
-        anchorEl={actionMenuAnchor}
-        open={Boolean(actionMenuAnchor)}
-        onClose={handleCloseActionMenu}
-      >
-        {selectedContentId === null && (
-          <>
-            <MenuItem
-              onClick={() => {
-                if (selectedSectionId !== null) {
-                  handleOpenAddContentModal(selectedSectionId, "video");
-                  handleCloseActionMenu();
-                }
-              }}
-            >
-              <ListItemIcon>
-                <Add color="primary" />
-              </ListItemIcon>
-              <ListItemText>Thêm bài giảng video</ListItemText>
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                if (selectedSectionId !== null) {
-                  handleOpenAddContentModal(selectedSectionId, "slide");
-                  handleCloseActionMenu();
-                }
-              }}
-            >
-              <ListItemIcon>
-                <Add color="primary" />
-              </ListItemIcon>
-              <ListItemText>Thêm slide</ListItemText>
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                if (selectedSectionId !== null) {
-                  handleOpenAddContentModal(selectedSectionId, "quiz");
-                  handleCloseActionMenu();
-                }
-              }}
-            >
-              <ListItemIcon>
-                <Add color="primary" />
-              </ListItemIcon>
-              <ListItemText>Thêm bài kiểm tra</ListItemText>
-            </MenuItem>
-            <MenuItem
-              onClick={() => {
-                if (selectedSectionId !== null) {
-                  handleOpenAddContentModal(selectedSectionId, "assignment");
-                  handleCloseActionMenu();
-                }
-              }}
-            >
-              <ListItemIcon>
-                <Add color="primary" />
-              </ListItemIcon>
-              <ListItemText>Thêm bài tập</ListItemText>
-            </MenuItem>
-          </>
-        )}
-      </Menu>
 
       {/* Dialog xác nhận xóa */}
       <Dialog

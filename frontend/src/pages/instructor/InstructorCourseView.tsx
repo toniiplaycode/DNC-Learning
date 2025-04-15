@@ -554,6 +554,7 @@ const InstructorCourseView = () => {
 
   // Hàm mở modal thêm nội dung mới
   const handleOpenAddContentModal = (sectionId: number) => {
+    console.log(sectionId);
     setCurrentSectionId(sectionId);
     setOpenAddContentModal(true);
   };
@@ -566,27 +567,6 @@ const InstructorCourseView = () => {
     setContentToEdit(content);
     setCurrentSectionId(sectionId);
     setOpenEditContentModal(true);
-  };
-
-  // Xử lý khi submit form thêm mới
-  const handleAddContent = (contentData: any) => {
-    console.log("Thêm nội dung mới:", contentData);
-    // Thực hiện thêm nội dung vào state hoặc gọi API
-
-    // Đóng modal
-    setOpenAddContentModal(false);
-    setCurrentSectionId(null);
-  };
-
-  // Xử lý khi submit form sửa
-  const handleUpdateContent = (contentData: any) => {
-    console.log("Cập nhật nội dung:", contentData);
-    // Thực hiện cập nhật nội dung trong state hoặc gọi API
-
-    // Đóng modal
-    setOpenEditContentModal(false);
-    setContentToEdit(null);
-    setCurrentSectionId(null);
   };
 
   // Hàm mở modal thêm section
@@ -712,37 +692,6 @@ const InstructorCourseView = () => {
 
     // Đóng dialog
     setOpenSettingsModal(false);
-  };
-
-  // Thêm hàm xử lý xóa content
-  const handleDeleteContent = (contentId: number, sectionId: number) => {
-    console.log("Xóa content:", contentId, "từ section:", sectionId);
-
-    // Tìm section chứa content
-    const sectionIndex = mockCourseData.sections.findIndex(
-      (section) => section.id === sectionId
-    );
-
-    if (sectionIndex !== -1) {
-      // Copy sections để tránh mutate state trực tiếp
-      const updatedSections = [...mockCourseData.sections];
-
-      // Lọc ra các content không bị xóa
-      updatedSections[sectionIndex].contents = updatedSections[
-        sectionIndex
-      ].contents.filter((content) => content.id !== contentId);
-
-      // Cập nhật state
-      setMockCourseData({
-        ...mockCourseData,
-        sections: updatedSections,
-      });
-
-      // Nếu content bị xóa đang được chọn, reset selected content
-      if (selectedContent && selectedContent.id === contentId) {
-        setSelectedContent(null);
-      }
-    }
   };
 
   // Thêm hàm xử lý xóa tài liệu
@@ -873,7 +822,6 @@ const InstructorCourseView = () => {
             getContentIcon={getContentIcon}
             handleOpenEditContentModal={handleOpenEditContentModal}
             handleOpenAddContentModal={handleOpenAddContentModal}
-            onDeleteContent={handleDeleteContent}
           />
         </Grid>
 
@@ -966,9 +914,8 @@ const InstructorCourseView = () => {
       <DialogAddEditLesson
         open={openAddContentModal}
         onClose={() => setOpenAddContentModal(false)}
-        onSubmit={handleAddContent}
         initialSectionId={currentSectionId || undefined}
-        sections={mockCourseData.sections}
+        sections={courseData?.sections || []}
         editMode={false}
       />
 
@@ -976,9 +923,8 @@ const InstructorCourseView = () => {
       <DialogAddEditLesson
         open={openEditContentModal}
         onClose={() => setOpenEditContentModal(false)}
-        onSubmit={handleUpdateContent}
         contentToEdit={contentToEdit || undefined}
-        sections={mockCourseData.sections}
+        sections={courseData?.sections || []}
         editMode={true}
       />
 

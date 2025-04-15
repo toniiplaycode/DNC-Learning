@@ -96,6 +96,14 @@ export class CoursesService {
           id: true,
         },
       },
+      order: {
+        sections: {
+          orderNumber: 'ASC', // Sort sections by orderNumber ascending
+          lessons: {
+            orderNumber: 'ASC', // Sort lessons by orderNumber ascending
+          },
+        },
+      },
     });
     if (!course) {
       throw new NotFoundException('không tìm thấy khóa học !');

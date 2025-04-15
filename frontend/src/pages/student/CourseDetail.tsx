@@ -726,9 +726,6 @@ const CourseDetail: React.FC = () => {
             <TabPanel value={activeTab} index={1}>
               <Card>
                 <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Tài liệu khóa học
-                  </Typography>
                   {currentCourse?.sections?.map((section, sectionIndex) => {
                     // Kết hợp documents từ section và lessons có contentType là "document", "pdf", "docx", "xlsx", "txt", "slide"
                     const documentLessons = section.lessons
@@ -752,6 +749,10 @@ const CourseDetail: React.FC = () => {
                       ...section.documents,
                       ...documentLessons,
                     ];
+
+                    if (allDocuments.length === 0) {
+                      return null; // Không hiển thị nếu không có tài liệu
+                    }
 
                     return (
                       <Box key={section.id}>

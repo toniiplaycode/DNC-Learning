@@ -55,6 +55,7 @@ import { AssignmentSubmissionsModule } from './modules/assignment-submissions/as
 import { AcademicClassInstructorsModule } from './modules/academic-class-instructors/academic-class-instructors.module';
 import { AcademicClassInstructor } from './entities/AcademicClassInstructor';
 import { CourseSectionModule } from './modules/course-sections/course-section.module';
+import { CourseLessonsModule } from './modules/course-lessons/course-lessons.module';
 
 @Module({
   imports: [
@@ -128,6 +129,7 @@ import { CourseSectionModule } from './modules/course-sections/course-section.mo
     AssignmentSubmissionsModule,
     AcademicClassInstructorsModule,
     CourseSectionModule,
+    CourseLessonsModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthMiddleware, InstructorMiddleware],

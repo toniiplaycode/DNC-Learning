@@ -18,22 +18,23 @@ import {
   LinearProgress,
 } from "@mui/material";
 import { Close, CloudUpload } from "@mui/icons-material";
+import { createCourseLesson } from "../../../features/course-lessons/courseLessonsApiSlice";
+import { useAppDispatch } from "../../../app/hooks";
+import { fetchCourseSectionsByCourseId } from "../../../features/course-sections/courseSectionApiSlice";
+import { toast } from "react-toastify";
+import { useParams } from "react-router-dom";
+import { fetchCourseById } from "../../../features/courses/coursesApiSlice";
 
 // Định nghĩa kiểu ContentItem cho rõ ràng
 interface ContentItem {
   id: number;
-  type: string;
+  contentType: string;
   title: string;
-  description: string;
-  duration: string;
-  url: string;
+  content: string;
+  duration: number;
+  contentUrl: string;
   completed: boolean;
   locked: boolean;
-  objectives?: string[];
-  keywords?: string[];
-  prerequisites?: string[];
-  maxAttempts?: number;
-  passingScore?: number;
   sectionId?: number;
 }
 
@@ -41,7 +42,6 @@ interface ContentItem {
 interface DialogAddEditLessonProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (contentData: any) => void;
   initialSectionId?: number;
   contentToEdit?: ContentItem;
   sections: any[];
@@ -60,41 +60,38 @@ type ContentType =
 
 // Form data interface
 interface ContentFormData {
+  id?: number;
   title: string;
-  type: ContentType;
-  description: string;
-  duration: string;
-  url: string;
+  contentType: ContentType;
+  content: string;
+  duration: number;
+  contentUrl: string;
   sectionId: number;
-  position: number;
-  objectives?: string[];
-  keywords?: string[];
-  prerequisites?: string[];
-  maxAttempts?: number;
-  passingScore?: number;
+  orderNumber: number;
+  isFree?: boolean;
 }
 
 const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
   open,
   onClose,
-  onSubmit,
   initialSectionId,
   contentToEdit,
   sections,
   editMode,
 }) => {
-  // State quản lý form
+  const { id } = useParams();
+  const dispatch = useAppDispatch();
+
+  // Single form state
   const [contentForm, setContentForm] = useState<ContentFormData>({
     title: "",
-    type: "video",
-    description: "",
-    duration: "",
-    url: "",
-    sectionId: 0,
-    position: 0,
-    objectives: [],
-    keywords: [],
-    prerequisites: [],
+    contentType: "video",
+    content: "",
+    duration: 0,
+    contentUrl: "",
+    sectionId: initialSectionId || 0,
+    orderNumber: 1,
+    isFree: false,
   });
 
   // State quản lý upload file
@@ -103,25 +100,13 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [fileUploadError, setFileUploadError] = useState<string | null>(null);
 
-  // Thêm vào state form
-  const [lessonForm, setLessonForm] = useState({
-    title: "",
-    description: "",
-    content: "",
-    duration: 0,
-    videoUrl: "",
-    isFree: false,
-    sectionId: 0,
-    position: 0, // Thêm trường position để lưu vị trí
-  });
-
   // Cập nhật form khi có dữ liệu ban đầu
   useEffect(() => {
     if (open) {
       if (editMode && contentToEdit) {
-        // Tìm section và position của content khi edit
+        // Tìm section và orderNumber của content khi edit
         let sectionId = contentToEdit.sectionId || 0;
-        let position = 0;
+        let orderNumber = 0;
 
         // Nếu không có sectionId trong contentToEdit, tìm từ sections
         if (!sectionId) {
@@ -131,100 +116,45 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
             );
             if (contentIndex !== -1) {
               sectionId = section.id;
-              position = contentIndex;
+              orderNumber = contentIndex;
               break;
             }
           }
         }
 
         setContentForm({
+          id: contentToEdit.id,
           title: contentToEdit.title || "",
-          type: (contentToEdit.type as ContentType) || "video",
-          description: contentToEdit.description || "",
-          duration: contentToEdit.duration || "",
-          url: contentToEdit.url || "",
+          contentType: (contentToEdit.contentType as ContentType) || "video",
+          content: contentToEdit.content || "",
+          duration: contentToEdit.duration || 0,
+          contentUrl: contentToEdit.contentUrl || "",
           sectionId: sectionId,
-          position: position,
-          objectives: contentToEdit.objectives || [],
-          keywords: contentToEdit.keywords || [],
-          prerequisites: contentToEdit.prerequisites || [],
-          maxAttempts: contentToEdit.maxAttempts,
-          passingScore: contentToEdit.passingScore,
+          orderNumber: orderNumber,
+          isFree: contentToEdit.isFree || false,
         });
       } else {
         // Khi thêm mới
         const section = sections.find((s) => s.id === initialSectionId);
-        const defaultPosition = section?.contents ? section.contents.length : 0;
+        // Set position to length + 1 for new content
+        const lastPosition = section?.lessons?.length
+          ? section.lessons.length + 1
+          : 1;
 
         setContentForm({
           title: "",
-          type: "video",
-          description: "",
-          duration: "",
-          url: "",
+          contentType: "video",
+          content: "",
+          duration: 0,
+          contentUrl: "",
           sectionId: initialSectionId || 0,
-          position: defaultPosition,
-          objectives: [],
-          keywords: [],
-          prerequisites: [],
+          orderNumber: lastPosition, // Set to last position by default
+          isFree: false,
         });
       }
 
       // Reset upload state
       resetFileUpload();
-    }
-  }, [open, editMode, contentToEdit, initialSectionId, sections]);
-
-  // Trong useEffect khi mở dialog, cần cập nhật position
-  useEffect(() => {
-    if (open) {
-      if (editMode && contentToEdit) {
-        // Tìm section và position khi edit
-        let sectionId = contentToEdit.sectionId || 0;
-        let position = 0;
-
-        // Nếu không có sectionId trong contentToEdit, tìm từ sections
-        if (!sectionId) {
-          for (const section of sections) {
-            const lessonIndex = section.lessons?.findIndex(
-              (l: any) => l.id === contentToEdit.id
-            );
-            if (lessonIndex !== -1) {
-              sectionId = section.id;
-              position = lessonIndex; // Lưu vị trí hiện tại của bài học
-              break;
-            }
-          }
-        }
-
-        setLessonForm({
-          title: contentToEdit.title || "",
-          description: contentToEdit.description || "",
-          content: contentToEdit.content || "",
-          duration: Number(contentToEdit.duration) || 0,
-          videoUrl: contentToEdit.url || "",
-          isFree: contentToEdit.isFree || false,
-          sectionId: sectionId,
-          position: position, // Cập nhật position khi edit
-        });
-      } else {
-        // Khi thêm mới
-        const selectedSection = sections.find(
-          (section) => section.id === initialSectionId
-        );
-        const lessonsCount = selectedSection?.lessons?.length || 0;
-
-        setLessonForm({
-          title: "",
-          description: "",
-          content: "",
-          duration: 0,
-          videoUrl: "",
-          isFree: false,
-          sectionId: initialSectionId || 0,
-          position: lessonsCount, // Mặc định thêm vào cuối danh sách
-        });
-      }
     }
   }, [open, editMode, contentToEdit, initialSectionId, sections]);
 
@@ -276,68 +206,32 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
 
   // Xử lý submit form
   const handleSubmit = async () => {
-    try {
-      let fileUrl = contentForm.url;
+    let fileUrl = contentForm.contentUrl;
 
-      // Nếu có file được chọn, thực hiện upload
-      if (selectedFile) {
-        fileUrl = (await simulateFileUpload()) || "";
-      }
-
-      // Chuẩn bị data để submit
-      const submittedData = {
-        ...(editMode && contentToEdit ? { id: contentToEdit.id } : {}),
-        title: contentForm.title,
-        type: contentForm.type,
-        description: contentForm.description,
-        duration: contentForm.duration,
-        url: fileUrl,
-        sectionId: contentForm.sectionId,
-        position: contentForm.position,
-        objectives: contentForm.objectives,
-        keywords: contentForm.keywords,
-        prerequisites: contentForm.prerequisites,
-        // Thêm các trường chỉ cần cho quiz
-        ...(contentForm.type === "quiz"
-          ? {
-              maxAttempts: contentForm.maxAttempts || 2,
-              passingScore: contentForm.passingScore || 70,
-            }
-          : {}),
-      };
-
-      // Tạo một object kết quả để gửi về
-      const lessonData = {
-        ...lessonForm,
-        // Đảm bảo dữ liệu đúng định dạng
-        duration: Number(lessonForm.duration),
-        sectionId: Number(lessonForm.sectionId),
-        position: Number(lessonForm.position), // Đảm bảo gửi position
-      };
-
-      // Gọi hàm callback onSubmit được truyền vào từ component cha
-      onSubmit(lessonData);
-
-      // Reset form và đóng modal
-      if (!editMode) {
-        setContentForm({
-          title: "",
-          type: "video",
-          description: "",
-          duration: "",
-          url: "",
-          sectionId: contentForm.sectionId, // Giữ lại section đã chọn
-          position: 0,
-          objectives: [],
-          keywords: [],
-          prerequisites: [],
-        });
-      }
-
-      resetFileUpload();
-    } catch (error) {
-      console.error("Lỗi khi submit form:", error);
+    if (selectedFile) {
+      fileUrl = (await simulateFileUpload()) || "";
     }
+
+    const submitData = {
+      ...contentForm,
+      contentUrl: fileUrl,
+      duration: Number(contentForm.duration),
+      sectionId: Number(contentForm.sectionId),
+      orderNumber: Number(contentForm.orderNumber),
+    };
+
+    console.log(submitData);
+
+    dispatch(createCourseLesson(submitData)).then(() => {
+      dispatch(fetchCourseById(Number(id)));
+      toast.success(
+        editMode
+          ? "Cập nhật bài giảng thành công!"
+          : "Thêm bài giảng thành công!"
+      );
+    });
+
+    onClose();
   };
 
   // Lấy vị trí mới nhất cho nội dung
@@ -348,10 +242,15 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
 
   // Xử lý khi thay đổi section
   const handleSectionChange = (newSectionId: number) => {
+    const section = sections.find((s) => s.id === newSectionId);
+    const lastPosition = section?.lessons?.length
+      ? section.lessons.length + 1
+      : 1;
+
     setContentForm({
       ...contentForm,
       sectionId: newSectionId,
-      position: getNextPosition(newSectionId),
+      orderNumber: lastPosition, // Set to last position when changing sections
     });
   };
 
@@ -412,11 +311,11 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
           <FormControl fullWidth required>
             <InputLabel>Loại nội dung</InputLabel>
             <Select
-              value={contentForm.type}
+              value={contentForm.contentType}
               onChange={(e) =>
                 setContentForm({
                   ...contentForm,
-                  type: e.target.value as ContentType,
+                  contentType: e.target.value as ContentType,
                 })
               }
               label="Loại nội dung"
@@ -440,45 +339,12 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
             fullWidth
             multiline
             rows={4}
-            value={contentForm.description}
+            value={contentForm.content}
             onChange={(e) =>
-              setContentForm({ ...contentForm, description: e.target.value })
+              setContentForm({ ...contentForm, content: e.target.value })
             }
             placeholder="Nhập mô tả chi tiết về nội dung"
           />
-
-          {/* Thêm các trường đặc biệt cho quiz */}
-          {contentForm.type === "quiz" && (
-            <Stack spacing={2}>
-              <TextField
-                label="Số lần làm tối đa"
-                type="number"
-                fullWidth
-                value={contentForm.maxAttempts || 2}
-                onChange={(e) =>
-                  setContentForm({
-                    ...contentForm,
-                    maxAttempts: Number(e.target.value),
-                  })
-                }
-                inputProps={{ min: 1 }}
-              />
-              <TextField
-                label="Điểm đạt (%)"
-                type="number"
-                fullWidth
-                value={contentForm.passingScore || 70}
-                onChange={(e) =>
-                  setContentForm({
-                    ...contentForm,
-                    passingScore: Number(e.target.value),
-                  })
-                }
-                inputProps={{ min: 0, max: 100 }}
-                helperText="Điểm phần trăm tối thiểu để đạt bài kiểm tra"
-              />
-            </Stack>
-          )}
 
           {/* Thời lượng */}
           <TextField
@@ -486,15 +352,17 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
             fullWidth
             value={contentForm.duration}
             onChange={(e) =>
-              setContentForm({ ...contentForm, duration: e.target.value })
+              setContentForm({
+                ...contentForm,
+                duration: Number(e.target.value),
+              })
             }
-            helperText="Ví dụ: 45 phút, 1:30:00"
           />
 
           {/* Upload file */}
-          {(contentForm.type === "video" ||
-            contentForm.type === "document" ||
-            contentForm.type === "slide") && (
+          {(contentForm.contentType === "video" ||
+            contentForm.contentType === "document" ||
+            contentForm.contentType === "slide") && (
             <Box>
               <Typography variant="subtitle2" gutterBottom>
                 Tải lên file
@@ -525,9 +393,9 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
                   <Box>
                     <input
                       accept={
-                        contentForm.type === "video"
+                        contentForm.contentType === "video"
                           ? "video/*"
-                          : contentForm.type === "document"
+                          : contentForm.contentType === "document"
                           ? ".pdf,.doc,.docx"
                           : ".pdf,.ppt,.pptx"
                       }
@@ -553,9 +421,9 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
                       color="text.secondary"
                       sx={{ mt: 1 }}
                     >
-                      {contentForm.type === "video"
+                      {contentForm.contentType === "video"
                         ? "Định dạng: MP4, WebM, Ogg"
-                        : contentForm.type === "document"
+                        : contentForm.contentType === "document"
                         ? "Định dạng: PDF, DOC, DOCX"
                         : "Định dạng: PDF, PPT, PPTX"}
                     </Typography>
@@ -578,73 +446,75 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
           {/* URL trực tiếp */}
           <TextField
             label={`URL ${
-              contentForm.type === "video"
+              contentForm.contentType === "video"
                 ? "video"
-                : contentForm.type === "slide"
+                : contentForm.contentType === "slide"
                 ? "slide"
-                : contentForm.type === "document"
+                : contentForm.contentType === "document"
                 ? "tài liệu"
-                : contentForm.type === "link"
+                : contentForm.contentType === "link"
                 ? "đường dẫn"
                 : "nội dung"
             }`}
             fullWidth
-            value={contentForm.url}
+            value={contentForm.contentUrl}
             onChange={(e) =>
-              setContentForm({ ...contentForm, url: e.target.value })
+              setContentForm({ ...contentForm, contentUrl: e.target.value })
             }
             placeholder="https://example.com/content"
             helperText={
-              contentForm.type === "video" ||
-              contentForm.type === "document" ||
-              contentForm.type === "slide"
+              contentForm.contentType === "video" ||
+              contentForm.contentType === "document" ||
+              contentForm.contentType === "slide"
                 ? "Có thể để trống nếu bạn tải file lên trực tiếp"
                 : "Nhập URL đến nội dung"
             }
             required={
               !selectedFile ||
               !(
-                contentForm.type === "video" ||
-                contentForm.type === "document" ||
-                contentForm.type === "slide"
+                contentForm.contentType === "video" ||
+                contentForm.contentType === "document" ||
+                contentForm.contentType === "slide"
               )
             }
           />
 
-          {/* Thêm phần chọn vị trí ở đây, ngay trước nút checkbox Free Lesson */}
+          {/* Vị trí bài học */}
           <FormControl fullWidth>
             <InputLabel>Vị trí bài học</InputLabel>
             <Select
-              value={lessonForm.position}
+              value={contentForm.orderNumber}
               onChange={(e) =>
-                setLessonForm({
-                  ...lessonForm,
-                  position: Number(e.target.value),
+                setContentForm({
+                  ...contentForm,
+                  orderNumber: Number(e.target.value),
                 })
               }
               label="Vị trí bài học"
             >
-              {/* Tìm section hiện tại */}
               {(() => {
                 const currentSection = sections.find(
-                  (s) => s.id === lessonForm.sectionId
+                  (s) => s.id === contentForm.sectionId
                 );
                 const lessonsCount = currentSection?.lessons?.length || 0;
                 const totalPositions = editMode
                   ? lessonsCount
                   : lessonsCount + 1;
 
-                return Array.from({ length: totalPositions }, (_, i) => (
-                  <MenuItem key={i} value={i}>
-                    {i === 0
-                      ? "Đầu tiên trong phần"
-                      : i === lessonsCount
-                      ? "Cuối cùng trong phần"
-                      : `Sau "${
-                          currentSection?.lessons?.[i - 1]?.title || ""
-                        }"`}
-                  </MenuItem>
-                ));
+                return Array.from({ length: totalPositions }, (_, i) => {
+                  const position = i + 1;
+                  return (
+                    <MenuItem key={position} value={position}>
+                      {position === 1
+                        ? "Đầu tiên trong phần"
+                        : position === totalPositions
+                        ? "Cuối cùng trong phần"
+                        : `Sau "${
+                            currentSection?.lessons?.[position - 2]?.title || ""
+                          }`}
+                    </MenuItem>
+                  );
+                });
               })()}
             </Select>
             <FormHelperText>
@@ -660,11 +530,11 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
           onClick={handleSubmit}
           disabled={
             !contentForm.title ||
-            (!contentForm.url &&
+            (!contentForm.contentUrl &&
               !selectedFile &&
-              (contentForm.type === "video" ||
-                contentForm.type === "document" ||
-                contentForm.type === "slide")) ||
+              (contentForm.contentType === "video" ||
+                contentForm.contentType === "document" ||
+                contentForm.contentType === "slide")) ||
             isUploading
           }
         >

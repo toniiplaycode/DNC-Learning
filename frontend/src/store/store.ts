@@ -17,6 +17,7 @@ import assignmentSubmissionsReducer from "../features/assignment-submissions/ass
 import usersReducer from "../features/users/usersApiSlice";
 import academicClassInstructorsReducer from "../features/academic-class-instructors/academicClassInstructorsSlice";
 import courseSectionsReducer from "../features/course-sections/courseSectionSlice";
+import courseLessonsReducer from "../features/course-lessons/courseLessonsSlice";
 // Import các reducer khác nếu có
 
 export const store = configureStore({
@@ -39,6 +40,7 @@ export const store = configureStore({
     users: usersReducer,
     academicClassInstructors: academicClassInstructorsReducer,
     courseSections: courseSectionsReducer,
+    courseLessons: courseLessonsReducer,
     // Thêm các reducer khác nếu có
   },
   middleware: (getDefaultMiddleware) =>
