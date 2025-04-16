@@ -26,34 +26,48 @@ export class DocumentsService {
     private instructorsRepository: Repository<UserInstructor>,
   ) {}
 
-  async create(
-    createDocumentDto: CreateDocumentDto,
-    userId: number,
-  ): Promise<Document> {
-    // Kiểm tra section tồn tại
-    const section = await this.sectionsRepository.findOne({
-      where: { id: createDocumentDto.courseSectionId },
-      relations: ['course'],
+  async create(createDocumentDto: CreateDocumentDto): Promise<Document> {
+    // Convert and validate courseSectionId if present
+    if (createDocumentDto.courseSectionId) {
+      const sectionId = Number(createDocumentDto.courseSectionId);
+
+      if (isNaN(sectionId)) {
+        throw new BadRequestException('Invalid course section ID');
+      }
+
+      const section = await this.sectionsRepository.findOne({
+        where: { id: sectionId },
+        relations: ['course'],
+      });
+
+      if (!section) {
+        throw new NotFoundException(
+          `Section với ID ${sectionId} không tồn tại`,
+        );
+      }
+
+      // Update the DTO with the validated number
+      createDocumentDto.courseSectionId = sectionId;
+    }
+
+    // Convert and validate instructorId
+    const instructorId = Number(createDocumentDto.instructorId);
+    if (isNaN(instructorId)) {
+      throw new BadRequestException('Invalid instructor ID');
+    }
+
+    // Find instructor
+    const instructor = await this.instructorsRepository.findOne({
+      where: { id: instructorId },
     });
 
-    if (!section) {
+    if (!instructor) {
       throw new NotFoundException(
-        `Section với ID ${createDocumentDto.courseSectionId} không tồn tại`,
+        `Giảng viên với ID ${instructorId} không tồn tại`,
       );
     }
 
-    // Tìm kiếm instructor ID từ user ID
-    const instructor = await this.instructorsRepository.findOne({
-      where: { userId },
-    });
-
-    // Tạo tài liệu mới
-    const instructorId = createDocumentDto.instructorId || instructor?.id;
-
-    if (!instructorId) {
-      throw new BadRequestException('Người dùng không phải là giảng viên');
-    }
-
+    // Create document with validated data
     const document = this.documentsRepository.create({
       ...createDocumentDto,
       instructorId,
@@ -161,22 +175,11 @@ export class DocumentsService {
     return this.documentsRepository.save(document);
   }
 
-  async remove(
-    id: number,
-    userId: number,
-    isAdmin = false,
-    isInstructor = false,
-  ): Promise<void> {
-    const document = await this.findOne(id);
+  async remove(id: number): Promise<void> {
+    const document = await this.documentsRepository.findOne({ where: { id } });
 
-    // Lấy instructor ID từ user ID
-    const instructor = await this.instructorsRepository.findOne({
-      where: { userId },
-    });
-
-    // Chỉ admin, người tạo, hoặc giảng viên của khóa học mới có quyền xóa
-    if (document.instructorId !== instructor?.id && !isAdmin && !isInstructor) {
-      throw new ForbiddenException('Bạn không có quyền xóa tài liệu này');
+    if (!document) {
+      throw new NotFoundException(`Tài liệu với ID ${id} không tồn tại`);
     }
 
     await this.documentsRepository.remove(document);

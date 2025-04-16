@@ -579,38 +579,12 @@ const InstructorCourseView = () => {
     setSectionIdToEdit(sectionId);
     setOpenEditSectionModal(true);
   };
-  // Hàm mở modal thêm document
-  const handleOpenAddDocumentModal = (sectionId?: number) => {
-    setCurrentSectionId(sectionId || null);
-    setOpenAddDocumentModal(true);
-  };
 
   // Hàm mở modal sửa document
   const handleOpenEditDocumentModal = (document: any, sectionId?: number) => {
     setDocumentToEdit(document);
     setCurrentSectionId(sectionId || null);
     setOpenEditDocumentModal(true);
-  };
-
-  // Xử lý khi thêm document mới
-  const handleAddDocument = (documentData: any) => {
-    console.log("Thêm tài liệu mới:", documentData);
-    // Thực hiện thêm tài liệu vào state hoặc gọi API
-
-    // Đóng modal
-    setOpenAddDocumentModal(false);
-    setCurrentSectionId(null);
-  };
-
-  // Xử lý khi cập nhật document
-  const handleUpdateDocument = (documentData: any) => {
-    console.log("Cập nhật tài liệu:", documentData);
-    // Thực hiện cập nhật tài liệu trong state hoặc gọi API
-
-    // Đóng modal
-    setOpenEditDocumentModal(false);
-    setDocumentToEdit(null);
-    setCurrentSectionId(null);
   };
 
   // Hàm mở modal thêm quiz
@@ -692,11 +666,6 @@ const InstructorCourseView = () => {
 
     // Đóng dialog
     setOpenSettingsModal(false);
-  };
-
-  // Thêm hàm xử lý xóa tài liệu
-  const handleDeleteDocument = (documentId: number) => {
-    console.log("Xóa tài liệu:", documentId);
   };
 
   // Thêm hàm xử lý xóa quiz và assignment
@@ -862,10 +831,7 @@ const InstructorCourseView = () => {
                   Thêm tài liệu
                 </Button>
               </Box>
-              <ContentDocuments
-                isInstructor={true}
-                onDeleteDocument={handleDeleteDocument}
-              />
+              <ContentDocuments isInstructor={true} />
             </TabPanel>
 
             <TabPanel value={tabValue} index={2}>
@@ -932,9 +898,7 @@ const InstructorCourseView = () => {
       <DialogAddEditDocument
         open={openAddDocumentModal}
         onClose={() => setOpenAddDocumentModal(false)}
-        onSubmit={handleAddDocument}
         initialSectionId={currentSectionId || undefined}
-        sections={mockCourseData.sections}
         editMode={false}
       />
 
@@ -942,9 +906,7 @@ const InstructorCourseView = () => {
       <DialogAddEditDocument
         open={openEditDocumentModal}
         onClose={() => setOpenEditDocumentModal(false)}
-        onSubmit={handleUpdateDocument}
         documentToEdit={documentToEdit || undefined}
-        sections={mockCourseData.sections}
         editMode={true}
       />
 

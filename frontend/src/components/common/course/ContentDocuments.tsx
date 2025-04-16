@@ -29,19 +29,29 @@ import {
   TextSnippet,
   LinkOff,
 } from "@mui/icons-material";
-import { fetchDocumentsByCourse } from "../../../features/documents/documentsSlice";
+import {
+  deleteDocument,
+  fetchDocumentsByCourse,
+} from "../../../features/documents/documentsSlice";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { useParams } from "react-router-dom";
 import { selectCourseDocuments } from "../../../features/documents/documentsSelectors";
+import { toast } from "react-toastify";
 
 interface ContentDocumentsProps {
   isInstructor?: boolean;
-  onDeleteDocument?: (documentId: number) => void;
+}
+
+interface GroupedDocuments {
+  [key: string]: {
+    section: any;
+    documents: typeof documentsCourse;
+    orderNumber: number;
+  };
 }
 
 const ContentDocuments: React.FC<ContentDocumentsProps> = ({
   isInstructor = false,
-  onDeleteDocument,
 }) => {
   const dispatch = useAppDispatch();
   const { id } = useParams();
@@ -95,10 +105,13 @@ const ContentDocuments: React.FC<ContentDocumentsProps> = ({
     setDeleteDialogOpen(true);
   };
 
-  const handleConfirmDelete = () => {
-    if (documentToDelete !== null && onDeleteDocument) {
-      onDeleteDocument(documentToDelete);
-    }
+  const handleConfirmDelete = async () => {
+    console.log("Deleting document with ID:", documentToDelete);
+
+    await dispatch(deleteDocument(Number(documentToDelete)));
+    await dispatch(fetchDocumentsByCourse(Number(id)));
+    await toast.success("Xóa tài liệu thành công");
+
     setDeleteDialogOpen(false);
     setDocumentToDelete(null);
   };
@@ -255,64 +268,108 @@ const ContentDocuments: React.FC<ContentDocumentsProps> = ({
     }
   };
 
+  const groupDocumentsBySection = (
+    documents: typeof documentsCourse
+  ): GroupedDocuments => {
+    // First, group documents
+    const groups = documents.reduce((groups, doc) => {
+      const sectionId = doc?.courseSection?.id || "common";
+      if (!groups[sectionId]) {
+        groups[sectionId] = {
+          section: doc.courseSection,
+          documents: [],
+          orderNumber: doc.courseSection?.orderNumber ?? Infinity,
+        };
+      }
+      groups[sectionId].documents.push(doc);
+      return groups;
+    }, {} as GroupedDocuments);
+
+    return groups;
+  };
+
+  const getSortedSections = (groupedDocuments: GroupedDocuments) => {
+    // Convert to array and sort by orderNumber
+    return Object.entries(groupedDocuments).sort(([, a], [, b]) => {
+      // Common documents (no section) will appear first
+      if (!a.section) return -1;
+      if (!b.section) return 1;
+
+      return a.section.orderNumber - b.section.orderNumber;
+    });
+  };
+
+  const sortDocumentsInSection = (documents: typeof documentsCourse) => {
+    return [...documents].sort((a, b) => {
+      // Sort by orderNumber if available, otherwise by title
+      if (a.orderNumber !== undefined && b.orderNumber !== undefined) {
+        return a.orderNumber - b.orderNumber;
+      }
+      return a.title.localeCompare(b.title);
+    });
+  };
+
   return (
     <Box>
       <List sx={{ bgcolor: "background.paper" }}>
-        {documentsCourse?.map((doc) => (
-          <Fragment key={doc.id}>
-            <Typography variant="h6">
-              Phần {doc?.courseSection?.orderNumber} -{" "}
-              {doc?.courseSection?.title}
-            </Typography>
-            <ListItem
-              disablePadding
-              secondaryAction={
-                <Stack direction="row" spacing={1}>
-                  <Button
-                    size="small"
-                    startIcon={<Download />}
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDownload(doc.fileUrl);
-                    }}
-                  >
-                    Tải xuống
-                  </Button>
-                  {isInstructor && (
-                    <IconButton
-                      edge="end"
-                      aria-label="delete"
-                      onClick={(e) => handleDeleteClick(e, doc.id)}
-                      color="error"
-                      size="small"
-                    >
-                      <Delete />
-                    </IconButton>
-                  )}
-                </Stack>
-              }
-            >
-              <ListItemButton onClick={() => handlePreview(doc)}>
-                <ListItemIcon>{getFileIcon(doc.fileType)}</ListItemIcon>
-                <ListItemText
-                  primary={doc.title}
-                  secondary={
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Typography variant="body2" color="text.secondary">
-                        {doc.fileSize} KB
-                      </Typography>
-                      <Chip
-                        label={doc.fileType.toUpperCase()}
+        {getSortedSections(groupDocumentsBySection(documentsCourse))
+          .filter(([, group]) => group.section || group.documents.length > 0)
+          .map(([sectionId, { section, documents }]) => (
+            <Fragment key={sectionId}>
+              <Typography variant="h6" sx={{ mt: 2, mb: 1 }}>
+                {section
+                  ? `Phần ${section.orderNumber} - ${section.title}`
+                  : "Tài liệu chung"}
+              </Typography>
+              {sortDocumentsInSection(documents).map((doc) => (
+                <ListItem
+                  key={doc.id}
+                  disablePadding
+                  secondaryAction={
+                    <Stack direction="row" spacing={1}>
+                      <Button
                         size="small"
-                        variant="outlined"
-                      />
+                        startIcon={<Download />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleDownload(doc.fileUrl);
+                        }}
+                      >
+                        Tải xuống
+                      </Button>
+                      {isInstructor && (
+                        <IconButton
+                          edge="end"
+                          aria-label="delete"
+                          onClick={(e) => handleDeleteClick(e, doc.id)}
+                          color="error"
+                          size="small"
+                        >
+                          <Delete />
+                        </IconButton>
+                      )}
                     </Stack>
                   }
-                />
-              </ListItemButton>
-            </ListItem>
-          </Fragment>
-        ))}
+                >
+                  <ListItemButton onClick={() => handlePreview(doc)}>
+                    <ListItemIcon>{getFileIcon(doc.fileType)}</ListItemIcon>
+                    <ListItemText
+                      primary={doc.title}
+                      secondary={
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Chip
+                            label={doc.fileType.toUpperCase()}
+                            size="small"
+                            variant="outlined"
+                          />
+                        </Stack>
+                      }
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ))}
+            </Fragment>
+          ))}
       </List>
 
       {/* Preview Dialog */}

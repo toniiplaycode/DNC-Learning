@@ -642,7 +642,9 @@ const CourseDetail: React.FC = () => {
                                       variant="caption"
                                       color="text.secondary"
                                     >
-                                      {lesson.duration || "N/A"} phút
+                                      {lesson.duration
+                                        ? `${lesson.duration} phút`
+                                        : "không có thời gian"}
                                     </Typography>
                                   </Box>
                                 }
@@ -740,7 +742,6 @@ const CourseDetail: React.FC = () => {
                         fileType: getFileTypeFromContentType(
                           lesson.contentType
                         ), // Xác định đúng fileType
-                        fileSize: 1024, // Giả định kích thước mặc định
                         isLesson: true, // Đánh dấu đây là lesson
                         isFree: lesson.isFree,
                       }));
@@ -820,16 +821,6 @@ const CourseDetail: React.FC = () => {
                                     spacing={2}
                                     alignItems="center"
                                   >
-                                    {!item.isLesson && (
-                                      <Typography
-                                        variant="body2"
-                                        color="text.secondary"
-                                      >
-                                        {`${(item.fileSize / 1024).toFixed(
-                                          2
-                                        )} MB`}
-                                      </Typography>
-                                    )}
                                     <Chip
                                       label={item.fileType.toUpperCase()}
                                       size="small"

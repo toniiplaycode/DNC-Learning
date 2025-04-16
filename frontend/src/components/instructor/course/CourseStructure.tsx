@@ -116,13 +116,13 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
   const handleConfirmDelete = () => {
     setOpenDeleteDialog(false);
 
-    if (deleteType === "section") {
+    if (deleteType == "section") {
       console.log("Delete section with ID:", itemToDelete.id);
       dispatch(deleteCourseSection(itemToDelete.id)).then(() => {
         dispatch(fetchCourseById(courseID));
         toast.success("Xóa phần học thành công");
       });
-    } else if (deleteType === "content") {
+    } else if (deleteType == "content") {
       console.log("Delete content with ID:", itemToDelete.id);
       dispatch(deleteCourseLesson(itemToDelete.id)).then(() => {
         dispatch(fetchCourseById(courseID));
@@ -173,9 +173,20 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
                     ) : (
                       <ExpandMore />
                     )}
-                    <Typography variant="h6" sx={{ ml: 1 }}>
-                      {section.title}
-                    </Typography>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                      }}
+                    >
+                      <Typography variant="h6" sx={{ ml: 1 }}>
+                        Phần {section.orderNumber} - {section.title}
+                      </Typography>
+
+                      <Typography variant="h9" sx={{ ml: 1, mt: 0.5 }}>
+                        {section.description}
+                      </Typography>
+                    </Box>
                   </Box>
                   <Box sx={{ display: "flex", alignItems: "center" }}>
                     <IconButton

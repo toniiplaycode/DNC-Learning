@@ -80,14 +80,6 @@ const getFileIcon = (fileType: string) => {
   return <AttachFile />;
 };
 
-const formatFileSize = (bytes: number) => {
-  if (bytes === 0) return "0 Bytes";
-  const k = 1024;
-  const sizes = ["Bytes", "KB", "MB", "GB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-};
-
 const AssignmentContent: React.FC<AssignmentContentProps> = ({
   assignmentData,
   onSubmit,
@@ -377,10 +369,6 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
                         }
                       >
                         <ListItemIcon>{getFileIcon(file.type)}</ListItemIcon>
-                        <ListItemText
-                          primary={file.name}
-                          secondary={formatFileSize(file.size)}
-                        />
                       </ListItem>
                     ))}
                   </List>
@@ -452,10 +440,6 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
             {files.map((file) => (
               <ListItem key={file.id}>
                 <ListItemIcon>{getFileIcon(file.type)}</ListItemIcon>
-                <ListItemText
-                  primary={file.name}
-                  secondary={formatFileSize(file.size)}
-                />
               </ListItem>
             ))}
           </List>

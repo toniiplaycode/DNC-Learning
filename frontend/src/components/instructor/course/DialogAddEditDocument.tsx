@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -18,6 +18,47 @@ import {
   FormHelperText,
 } from "@mui/material";
 import { Close, CloudUpload } from "@mui/icons-material";
+import { useParams } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import { selectAllCourseSectionsByCourseId } from "../../../features/course-sections/courseSectionSelector";
+import { fetchCourseSectionsByCourseId } from "../../../features/course-sections/courseSectionApiSlice";
+import { selectCurrentUser } from "../../../features/auth/authSelectors";
+import {
+  createDocument,
+  fetchDocumentsByCourse,
+} from "../../../features/documents/documentsSlice";
+import { fetchCourseById } from "../../../features/courses/coursesApiSlice";
+import { toast } from "react-toastify";
+
+// First define the document type enum to match backend
+export enum DocumentType {
+  PDF = "pdf",
+  SLIDE = "slide",
+  CODE = "code",
+  LINK = "link",
+  TXT = "txt",
+  DOCX = "docx",
+  XLSX = "xlsx",
+}
+
+export enum DocumentStatus {
+  ACTIVE = "active",
+  ARCHIVED = "archived",
+}
+
+// Define interface matching backend entity
+interface DocumentFormData {
+  id?: number;
+  instructorId: number;
+  courseSectionId?: number;
+  title: string;
+  description?: string;
+  fileUrl: string;
+  fileType: DocumentType;
+  uploadDate?: Date;
+  downloadCount?: number;
+  status: DocumentStatus;
+}
 
 // Định nghĩa kiểu DocumentItem
 interface DocumentItem {
@@ -25,8 +66,8 @@ interface DocumentItem {
   title: string;
   description?: string;
   url: string;
+  documentType: "pdf" | "slide" | "code" | "link" | "txt" | "docx" | "xlsx";
   fileType?: string;
-  fileSize?: number;
   sectionId?: number;
   visibility?: "all" | "enrolled" | "premium";
   isDownloadable?: boolean;
@@ -36,31 +77,51 @@ interface DocumentItem {
 interface DialogAddEditDocumentProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (documentData: any) => void;
   initialSectionId?: number;
   documentToEdit?: DocumentItem;
-  sections: any[];
   editMode: boolean;
 }
 
 const DialogAddEditDocument: React.FC<DialogAddEditDocumentProps> = ({
   open,
   onClose,
-  onSubmit,
   initialSectionId,
   documentToEdit,
-  sections,
   editMode,
 }) => {
-  // State cho form document
-  const [documentForm, setDocumentForm] = useState({
+  const { id } = useParams();
+  const dispatch = useAppDispatch();
+  const sectionData = useAppSelector(selectAllCourseSectionsByCourseId);
+  const currentUser = useAppSelector(selectCurrentUser);
+
+  useEffect(() => {
+    if (id) {
+      const courseId = Number(id);
+      if (!isNaN(courseId)) {
+        dispatch(fetchCourseSectionsByCourseId(courseId));
+      } else {
+        console.error("Invalid course ID:", id);
+      }
+    }
+  }, [dispatch, id]);
+
+  console.log("sectionData", sectionData, currentUser);
+
+  // Initialize form state matching backend structure
+  const [documentForm, setDocumentForm] = useState<DocumentFormData>({
+    instructorId: Number(currentUser?.userInstructor?.id), // Set this from logged in user
     title: "",
     description: "",
-    url: "",
-    sectionId: 0,
-    visibility: "enrolled",
-    isDownloadable: true,
+    fileUrl: "",
+    fileType: DocumentType.PDF,
+    courseSectionId: initialSectionId || undefined,
+    status: DocumentStatus.ACTIVE,
   });
+
+  // Fix the sorting issue by creating a new array
+  const sortedSections = useMemo(() => {
+    return [...sectionData].sort((a, b) => a.orderNumber - b.orderNumber);
+  }, [sectionData]);
 
   // State quản lý upload file
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -75,9 +136,9 @@ const DialogAddEditDocument: React.FC<DialogAddEditDocumentProps> = ({
         // Tìm section của document khi edit
         let sectionId = documentToEdit.sectionId || 0;
 
-        // Nếu không có sectionId trong documentToEdit, tìm từ sections
+        // Nếu không có sectionId trong documentToEdit, tìm từ sectionData
         if (!sectionId) {
-          for (const section of sections) {
+          for (const section of sectionData) {
             const docIndex = section.documents?.findIndex(
               (d: DocumentItem) => d.id === documentToEdit.id
             );
@@ -89,22 +150,25 @@ const DialogAddEditDocument: React.FC<DialogAddEditDocumentProps> = ({
         }
 
         setDocumentForm({
+          id: documentToEdit.id,
+          instructorId: Number(currentUser?.userInstructor?.id), // Set this from logged in user
           title: documentToEdit.title || "",
           description: documentToEdit.description || "",
-          url: documentToEdit.url || "",
-          sectionId: sectionId,
-          visibility: documentToEdit.visibility || "enrolled",
-          isDownloadable: documentToEdit.isDownloadable !== false,
+          fileUrl: documentToEdit.url || "",
+          fileType: documentToEdit.documentType as DocumentType,
+          courseSectionId: sectionId || undefined,
+          status: DocumentStatus.ACTIVE,
         });
       } else {
         // Khi thêm mới
         setDocumentForm({
+          instructorId: Number(currentUser?.userInstructor?.id), // Set this from logged in user
           title: "",
           description: "",
-          url: "",
-          sectionId: initialSectionId || 0,
-          visibility: "enrolled",
-          isDownloadable: true,
+          fileUrl: "",
+          fileType: DocumentType.PDF,
+          courseSectionId: initialSectionId || undefined,
+          status: DocumentStatus.ACTIVE,
         });
       }
 
@@ -114,7 +178,7 @@ const DialogAddEditDocument: React.FC<DialogAddEditDocumentProps> = ({
       setUploadProgress(0);
       setFileUploadError(null);
     }
-  }, [open, editMode, documentToEdit, initialSectionId, sections]);
+  }, [open, editMode, documentToEdit, initialSectionId, sectionData]);
 
   // Xử lý khi chọn file
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -172,34 +236,45 @@ const DialogAddEditDocument: React.FC<DialogAddEditDocumentProps> = ({
   // Xử lý submit form
   const handleSubmit = async () => {
     try {
-      let fileUrl = documentForm.url;
+      let fileUrl = documentForm.fileUrl;
+      const courseId = Number(id);
 
-      // Nếu có file được chọn, thực hiện upload
+      if (isNaN(courseId)) {
+        toast.error("Invalid course ID");
+        return;
+      }
+
+      if (!documentForm.instructorId || isNaN(documentForm.instructorId)) {
+        toast.error("Invalid instructor ID");
+        return;
+      }
+
+      // If there's a file selected, upload it first
       if (selectedFile) {
         fileUrl = await simulateFileUpload();
       }
 
-      // Chuẩn bị data để submit
+      // Prepare data with validated IDs
       const submittedData = {
         ...(editMode && documentToEdit ? { id: documentToEdit.id } : {}),
+        instructorId: Number(documentForm.instructorId),
         title: documentForm.title,
         description: documentForm.description,
-        url: fileUrl,
-        sectionId: documentForm.sectionId,
-        visibility: documentForm.visibility,
-        isDownloadable: documentForm.isDownloadable,
-        fileType: selectedFile
-          ? selectedFile.type
-          : documentToEdit?.fileType || "",
-        fileSize: selectedFile
-          ? selectedFile.size
-          : documentToEdit?.fileSize || 0,
+        fileUrl: fileUrl,
+        fileType: documentForm.fileType,
+        courseSectionId: documentForm.courseSectionId
+          ? Number(documentForm.courseSectionId)
+          : undefined,
+        status: documentForm.status,
       };
 
-      // Gọi callback onSubmit từ prop
-      onSubmit(submittedData);
+      await dispatch(createDocument(submittedData));
+      await dispatch(fetchDocumentsByCourse(courseId));
+      toast.success("Thêm tài liệu thành công!");
+      onClose();
     } catch (error) {
       console.error("Lỗi khi submit form:", error);
+      toast.error("Có lỗi xảy ra khi thêm tài liệu");
     }
   };
 
@@ -240,21 +315,49 @@ const DialogAddEditDocument: React.FC<DialogAddEditDocumentProps> = ({
             placeholder="Mô tả ngắn về nội dung của tài liệu"
           />
 
+          {/* Document Type Selector */}
+          <FormControl fullWidth required>
+            <InputLabel>Loại tài liệu</InputLabel>
+            <Select
+              value={documentForm.fileType}
+              label="Loại tài liệu"
+              onChange={(e) =>
+                setDocumentForm({
+                  ...documentForm,
+                  fileType: e.target.value as DocumentType,
+                })
+              }
+            >
+              <MenuItem value={DocumentType.PDF}>PDF Document</MenuItem>
+              <MenuItem value={DocumentType.SLIDE}>Slide Presentation</MenuItem>
+              <MenuItem value={DocumentType.CODE}>Source Code</MenuItem>
+              <MenuItem value={DocumentType.LINK}>External Link</MenuItem>
+              <MenuItem value={DocumentType.TXT}>Text Document</MenuItem>
+              <MenuItem value={DocumentType.DOCX}>Word Document</MenuItem>
+              <MenuItem value={DocumentType.XLSX}>Excel Spreadsheet</MenuItem>
+            </Select>
+            <FormHelperText>
+              Chọn loại tài liệu phù hợp với nội dung
+            </FormHelperText>
+          </FormControl>
+
           {/* Chọn section */}
-          <FormControl fullWidth>
+          <FormControl fullWidth required>
             <InputLabel>Chọn phần học</InputLabel>
             <Select
-              value={documentForm.sectionId}
+              value={documentForm.courseSectionId || ""}
               label="Chọn phần học"
               onChange={(e) =>
                 setDocumentForm({
                   ...documentForm,
-                  sectionId: e.target.value as number,
+                  courseSectionId: e.target.value
+                    ? Number(e.target.value)
+                    : undefined,
                 })
               }
             >
-              <MenuItem value={0}>Không thuộc phần học nào</MenuItem>
-              {sections.map((section) => (
+              <MenuItem value="">Không thuộc phần học nào</MenuItem>
+              {sortedSections.map((section) => (
                 <MenuItem key={section.id} value={section.id}>
                   {section.title}
                 </MenuItem>
@@ -342,9 +445,9 @@ const DialogAddEditDocument: React.FC<DialogAddEditDocumentProps> = ({
           <TextField
             label="URL tài liệu"
             fullWidth
-            value={documentForm.url}
+            value={documentForm.fileUrl}
             onChange={(e) =>
-              setDocumentForm({ ...documentForm, url: e.target.value })
+              setDocumentForm({ ...documentForm, fileUrl: e.target.value })
             }
             placeholder="https://example.com/document.pdf"
             helperText="Có thể để trống nếu bạn tải file lên trực tiếp"
@@ -355,18 +458,17 @@ const DialogAddEditDocument: React.FC<DialogAddEditDocumentProps> = ({
           <FormControl fullWidth>
             <InputLabel>Chế độ hiển thị</InputLabel>
             <Select
-              value={documentForm.visibility}
+              value={documentForm.status}
               label="Chế độ hiển thị"
               onChange={(e) =>
                 setDocumentForm({
                   ...documentForm,
-                  visibility: e.target.value as "all" | "enrolled" | "premium",
+                  status: e.target.value as DocumentStatus,
                 })
               }
             >
-              <MenuItem value="all">Tất cả (Công khai)</MenuItem>
-              <MenuItem value="enrolled">Học viên đã đăng ký</MenuItem>
-              <MenuItem value="premium">Chỉ học viên premium</MenuItem>
+              <MenuItem value={DocumentStatus.ACTIVE}>Hoạt động</MenuItem>
+              <MenuItem value={DocumentStatus.ARCHIVED}>Lưu trữ</MenuItem>
             </Select>
           </FormControl>
 
@@ -376,11 +478,13 @@ const DialogAddEditDocument: React.FC<DialogAddEditDocumentProps> = ({
               <input
                 type="checkbox"
                 id="downloadable"
-                checked={documentForm.isDownloadable}
+                checked={documentForm.status === DocumentStatus.ACTIVE}
                 onChange={(e) =>
                   setDocumentForm({
                     ...documentForm,
-                    isDownloadable: e.target.checked,
+                    status: e.target.checked
+                      ? DocumentStatus.ACTIVE
+                      : DocumentStatus.ARCHIVED,
                   })
                 }
               />
@@ -397,8 +501,9 @@ const DialogAddEditDocument: React.FC<DialogAddEditDocumentProps> = ({
           variant="contained"
           onClick={handleSubmit}
           disabled={
+            !documentForm.courseSectionId ||
             !documentForm.title ||
-            (!documentForm.url && !selectedFile) ||
+            (!documentForm.fileUrl && !selectedFile) ||
             isUploading
           }
         >

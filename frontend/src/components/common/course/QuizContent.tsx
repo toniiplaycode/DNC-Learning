@@ -32,6 +32,12 @@ import {
 import { selectCurrentUser } from "../../../features/auth/authSelectors";
 import { useLocation, useParams } from "react-router-dom";
 
+// Add this interface for better type safety
+interface QuizAnswer {
+  quizId: number;
+  answers: number[];
+}
+
 interface QuizContentProps {
   quizId: number;
   lessonId: number;
@@ -58,15 +64,32 @@ const QuizContent: React.FC<QuizContentProps> = ({
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [activeQuiz, setActiveQuiz] = useState();
   // State
-  const [answers, setAnswers] = useState<number[]>([]);
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
-  const [quizSubmitted, setQuizSubmitted] = useState(false);
   const [quizStarted, setQuizStarted] = useState(false);
   const [score, setScore] = useState(0);
   const [activeShowExplanations, setActiveShowExplanations] = useState(false);
   const [isAssessmentQuiz, setIsAssessmentQuiz] = useState(false);
   // Tạo state cho lần thử gần nhất
   const [latestAttempt, setLatestAttempt] = useState(null);
+  const [quizSubmitted, setQuizSubmitted] = useState<boolean>(() => {
+    // Check if there's a completed attempt for this quiz
+    if (
+      latestAttempt &&
+      latestAttempt.status === "completed" &&
+      latestAttempt.quizId === activeQuiz?.id
+    ) {
+      return true;
+    }
+    return false;
+  });
+
+  // Replace the simple answers state with a more specific one
+  const [currentAnswers, setCurrentAnswers] = useState<QuizAnswer>(() => ({
+    quizId: 0,
+    answers: [],
+  }));
+
+  console.log(quizSubmitted, currentAnswers.answers);
 
   useEffect(() => {
     // Fetch quizzes when the component mounts
@@ -175,10 +198,28 @@ const QuizContent: React.FC<QuizContentProps> = ({
     }
   }, [timeRemaining, quizSubmitted]);
 
+  // Reset answers when quiz changes
+  useEffect(() => {
+    if (activeQuiz?.id) {
+      // Only reset if it's a different quiz
+      if (currentAnswers.quizId !== activeQuiz.id) {
+        setCurrentAnswers({
+          quizId: activeQuiz.id,
+          answers: new Array(activeQuiz.questions?.length).fill(undefined),
+        });
+      }
+    }
+  }, [activeQuiz?.id]);
+
   const handleAnswerChange = (questionIndex: number, optionId: number) => {
-    const newAnswers = [...answers];
-    newAnswers[questionIndex] = optionId;
-    setAnswers(newAnswers);
+    setCurrentAnswers((prev) => {
+      const newAnswers = [...prev.answers];
+      newAnswers[questionIndex] = optionId;
+      return {
+        ...prev,
+        answers: newAnswers,
+      };
+    });
   };
 
   const handleStartQuizAttempt = () => {
@@ -196,29 +237,47 @@ const QuizContent: React.FC<QuizContentProps> = ({
     setQuizStarted(true);
   };
 
-  const handleSubmit = () => {
-    if (!activeQuiz) return;
+  const handleSubmit = async () => {
+    if (!activeQuiz || currentAnswers.quizId !== activeQuiz.id) return;
 
-    const questionIds =
-      activeQuiz?.questions?.map((question) => Number(question.id)) || [];
+    try {
+      const questionIds =
+        activeQuiz.questions?.map((question) => Number(question.id)) || [];
 
-    dispatch(
-      submitQuizResponsesAndUpdateAttempt({
-        questionIds,
-        responses: answers,
-        attemptId: Number(currentAttempt?.id),
-      })
-    ).then(() => {
-      dispatch(fetchUserAttempts(Number(currentUser?.id)));
+      await dispatch(
+        submitQuizResponsesAndUpdateAttempt({
+          questionIds,
+          responses: currentAnswers.answers,
+          attemptId: Number(currentAttempt?.id),
+        })
+      );
 
-      // Khi đã có dữ liệu mới, set state để hiển thị kết quả
+      await dispatch(fetchUserAttempts(Number(currentUser?.id)));
+
+      // Clear and explicit set of submission state
       setQuizSubmitted(true);
-      // setActiveShowExplanations(true);
-    });
 
-    if (!isAssessmentQuiz) {
-      setShowDiscussion(true);
+      // Show discussion only for non-assessment quizzes
+      if (!isAssessmentQuiz) {
+        setShowDiscussion(true);
+      }
+    } catch (error) {
+      console.error("Error submitting quiz:", error);
+      toast.error("Có lỗi xảy ra khi nộp bài");
     }
+  };
+
+  const handleRetakeQuiz = () => {
+    if (activeQuiz?.id) {
+      setCurrentAnswers({
+        quizId: activeQuiz.id,
+        answers: new Array(activeQuiz.questions?.length).fill(undefined),
+      });
+    }
+    setQuizSubmitted(false);
+    setQuizStarted(false);
+    setScore(0);
+    setTimeRemaining(null);
   };
 
   const formatTime = (seconds: number) => {
@@ -231,42 +290,45 @@ const QuizContent: React.FC<QuizContentProps> = ({
 
   // Thêm useEffect để xử lý khi latestAttempt thay đổi
   useEffect(() => {
-    if (latestAttempt && latestAttempt.status === "completed") {
-      setQuizSubmitted(true);
-      setScore(parseFloat(latestAttempt.score));
-      if (!isAssessmentQuiz) {
-        setShowDiscussion(true);
-      }
+    if (latestAttempt && activeQuiz) {
+      const isCompletedAttempt =
+        latestAttempt.status === "completed" &&
+        Number(latestAttempt.quizId) === Number(activeQuiz.id);
 
-      // Tạo mảng answers từ responses của latestAttempt
-      const userAnswers = [];
+      if (isCompletedAttempt) {
+        setQuizSubmitted(true);
+        setScore(parseFloat(latestAttempt.score));
 
-      if (latestAttempt.responses && activeQuiz?.questions) {
-        activeQuiz.questions.forEach((question) => {
-          const response = latestAttempt.responses.find(
-            (r) => r.questionId === question.id
-          );
+        if (!isAssessmentQuiz) {
+          setShowDiscussion(true);
+        }
 
-          if (response && response.selectedOption) {
-            // Tìm index của option đã chọn trong danh sách options của câu hỏi
-            const questionInQuiz = activeQuiz.questions.find(
-              (q) => q.id === question.id
+        // Handle setting answers from latest attempt
+        const userAnswers =
+          activeQuiz.questions?.map((question) => {
+            const response = latestAttempt.responses?.find(
+              (r) => r.questionId === question.id
             );
-            if (questionInQuiz && questionInQuiz.options) {
-              const optionIndex = questionInQuiz.options.findIndex(
-                (opt) => opt.id === response.selectedOption.id
-              );
-              userAnswers.push(optionIndex);
-            }
-          } else {
-            userAnswers.push(-1); // Không có câu trả lời
-          }
-        });
 
-        setAnswers(userAnswers);
+            if (response?.selectedOption) {
+              return (
+                question.options?.findIndex(
+                  (opt) => opt.id === response.selectedOption.id
+                ) ?? -1
+              );
+            }
+            return -1;
+          }) ?? [];
+
+        setCurrentAnswers((prev) => ({
+          ...prev,
+          answers: userAnswers,
+        }));
+      } else {
+        setQuizSubmitted(false);
       }
     }
-  }, [latestAttempt, activeQuiz, quizSubmitted]);
+  }, [latestAttempt, activeQuiz, isAssessmentQuiz]);
 
   // Kiểm tra loading
   if (!activeQuiz) {
@@ -314,7 +376,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
                   ? latestAttempt.responses.filter(
                       (response) => parseFloat(response.score) > 0
                     ).length
-                  : answers.filter((answer) => {
+                  : currentAnswers.answers.filter((answer) => {
                       // Đếm số câu trả lời đúng dựa vào mảng answers
                       const questionIndex = activeQuiz.questions?.findIndex(
                         (_, idx) => idx === answer
@@ -363,7 +425,9 @@ const QuizContent: React.FC<QuizContentProps> = ({
 
                 {activeQuiz.questions?.map((question, index) => {
                   const userAnswer =
-                    answers[index] !== undefined ? answers[index] : -1;
+                    currentAnswers.answers[index] !== undefined
+                      ? currentAnswers.answers[index]
+                      : -1;
                   const correctOptionIndex = question?.options?.findIndex(
                     (option) => option.isCorrect
                   );
@@ -473,14 +537,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
                   <Button
                     variant="contained"
                     color="primary"
-                    onClick={() => {
-                      // Reset state để làm bài mới
-                      setQuizSubmitted(false);
-                      setQuizStarted(false);
-                      setAnswers([]);
-                      setScore(0);
-                      setTimeRemaining(null);
-                    }}
+                    onClick={handleRetakeQuiz}
                   >
                     Làm lại bài
                   </Button>
@@ -640,7 +697,8 @@ const QuizContent: React.FC<QuizContentProps> = ({
                   }}
                 />
                 <Typography variant="body2" color="text.secondary">
-                  Đã chọn: {answers.filter((a) => a !== undefined).length}
+                  Đã chọn:{" "}
+                  {currentAnswers.answers.filter((a) => a !== undefined).length}
                 </Typography>
               </Box>
               <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -656,7 +714,8 @@ const QuizContent: React.FC<QuizContentProps> = ({
                 <Typography variant="body2" color="text.secondary">
                   Chưa chọn:{" "}
                   {activeQuiz?.questions?.length -
-                    answers.filter((a) => a !== undefined).length}
+                    currentAnswers.answers.filter((a) => a !== undefined)
+                      .length}
                 </Typography>
               </Box>
             </Box>
@@ -668,7 +727,8 @@ const QuizContent: React.FC<QuizContentProps> = ({
               </Typography>
               <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
                 {activeQuiz?.questions?.map((_, index) => {
-                  const isAnswered = answers[index] !== undefined;
+                  const isAnswered =
+                    currentAnswers.answers[index] !== undefined;
                   return (
                     <Box
                       key={index}
@@ -719,7 +779,8 @@ const QuizContent: React.FC<QuizContentProps> = ({
                 sx={{
                   height: "100%",
                   width: `${
-                    (answers.filter((a) => a !== undefined).length /
+                    (currentAnswers.answers.filter((a) => a !== undefined)
+                      .length /
                       activeQuiz?.questions?.length) *
                     100
                   }%`,
@@ -736,7 +797,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
             fullWidth
             onClick={handleSubmit}
             disabled={
-              answers.filter((a) => a !== undefined).length !==
+              currentAnswers.answers.filter((a) => a !== undefined).length !==
               activeQuiz?.questions?.length
             }
           >
@@ -779,7 +840,11 @@ const QuizContent: React.FC<QuizContentProps> = ({
 
               <RadioGroup
                 name={`question-${question.id}`}
-                value={answers[index] !== undefined ? answers[index] : ""}
+                value={
+                  currentAnswers.answers[index] !== undefined
+                    ? currentAnswers.answers[index]
+                    : ""
+                }
                 onChange={(e) =>
                   handleAnswerChange(index, parseInt(e.target.value))
                 }

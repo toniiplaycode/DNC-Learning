@@ -1,13 +1,18 @@
-import { User } from "../../../backend/src/entities/User";
 import { CourseSection } from "../../../backend/src/entities/CourseSection";
 
 export enum DocumentType {
   PDF = "pdf",
-  WORD = "docx",
-  EXCEL = "xlsx",
-  VIDEO = "video",
-  IMAGE = "image",
-  OTHER = "other",
+  SLIDE = "slide",
+  CODE = "code",
+  LINK = "link",
+  TXT = "txt",
+  DOCX = "docx",
+  XLSX = "xlsx",
+}
+
+export enum DocumentStatus {
+  ACTIVE = "active",
+  ARCHIVED = "archived",
 }
 
 export interface Document {
@@ -19,7 +24,6 @@ export interface Document {
   thumbnailUrl?: string;
   filePath?: string;
   fileType: DocumentType;
-  fileSize?: number;
   duration?: string;
   instructorId?: number;
   createdAt: string;
@@ -47,16 +51,16 @@ export interface DocumentState {
 }
 
 export interface CreateDocumentData {
+  instructorId: number;
+  courseSectionId?: number;
   title: string;
-  description: string;
-  courseSectionId: number;
+  description?: string;
   fileUrl: string;
+  fileType: DocumentType;
+  status?: DocumentStatus;
   thumbnailUrl?: string;
   filePath?: string;
-  fileType?: DocumentType;
-  fileSize?: number;
   duration?: string;
-  instructorId?: number;
 }
 
 export interface UpdateDocumentData {

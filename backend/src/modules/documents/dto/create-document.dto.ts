@@ -10,11 +10,12 @@ import { Type } from 'class-transformer';
 
 export enum DocumentType {
   PDF = 'pdf',
-  WORD = 'docx',
-  EXCEL = 'xlsx',
-  VIDEO = 'video',
-  IMAGE = 'image',
-  OTHER = 'other',
+  SLIDE = 'slide', // Added for presentations
+  CODE = 'code', // Added for code files
+  LINK = 'link', // Added for external links
+  TXT = 'txt', // Added for text files
+  DOCX = 'docx', // Renamed from WORD
+  XLSX = 'xlsx', // Renamed from EXCEL
 }
 
 export class CreateDocumentDto {
@@ -23,40 +24,24 @@ export class CreateDocumentDto {
   title: string;
 
   @IsString()
-  @IsNotEmpty()
-  description: string;
+  @IsOptional() // Changed to optional to match frontend
+  description?: string;
 
   @IsNumber()
+  @IsOptional() // Changed to optional to match frontend
   @Type(() => Number)
-  courseSectionId: number;
+  courseSectionId?: number;
 
   @IsString()
   @IsUrl()
   fileUrl: string;
 
-  @IsString()
-  @IsOptional()
-  thumbnailUrl?: string;
-
-  @IsString()
-  @IsOptional()
-  filePath?: string;
-
   @IsEnum(DocumentType)
-  @IsOptional()
-  fileType?: DocumentType;
+  @IsNotEmpty() // Changed to required to match frontend
+  fileType: DocumentType;
 
   @IsNumber()
-  @IsOptional()
+  @IsNotEmpty() // Changed to required to match frontend
   @Type(() => Number)
-  fileSize?: number;
-
-  @IsString()
-  @IsOptional()
-  duration?: string;
-
-  @IsNumber()
-  @IsOptional()
-  @Type(() => Number)
-  instructorId?: number;
+  instructorId: number;
 }

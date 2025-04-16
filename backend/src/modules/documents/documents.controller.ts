@@ -25,9 +25,9 @@ export class DocumentsController {
 
   @Post()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.INSTRUCTOR)
-  create(@Body() createDocumentDto: CreateDocumentDto, @GetUser() user) {
-    return this.documentsService.create(createDocumentDto, user.id);
+  @Roles(UserRole.INSTRUCTOR)
+  create(@Body() createDocumentDto: CreateDocumentDto) {
+    return this.documentsService.create(createDocumentDto);
   }
 
   @Get()
@@ -81,23 +81,7 @@ export class DocumentsController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
-  async remove(@Param('id', ParseIntPipe) id: number, @GetUser() user) {
-    const isAdmin = user.role === UserRole.ADMIN;
-    const isInstructor = user.role === UserRole.INSTRUCTOR;
-
-    let isDocumentOwner = false;
-    if (isInstructor) {
-      isDocumentOwner = await this.documentsService.isInstructorOfCourse(
-        user.id,
-        (await this.documentsService.findOne(id)).courseSectionId,
-      );
-    }
-
-    return this.documentsService.remove(
-      id,
-      user.id,
-      isAdmin,
-      isInstructor && isDocumentOwner,
-    );
+  async remove(@Param('id') id: number) {
+    return await this.documentsService.remove(id);
   }
 }

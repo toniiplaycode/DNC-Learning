@@ -48,9 +48,6 @@ export class DocumentResponseDto {
   fileType: string;
 
   @Expose()
-  fileSize?: number;
-
-  @Expose()
   duration?: string;
 
   @Expose()

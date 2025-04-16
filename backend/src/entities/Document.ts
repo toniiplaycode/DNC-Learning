@@ -42,9 +42,6 @@ export class Document {
   })
   fileType: string;
 
-  @Column({ name: 'file_size', nullable: true })
-  fileSize: number;
-
   @Column({
     name: 'upload_date',
     type: 'timestamp',

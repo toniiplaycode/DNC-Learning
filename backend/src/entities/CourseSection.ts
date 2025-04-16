@@ -39,9 +39,15 @@ export class CourseSection {
   @JoinColumn({ name: 'course_id' })
   course: Course;
 
-  @OneToMany(() => CourseLesson, (lesson) => lesson.section)
+  @OneToMany(() => CourseLesson, (lesson) => lesson.section, {
+    cascade: true,
+    onDelete: 'CASCADE',
+  })
   lessons: CourseLesson[];
 
-  @OneToMany(() => Document, (document) => document.courseSection)
+  @OneToMany(() => Document, (document) => document.courseSection, {
+    cascade: true,
+    onDelete: 'CASCADE',
+  })
   documents: Document[];
 }

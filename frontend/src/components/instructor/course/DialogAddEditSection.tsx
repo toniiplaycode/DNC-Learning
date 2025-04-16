@@ -113,13 +113,14 @@ const DialogAddEditSection: React.FC<DialogAddEditSectionProps> = ({
         );
       });
     } else {
-      console.log(sectionForm);
       dispatch(updateCourseSection(sectionForm)).then(() => {
         dispatch(fetchCourseById(Number(id)));
         dispatch(fetchCourseSectionsByCourseId(Number(id)));
         toast.success("Cập nhật phần học thành công!");
       });
     }
+
+    console.log(sectionForm);
 
     onClose();
   };

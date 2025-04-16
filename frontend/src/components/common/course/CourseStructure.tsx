@@ -23,7 +23,6 @@ import {
   PictureAsPdf,
   Slideshow,
 } from "@mui/icons-material";
-import { formatFileSize } from "../../../utils/formatters";
 
 interface Lesson {
   id: string;
@@ -45,7 +44,6 @@ interface Document {
   description: string;
   fileUrl: string;
   fileType: string;
-  fileSize: number;
   uploadDate: string;
   downloadCount: number;
   status: string;
@@ -239,12 +237,7 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
                       <ListItemIcon>
                         <InsertDriveFile />
                       </ListItemIcon>
-                      <ListItemText
-                        primary={doc.title}
-                        secondary={`${doc.fileType.toUpperCase()} • ${formatFileSize(
-                          doc.fileSize
-                        )}`}
-                      />
+                      <ListItemText primary={doc.title} />
                     </ListItem>
                   ))}
                 </>

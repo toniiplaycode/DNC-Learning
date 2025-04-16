@@ -98,7 +98,6 @@ const mockCourseDetail = {
           id: 201,
           title: "Tổng quan về React",
           fileType: "pdf",
-          fileSize: "1.2 MB",
         },
       ],
     },
@@ -125,7 +124,6 @@ const mockCourseDetail = {
           id: 202,
           title: "TypeScript Cheat Sheet",
           fileType: "pdf",
-          fileSize: "0.8 MB",
         },
       ],
       quizzes: [
@@ -425,12 +423,6 @@ const DialogDetailCourse: React.FC<DialogDetailCourseProps> = ({
                               <ListItemIcon>
                                 <Description fontSize="small" />
                               </ListItemIcon>
-                              <ListItemText
-                                primary={doc.title}
-                                secondary={`${doc.fileType.toUpperCase()} • ${
-                                  doc.fileSize
-                                }`}
-                              />
                               <IconButton size="small">
                                 <Download fontSize="small" />
                               </IconButton>

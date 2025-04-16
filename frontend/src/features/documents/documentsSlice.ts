@@ -1,9 +1,10 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import {
-  Document,
   DocumentState,
-  CreateDocumentData,
   UpdateDocumentData,
+  CreateDocumentData,
+  DocumentType,
+  DocumentStatus,
 } from "../../types/document.types";
 import { api } from "../../services/api";
 
@@ -69,11 +70,29 @@ export const createDocument = createAsyncThunk(
   "documents/create",
   async (documentData: CreateDocumentData, { rejectWithValue }) => {
     try {
-      const response = await api.post("/documents", documentData);
+      // Ensure all required fields are present
+      if (
+        !documentData.title ||
+        !documentData.fileUrl ||
+        !documentData.fileType ||
+        !documentData.instructorId
+      ) {
+        throw new Error("Missing required fields");
+      }
+
+      // Set default status if not provided
+      const dataToSubmit = {
+        ...documentData,
+        status: documentData.status || DocumentStatus.ACTIVE,
+      };
+
+      const response = await api.post("/documents", dataToSubmit);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Không thể tạo tài liệu"
+        error.response?.data?.message ||
+          error.message ||
+          "Không thể tạo tài liệu"
       );
     }
   }
