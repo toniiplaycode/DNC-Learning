@@ -6,6 +6,7 @@ import {
   Param,
   Patch,
   Delete,
+  ParseIntPipe,
 } from '@nestjs/common';
 import { CourseLessonsService } from './course-lessons.service';
 import { CourseLesson } from 'src/entities/CourseLesson';
@@ -27,6 +28,11 @@ export class CourseLessonsController {
   @Get(':id')
   findOne(@Param('id') id: number) {
     return this.courseLessonsService.findOne(id);
+  }
+
+  @Get('course/:courseId/quizzes')
+  async findQuizzesByCourse(@Param('courseId', ParseIntPipe) courseId: number) {
+    return await this.courseLessonsService.findQuizzesByCourse(courseId);
   }
 
   @Patch(':id')

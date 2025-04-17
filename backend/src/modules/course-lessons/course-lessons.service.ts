@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { CourseLesson } from 'src/entities/CourseLesson';
+import { ContentType, CourseLesson } from 'src/entities/CourseLesson';
 import { Repository } from 'typeorm';
 
 @Injectable()
@@ -40,6 +40,18 @@ export class CourseLessonsService {
 
   async findOne(id: number): Promise<CourseLesson | null> {
     return this.courseLessonRepository.findOneBy({ id });
+  }
+
+  async findQuizzesByCourse(courseId: number): Promise<CourseLesson[]> {
+    return this.courseLessonRepository
+      .createQueryBuilder('lesson')
+      .innerJoin('lesson.section', 'section')
+      .where('section.courseId = :courseId', { courseId })
+      .andWhere('lesson.contentType = :contentType', {
+        contentType: ContentType.QUIZ,
+      })
+      .orderBy('lesson.orderNumber', 'ASC')
+      .getMany();
   }
 
   async update(

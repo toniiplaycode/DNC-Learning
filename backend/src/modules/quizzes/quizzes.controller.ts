@@ -35,10 +35,16 @@ export class QuizzesController {
   ) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.INSTRUCTOR)
-  create(@Body() createQuizDto: CreateQuizDto) {
-    return this.quizzesService.create(createQuizDto);
+  async create(@Body() createQuizDto: any) {
+    const quiz =
+      await this.quizzesService.createQuizWithQuestionsAndOptions(
+        createQuizDto,
+      );
+    return {
+      status: 'success',
+      data: quiz,
+      message: 'Tạo bài kiểm tra thành công',
+    };
   }
 
   @Get()

@@ -492,18 +492,73 @@ export class QuizzesService {
     await this.attemptsRepository.save(attempt);
   }
 
-  // Helper methods
-  private mapQuizTypeToGradeType(quizType: QuizType): GradeType {
-    switch (quizType) {
-      case QuizType.PRACTICE:
-      case QuizType.HOMEWORK:
-        return GradeType.QUIZ;
-      case QuizType.MIDTERM:
-        return GradeType.MIDTERM;
-      case QuizType.FINAL:
-        return GradeType.FINAL;
-      default:
-        return GradeType.QUIZ;
+  async createQuizWithQuestionsAndOptions(createQuizDto: any): Promise<Quiz> {
+    // Start a transaction
+    const queryRunner =
+      this.quizzesRepository.manager.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // 1. Create the quiz first
+      const quiz = this.quizzesRepository.create({
+        title: createQuizDto.title,
+        description: createQuizDto.description,
+        lessonId: createQuizDto.lessonId,
+        timeLimit: createQuizDto.timeLimit,
+        passingScore: createQuizDto.passingScore,
+        attemptsAllowed: createQuizDto.attemptsAllowed,
+        quizType: createQuizDto.quizType,
+        showExplanation: createQuizDto.showExplanation,
+      });
+
+      const savedQuiz = await queryRunner.manager.save(Quiz, quiz);
+
+      // 2. Create questions with their options
+      const questions = createQuizDto.questions.map((questionDto) => ({
+        questionText: questionDto.questionText,
+        questionType: questionDto.questionType,
+        points: questionDto.points,
+        orderNumber: questionDto.orderNumber,
+        correctExplanation: questionDto.correctExplanation,
+        quizId: savedQuiz.id,
+      }));
+
+      const savedQuestions = await queryRunner.manager.save(
+        QuizQuestion,
+        questions,
+      );
+
+      // 3. Create options for each question
+      const options: QuizOption[] = [];
+      savedQuestions.forEach((question, index) => {
+        const questionOptions = createQuizDto.questions[index].options.map(
+          (optionDto) => ({
+            optionText: optionDto.optionText,
+            isCorrect: optionDto.isCorrect,
+            orderNumber: optionDto.orderNumber,
+            questionId: question.id,
+          }),
+        );
+        options.push(...questionOptions);
+      });
+
+      await queryRunner.manager.save(QuizOption, options);
+
+      // Commit transaction
+      await queryRunner.commitTransaction();
+
+      // Return the complete quiz with questions and options
+      return this.findOne(savedQuiz.id);
+    } catch (error) {
+      // Rollback transaction on error
+      await queryRunner.rollbackTransaction();
+      throw new BadRequestException(
+        'Lỗi khi tạo bài kiểm tra: ' + error.message,
+      );
+    } finally {
+      // Release queryRunner
+      await queryRunner.release();
     }
   }
 }
