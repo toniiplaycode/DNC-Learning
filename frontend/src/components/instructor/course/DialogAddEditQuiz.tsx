@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -48,7 +48,8 @@ import { parseQuizDocument } from "../../../utils/quizParser";
 import { toast } from "react-toastify";
 import { generateDocxFromTemplate } from "../../../utils/browserDocGenerator";
 import { fetchCourseQuizzes } from "../../../features/course-lessons/courseLessonsApiSlice";
-import { selectAllQuizzes } from "../../../features/course-lessons/courseLessonsSelector";
+import { selectAlCourseLessonlQuizzes } from "../../../features/course-lessons/courseLessonsSelector";
+import { selectAllQuizzes } from "../../../features/quizzes/quizzesSelectors";
 import { createQuiz } from "../../../features/quizzes/quizzesSlice";
 import { fetchCourseById } from "../../../features/courses/coursesApiSlice";
 
@@ -128,7 +129,8 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
 }) => {
   const { id } = useParams();
   const dispatch = useAppDispatch();
-  const lessonData = useAppSelector(selectAllQuizzes);
+  const lessonData = useAppSelector(selectAlCourseLessonlQuizzes);
+  const quizzesData = useAppSelector(selectAllQuizzes);
 
   // State cho form quiz
   const [quizForm, setQuizForm] = useState<Quiz>({
@@ -158,6 +160,9 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
     number | null
   >(null);
   const [isLoading, setIsLoading] = useState(false);
+
+  // Add ref for the edit section
+  const editSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (id) {
@@ -330,6 +335,14 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
     if (question) {
       setCurrentQuestion(question);
       setEditingQuestionIndex(questions.findIndex((q) => q.id === questionId));
+
+      // Add smooth scrolling after state update
+      setTimeout(() => {
+        editSectionRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 100);
     }
   };
 
@@ -505,15 +518,38 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                 }
               >
                 <MenuItem value={0}>Không thuộc nội dung nào</MenuItem>
-                {lessonData.map((lesson) => (
-                  <MenuItem key={lesson.id} value={lesson.id}>
-                    {lesson.title}
-                  </MenuItem>
-                ))}
+                {lessonData.map((lesson) => {
+                  const hasQuiz = quizzesData.some(
+                    (quiz) => quiz.lessonId === lesson.id
+                  );
+                  return (
+                    <MenuItem
+                      key={lesson.id}
+                      value={lesson.id}
+                      disabled={hasQuiz}
+                      sx={{
+                        ...(hasQuiz && {
+                          color: "promary.main",
+                          "& .quiz-indicator": {
+                            ml: 1,
+                            color: "warning.main",
+                            fontSize: "0.75rem",
+                          },
+                        }),
+                      }}
+                    >
+                      {lesson.title}
+                      {hasQuiz && (
+                        <Typography component="span" className="quiz-indicator">
+                          (đã có bài kiểm tra)
+                        </Typography>
+                      )}
+                    </MenuItem>
+                  );
+                })}
               </Select>
               <FormHelperText>
-                Nếu bài kiểm tra không thuộc nội dung cụ thể, chọn "Không thuộc
-                nội dung nào"
+                Chọn nội dung cho bài kiểm tra hoặc 'Không thuộc nội dung nào'
               </FormHelperText>
             </FormControl>
           )}
@@ -674,7 +710,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                   borderRadius: 1,
                   border: "1px solid",
                   borderColor: "divider",
-                  maxHeight: "500px",
+                  maxHeight: "800px",
                   overflow: "auto",
                 }}
               >
@@ -811,7 +847,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
             )}
           </Box>
 
-          <Divider>
+          <Divider ref={editSectionRef}>
             <Typography variant="caption" color="text.secondary">
               {editingQuestionIndex !== null
                 ? "Chỉnh sửa câu hỏi"

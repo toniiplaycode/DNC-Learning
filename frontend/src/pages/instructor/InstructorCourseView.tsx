@@ -244,30 +244,6 @@ const mockCourseData = {
   ],
 };
 
-// Thêm mock data cho quizzes và assignments
-const mockQuizzes = [
-  {
-    id: 1,
-    title: "Kiểm tra kiến thức React cơ bản",
-    description: "Bài kiểm tra nhanh về các kiến thức React đã học",
-    duration: 30,
-    maxAttempts: 2,
-    passingScore: 70,
-    sectionId: 1,
-    totalQuestions: 15,
-  },
-  {
-    id: 2,
-    title: "Kiểm tra TypeScript",
-    description: "Đánh giá kiến thức về TypeScript và cách sử dụng với React",
-    duration: 45,
-    maxAttempts: 3,
-    passingScore: 75,
-    sectionId: 2,
-    totalQuestions: 20,
-  },
-];
-
 const mockAssignments = [
   {
     id: 1,
@@ -855,7 +831,6 @@ const InstructorCourseView = () => {
                 </Stack>
               </Box>
               <CourseQuizAssignment
-                quizzes={mockQuizzes}
                 assignments={mockAssignments}
                 onEditQuiz={handleOpenEditQuizModal}
                 onDeleteQuiz={handleDeleteQuiz}

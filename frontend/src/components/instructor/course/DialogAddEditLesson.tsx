@@ -26,6 +26,7 @@ import { useAppDispatch } from "../../../app/hooks";
 import { toast } from "react-toastify";
 import { useParams } from "react-router-dom";
 import { fetchCourseById } from "../../../features/courses/coursesApiSlice";
+import { fetchQuizzesByCourse } from "../../../features/quizzes/quizzesSlice";
 
 // Định nghĩa kiểu ContentItem cho rõ ràng
 interface ContentItem {
@@ -197,12 +198,13 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
     if (!editMode) {
       dispatch(createCourseLesson(submitData)).then(() => {
         dispatch(fetchCourseById(Number(id)));
-        toast.success("Tạo bài giảng thành công!");
+        dispatch(fetchQuizzesByCourse(Number(id)));
+        toast.success("Tạo nội dung thành công!");
       });
     } else {
       dispatch(updateCourseLesson(submitData)).then(() => {
         dispatch(fetchCourseById(Number(id)));
-        toast.success("Cập nhật bài giảng thành công!");
+        toast.success("Cập nhật nội dung thành công!");
       });
     }
     console.log(submitData);

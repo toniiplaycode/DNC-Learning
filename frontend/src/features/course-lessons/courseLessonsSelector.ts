@@ -17,5 +17,5 @@ export const selectCourseLessonsError = (state: RootState) =>
   state.courseLessons.error;
 
 // Lấy các quizz của một course
-export const selectAllQuizzes = (state: RootState) =>
+export const selectAlCourseLessonlQuizzes = (state: RootState) =>
   state.courseLessons.quizzes;
