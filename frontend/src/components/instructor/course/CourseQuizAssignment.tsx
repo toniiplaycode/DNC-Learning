@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -7,10 +7,6 @@ import {
   Card,
   CardContent,
   List,
-  ListItem,
-  ListItemText,
-  ListItemIcon,
-  ListItemSecondaryAction,
   IconButton,
   Chip,
   Stack,
@@ -28,22 +24,14 @@ import {
   AccessTime,
   Edit,
   Delete,
-  Visibility,
   QueryBuilder,
   CheckCircle,
   Info,
 } from "@mui/icons-material";
-
-interface QuizItem {
-  id: number;
-  title: string;
-  description: string;
-  duration: string | number;
-  maxAttempts: number;
-  passingScore: number;
-  sectionId?: number;
-  totalQuestions: number;
-}
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import { selectAllQuizzes } from "../../../features/quizzes/quizzesSelectors";
+import { fetchQuizzesByCourse } from "../../../features/quizzes/quizzesSlice";
+import { useParams } from "react-router-dom";
 
 interface AssignmentItem {
   id: number;
@@ -56,9 +44,8 @@ interface AssignmentItem {
 }
 
 interface CourseQuizAssignmentProps {
-  quizzes?: QuizItem[];
   assignments?: AssignmentItem[];
-  onEditQuiz?: (quiz: QuizItem) => void;
+  onEditQuiz?: (quiz: any) => void;
   onDeleteQuiz?: (quizId: number) => void;
   onEditAssignment?: (assignment: AssignmentItem) => void;
   onDeleteAssignment?: (assignmentId: number) => void;
@@ -66,7 +53,6 @@ interface CourseQuizAssignmentProps {
 }
 
 const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
-  quizzes = [],
   assignments = [],
   onEditQuiz,
   onDeleteQuiz,
@@ -74,12 +60,21 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
   onDeleteAssignment,
   isInstructor = true,
 }) => {
+  const { id } = useParams();
+  const dispatch = useAppDispatch();
+  const quizzesData = useAppSelector(selectAllQuizzes);
   const [tabValue, setTabValue] = useState(0);
   const [deleteDialog, setDeleteDialog] = useState({
     open: false,
     type: "",
     id: 0,
   });
+
+  useEffect(() => {
+    dispatch(fetchQuizzesByCourse(Number(id)));
+  }, [dispatch, id]);
+
+  console.log(quizzesData);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -110,7 +105,7 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
             label={
               <Stack direction="row" spacing={1} alignItems="center">
                 <Quiz />
-                <span>Bài kiểm tra ({quizzes.length})</span>
+                <span>Bài kiểm tra ({quizzesData.length})</span>
               </Stack>
             }
           />
@@ -127,9 +122,9 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
 
       {/* Quiz List */}
       <TabPanel value={tabValue} index={0}>
-        {quizzes.length > 0 ? (
+        {quizzesData.length > 0 ? (
           <List>
-            {quizzes.map((quiz) => (
+            {quizzesData.map((quiz) => (
               <Card key={quiz.id} sx={{ mb: 2 }}>
                 <CardContent>
                   <Stack spacing={1}>
@@ -179,16 +174,14 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
                       <Stack direction="row" alignItems="center" spacing={1}>
                         <QueryBuilder fontSize="small" color="action" />
                         <Typography variant="body2">
-                          {typeof quiz.duration === "number"
-                            ? `${quiz.duration} phút`
-                            : quiz.duration}
+                          {quiz.timeLimit} phút
                         </Typography>
                       </Stack>
 
                       <Stack direction="row" alignItems="center" spacing={1}>
                         <Info fontSize="small" color="action" />
                         <Typography variant="body2">
-                          {quiz.totalQuestions} câu hỏi
+                          {quiz?.questions?.length} câu hỏi
                         </Typography>
                       </Stack>
 
@@ -200,7 +193,7 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
                       </Stack>
 
                       <Chip
-                        label={`Tối đa ${quiz.maxAttempts} lần làm bài`}
+                        label={`Tối đa ${quiz.attemptsAllowed} lần làm bài`}
                         size="small"
                         variant="outlined"
                       />

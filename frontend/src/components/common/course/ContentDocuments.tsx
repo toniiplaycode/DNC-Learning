@@ -28,6 +28,7 @@ import {
   Slideshow,
   TextSnippet,
   LinkOff,
+  Edit,
 } from "@mui/icons-material";
 import {
   deleteDocument,
@@ -40,6 +41,7 @@ import { toast } from "react-toastify";
 
 interface ContentDocumentsProps {
   isInstructor?: boolean;
+  handleOpenEditDocumentModal: (doc: any, id: number) => void;
 }
 
 interface GroupedDocuments {
@@ -52,6 +54,7 @@ interface GroupedDocuments {
 
 const ContentDocuments: React.FC<ContentDocumentsProps> = ({
   isInstructor = false,
+  handleOpenEditDocumentModal,
 }) => {
   const dispatch = useAppDispatch();
   const { id } = useParams();
@@ -103,6 +106,12 @@ const ContentDocuments: React.FC<ContentDocumentsProps> = ({
     e.stopPropagation();
     setDocumentToDelete(docId);
     setDeleteDialogOpen(true);
+  };
+
+  const handleEditClick = (e: React.MouseEvent, doc: any) => {
+    e.stopPropagation();
+
+    handleOpenEditDocumentModal(doc, doc.id);
   };
 
   const handleConfirmDelete = async () => {
@@ -340,6 +349,17 @@ const ContentDocuments: React.FC<ContentDocumentsProps> = ({
                       {isInstructor && (
                         <IconButton
                           edge="end"
+                          aria-label="edit"
+                          onClick={(e) => handleEditClick(e, doc)}
+                          color="primary"
+                          size="small"
+                        >
+                          <Edit />
+                        </IconButton>
+                      )}
+                      {isInstructor && (
+                        <IconButton
+                          edge="end"
                           aria-label="delete"
                           onClick={(e) => handleDeleteClick(e, doc.id)}
                           color="error"
@@ -358,7 +378,7 @@ const ContentDocuments: React.FC<ContentDocumentsProps> = ({
                       secondary={
                         <Stack direction="row" spacing={1} alignItems="center">
                           <Chip
-                            label={doc.fileType.toUpperCase()}
+                            label={(doc.fileType || "unknown").toUpperCase()}
                             size="small"
                             variant="outlined"
                           />

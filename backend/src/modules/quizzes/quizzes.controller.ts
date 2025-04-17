@@ -76,6 +76,11 @@ export class QuizzesController {
     );
   }
 
+  @Get('courses/:id')
+  async getCourseQuizzes(@Param('id') id: string) {
+    return this.quizzesService.findQuizzesByCourseId(Number(id));
+  }
+
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.INSTRUCTOR)

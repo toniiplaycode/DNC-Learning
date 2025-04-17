@@ -26,8 +26,8 @@ import { selectCurrentUser } from "../../../features/auth/authSelectors";
 import {
   createDocument,
   fetchDocumentsByCourse,
+  updateDocument,
 } from "../../../features/documents/documentsSlice";
-import { fetchCourseById } from "../../../features/courses/coursesApiSlice";
 import { toast } from "react-toastify";
 
 // First define the document type enum to match backend
@@ -105,8 +105,6 @@ const DialogAddEditDocument: React.FC<DialogAddEditDocumentProps> = ({
     }
   }, [dispatch, id]);
 
-  console.log("sectionData", sectionData, currentUser);
-
   // Initialize form state matching backend structure
   const [documentForm, setDocumentForm] = useState<DocumentFormData>({
     instructorId: Number(currentUser?.userInstructor?.id), // Set this from logged in user
@@ -133,36 +131,22 @@ const DialogAddEditDocument: React.FC<DialogAddEditDocumentProps> = ({
   useEffect(() => {
     if (open) {
       if (editMode && documentToEdit) {
-        // Tìm section của document khi edit
-        let sectionId = documentToEdit.sectionId || 0;
-
-        // Nếu không có sectionId trong documentToEdit, tìm từ sectionData
-        if (!sectionId) {
-          for (const section of sectionData) {
-            const docIndex = section.documents?.findIndex(
-              (d: DocumentItem) => d.id === documentToEdit.id
-            );
-            if (docIndex !== -1) {
-              sectionId = section.id;
-              break;
-            }
-          }
-        }
-
         setDocumentForm({
-          id: documentToEdit.id,
-          instructorId: Number(currentUser?.userInstructor?.id), // Set this from logged in user
-          title: documentToEdit.title || "",
+          id: Number(documentToEdit.id),
+          instructorId: Number(documentToEdit.instructorId),
+          courseSectionId: Number(documentToEdit.courseSectionId),
+          title: documentToEdit.title,
           description: documentToEdit.description || "",
-          fileUrl: documentToEdit.url || "",
-          fileType: documentToEdit.documentType as DocumentType,
-          courseSectionId: sectionId || undefined,
-          status: DocumentStatus.ACTIVE,
+          fileUrl: documentToEdit.fileUrl,
+          fileType: documentToEdit.fileType as DocumentType,
+          status: documentToEdit.status as DocumentStatus,
+          downloadCount: documentToEdit.downloadCount,
+          uploadDate: new Date(documentToEdit.uploadDate),
         });
       } else {
-        // Khi thêm mới
+        // Reset form for new document
         setDocumentForm({
-          instructorId: Number(currentUser?.userInstructor?.id), // Set this from logged in user
+          instructorId: Number(currentUser?.userInstructor?.id),
           title: "",
           description: "",
           fileUrl: "",
@@ -178,7 +162,7 @@ const DialogAddEditDocument: React.FC<DialogAddEditDocumentProps> = ({
       setUploadProgress(0);
       setFileUploadError(null);
     }
-  }, [open, editMode, documentToEdit, initialSectionId, sectionData]);
+  }, [open, editMode, documentToEdit, initialSectionId, currentUser]);
 
   // Xử lý khi chọn file
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -254,27 +238,43 @@ const DialogAddEditDocument: React.FC<DialogAddEditDocumentProps> = ({
         fileUrl = await simulateFileUpload();
       }
 
-      // Prepare data with validated IDs
       const submittedData = {
-        ...(editMode && documentToEdit ? { id: documentToEdit.id } : {}),
-        instructorId: Number(documentForm.instructorId),
+        ...(editMode ? { id: documentForm.id } : {}),
+        instructorId: documentForm.instructorId,
+        courseSectionId: documentForm.courseSectionId,
         title: documentForm.title,
         description: documentForm.description,
         fileUrl: fileUrl,
         fileType: documentForm.fileType,
-        courseSectionId: documentForm.courseSectionId
-          ? Number(documentForm.courseSectionId)
-          : undefined,
         status: documentForm.status,
+        ...(editMode
+          ? {
+              uploadDate: documentForm.uploadDate,
+              downloadCount: documentForm.downloadCount,
+            }
+          : {}),
       };
 
-      await dispatch(createDocument(submittedData));
+      console.log(submittedData);
+
+      if (editMode) {
+        await dispatch(updateDocument(submittedData));
+      } else {
+        await dispatch(createDocument(submittedData));
+      }
+
       await dispatch(fetchDocumentsByCourse(courseId));
-      toast.success("Thêm tài liệu thành công!");
+      toast.success(
+        editMode ? "Cập nhật tài liệu thành công!" : "Thêm tài liệu thành công!"
+      );
       onClose();
     } catch (error) {
       console.error("Lỗi khi submit form:", error);
-      toast.error("Có lỗi xảy ra khi thêm tài liệu");
+      toast.error(
+        editMode
+          ? "Có lỗi xảy ra khi cập nhật tài liệu"
+          : "Có lỗi xảy ra khi thêm tài liệu"
+      );
     }
   };
 

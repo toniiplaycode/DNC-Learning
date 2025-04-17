@@ -100,12 +100,13 @@ export const createDocument = createAsyncThunk(
 
 export const updateDocument = createAsyncThunk(
   "documents/update",
-  async (
-    { id, updateData }: { id: number; updateData: UpdateDocumentData },
-    { rejectWithValue }
-  ) => {
+  async (updateData: UpdateDocumentData, { rejectWithValue }) => {
+    console.log(updateData);
     try {
-      const response = await api.patch(`/documents/${id}`, updateData);
+      const response = await api.patch(
+        `/documents/${Number(updateData.id)}`,
+        updateData
+      );
       return response.data;
     } catch (error: any) {
       return rejectWithValue(

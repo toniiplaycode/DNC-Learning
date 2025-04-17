@@ -20,6 +20,7 @@ import { CreateQuestionDto } from './dto/create-question.dto';
 import { CreateAttemptDto } from './dto/create-attempt.dto';
 import { SubmitQuizDto } from './dto/submit-quiz.dto';
 import { GradeType } from '../../entities/UserGrade';
+import { Course } from 'src/entities/Course';
 
 @Injectable()
 export class QuizzesService {
@@ -39,6 +40,8 @@ export class QuizzesService {
     @InjectRepository(User)
     private usersRepository: Repository<User>,
     private userGradesService: UserGradesService,
+    @InjectRepository(Course)
+    private readonly courseRepository: Repository<Course>,
   ) {}
 
   async create(createQuizDto: CreateQuizDto): Promise<Quiz> {
@@ -172,6 +175,34 @@ export class QuizzesService {
       console.error('Error finding quizzes:', error);
       return [];
     }
+  }
+
+  async findQuizzesByCourseId(id: number): Promise<Quiz[]> {
+    const course = await this.courseRepository.findOne({
+      where: { id },
+      relations: [
+        'sections',
+        'sections.lessons',
+        'sections.lessons.quizzes', // Load relation đến quizzes
+        'sections.lessons.quizzes.questions',
+      ],
+    });
+
+    if (!course) {
+      throw new Error('Course not found');
+    }
+
+    // Thu thập tất cả quiz từ tất cả lessons trong tất cả sections
+    const quizzes: Quiz[] = [];
+    for (const section of course.sections) {
+      for (const lesson of section.lessons) {
+        if (lesson.quizzes && lesson.quizzes.length > 0) {
+          quizzes.push(...lesson.quizzes);
+        }
+      }
+    }
+
+    return quizzes;
   }
 
   async update(id: number, updateQuizDto: UpdateQuizDto): Promise<Quiz> {

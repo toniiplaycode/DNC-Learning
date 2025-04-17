@@ -64,6 +64,7 @@ export interface CreateDocumentData {
 }
 
 export interface UpdateDocumentData {
+  id?: number;
   title?: string;
   description?: string;
   fileUrl?: string;

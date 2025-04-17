@@ -79,6 +79,21 @@ export const fetchQuizzesByStudentAcademic = createAsyncThunk(
   }
 );
 
+export const fetchQuizzesByCourse = createAsyncThunk(
+  "quizzes/fetchByCourse",
+  async (id: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/quizzes/courses/${id}`);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          "Không thể tải bài kiểm tra cho sinh viên học thuật"
+      );
+    }
+  }
+);
+
 export const createQuiz = createAsyncThunk(
   "quizzes/create",
   async (data: CreateQuizData, { rejectWithValue }) => {
@@ -553,6 +568,20 @@ const quizzesSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchQuizzesByStudentAcademic.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
+
+      // Fetch quizzes by course
+      .addCase(fetchQuizzesByCourse.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchQuizzesByCourse.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.quizzes = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchQuizzesByCourse.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
       });

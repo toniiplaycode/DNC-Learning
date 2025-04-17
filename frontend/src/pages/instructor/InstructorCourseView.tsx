@@ -801,7 +801,7 @@ const InstructorCourseView = () => {
               <Tabs value={tabValue} onChange={handleTabChange}>
                 <Tab label="Nội dung" />
                 <Tab label="Tài liệu" />
-                <Tab label="Bài tập/Quiz" />
+                <Tab label="Bài kiểm tra/bài tập" />
               </Tabs>
             </Box>
 
@@ -831,7 +831,10 @@ const InstructorCourseView = () => {
                   Thêm tài liệu
                 </Button>
               </Box>
-              <ContentDocuments isInstructor={true} />
+              <ContentDocuments
+                handleOpenEditDocumentModal={handleOpenEditDocumentModal}
+                isInstructor={true}
+              />
             </TabPanel>
 
             <TabPanel value={tabValue} index={2}>
@@ -843,21 +846,21 @@ const InstructorCourseView = () => {
                   mb: 3,
                 }}
               >
-                <Typography variant="h6">Bài tập & Quiz</Typography>
+                <Typography variant="h6">Bài kiểm tra & bài tập</Typography>
                 <Stack direction="row" spacing={2}>
+                  <Button
+                    variant="contained"
+                    startIcon={<Add />}
+                    onClick={() => setOpenAddQuizModal(true)}
+                  >
+                    Thêm bài kiểm tra
+                  </Button>
                   <Button
                     variant="outlined"
                     startIcon={<Add />}
                     onClick={() => setOpenAddAssignmentModal(true)}
                   >
                     Thêm bài tập
-                  </Button>
-                  <Button
-                    variant="contained"
-                    startIcon={<Add />}
-                    onClick={() => setOpenAddQuizModal(true)}
-                  >
-                    Thêm quiz
                   </Button>
                 </Stack>
               </Box>

@@ -12,6 +12,7 @@ import { User } from '../../entities/User';
 import { UserGradesModule } from '../user-grades/user-grades.module';
 import { QuizAttemptsService } from './quiz-attempts.service';
 import { QuizResponsesService } from './quiz-responses.service';
+import { Course } from 'src/entities/Course';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { QuizResponsesService } from './quiz-responses.service';
       QuizResponse,
       CourseLesson,
       User,
+      Course,
     ]),
     UserGradesModule,
   ],

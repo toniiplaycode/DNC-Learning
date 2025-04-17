@@ -57,26 +57,8 @@ export class DocumentsController {
   async update(
     @Param('id', ParseIntPipe) id: number,
     @Body() updateDocumentDto: UpdateDocumentDto,
-    @GetUser() user,
   ) {
-    const isAdmin = user.role === UserRole.ADMIN;
-    const isInstructor = user.role === UserRole.INSTRUCTOR;
-
-    let isDocumentOwner = false;
-    if (isInstructor) {
-      isDocumentOwner = await this.documentsService.isInstructorOfCourse(
-        user.id,
-        (await this.documentsService.findOne(id)).courseSectionId,
-      );
-    }
-
-    return this.documentsService.update(
-      id,
-      updateDocumentDto,
-      user.id,
-      isAdmin,
-      isInstructor && isDocumentOwner,
-    );
+    return await this.documentsService.update(+id, updateDocumentDto);
   }
 
   @Delete(':id')

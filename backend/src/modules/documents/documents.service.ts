@@ -153,26 +153,45 @@ export class DocumentsService {
   async update(
     id: number,
     updateDocumentDto: UpdateDocumentDto,
-    userId: number,
-    isAdmin = false,
-    isInstructor = false,
-  ): Promise<Document> {
-    const document = await this.findOne(id);
-
-    // Lấy instructor ID từ user ID
-    const instructor = await this.instructorsRepository.findOne({
-      where: { userId },
+  ): Promise<Document | null> {
+    // Find document with relations
+    const document = await this.documentsRepository.findOne({
+      where: { id },
+      relations: ['courseSection'],
     });
 
-    // Chỉ admin, người tạo, hoặc giảng viên của khóa học mới có quyền cập nhật
-    if (document.instructorId !== instructor?.id && !isAdmin && !isInstructor) {
-      throw new ForbiddenException('Bạn không có quyền cập nhật tài liệu này');
+    if (!document) {
+      throw new NotFoundException(`Tài liệu với ID ${id} không tồn tại`);
     }
 
-    // Cập nhật tài liệu
-    Object.assign(document, updateDocumentDto);
+    // If courseSectionId is provided, validate the new section
+    if (updateDocumentDto.courseSectionId) {
+      const newSection = await this.sectionsRepository.findOne({
+        where: { id: updateDocumentDto.courseSectionId },
+      });
 
-    return this.documentsRepository.save(document);
+      if (!newSection) {
+        throw new NotFoundException(
+          `Section với ID ${updateDocumentDto.courseSectionId} không tồn tại`,
+        );
+      }
+    }
+
+    // Create updated document object with new values
+    const updatedData = {
+      ...document,
+      ...updateDocumentDto,
+      id: document.id, // Keep original ID
+    };
+
+    // Save changes directly without overriding courseSectionId
+    const savedDocument = await this.documentsRepository.save(updatedData);
+
+    // Fetch and return updated document with relations
+    return this.documentsRepository.findOne({
+      where: { id: savedDocument.id },
+      relations: ['courseSection'],
+    });
   }
 
   async remove(id: number): Promise<void> {
