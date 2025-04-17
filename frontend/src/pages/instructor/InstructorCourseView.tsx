@@ -600,16 +600,6 @@ const InstructorCourseView = () => {
     setOpenEditQuizModal(true);
   };
 
-  // Xử lý khi thêm quiz mới
-  const handleAddQuiz = (quizData: any) => {
-    console.log("Thêm quiz mới:", quizData);
-    // Thực hiện thêm quiz vào state hoặc gọi API
-
-    // Đóng modal
-    setOpenAddQuizModal(false);
-    setCurrentSectionId(null);
-  };
-
   // Xử lý khi cập nhật quiz
   const handleUpdateQuiz = (quizData: any) => {
     console.log("Cập nhật quiz:", quizData);
@@ -917,9 +907,7 @@ const InstructorCourseView = () => {
       <DialogAddEditQuiz
         open={openAddQuizModal}
         onClose={() => setOpenAddQuizModal(false)}
-        onSubmit={handleAddQuiz}
         initialSectionId={currentSectionId || undefined}
-        sections={mockCourseData.sections}
         editMode={false}
       />
 
@@ -929,7 +917,6 @@ const InstructorCourseView = () => {
         onClose={() => setOpenEditQuizModal(false)}
         onSubmit={handleUpdateQuiz}
         quizToEdit={quizToEdit || undefined}
-        sections={mockCourseData.sections}
         editMode={true}
       />
 

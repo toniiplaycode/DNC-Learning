@@ -74,8 +74,6 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
     dispatch(fetchQuizzesByCourse(Number(id)));
   }, [dispatch, id]);
 
-  console.log(quizzesData);
-
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };

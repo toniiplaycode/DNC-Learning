@@ -15,3 +15,7 @@ export const selectCourseLessonsLoading = (state: RootState) =>
 // Lấy trạng thái error
 export const selectCourseLessonsError = (state: RootState) =>
   state.courseLessons.error;
+
+// Lấy các quizz của một course
+export const selectAllQuizzes = (state: RootState) =>
+  state.courseLessons.quizzes;

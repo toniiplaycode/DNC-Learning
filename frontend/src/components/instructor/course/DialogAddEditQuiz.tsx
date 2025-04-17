@@ -29,6 +29,7 @@ import {
   AccordionDetails,
   Tooltip,
   Chip,
+  Switch,
 } from "@mui/material";
 import {
   Close,
@@ -38,28 +39,65 @@ import {
   ExpandMore,
   CheckCircle,
   DragIndicator,
+  CloudUpload,
+  Download,
 } from "@mui/icons-material";
+import { useParams } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import { parseQuizDocument } from "../../../utils/quizParser";
+import { toast } from "react-toastify";
+import { generateDocxFromTemplate } from "../../../utils/browserDocGenerator";
+import { fetchCourseQuizzes } from "../../../features/course-lessons/courseLessonsApiSlice";
+import { selectAllQuizzes } from "../../../features/course-lessons/courseLessonsSelector";
 
-// Định nghĩa kiểu QuizItem
-interface QuizItem {
-  id: number;
-  title: string;
-  description: string;
-  maxAttempts?: number;
-  passingScore?: number;
-  timeLimit?: number;
-  questions?: QuizQuestion[];
-  sectionId?: number;
+// Định nghĩa kiểu QuizOption
+interface QuizOption {
+  id?: number;
+  questionId?: number;
+  optionText: string;
+  isCorrect: boolean;
+  orderNumber: number;
 }
 
 // Định nghĩa kiểu QuizQuestion
 interface QuizQuestion {
-  id: number;
-  question: string;
-  options: string[];
-  correctAnswer: number;
-  explanation?: string;
-  points?: number;
+  id?: number;
+  quizId?: number;
+  questionText: string;
+  questionType: QuestionType;
+  correctExplanation?: string;
+  points: number;
+  orderNumber: number;
+  options: QuizOption[];
+}
+
+// Định nghĩa kiểu Quiz
+interface Quiz {
+  id?: number;
+  lessonId?: number | null; // Changed to allow null
+  academicClassId?: number;
+  title: string;
+  description?: string;
+  timeLimit?: number;
+  passingScore?: number;
+  attemptsAllowed: number;
+  quizType: QuizType;
+  showExplanation: boolean;
+  startTime?: Date;
+  endTime?: Date;
+  questions?: QuizQuestion[];
+}
+
+enum QuizType {
+  PRACTICE = "practice",
+  HOMEWORK = "homework",
+  MIDTERM = "midterm",
+  FINAL = "final",
+}
+
+enum QuestionType {
+  MULTIPLE_CHOICE = "multiple_choice",
+  TRUE_FALSE = "true_false",
 }
 
 // Định nghĩa props cho component
@@ -67,9 +105,8 @@ interface DialogAddEditQuizProps {
   open: boolean;
   onClose: () => void;
   onSubmit: (quizData: any) => void;
-  initialSectionId?: number;
-  quizToEdit?: QuizItem;
-  sections: any[];
+  initialLessonId?: number;
+  quizToEdit?: Quiz;
   editMode: boolean;
   additionalInfo?: {
     targetType: string;
@@ -78,163 +115,123 @@ interface DialogAddEditQuizProps {
   };
 }
 
-// Mock data cho quiz
-const mockQuizData: QuizItem[] = [
-  {
-    id: 1,
-    title: "Kiểm tra kiến thức React cơ bản",
-    description: "Bài kiểm tra đánh giá kiến thức về React hooks và lifecycle",
-    maxAttempts: 2,
-    passingScore: 70,
-    timeLimit: 30,
-    sectionId: 1,
-    questions: [
-      {
-        id: 1,
-        question: "useState hook được sử dụng để làm gì?",
-        options: [
-          "Quản lý side effects",
-          "Quản lý state trong functional component",
-          "Tối ưu performance",
-          "Xử lý routing",
-        ],
-        correctAnswer: 1,
-        explanation:
-          "useState là hook cơ bản để quản lý state trong functional component.",
-        points: 10,
-      },
-      {
-        id: 2,
-        question: "useEffect hook được gọi khi nào?",
-        options: [
-          "Chỉ khi component mount",
-          "Sau mỗi lần render",
-          "Khi dependencies thay đổi",
-          "Tất cả các trường hợp trên",
-        ],
-        correctAnswer: 3,
-        explanation:
-          "useEffect có thể được gọi trong cả 3 trường hợp tùy vào cách sử dụng dependencies.",
-        points: 10,
-      },
-      {
-        id: 3,
-        question: "useMemo hook dùng để làm gì?",
-        options: [
-          "Tối ưu performance bằng cách cache giá trị",
-          "Quản lý state",
-          "Xử lý side effects",
-          "Tạo ref",
-        ],
-        correctAnswer: 0,
-        explanation:
-          "useMemo giúp tối ưu performance bằng cách cache giá trị tính toán.",
-        points: 10,
-      },
-    ],
-  },
-];
-
 const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
   open,
   onClose,
   onSubmit,
-  initialSectionId,
+  initialLessonId,
   quizToEdit,
-  sections,
   editMode,
   additionalInfo,
 }) => {
+  const { id } = useParams();
+  const dispatch = useAppDispatch();
+  const lessonData = useAppSelector(selectAllQuizzes);
+
   // State cho form quiz
-  const [quizForm, setQuizForm] = useState({
+  const [quizForm, setQuizForm] = useState<Quiz>({
     title: "",
     description: "",
-    sectionId: 0,
-    maxAttempts: 3,
-    passingScore: 70,
+    lessonId: null,
     timeLimit: 30,
+    passingScore: 70,
+    attemptsAllowed: 1,
+    quizType: QuizType.PRACTICE,
+    showExplanation: true,
   });
 
   // State cho câu hỏi quiz
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
   const [currentQuestion, setCurrentQuestion] = useState<QuizQuestion>({
-    id: 0,
-    question: "",
-    options: ["", "", "", ""],
-    correctAnswer: 0,
-    explanation: "",
+    questionText: "",
+    questionType: QuestionType.MULTIPLE_CHOICE,
     points: 1,
+    orderNumber: 1,
+    options: [
+      { optionText: "", isCorrect: false, orderNumber: 1 },
+      { optionText: "", isCorrect: false, orderNumber: 2 },
+    ],
   });
   const [editingQuestionIndex, setEditingQuestionIndex] = useState<
     number | null
   >(null);
+  const [isLoading, setIsLoading] = useState(false);
 
-  // Thêm state để lưu quiz mẫu được chọn
-  const [selectedMockQuiz, setSelectedMockQuiz] = useState<number>(0);
+  useEffect(() => {
+    if (id) {
+      dispatch(fetchCourseQuizzes(Number(id)));
+    }
+  }, [dispatch, id]);
+
+  console.log("lessonData", lessonData);
 
   // Cập nhật useEffect để hiển thị mock data trong cả hai trường hợp
   useEffect(() => {
     if (open) {
-      const sampleQuiz = mockQuizData[0]; // Quiz mẫu
-
       if (editMode && quizToEdit) {
         // Tìm section của quiz khi edit
-        let sectionId = quizToEdit.sectionId || 0;
-
-        // Nếu không có sectionId trong quizToEdit, tìm từ sections
-        if (!sectionId) {
-          for (const section of sections) {
-            const quizIndex = section.contents?.findIndex(
-              (c: any) => c.id === quizToEdit.id && c.type === "quiz"
-            );
-            if (quizIndex !== -1) {
-              sectionId = section.id;
-              break;
-            }
-          }
-        }
+        let lessonId = quizToEdit.lessonId || null;
 
         // Cập nhật form với dữ liệu của quiz đang edit
         setQuizForm({
-          title: quizToEdit.title || "",
-          description: quizToEdit.description || "",
-          sectionId: sectionId,
-          maxAttempts: quizToEdit.maxAttempts || 3,
-          passingScore: quizToEdit.passingScore || 70,
-          timeLimit: quizToEdit.timeLimit || 30,
+          ...quizToEdit,
+          showExplanation: Boolean(quizToEdit.showExplanation),
         });
 
         // Load câu hỏi từ quiz đang edit
         // Nếu không có câu hỏi, tự động tải từ quiz mẫu
         if (quizToEdit.questions && quizToEdit.questions.length > 0) {
           setQuestions([...quizToEdit.questions]);
-        } else {
-          setQuestions(sampleQuiz.questions || []);
         }
       } else {
         // Khi thêm mới, tự động tải quiz mẫu
         setQuizForm({
-          title: sampleQuiz.title || "",
-          description: sampleQuiz.description || "",
-          sectionId: initialSectionId || 0,
-          maxAttempts: sampleQuiz.maxAttempts || 3,
-          passingScore: sampleQuiz.passingScore || 70,
-          timeLimit: sampleQuiz.timeLimit || 30,
+          title: "",
+          description: "",
+          lessonId: null,
+          timeLimit: 30,
+          passingScore: 70,
+          attemptsAllowed: 1,
+          quizType: QuizType.PRACTICE,
+          showExplanation: true,
         });
 
         // Tự động tải câu hỏi từ quiz mẫu
-        setQuestions(sampleQuiz.questions || []);
+        setQuestions([]);
       }
+
+      // Reset câu hỏi hiện tại
+      setCurrentQuestion({
+        questionText: "",
+        questionType: QuestionType.MULTIPLE_CHOICE,
+        points: 1,
+        orderNumber: 1,
+        options: [
+          { optionText: "", isCorrect: false, orderNumber: 1 },
+          { optionText: "", isCorrect: false, orderNumber: 2 },
+        ],
+      });
+      setEditingQuestionIndex(null);
     }
-  }, [open, editMode, quizToEdit, initialSectionId, sections]);
+  }, [open, editMode, quizToEdit, initialLessonId]);
 
   // Xử lý thay đổi option trong câu hỏi hiện tại
-  const handleOptionChange = (index: number, value: string) => {
-    const newOptions = [...currentQuestion.options];
-    newOptions[index] = value;
+  const handleOptionChange = (
+    index: number,
+    value: string,
+    isCorrect: boolean
+  ) => {
+    const newOptions = currentQuestion.options.map((opt, i) => ({
+      ...opt,
+      isCorrect: i === index ? isCorrect : false,
+    }));
+
     setCurrentQuestion({
       ...currentQuestion,
-      options: newOptions,
+      options: newOptions.map((opt, i) => ({
+        ...opt,
+        optionText: i === index ? value : opt.optionText,
+      })),
     });
   };
 
@@ -242,7 +239,14 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
   const addOption = () => {
     setCurrentQuestion({
       ...currentQuestion,
-      options: [...currentQuestion.options, ""],
+      options: [
+        ...currentQuestion.options,
+        {
+          optionText: "",
+          isCorrect: false,
+          orderNumber: currentQuestion.options.length + 1,
+        },
+      ],
     });
   };
 
@@ -256,25 +260,26 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
     newOptions.splice(index, 1);
 
     // Nếu xoá đáp án đúng, reset correctAnswer về 0
-    let newCorrectAnswer = currentQuestion.correctAnswer;
-    if (index === currentQuestion.correctAnswer) {
+    let newCorrectAnswer = currentQuestion.options.findIndex(
+      (opt) => opt.isCorrect
+    );
+    if (index === newCorrectAnswer) {
       newCorrectAnswer = 0;
-    } else if (index < currentQuestion.correctAnswer) {
+    } else if (index < newCorrectAnswer) {
       newCorrectAnswer--;
     }
 
     setCurrentQuestion({
       ...currentQuestion,
       options: newOptions,
-      correctAnswer: newCorrectAnswer,
     });
   };
 
   // Thêm câu hỏi vào quiz
   const addQuestion = () => {
     if (
-      !currentQuestion.question.trim() ||
-      currentQuestion.options.some((opt) => !opt.trim())
+      !currentQuestion.questionText.trim() ||
+      currentQuestion.options.some((opt) => !opt.optionText.trim())
     ) {
       return; // Validate câu hỏi và options
     }
@@ -294,12 +299,14 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
 
     // Reset câu hỏi hiện tại
     setCurrentQuestion({
-      id: Date.now(),
-      question: "",
-      options: ["", "", "", ""],
-      correctAnswer: 0,
-      explanation: "",
+      questionText: "",
+      questionType: QuestionType.MULTIPLE_CHOICE,
       points: 1,
+      orderNumber: questions.length + 1,
+      options: [
+        { optionText: "", isCorrect: false, orderNumber: 1 },
+        { optionText: "", isCorrect: false, orderNumber: 2 },
+      ],
     });
     setEditingQuestionIndex(null);
   };
@@ -326,23 +333,6 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
     }
   };
 
-  // Áp dụng quiz mẫu được chọn vào form
-  const applyMockQuiz = (quizId: number) => {
-    const sampleQuiz = mockQuizData.find((q) => q.id === quizId);
-    if (!sampleQuiz) return;
-
-    setQuizForm({
-      ...quizForm,
-      title: sampleQuiz.title,
-      description: sampleQuiz.description,
-      maxAttempts: sampleQuiz.maxAttempts || 3,
-      passingScore: sampleQuiz.passingScore || 70,
-      timeLimit: sampleQuiz.timeLimit || 30,
-    });
-
-    setQuestions(sampleQuiz.questions || []);
-  };
-
   // Xử lý submit form
   const handleSubmit = () => {
     // Validate form
@@ -351,14 +341,63 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
     }
 
     // Chuẩn bị dữ liệu để submit
-    const quizData = {
+    const quizData: Quiz = {
       ...quizForm,
-      questions: questions,
-      id: editMode && quizToEdit ? quizToEdit.id : Date.now(),
-      type: "quiz",
+      questions: questions.map((q, index) => ({
+        ...q,
+        orderNumber: index + 1,
+        options: q.options.map((opt, optIndex) => ({
+          ...opt,
+          orderNumber: optIndex + 1,
+        })),
+      })),
     };
 
-    onSubmit(quizData);
+    console.log("Quiz data to submit:", quizData);
+
+    // onClose();
+  };
+
+  // Add file upload handler in component
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsLoading(true);
+
+      const parsedQuestions = await parseQuizDocument(file);
+
+      // Update quiz form with initial values
+      setQuizForm((prev) => ({
+        ...prev,
+        title: prev.title || file.name.replace(/\.[^/.]+$/, ""),
+        description: prev.description || "",
+        timeLimit: 30,
+        passingScore: 70,
+        attemptsAllowed: 1,
+        quizType: QuizType.PRACTICE,
+        showExplanation: true,
+      }));
+
+      // Add parsed questions
+      setQuestions((prevQuestions) => [
+        ...prevQuestions,
+        ...parsedQuestions.map((q, index) => ({
+          ...q,
+          orderNumber: prevQuestions.length + index + 1,
+        })),
+      ]);
+
+      toast.success(`Đã nhập ${parsedQuestions.length} câu hỏi từ tệp`);
+    } catch (error) {
+      console.error("Error importing questions:", error);
+      toast.error("Không thể đọc tệp. Vui lòng kiểm tra định dạng tệp.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -431,43 +470,67 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
               setQuizForm({ ...quizForm, description: e.target.value })
             }
           />
-
-          <FormControl fullWidth>
-            <InputLabel>Phần học</InputLabel>
-            <Select
-              value={quizForm.sectionId}
-              label="Phần học"
-              onChange={(e) =>
-                setQuizForm({ ...quizForm, sectionId: Number(e.target.value) })
-              }
-            >
-              <MenuItem value={0}>Không thuộc phần học nào</MenuItem>
-              {sections.map((section) => (
-                <MenuItem key={section.id} value={section.id}>
-                  {section.title}
-                </MenuItem>
-              ))}
-            </Select>
-            <FormHelperText>
-              Nếu bài kiểm tra không thuộc phần học cụ thể, chọn "Không thuộc
-              phần học nào"
-            </FormHelperText>
-          </FormControl>
+          {lessonData.length > 0 && (
+            <FormControl fullWidth>
+              <InputLabel>Nội dung</InputLabel>
+              <Select
+                value={quizForm.lessonId || 0}
+                label="Nội dung"
+                onChange={(e) =>
+                  setQuizForm({
+                    ...quizForm,
+                    lessonId: Number(e.target.value) || null,
+                  })
+                }
+              >
+                <MenuItem value={0}>Không thuộc nội dung nào</MenuItem>
+                {lessonData.map((lesson) => (
+                  <MenuItem key={lesson.id} value={lesson.id}>
+                    {lesson.title}
+                  </MenuItem>
+                ))}
+              </Select>
+              <FormHelperText>
+                Nếu bài kiểm tra không thuộc nội dung cụ thể, chọn "Không thuộc
+                nội dung nào"
+              </FormHelperText>
+            </FormControl>
+          )}
 
           {/* Cài đặt quiz */}
-          <Box sx={{ display: "flex", gap: 2 }}>
+          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+            <FormControl sx={{ minWidth: 200 }}>
+              <InputLabel>Loại bài kiểm tra</InputLabel>
+              <Select
+                value={quizForm.quizType}
+                label="Loại bài kiểm tra"
+                onChange={(e) =>
+                  setQuizForm({
+                    ...quizForm,
+                    quizType: e.target.value as QuizType,
+                  })
+                }
+              >
+                <MenuItem value={QuizType.PRACTICE}>Luyện tập</MenuItem>
+                <MenuItem value={QuizType.HOMEWORK}>Bài tập về nhà</MenuItem>
+                <MenuItem value={QuizType.MIDTERM}>Thi giữa kỳ</MenuItem>
+                <MenuItem value={QuizType.FINAL}>Thi cuối kỳ</MenuItem>
+              </Select>
+            </FormControl>
+
             <TextField
               label="Số lần làm tối đa"
               type="number"
-              value={quizForm.maxAttempts}
+              value={quizForm.attemptsAllowed}
               onChange={(e) =>
                 setQuizForm({
                   ...quizForm,
-                  maxAttempts: parseInt(e.target.value) || 1,
+                  attemptsAllowed: parseInt(e.target.value) || 1,
                 })
               }
               InputProps={{ inputProps: { min: 1 } }}
             />
+
             <TextField
               label="Điểm đạt (%)"
               type="number"
@@ -480,6 +543,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
               }
               InputProps={{ inputProps: { min: 0, max: 100 } }}
             />
+
             <TextField
               label="Thời gian làm bài (phút)"
               type="number"
@@ -492,6 +556,21 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
               }
               InputProps={{ inputProps: { min: 0 } }}
               helperText="0 = không giới hạn thời gian"
+            />
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={quizForm.showExplanation}
+                  onChange={(e) =>
+                    setQuizForm({
+                      ...quizForm,
+                      showExplanation: e.target.checked,
+                    })
+                  }
+                />
+              }
+              label="Hiện giải thích sau khi nộp bài"
             />
           </Box>
 
@@ -508,23 +587,63 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
               }}
             >
               <Typography variant="h6">Câu hỏi ({questions.length})</Typography>
-              <Button
-                variant="outlined"
-                startIcon={<Add />}
-                onClick={() => {
-                  setCurrentQuestion({
-                    id: Date.now(),
-                    question: "",
-                    options: ["", "", "", ""],
-                    correctAnswer: 0,
-                    explanation: "",
-                    points: 1,
-                  });
-                  setEditingQuestionIndex(null);
-                }}
-              >
-                Thêm câu hỏi
-              </Button>
+              <Stack direction="row" spacing={1}>
+                <Button
+                  variant="outlined"
+                  startIcon={<Add />}
+                  onClick={() => {
+                    setCurrentQuestion({
+                      questionText: "",
+                      questionType: QuestionType.MULTIPLE_CHOICE,
+                      points: 1,
+                      orderNumber: questions.length + 1,
+                      options: [
+                        { optionText: "", isCorrect: false, orderNumber: 1 },
+                        { optionText: "", isCorrect: false, orderNumber: 2 },
+                      ],
+                    });
+                    setEditingQuestionIndex(null);
+                  }}
+                >
+                  Thêm câu hỏi
+                </Button>
+                <Button
+                  component="label"
+                  variant="outlined"
+                  startIcon={<CloudUpload />}
+                  disabled={isLoading}
+                >
+                  Nhập từ tệp
+                  <input
+                    type="file"
+                    hidden
+                    accept=".docx,.pdf"
+                    onChange={handleFileUpload}
+                  />
+                </Button>
+                <Button
+                  onClick={async () => {
+                    try {
+                      const blob = await generateDocxFromTemplate();
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement("a");
+                      a.href = url;
+                      a.download = "mau-cau-hoi-quiz.docx"; // Changed extension to .docx
+                      document.body.appendChild(a);
+                      a.click();
+                      document.body.removeChild(a);
+                      URL.revokeObjectURL(url);
+                    } catch (error) {
+                      console.error("Error generating template:", error);
+                      toast.error("Có lỗi khi tạo file mẫu");
+                    }
+                  }}
+                  size="small"
+                  startIcon={<Download />}
+                >
+                  Tải mẫu định dạng
+                </Button>
+              </Stack>
             </Box>
 
             {questions.length > 0 ? (
@@ -580,7 +699,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                               whiteSpace: "nowrap",
                             }}
                           >
-                            {question.question}
+                            {question.questionText}
                           </Typography>
                           <Typography
                             variant="caption"
@@ -624,16 +743,14 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                                 value={optIndex}
                                 control={
                                   <Radio
-                                    checked={
-                                      optIndex === question.correctAnswer
-                                    }
+                                    checked={option.isCorrect}
                                     size="small"
                                     readOnly
                                   />
                                 }
-                                label={option}
+                                label={option.optionText}
                               />
-                              {optIndex === question.correctAnswer && (
+                              {option.isCorrect && (
                                 <CheckCircle
                                   fontSize="small"
                                   color="success"
@@ -643,14 +760,14 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                             </ListItem>
                           ))}
                         </List>
-                        {question.explanation && (
+                        {question.correctExplanation && (
                           <Box sx={{ pl: 6, mt: 1 }}>
                             <Typography
                               variant="caption"
                               color="text.secondary"
                             >
                               <strong>Giải thích:</strong>{" "}
-                              {question.explanation}
+                              {question.correctExplanation}
                             </Typography>
                           </Box>
                         )}
@@ -698,11 +815,11 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
               <TextField
                 label="Câu hỏi"
                 fullWidth
-                value={currentQuestion.question}
+                value={currentQuestion.questionText}
                 onChange={(e) =>
                   setCurrentQuestion({
                     ...currentQuestion,
-                    question: e.target.value,
+                    questionText: e.target.value,
                   })
                 }
                 required
@@ -711,11 +828,11 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
               <TextField
                 label="Giải thích đáp án"
                 fullWidth
-                value={currentQuestion.explanation || ""}
+                value={currentQuestion.correctExplanation || ""}
                 onChange={(e) =>
                   setCurrentQuestion({
                     ...currentQuestion,
-                    explanation: e.target.value,
+                    correctExplanation: e.target.value,
                   })
                 }
                 helperText="Giải thích sẽ hiển thị sau khi học viên trả lời câu hỏi"
@@ -737,11 +854,16 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
               <Typography variant="subtitle2">Các lựa chọn:</Typography>
 
               <RadioGroup
-                value={currentQuestion.correctAnswer}
+                value={currentQuestion.options.findIndex(
+                  (opt) => opt.isCorrect
+                )}
                 onChange={(e) =>
                   setCurrentQuestion({
                     ...currentQuestion,
-                    correctAnswer: parseInt(e.target.value),
+                    options: currentQuestion.options.map((opt, i) => ({
+                      ...opt,
+                      isCorrect: i === parseInt(e.target.value),
+                    })),
                   })
                 }
               >
@@ -762,9 +884,13 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                     />
                     <TextField
                       label={`Lựa chọn ${index + 1}`}
-                      value={option}
+                      value={option.optionText}
                       onChange={(e) =>
-                        handleOptionChange(index, e.target.value)
+                        handleOptionChange(
+                          index,
+                          e.target.value,
+                          option.isCorrect
+                        )
                       }
                       fullWidth
                       size="small"
@@ -795,12 +921,14 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                     onClick={() => {
                       setEditingQuestionIndex(null);
                       setCurrentQuestion({
-                        id: Date.now(),
-                        question: "",
-                        options: ["", "", "", ""],
-                        correctAnswer: 0,
-                        explanation: "",
+                        questionText: "",
+                        questionType: QuestionType.MULTIPLE_CHOICE,
                         points: 1,
+                        orderNumber: questions.length + 1,
+                        options: [
+                          { optionText: "", isCorrect: false, orderNumber: 1 },
+                          { optionText: "", isCorrect: false, orderNumber: 2 },
+                        ],
                       });
                     }}
                     sx={{ mr: 1 }}
@@ -812,8 +940,10 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                   variant="contained"
                   onClick={addQuestion}
                   disabled={
-                    !currentQuestion.question.trim() ||
-                    currentQuestion.options.some((opt) => !opt.trim())
+                    !currentQuestion.questionText.trim() ||
+                    currentQuestion.options.some(
+                      (opt) => !opt.optionText.trim()
+                    )
                   }
                 >
                   {editingQuestionIndex !== null

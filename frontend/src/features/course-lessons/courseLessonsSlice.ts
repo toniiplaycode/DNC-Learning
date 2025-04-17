@@ -6,10 +6,17 @@ import {
   createCourseLesson,
   updateCourseLesson,
   deleteCourseLesson,
+  fetchCourseQuizzes,
 } from "./courseLessonsApiSlice";
+import { Quiz } from "../../types/quiz.types";
+
+interface QuizLesson extends CourseLesson {
+  quizzes?: Quiz[];
+}
 
 interface CourseLessonsState {
   courseLessons: CourseLesson[];
+  quizzes: QuizLesson[];
   currentCourseLesson: CourseLesson | null;
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
@@ -17,6 +24,7 @@ interface CourseLessonsState {
 
 const initialState: CourseLessonsState = {
   courseLessons: [],
+  quizzes: [],
   currentCourseLesson: null,
   status: "idle",
   error: null,
@@ -74,6 +82,20 @@ const courseLessonsSlice = createSlice({
         state.error =
           (action.payload as string) || "Đã xảy ra lỗi khi tải bài học theo ID";
       })
+
+      .addCase(fetchCourseQuizzes.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchCourseQuizzes.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.quizzes = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchCourseQuizzes.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
+
       // Create a new course lesson
       .addCase(createCourseLesson.pending, (state) => {
         state.status = "loading";

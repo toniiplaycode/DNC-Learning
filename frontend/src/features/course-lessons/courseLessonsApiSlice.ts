@@ -42,6 +42,22 @@ export const fetchCourseLessonById = createAsyncThunk(
   }
 );
 
+export const fetchCourseQuizzes = createAsyncThunk(
+  "courseLessons/fetchCourseQuizzes",
+  async (courseId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get(
+        `/course-lessons/course/${courseId}/quizzes`
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data || "Không thể tải danh sách bài kiểm tra"
+      );
+    }
+  }
+);
+
 // Create a new course lesson
 export const createCourseLesson = createAsyncThunk(
   "courseLessons/createCourseLesson",
