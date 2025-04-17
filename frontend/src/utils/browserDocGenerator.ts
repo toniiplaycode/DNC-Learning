@@ -34,51 +34,28 @@ export const generateDocxFromTemplate = async () => {
               ],
             }),
             new Paragraph({}),
-            // Question 1
+            // Example Question
             new Paragraph({
               children: [
                 new TextRun({
-                  text: "Question: Đây là câu hỏi thứ nhất?",
+                  text: "--Question: Câu hỏi?",
                   bold: true,
                 }),
               ],
             }),
-            new Paragraph({ children: [new TextRun("A. Đáp án thứ nhất")] }),
-            new Paragraph({ children: [new TextRun("B. Đáp án thứ hai")] }),
-            new Paragraph({ children: [new TextRun("C. Đáp án thứ ba")] }),
-            new Paragraph({ children: [new TextRun("D. Đáp án thứ tư")] }),
-            new Paragraph({
-              children: [new TextRun({ text: "Correct: 2", color: "2E74B5" })],
-            }),
+            new Paragraph({ children: [new TextRun("-A. Đáp án 1")] }),
+            new Paragraph({ children: [new TextRun("-B. Đáp án 2")] }),
+            new Paragraph({ children: [new TextRun("-C. Đáp án 3")] }),
+            new Paragraph({ children: [new TextRun("-D. Đáp án 4")] }),
             new Paragraph({
               children: [
-                new TextRun({
-                  text: "Explanation: Đây là giải thích tại sao đáp án B là đúng",
-                  color: "548235",
-                }),
+                new TextRun({ text: "--Correct: 1", color: "2E74B5" }),
               ],
             }),
-            new Paragraph({}),
-
-            // Question 2
             new Paragraph({
               children: [
                 new TextRun({
-                  text: "Question: Đây là câu hỏi thứ hai?",
-                  bold: true,
-                }),
-              ],
-            }),
-            new Paragraph({ children: [new TextRun("1. Lựa chọn một")] }),
-            new Paragraph({ children: [new TextRun("2. Lựa chọn hai")] }),
-            new Paragraph({ children: [new TextRun("3. Lựa chọn ba")] }),
-            new Paragraph({
-              children: [new TextRun({ text: "Correct: 1", color: "2E74B5" })],
-            }),
-            new Paragraph({
-              children: [
-                new TextRun({
-                  text: "Explanation: Giải thích tại sao lựa chọn 1 là đúng",
+                  text: "--Explanation: Đáp án 1 đúng vì...",
                   color: "548235",
                 }),
               ],
@@ -92,10 +69,10 @@ export const generateDocxFromTemplate = async () => {
               ],
             }),
             ...[
-              "Mỗi câu hỏi bắt đầu bằng số thứ tự và dấu chấm (1., 2.,...)",
-              "Các đáp án có thể đánh số A,B,C,D hoặc 1,2,3,4",
-              "Đáp án đúng đánh dấu bằng 'Correct: X' (X là số thứ tự đáp án)",
-              "Giải thích không bắt buộc, bắt đầu bằng 'Explanation:'",
+              "Bắt đầu câu hỏi với '--Question:'",
+              "Các đáp án bắt đầu với dấu gạch ngang '-A.', '-B.', '-C.', '-D.'",
+              "Đáp án đúng đánh dấu bằng '--Correct: X' (X là số thứ tự đáp án)",
+              "Giải thích bắt đầu bằng '--Explanation:'",
               "Các câu hỏi cách nhau bởi một dòng trống",
             ].map(
               (text) =>

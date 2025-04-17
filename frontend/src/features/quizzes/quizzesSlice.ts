@@ -96,7 +96,7 @@ export const fetchQuizzesByCourse = createAsyncThunk(
 
 export const createQuiz = createAsyncThunk(
   "quizzes/create",
-  async (data: CreateQuizData, { rejectWithValue }) => {
+  async (data: any, { rejectWithValue }) => {
     try {
       const response = await api.post("/quizzes", data);
       return response.data;
@@ -338,8 +338,6 @@ const quizzesSlice = createSlice({
       })
       .addCase(createQuiz.fulfilled, (state, action) => {
         state.status = "succeeded";
-        state.quizzes.unshift(action.payload);
-        state.currentQuiz = action.payload;
         state.error = null;
       })
       .addCase(createQuiz.rejected, (state, action) => {

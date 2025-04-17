@@ -49,6 +49,8 @@ import { toast } from "react-toastify";
 import { generateDocxFromTemplate } from "../../../utils/browserDocGenerator";
 import { fetchCourseQuizzes } from "../../../features/course-lessons/courseLessonsApiSlice";
 import { selectAllQuizzes } from "../../../features/course-lessons/courseLessonsSelector";
+import { createQuiz } from "../../../features/quizzes/quizzesSlice";
+import { fetchCourseById } from "../../../features/courses/coursesApiSlice";
 
 // Định nghĩa kiểu QuizOption
 interface QuizOption {
@@ -134,7 +136,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
     description: "",
     lessonId: null,
     timeLimit: 30,
-    passingScore: 70,
+    passingScore: 50,
     attemptsAllowed: 1,
     quizType: QuizType.PRACTICE,
     showExplanation: true,
@@ -163,8 +165,6 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
     }
   }, [dispatch, id]);
 
-  console.log("lessonData", lessonData);
-
   // Cập nhật useEffect để hiển thị mock data trong cả hai trường hợp
   useEffect(() => {
     if (open) {
@@ -190,7 +190,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
           description: "",
           lessonId: null,
           timeLimit: 30,
-          passingScore: 70,
+          passingScore: 50,
           attemptsAllowed: 1,
           quizType: QuizType.PRACTICE,
           showExplanation: true,
@@ -334,7 +334,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
   };
 
   // Xử lý submit form
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Validate form
     if (!quizForm.title.trim() || questions.length === 0) {
       return;
@@ -353,9 +353,19 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
       })),
     };
 
+    await dispatch(createQuiz(quizData));
+    await dispatch(fetchCourseQuizzes(Number(id)));
+    await dispatch(fetchCourseById(Number(id)));
+
+    toast.success(
+      editMode
+        ? "Cập nhật bài kiểm tra thành công!"
+        : "Thêm bài kiểm tra thành công!"
+    );
+
     console.log("Quiz data to submit:", quizData);
 
-    // onClose();
+    onClose();
   };
 
   // Add file upload handler in component
@@ -375,20 +385,31 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
         ...prev,
         title: prev.title || file.name.replace(/\.[^/.]+$/, ""),
         description: prev.description || "",
-        timeLimit: 30,
-        passingScore: 70,
-        attemptsAllowed: 1,
-        quizType: QuizType.PRACTICE,
-        showExplanation: true,
+        timeLimit: quizForm.timeLimit || 30,
+        passingScore: quizForm.passingScore || 50,
+        attemptsAllowed: quizForm.attemptsAllowed || 1,
+        quizType: quizForm.quizType || QuizType.PRACTICE,
+        showExplanation: quizForm.showExplanation || true,
       }));
 
-      // Add parsed questions
+      // Add parsed questions with proper type casting
       setQuestions((prevQuestions) => [
         ...prevQuestions,
-        ...parsedQuestions.map((q, index) => ({
-          ...q,
-          orderNumber: prevQuestions.length + index + 1,
-        })),
+        ...parsedQuestions.map(
+          (q, index) =>
+            ({
+              ...q,
+              orderNumber: prevQuestions.length + index + 1,
+              options: q.options || [], // Ensure options is never undefined
+              id: q.id || Date.now() + Math.random(),
+              quizId: q.quizId || Date.now(),
+              questionType: q.questionType || QuestionType.MULTIPLE_CHOICE,
+              points: q.points || 1,
+              correctExplanation: q.correctExplanation || "",
+              createdAt: q.createdAt || new Date().toISOString(),
+              updatedAt: q.updatedAt || new Date().toISOString(),
+            } as QuizQuestion)
+        ),
       ]);
 
       toast.success(`Đã nhập ${parsedQuestions.length} câu hỏi từ tệp`);
@@ -653,7 +674,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                   borderRadius: 1,
                   border: "1px solid",
                   borderColor: "divider",
-                  maxHeight: "300px",
+                  maxHeight: "500px",
                   overflow: "auto",
                 }}
               >
@@ -693,10 +714,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                           </Badge>
                           <Typography
                             sx={{
-                              flexGrow: 1,
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                              whiteSpace: "nowrap",
+                              width: "100%",
                             }}
                           >
                             {question.questionText}
