@@ -563,28 +563,12 @@ const InstructorCourseView = () => {
     setOpenEditDocumentModal(true);
   };
 
-  // Hàm mở modal thêm quiz
-  const handleOpenAddQuizModal = (sectionId?: number) => {
-    setCurrentSectionId(sectionId || null);
-    setOpenAddQuizModal(true);
-  };
-
   // Hàm mở modal sửa quiz
   const handleOpenEditQuizModal = (quiz: any, sectionId?: number) => {
     setQuizToEdit(quiz);
-    setCurrentSectionId(sectionId || null);
+    // setCurrentSectionId(sectionId || null);
+    console.log("Sửa quiz:", quiz);
     setOpenEditQuizModal(true);
-  };
-
-  // Xử lý khi cập nhật quiz
-  const handleUpdateQuiz = (quizData: any) => {
-    console.log("Cập nhật quiz:", quizData);
-    // Thực hiện cập nhật quiz trong state hoặc gọi API
-
-    // Đóng modal
-    setOpenEditQuizModal(false);
-    setQuizToEdit(null);
-    setCurrentSectionId(null);
   };
 
   // Hàm mở modal thêm assignment
@@ -632,12 +616,6 @@ const InstructorCourseView = () => {
 
     // Đóng dialog
     setOpenSettingsModal(false);
-  };
-
-  // Thêm hàm xử lý xóa quiz và assignment
-  const handleDeleteQuiz = (quizId: number) => {
-    console.log("Xóa quiz:", quizId);
-    // Logic xóa quiz
   };
 
   const handleDeleteAssignment = (assignmentId: number) => {
@@ -833,7 +811,6 @@ const InstructorCourseView = () => {
               <CourseQuizAssignment
                 assignments={mockAssignments}
                 onEditQuiz={handleOpenEditQuizModal}
-                onDeleteQuiz={handleDeleteQuiz}
                 onEditAssignment={handleOpenEditAssignmentModal}
                 onDeleteAssignment={handleDeleteAssignment}
                 isInstructor={true}
@@ -890,7 +867,6 @@ const InstructorCourseView = () => {
       <DialogAddEditQuiz
         open={openEditQuizModal}
         onClose={() => setOpenEditQuizModal(false)}
-        onSubmit={handleUpdateQuiz}
         quizToEdit={quizToEdit || undefined}
         editMode={true}
       />

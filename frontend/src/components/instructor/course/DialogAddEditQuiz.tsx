@@ -50,7 +50,11 @@ import { generateDocxFromTemplate } from "../../../utils/browserDocGenerator";
 import { fetchCourseQuizzes } from "../../../features/course-lessons/courseLessonsApiSlice";
 import { selectAlCourseLessonlQuizzes } from "../../../features/course-lessons/courseLessonsSelector";
 import { selectAllQuizzes } from "../../../features/quizzes/quizzesSelectors";
-import { createQuiz } from "../../../features/quizzes/quizzesSlice";
+import {
+  createQuiz,
+  fetchQuizzesByCourse,
+  updateQuiz,
+} from "../../../features/quizzes/quizzesSlice";
 import { fetchCourseById } from "../../../features/courses/coursesApiSlice";
 
 // Định nghĩa kiểu QuizOption
@@ -107,7 +111,6 @@ enum QuestionType {
 interface DialogAddEditQuizProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (quizData: any) => void;
   initialLessonId?: number;
   quizToEdit?: Quiz;
   editMode: boolean;
@@ -121,7 +124,6 @@ interface DialogAddEditQuizProps {
 const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
   open,
   onClose,
-  onSubmit,
   initialLessonId,
   quizToEdit,
   editMode,
@@ -366,17 +368,24 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
       })),
     };
 
-    await dispatch(createQuiz(quizData));
+    if (!editMode) {
+      await dispatch(createQuiz(quizData));
+      toast.success("Thêm bài kiểm tra thành công!");
+    } else if (editMode) {
+      await dispatch(updateQuiz(quizData)).then((result) => {
+        if (result?.error?.message == "Rejected") {
+          toast.error(
+            "Không thể sửa bài kiểm tra vì đã có học sinh/sinh viên làm !"
+          );
+          return;
+        }
+        toast.success("Cập nhật bài kiểm tra thành công!");
+      });
+    }
+
     await dispatch(fetchCourseQuizzes(Number(id)));
     await dispatch(fetchCourseById(Number(id)));
-
-    toast.success(
-      editMode
-        ? "Cập nhật bài kiểm tra thành công!"
-        : "Thêm bài kiểm tra thành công!"
-    );
-
-    console.log("Quiz data to submit:", quizData);
+    await dispatch(fetchQuizzesByCourse(Number(id)));
 
     onClose();
   };
@@ -541,7 +550,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                       {lesson.title}
                       {hasQuiz && (
                         <Typography component="span" className="quiz-indicator">
-                          (đã có bài kiểm tra)
+                          &nbsp; (đã có bài kiểm tra)
                         </Typography>
                       )}
                     </MenuItem>
@@ -791,7 +800,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                       </AccordionSummary>
                       <AccordionDetails sx={{ px: 2, pb: 2, pt: 0 }}>
                         <List dense>
-                          {question.options.map((option, optIndex) => (
+                          {question?.options?.map((option, optIndex) => (
                             <ListItem key={optIndex} sx={{ pl: 6 }}>
                               <FormControlLabel
                                 value={optIndex}

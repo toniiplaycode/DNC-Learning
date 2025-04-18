@@ -110,12 +110,9 @@ export const createQuiz = createAsyncThunk(
 
 export const updateQuiz = createAsyncThunk(
   "quizzes/update",
-  async (
-    { id, data }: { id: number; data: UpdateQuizData },
-    { rejectWithValue }
-  ) => {
+  async (data: any, { rejectWithValue }) => {
     try {
-      const response = await api.patch(`/quizzes/${id}`, data);
+      const response = await api.patch(`/quizzes/${Number(data.id)}`, data);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
@@ -129,8 +126,8 @@ export const deleteQuiz = createAsyncThunk(
   "quizzes/delete",
   async (id: number, { rejectWithValue }) => {
     try {
-      await api.delete(`/quizzes/${id}`);
-      return id;
+      const response = await api.delete(`/quizzes/${id}`);
+      return response.data;
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Không thể xóa bài kiểm tra"
@@ -267,6 +264,7 @@ const initialState: QuizzesState = {
   currentAttempt: null,
   quizResult: null,
   status: "idle",
+  statusUpdateQuiz: "idle",
   error: null,
 };
 
@@ -347,28 +345,13 @@ const quizzesSlice = createSlice({
 
       // Update quiz
       .addCase(updateQuiz.pending, (state) => {
-        state.status = "loading";
+        state.statusUpdateQuiz = "loading";
       })
       .addCase(updateQuiz.fulfilled, (state, action) => {
-        state.status = "succeeded";
-        const updatedQuiz = action.payload;
-
-        state.quizzes = state.quizzes.map((quiz) =>
-          quiz.id === updatedQuiz.id ? updatedQuiz : quiz
-        );
-
-        state.lessonQuizzes = state.lessonQuizzes.map((quiz) =>
-          quiz.id === updatedQuiz.id ? updatedQuiz : quiz
-        );
-
-        if (state.currentQuiz?.id === updatedQuiz.id) {
-          state.currentQuiz = updatedQuiz;
-        }
-
-        state.error = null;
+        state.statusUpdateQuiz = "succeeded";
       })
       .addCase(updateQuiz.rejected, (state, action) => {
-        state.status = "failed";
+        state.statusUpdateQuiz = "failed";
         state.error = action.payload as string;
       })
 
@@ -378,18 +361,6 @@ const quizzesSlice = createSlice({
       })
       .addCase(deleteQuiz.fulfilled, (state, action) => {
         state.status = "succeeded";
-        const id = action.payload as number;
-
-        state.quizzes = state.quizzes.filter((quiz) => quiz.id !== id);
-        state.lessonQuizzes = state.lessonQuizzes.filter(
-          (quiz) => quiz.id !== id
-        );
-
-        if (state.currentQuiz?.id === id) {
-          state.currentQuiz = null;
-        }
-
-        state.error = null;
       })
       .addCase(deleteQuiz.rejected, (state, action) => {
         state.status = "failed";

@@ -185,6 +185,8 @@ export class QuizzesService {
         'sections.lessons',
         'sections.lessons.quizzes', // Load relation đến quizzes
         'sections.lessons.quizzes.questions',
+        'sections.lessons.quizzes.questions.options',
+        'sections.lessons.quizzes.attempts',
       ],
     });
 
@@ -226,9 +228,93 @@ export class QuizzesService {
     return this.quizzesRepository.save(updatedQuiz);
   }
 
-  async remove(id: number): Promise<void> {
-    const quiz = await this.findOne(id);
-    await this.quizzesRepository.remove(quiz);
+  async remove(
+    id: number,
+  ): Promise<{ success: boolean; message: string; error?: string }> {
+    const queryRunner =
+      this.quizzesRepository.manager.connection.createQueryRunner();
+
+    try {
+      // Start transaction
+      await queryRunner.connect();
+      await queryRunner.startTransaction();
+
+      // Check if quiz exists with relations
+      const quiz = await queryRunner.manager.findOne(Quiz, {
+        where: { id },
+        relations: ['questions', 'questions.options'],
+      });
+
+      if (!quiz) {
+        throw new NotFoundException(`Không tìm thấy bài kiểm tra với ID ${id}`);
+      }
+
+      // Check for attempts
+      const hasAttempts = await queryRunner.manager.findOne(QuizAttempt, {
+        where: { quizId: id },
+      });
+
+      if (hasAttempts) {
+        return {
+          success: false,
+          message: 'Không thể xóa bài kiểm tra vì đã có học viên làm bài',
+          error: 'Rejected',
+        };
+      }
+
+      try {
+        // Delete in correct order to maintain referential integrity
+        if (quiz.questions) {
+          // Delete options first
+          for (const question of quiz.questions) {
+            if (question.options) {
+              await queryRunner.manager.delete(QuizOption, {
+                questionId: question.id,
+              });
+            }
+          }
+
+          // Then delete questions
+          await queryRunner.manager.delete(QuizQuestion, {
+            quizId: id,
+          });
+        }
+
+        // Finally delete quiz
+        await queryRunner.manager.remove(quiz);
+
+        // Commit if all operations succeeded
+        await queryRunner.commitTransaction();
+
+        return {
+          success: true,
+          message: 'Xóa bài kiểm tra thành công',
+        };
+      } catch (err) {
+        // Rollback on any error during deletion
+        await queryRunner.rollbackTransaction();
+
+        return {
+          success: false,
+          message: 'Không thể xóa bài kiểm tra vì còn dữ liệu liên quan',
+          error: 'Rejected',
+        };
+      }
+    } catch (error) {
+      // Handle any other errors
+      if (queryRunner.isTransactionActive) {
+        await queryRunner.rollbackTransaction();
+      }
+
+      return {
+        success: false,
+        message: 'Lỗi khi xóa bài kiểm tra',
+        error: 'Rejected',
+      };
+    } finally {
+      // Always release query runner
+      await queryRunner.release();
+    }
   }
 
   // Quản lý câu hỏi
@@ -555,6 +641,100 @@ export class QuizzesService {
       await queryRunner.rollbackTransaction();
       throw new BadRequestException(
         'Lỗi khi tạo bài kiểm tra: ' + error.message,
+      );
+    } finally {
+      // Release queryRunner
+      await queryRunner.release();
+    }
+  }
+
+  async updateQuizWithQuestionsAndOptions(
+    quizId: number,
+    updateQuizDto: any,
+  ): Promise<Quiz> {
+    const queryRunner =
+      this.quizzesRepository.manager.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // 1. Update the quiz
+      const quiz = await queryRunner.manager.findOne(Quiz, {
+        where: { id: quizId },
+      });
+
+      if (!quiz) {
+        throw new NotFoundException(`Quiz with ID ${quizId} not found`);
+      }
+
+      // Update quiz properties
+      Object.assign(quiz, {
+        title: updateQuizDto.title,
+        description: updateQuizDto.description,
+        lessonId: updateQuizDto.lessonId,
+        timeLimit: updateQuizDto.timeLimit,
+        passingScore: updateQuizDto.passingScore,
+        attemptsAllowed: updateQuizDto.attemptsAllowed,
+        quizType: updateQuizDto.quizType,
+        showExplanation: updateQuizDto.showExplanation,
+      });
+
+      await queryRunner.manager.save(Quiz, quiz);
+
+      // 2. Delete existing questions and options
+      await queryRunner.manager.delete(QuizOption, {
+        questionId: In(
+          await queryRunner.manager
+            .find(QuizQuestion, {
+              where: { quizId },
+              select: ['id'],
+            })
+            .then((questions) => questions.map((q) => q.id)),
+        ),
+      });
+      await queryRunner.manager.delete(QuizQuestion, { quizId });
+
+      // 3. Create new questions
+      const questions = updateQuizDto.questions.map((questionDto) => ({
+        questionText: questionDto.questionText,
+        questionType: questionDto.questionType,
+        points: questionDto.points,
+        orderNumber: questionDto.orderNumber,
+        correctExplanation: questionDto.correctExplanation,
+        quizId: quiz.id,
+      }));
+
+      const savedQuestions = await queryRunner.manager.save(
+        QuizQuestion,
+        questions,
+      );
+
+      // 4. Create new options for each question
+      const options: QuizOption[] = [];
+      savedQuestions.forEach((question, index) => {
+        const questionOptions = updateQuizDto.questions[index].options.map(
+          (optionDto) => ({
+            optionText: optionDto.optionText,
+            isCorrect: optionDto.isCorrect,
+            orderNumber: optionDto.orderNumber,
+            questionId: question.id,
+          }),
+        );
+        options.push(...questionOptions);
+      });
+
+      await queryRunner.manager.save(QuizOption, options);
+
+      // Commit transaction
+      await queryRunner.commitTransaction();
+
+      // Return updated quiz with questions and options
+      return this.findOne(quiz.id);
+    } catch (error) {
+      // Rollback transaction on error
+      await queryRunner.rollbackTransaction();
+      throw new BadRequestException(
+        'Lỗi khi cập nhật bài kiểm tra: ' + error.message,
       );
     } finally {
       // Release queryRunner

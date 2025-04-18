@@ -131,6 +131,7 @@ export interface QuizzesState {
   userAttempts: QuizAttempt[];
   currentAttempt: QuizAttempt | null;
   quizResult: QuizResult | null;
+  statusUpdateQuiz: "idle" | "loading" | "succeeded" | "failed";
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
 }
@@ -150,6 +151,7 @@ export interface CreateQuizData {
 }
 
 export interface UpdateQuizData {
+  id?: number;
   title?: string;
   description?: string;
   timeLimit?: number;

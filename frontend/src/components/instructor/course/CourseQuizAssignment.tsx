@@ -27,11 +27,18 @@ import {
   QueryBuilder,
   CheckCircle,
   Info,
+  Check,
 } from "@mui/icons-material";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { selectAllQuizzes } from "../../../features/quizzes/quizzesSelectors";
-import { fetchQuizzesByCourse } from "../../../features/quizzes/quizzesSlice";
+import {
+  deleteQuiz,
+  fetchQuizzesByCourse,
+} from "../../../features/quizzes/quizzesSlice";
 import { useParams } from "react-router-dom";
+import { toast } from "react-toastify";
+import { fetchCourseQuizzes } from "../../../features/course-lessons/courseLessonsApiSlice";
+import { fetchCourseById } from "../../../features/courses/coursesApiSlice";
 
 interface AssignmentItem {
   id: number;
@@ -46,7 +53,6 @@ interface AssignmentItem {
 interface CourseQuizAssignmentProps {
   assignments?: AssignmentItem[];
   onEditQuiz?: (quiz: any) => void;
-  onDeleteQuiz?: (quizId: number) => void;
   onEditAssignment?: (assignment: AssignmentItem) => void;
   onDeleteAssignment?: (assignmentId: number) => void;
   isInstructor?: boolean;
@@ -55,7 +61,6 @@ interface CourseQuizAssignmentProps {
 const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
   assignments = [],
   onEditQuiz,
-  onDeleteQuiz,
   onEditAssignment,
   onDeleteAssignment,
   isInstructor = true,
@@ -69,6 +74,8 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
     type: "",
     id: 0,
   });
+
+  console.log(quizzesData);
 
   useEffect(() => {
     dispatch(fetchQuizzesByCourse(Number(id)));
@@ -86,9 +93,21 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
     });
   };
 
-  const handleConfirmDelete = () => {
-    if (deleteDialog.type === "quiz" && onDeleteQuiz) {
-      onDeleteQuiz(deleteDialog.id);
+  const handleConfirmDelete = async () => {
+    if (deleteDialog.type === "quiz") {
+      await dispatch(deleteQuiz(deleteDialog.id)).then((result) => {
+        if (result?.payload?.error == "Rejected") {
+          toast.error(
+            "Không thể xóa bài kiểm tra vì đã có học sinh/sinh viên làm !"
+          );
+          return;
+        }
+        toast.success("Xóa bài bài kiểm tra thành công!");
+      });
+
+      await dispatch(fetchCourseQuizzes(Number(id)));
+      await dispatch(fetchCourseById(Number(id)));
+      await dispatch(fetchQuizzesByCourse(Number(id)));
     } else if (deleteDialog.type === "assignment" && onDeleteAssignment) {
       onDeleteAssignment(deleteDialog.id);
     }
@@ -137,14 +156,22 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
                           <IconButton
                             onClick={() => onEditQuiz && onEditQuiz(quiz)}
                             size="small"
-                            color="primary"
+                            color={
+                              quiz?.attempts?.length == 0
+                                ? "primary"
+                                : "disabled"
+                            }
                           >
                             <Edit />
                           </IconButton>
                           <IconButton
                             onClick={() => handleDeleteClick("quiz", quiz.id)}
                             size="small"
-                            color="error"
+                            color={
+                              quiz?.attempts?.length == 0
+                                ? "primary"
+                                : "disabled"
+                            }
                           >
                             <Delete />
                           </IconButton>
@@ -152,9 +179,25 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
                       )}
                     </Stack>
 
-                    <Typography variant="body2" color="text.secondary">
-                      {quiz.description}
-                    </Typography>
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      justifyContent="space-between"
+                    >
+                      <Typography variant="body2" color="text.secondary">
+                        {quiz.description}
+                      </Typography>
+
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <Typography
+                          variant="body2"
+                          color="primary"
+                          fontWeight={600}
+                        >
+                          Đã có {quiz?.attempts?.length} lần làm bài
+                        </Typography>
+                      </Stack>
+                    </Stack>
 
                     <Divider />
 

@@ -15,6 +15,8 @@ export const selectCurrentAttempt = (state: RootState) =>
   state.quizzes.currentAttempt;
 export const selectQuizResult = (state: RootState) => state.quizzes.quizResult;
 export const selectQuizzesStatus = (state: RootState) => state.quizzes.status;
+export const selectQuizzesUpdateStatus = (state: RootState) =>
+  state.quizzes.statusUpdateQuiz;
 export const selectQuizzesError = (state: RootState) => state.quizzes.error;
 
 // Derived selectors

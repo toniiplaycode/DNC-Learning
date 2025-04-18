@@ -35,7 +35,7 @@ export class QuizzesController {
   ) {}
 
   @Post()
-  async create(@Body() createQuizDto: any) {
+  async createQuizWithQuestionsAndOptions(@Body() createQuizDto: any) {
     const quiz =
       await this.quizzesService.createQuizWithQuestionsAndOptions(
         createQuizDto,
@@ -44,6 +44,22 @@ export class QuizzesController {
       status: 'success',
       data: quiz,
       message: 'Tạo bài kiểm tra thành công',
+    };
+  }
+
+  @Patch(':id')
+  async updateQuizWithQuestionsAndOptions(
+    @Param('id', ParseIntPipe) quizId: number,
+    @Body() updateQuizDto: any,
+  ) {
+    const quiz = await this.quizzesService.updateQuizWithQuestionsAndOptions(
+      quizId,
+      updateQuizDto,
+    );
+    return {
+      status: 'success',
+      data: quiz,
+      message: 'Sửa bài kiểm tra thành công',
     };
   }
 
