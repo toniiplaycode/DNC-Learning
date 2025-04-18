@@ -14,6 +14,8 @@ export const selectStudentAcademicAssignments = (state: RootState) =>
   state.assignments.studentAcademicAssignments;
 export const selectAcademicClassAssignments = (state: RootState) =>
   state.assignments.academicClassAssignments;
+export const selectAssignmentsCourse = (state: RootState) =>
+  state.assignments.assignmentsCourse;
 export const selectUserSubmissions = (state: RootState) =>
   state.assignments.userSubmissions;
 export const selectCurrentSubmission = (state: RootState) =>

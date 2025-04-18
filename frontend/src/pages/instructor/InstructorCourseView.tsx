@@ -244,27 +244,6 @@ const mockCourseData = {
   ],
 };
 
-const mockAssignments = [
-  {
-    id: 1,
-    title: "Xây dựng ứng dụng Todo List",
-    description: "Sử dụng React và TypeScript để xây dựng ứng dụng Todo List",
-    dueDate: "2024-05-15",
-    maxScore: 100,
-    sectionId: 3,
-    totalSubmissions: 12,
-  },
-  {
-    id: 2,
-    title: "Tạo form với validation",
-    description: "Xây dựng form đăng ký với validation sử dụng React Hook Form",
-    dueDate: "2024-05-20",
-    maxScore: 100,
-    sectionId: 4,
-    totalSubmissions: 8,
-  },
-];
-
 interface TabPanelProps {
   children?: React.ReactNode;
   index: number;
@@ -587,27 +566,6 @@ const InstructorCourseView = () => {
     setOpenEditAssignmentModal(true);
   };
 
-  // Xử lý khi thêm assignment mới
-  const handleAddAssignment = (assignmentData: any) => {
-    console.log("Thêm bài tập mới:", assignmentData);
-    // Thực hiện thêm bài tập vào state hoặc gọi API
-
-    // Đóng modal
-    setOpenAddAssignmentModal(false);
-    setCurrentSectionId(null);
-  };
-
-  // Xử lý khi cập nhật assignment
-  const handleUpdateAssignment = (assignmentData: any) => {
-    console.log("Cập nhật bài tập:", assignmentData);
-    // Thực hiện cập nhật bài tập trong state hoặc gọi API
-
-    // Đóng modal
-    setOpenEditAssignmentModal(false);
-    setAssignmentToEdit(null);
-    setCurrentSectionId(null);
-  };
-
   // Hàm xử lý lưu cài đặt
   const handleSaveSettings = (settings: any) => {
     console.log("Lưu cài đặt khóa học:", settings);
@@ -809,7 +767,6 @@ const InstructorCourseView = () => {
                 </Stack>
               </Box>
               <CourseQuizAssignment
-                assignments={mockAssignments}
                 onEditQuiz={handleOpenEditQuizModal}
                 onEditAssignment={handleOpenEditAssignmentModal}
                 onDeleteAssignment={handleDeleteAssignment}
@@ -875,9 +832,6 @@ const InstructorCourseView = () => {
       <DialogAddEditAssignment
         open={openAddAssignmentModal}
         onClose={() => setOpenAddAssignmentModal(false)}
-        onSubmit={handleAddAssignment}
-        initialSectionId={currentSectionId || undefined}
-        sections={mockCourseData.sections}
         editMode={false}
       />
 
@@ -885,9 +839,7 @@ const InstructorCourseView = () => {
       <DialogAddEditAssignment
         open={openEditAssignmentModal}
         onClose={() => setOpenEditAssignmentModal(false)}
-        onSubmit={handleUpdateAssignment}
         assignmentToEdit={assignmentToEdit || undefined}
-        sections={mockCourseData.sections}
         editMode={true}
       />
 

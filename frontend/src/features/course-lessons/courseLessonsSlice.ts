@@ -7,8 +7,10 @@ import {
   updateCourseLesson,
   deleteCourseLesson,
   fetchCourseQuizzes,
+  fetchCourseAssignments,
 } from "./courseLessonsApiSlice";
 import { Quiz } from "../../types/quiz.types";
+import { Assignment } from "../../types/assignment.types";
 
 interface QuizLesson extends CourseLesson {
   quizzes?: Quiz[];
@@ -17,6 +19,7 @@ interface QuizLesson extends CourseLesson {
 interface CourseLessonsState {
   courseLessons: CourseLesson[];
   quizzes: QuizLesson[];
+  assignments: Assignment[];
   currentCourseLesson: CourseLesson | null;
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
@@ -25,6 +28,7 @@ interface CourseLessonsState {
 const initialState: CourseLessonsState = {
   courseLessons: [],
   quizzes: [],
+  assignments: [],
   currentCourseLesson: null,
   status: "idle",
   error: null,
@@ -92,6 +96,19 @@ const courseLessonsSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchCourseQuizzes.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
+
+      .addCase(fetchCourseAssignments.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchCourseAssignments.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.assignments = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchCourseAssignments.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
       })

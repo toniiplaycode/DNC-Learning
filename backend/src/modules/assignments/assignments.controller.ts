@@ -58,6 +58,13 @@ export class AssignmentsController {
     );
   }
 
+  @Get('course/:id')
+  @UseGuards(JwtAuthGuard)
+  @Roles(UserRole.INSTRUCTOR)
+  async findAllByCourse(@Param('id', ParseIntPipe) studentAcademicId: number) {
+    return this.assignmentsService.findAllByCourse(studentAcademicId);
+  }
+
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.INSTRUCTOR)

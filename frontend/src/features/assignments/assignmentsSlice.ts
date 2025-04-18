@@ -13,6 +13,7 @@ const initialState: AssignmentsState = {
   lessonAssignments: [],
   academicClassAssignments: [],
   studentAcademicAssignments: [],
+  assignmentsCourse: [],
   userSubmissions: [],
   currentSubmission: null,
   status: "idle",
@@ -91,6 +92,21 @@ export const fetchAssignmentsByStudentAcademic = createAsyncThunk(
       return rejectWithValue(
         error.response?.data?.message ||
           "Không thể tải bài tập cho sinh viên học thuật"
+      );
+    }
+  }
+);
+
+// Async thunk để lấy assignments khóa học
+export const fetchAssignmentByCourse = createAsyncThunk(
+  "assignments/fetchAssignmentByCourse",
+  async (courseId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/assignments/course/${courseId}`);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Không thể tải bài tập "
       );
     }
   }
@@ -225,6 +241,20 @@ const assignmentsSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchAssignmentsByStudentAcademic.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
+
+      // Fetch assignments by course
+      .addCase(fetchAssignmentByCourse.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchAssignmentByCourse.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.assignmentsCourse = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchAssignmentByCourse.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
       })

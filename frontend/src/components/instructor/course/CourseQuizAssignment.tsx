@@ -39,6 +39,9 @@ import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { fetchCourseQuizzes } from "../../../features/course-lessons/courseLessonsApiSlice";
 import { fetchCourseById } from "../../../features/courses/coursesApiSlice";
+import { fetchAssignmentByCourse } from "../../../features/assignments/assignmentsSlice";
+import { selectAssignmentsCourse } from "../../../features/assignments/assignmentsSelectors";
+import { formatDateTime } from "../../../utils/formatters";
 
 interface AssignmentItem {
   id: number;
@@ -51,7 +54,6 @@ interface AssignmentItem {
 }
 
 interface CourseQuizAssignmentProps {
-  assignments?: AssignmentItem[];
   onEditQuiz?: (quiz: any) => void;
   onEditAssignment?: (assignment: AssignmentItem) => void;
   onDeleteAssignment?: (assignmentId: number) => void;
@@ -59,7 +61,6 @@ interface CourseQuizAssignmentProps {
 }
 
 const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
-  assignments = [],
   onEditQuiz,
   onEditAssignment,
   onDeleteAssignment,
@@ -68,6 +69,7 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
   const { id } = useParams();
   const dispatch = useAppDispatch();
   const quizzesData = useAppSelector(selectAllQuizzes);
+  const assignmentsData = useAppSelector(selectAssignmentsCourse);
   const [tabValue, setTabValue] = useState(0);
   const [deleteDialog, setDeleteDialog] = useState({
     open: false,
@@ -75,10 +77,9 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
     id: 0,
   });
 
-  console.log(quizzesData);
-
   useEffect(() => {
     dispatch(fetchQuizzesByCourse(Number(id)));
+    dispatch(fetchAssignmentByCourse(Number(id)));
   }, [dispatch, id]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -130,7 +131,7 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
             label={
               <Stack direction="row" spacing={1} alignItems="center">
                 <Assignment />
-                <span>Bài tập ({assignments.length})</span>
+                <span>Bài tập ({assignmentsData.length})</span>
               </Stack>
             }
           />
@@ -255,9 +256,9 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
 
       {/* Assignment List */}
       <TabPanel value={tabValue} index={1}>
-        {assignments.length > 0 ? (
+        {assignmentsData.length > 0 ? (
           <List>
-            {assignments.map((assignment) => (
+            {assignmentsData.map((assignment) => (
               <Card key={assignment.id} sx={{ mb: 2 }}>
                 <CardContent>
                   <Stack spacing={1}>
@@ -311,7 +312,7 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
                       <Stack direction="row" alignItems="center" spacing={1}>
                         <AccessTime fontSize="small" color="action" />
                         <Typography variant="body2">
-                          Hạn nộp: {assignment.dueDate}
+                          Hạn nộp {formatDateTime(assignment.dueDate)}
                         </Typography>
                       </Stack>
 
@@ -321,14 +322,6 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
                           Điểm tối đa: {assignment.maxScore}
                         </Typography>
                       </Stack>
-
-                      {assignment.totalSubmissions !== undefined && (
-                        <Chip
-                          label={`${assignment.totalSubmissions} bài nộp`}
-                          size="small"
-                          variant="outlined"
-                        />
-                      )}
                     </Stack>
                   </Stack>
                 </CardContent>

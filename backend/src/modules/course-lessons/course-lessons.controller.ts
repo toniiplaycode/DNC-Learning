@@ -35,6 +35,13 @@ export class CourseLessonsController {
     return await this.courseLessonsService.findQuizzesByCourse(courseId);
   }
 
+  @Get('course/:courseId/assignments')
+  async findAssignmentsByCourse(
+    @Param('courseId', ParseIntPipe) courseId: number,
+  ) {
+    return await this.courseLessonsService.findAssignmentsByCourse(courseId);
+  }
+
   @Patch(':id')
   update(
     @Param('id') id: number,

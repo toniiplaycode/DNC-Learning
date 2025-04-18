@@ -2,7 +2,6 @@ import {
   Injectable,
   NotFoundException,
   BadRequestException,
-  ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, In } from 'typeorm';
@@ -11,6 +10,7 @@ import { CourseLesson } from '../../entities/CourseLesson';
 import { AcademicClass } from '../../entities/AcademicClass';
 import { UserGrade } from '../../entities/UserGrade';
 import { CreateAssignmentDto } from './dto/create-assignment.dto';
+
 import { UpdateAssignmentDto } from './dto/update-assignment.dto';
 import { UserStudentAcademic } from '../../entities/UserStudentAcademic';
 
@@ -123,6 +123,43 @@ export class AssignmentsService {
         throw error;
       }
       throw new BadRequestException('Không thể lấy danh sách bài tập');
+    }
+  }
+
+  // Tìm tất cả assignments thông qua course
+  async findAllByCourse(courseId: number): Promise<Assignment[]> {
+    try {
+      // Find all lessons belonging to the course using subquery
+      const lessons = await this.lessonsRepository
+        .createQueryBuilder('lesson')
+        .where((qb) => {
+          const subQuery = qb
+            .subQuery()
+            .select('section.id')
+            .from('course_sections', 'section')
+            .where('section.courseId = :courseId', { courseId })
+            .getQuery();
+          return 'lesson.sectionId IN ' + subQuery;
+        })
+        .getMany();
+
+      if (!lessons || lessons.length === 0) {
+        return [];
+      }
+
+      // Get all assignments for these lessons
+      const assignments = await this.assignmentsRepository.find({
+        where: {
+          lessonId: In(lessons.map((lesson) => lesson.id)),
+        },
+      });
+
+      return assignments;
+    } catch (error) {
+      console.error('Error finding assignments by course:', error);
+      throw new BadRequestException(
+        'Không thể lấy danh sách bài tập cho khóa học này',
+      );
     }
   }
 }

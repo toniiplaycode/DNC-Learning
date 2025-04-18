@@ -21,30 +21,35 @@ import {
   LinearProgress,
 } from "@mui/material";
 import { Close, CloudUpload, CalendarToday } from "@mui/icons-material";
+import { useParams } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import { fetchCourseAssignments } from "../../../features/course-lessons/courseLessonsApiSlice";
+import { selectAlCourseLessonlAssignments } from "../../../features/course-lessons/courseLessonsSelector";
+import {
+  createAssignment,
+  fetchAssignmentByCourse,
+} from "../../../features/assignments/assignmentsSlice";
+import { toast } from "react-toastify";
+import { selectAssignmentsCourse } from "../../../features/assignments/assignmentsSelectors";
 
 // Định nghĩa kiểu AssignmentItem
 interface AssignmentItem {
-  id: number;
   title: string;
-  description: string;
-  dueDate?: string;
-  maxScore?: number;
-  allowLateSubmission?: boolean;
-  attachments?: string[];
-  sectionId?: number;
-  requiresSubmission?: boolean;
-  submissionType?: "file" | "text" | "both";
-  instructions?: string;
+  description: string | null;
+  lessonId: number | null;
+  academicClassId: number | null;
+  dueDate: Date | null;
+  maxScore: number | null;
+  fileRequirements: string | null;
+  assignmentType: "practice" | "homework" | "midterm" | "final" | "project";
 }
 
 // Định nghĩa props cho component
 interface DialogAddEditAssignmentProps {
   open: boolean;
   onClose: () => void;
-  onSubmit: (assignmentData: any) => void;
-  initialSectionId?: number;
   assignmentToEdit?: AssignmentItem;
-  sections: any[];
+  lessonData: any[];
   editMode: boolean;
   additionalInfo?: {
     targetType: string;
@@ -56,24 +61,34 @@ interface DialogAddEditAssignmentProps {
 const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
   open,
   onClose,
-  onSubmit,
-  initialSectionId,
   assignmentToEdit,
-  sections,
   editMode,
   additionalInfo,
 }) => {
+  const { id } = useParams();
+  const dispatch = useAppDispatch();
+  const lessonData = useAppSelector(selectAlCourseLessonlAssignments);
+  const assignmentsData = useAppSelector(selectAssignmentsCourse);
+
+  useEffect(() => {
+    if (id) {
+      dispatch(fetchCourseAssignments(Number(id)));
+      dispatch(fetchAssignmentByCourse(Number(id)));
+    }
+  }, [dispatch, id]);
+
+  console.log(lessonData, assignmentsData);
+
   // State cho form assignment
-  const [assignmentForm, setAssignmentForm] = useState({
+  const [assignmentForm, setAssignmentForm] = useState<AssignmentItem>({
     title: "",
-    description: "",
-    dueDate: "",
-    maxScore: 100,
-    allowLateSubmission: false,
-    sectionId: 0,
-    requiresSubmission: true,
-    submissionType: "file",
-    instructions: "",
+    description: null,
+    lessonId: null,
+    academicClassId: null,
+    dueDate: null,
+    maxScore: null,
+    fileRequirements: null,
+    assignmentType: "practice",
   });
 
   // State quản lý upload file (cho tài liệu đính kèm)
@@ -86,46 +101,27 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
   useEffect(() => {
     if (open) {
       if (editMode && assignmentToEdit) {
-        // Tìm section của assignment khi edit
-        let sectionId = assignmentToEdit.sectionId || 0;
-
-        // Nếu không có sectionId trong assignmentToEdit, tìm từ sections
-        if (!sectionId) {
-          for (const section of sections) {
-            const assignmentIndex = section.contents?.findIndex(
-              (c: any) =>
-                c.id === assignmentToEdit.id && c.type === "assignment"
-            );
-            if (assignmentIndex !== -1) {
-              sectionId = section.id;
-              break;
-            }
-          }
-        }
-
         setAssignmentForm({
           title: assignmentToEdit.title || "",
-          description: assignmentToEdit.description || "",
-          dueDate: assignmentToEdit.dueDate || "",
-          maxScore: assignmentToEdit.maxScore || 100,
-          allowLateSubmission: assignmentToEdit.allowLateSubmission || false,
-          sectionId: sectionId,
-          requiresSubmission: assignmentToEdit.requiresSubmission !== false,
-          submissionType: assignmentToEdit.submissionType || "file",
-          instructions: assignmentToEdit.instructions || "",
+          description: assignmentToEdit.description || null,
+          lessonId: assignmentToEdit.lessonId || null,
+          academicClassId: assignmentToEdit.academicClassId || null,
+          dueDate: assignmentToEdit.dueDate || null,
+          maxScore: assignmentToEdit.maxScore || null,
+          fileRequirements: assignmentToEdit.fileRequirements || null,
+          assignmentType: assignmentToEdit.assignmentType || "practice",
         });
       } else {
         // Khi thêm mới
         setAssignmentForm({
           title: "",
-          description: "",
-          dueDate: "",
-          maxScore: 100,
-          allowLateSubmission: false,
-          sectionId: initialSectionId || 0,
-          requiresSubmission: true,
-          submissionType: "file",
-          instructions: "",
+          description: null,
+          lessonId: null,
+          academicClassId: null,
+          dueDate: null,
+          maxScore: null,
+          fileRequirements: null,
+          assignmentType: "practice",
         });
       }
 
@@ -135,7 +131,7 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
       setUploadProgress(0);
       setIsUploading(false);
     }
-  }, [open, editMode, assignmentToEdit, initialSectionId, sections]);
+  }, [open, editMode, assignmentToEdit, lessonData]);
 
   // Xử lý chọn file
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -206,15 +202,19 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
   };
 
   // Xử lý submit form
-  const submitForm = (fileUrls: string[]) => {
-    // Chuẩn bị dữ liệu để submit
-    const submittedData = {
-      ...assignmentForm,
-      id: editMode && assignmentToEdit ? assignmentToEdit.id : Date.now(),
-      attachments: fileUrls || [],
-    };
+  const submitForm = async (fileUrls: string[]) => {
+    if (!editMode) {
+      await dispatch(createAssignment(assignmentForm));
+    } else if (editMode) {
+    }
 
-    onSubmit(submittedData);
+    await dispatch(fetchAssignmentByCourse(Number(id)));
+    toast.success(
+      editMode ? "Cập nhật bài tập thành công!" : "Thêm bài tập thành công!"
+    );
+
+    console.log("Submitted Data:", assignmentForm);
+    onClose();
   };
 
   return (
@@ -278,7 +278,7 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
             fullWidth
             multiline
             rows={3}
-            value={assignmentForm.description}
+            value={assignmentForm.description || ""}
             onChange={(e) =>
               setAssignmentForm({
                 ...assignmentForm,
@@ -287,29 +287,56 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
             }
           />
 
-          {/* Chọn phần học */}
+          {/* Chọn nội dung */}
           <FormControl fullWidth>
-            <InputLabel>Phần học</InputLabel>
+            <InputLabel>Nội dung</InputLabel>
             <Select
-              value={assignmentForm.sectionId}
-              label="Phần học"
+              value={assignmentForm.lessonId || 0}
+              label="Nội dung"
               onChange={(e) =>
                 setAssignmentForm({
                   ...assignmentForm,
-                  sectionId: Number(e.target.value),
+                  lessonId: Number(e.target.value),
                 })
               }
             >
-              <MenuItem value={0}>Không thuộc phần học nào</MenuItem>
-              {sections.map((section) => (
-                <MenuItem key={section.id} value={section.id}>
-                  {section.title}
-                </MenuItem>
-              ))}
+              <MenuItem value={0}>Không thuộc nội dung học nào</MenuItem>
+              {lessonData.map((lesson) => {
+                const hasAssignment = assignmentsData.some(
+                  (assignment) => assignment.lessonId === lesson.id
+                );
+                return (
+                  <MenuItem
+                    key={lesson.id}
+                    value={lesson.id}
+                    disabled={hasAssignment}
+                    sx={{
+                      ...(hasAssignment && {
+                        color: "promary.main",
+                        "& .assignment-indicator": {
+                          ml: 1,
+                          color: "warning.main",
+                          fontSize: "0.75rem",
+                        },
+                      }),
+                    }}
+                  >
+                    {lesson.title}
+                    {hasAssignment && (
+                      <Typography
+                        component="span"
+                        className="assignment-indicator"
+                      >
+                        &nbsp; (đã có bài tập)
+                      </Typography>
+                    )}
+                  </MenuItem>
+                );
+              })}
             </Select>
             <FormHelperText>
-              Nếu bài tập không thuộc phần học cụ thể, chọn "Không thuộc phần
-              học nào"
+              Nếu bài tập không thuộc nội dung cụ thể, chọn "Không thuộc nội
+              dung nào"
             </FormHelperText>
           </FormControl>
 
@@ -318,9 +345,16 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
             label="Ngày hạn nộp"
             type="datetime-local"
             fullWidth
-            value={assignmentForm.dueDate}
+            value={
+              assignmentForm.dueDate
+                ? new Date(assignmentForm.dueDate).toISOString().slice(0, 16)
+                : ""
+            }
             onChange={(e) =>
-              setAssignmentForm({ ...assignmentForm, dueDate: e.target.value })
+              setAssignmentForm({
+                ...assignmentForm,
+                dueDate: e.target.value ? new Date(e.target.value) : null,
+              })
             }
             InputLabelProps={{ shrink: true }}
             InputProps={{
@@ -337,86 +371,66 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
             label="Điểm tối đa"
             type="number"
             fullWidth
-            value={assignmentForm.maxScore}
+            value={assignmentForm.maxScore || ""}
             onChange={(e) =>
               setAssignmentForm({
                 ...assignmentForm,
-                maxScore: parseInt(e.target.value) || 0,
+                maxScore: parseInt(e.target.value) || null,
               })
             }
             InputProps={{ inputProps: { min: 0 } }}
           />
 
-          {/* Cho phép nộp muộn */}
-          <FormControlLabel
-            control={
-              <Switch
-                checked={assignmentForm.allowLateSubmission}
-                onChange={(e) =>
-                  setAssignmentForm({
-                    ...assignmentForm,
-                    allowLateSubmission: e.target.checked,
-                  })
-                }
-              />
-            }
-            label="Cho phép nộp bài muộn"
-          />
-
-          {/* Yêu cầu nộp bài */}
-          <FormControlLabel
-            control={
-              <Switch
-                checked={assignmentForm.requiresSubmission}
-                onChange={(e) =>
-                  setAssignmentForm({
-                    ...assignmentForm,
-                    requiresSubmission: e.target.checked,
-                  })
-                }
-              />
-            }
-            label="Yêu cầu học viên nộp bài"
-          />
-
-          {/* Loại bài nộp */}
-          {assignmentForm.requiresSubmission && (
+          <Stack spacing={3}>
+            {/* Assignment Type Selection */}
             <FormControl fullWidth>
-              <InputLabel>Loại bài nộp</InputLabel>
+              <InputLabel>Loại bài tập</InputLabel>
               <Select
-                value={assignmentForm.submissionType}
-                label="Loại bài nộp"
+                value={assignmentForm.assignmentType}
+                label="Loại bài tập"
                 onChange={(e) =>
                   setAssignmentForm({
                     ...assignmentForm,
-                    submissionType: e.target.value as "file" | "text" | "both",
+                    assignmentType: e.target
+                      .value as AssignmentItem["assignmentType"],
                   })
                 }
               >
-                <MenuItem value="file">File (PDF, Word, hình ảnh...)</MenuItem>
-                <MenuItem value="text">Văn bản</MenuItem>
-                <MenuItem value="both">Cả file và văn bản</MenuItem>
+                <MenuItem value="practice">Thực hành</MenuItem>
+                <MenuItem value="homework">Bài tập về nhà</MenuItem>
+                <MenuItem value="midterm">Giữa kỳ</MenuItem>
+                <MenuItem value="final">Cuối kỳ</MenuItem>
+                <MenuItem value="project">Dự án</MenuItem>
               </Select>
+              <FormHelperText>
+                Chọn loại bài tập để phân loại và quản lý dễ dàng hơn
+              </FormHelperText>
             </FormControl>
-          )}
 
-          {/* Hướng dẫn nộp bài */}
-          {assignmentForm.requiresSubmission && (
+            {/* File Requirements */}
             <TextField
-              label="Hướng dẫn nộp bài"
+              label="Yêu cầu về file nộp bài"
               fullWidth
               multiline
-              rows={2}
-              value={assignmentForm.instructions}
+              rows={3}
+              value={assignmentForm.fileRequirements || ""}
               onChange={(e) =>
                 setAssignmentForm({
                   ...assignmentForm,
-                  instructions: e.target.value,
+                  fileRequirements: e.target.value,
                 })
               }
-              placeholder="Nhập hướng dẫn nộp bài cho học viên..."
+              placeholder="Ví dụ: File PDF dưới 10MB, đặt tên theo format MSSV_TenBaiTap.pdf"
+              helperText="Mô tả các yêu cầu về định dạng, kích thước, cách đặt tên file nộp bài"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <CloudUpload color="action" />
+                  </InputAdornment>
+                ),
+              }}
             />
-          )}
+          </Stack>
 
           {/* Upload tài liệu đính kèm */}
           <Box>

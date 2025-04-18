@@ -61,6 +61,7 @@ export interface AssignmentsState {
   lessonAssignments: Assignment[];
   academicClassAssignments: Assignment[];
   studentAcademicAssignments: Assignment[];
+  assignmentsCourse: Assignment[];
   userSubmissions: AssignmentSubmission[];
   currentSubmission: AssignmentSubmission | null;
   status: "idle" | "loading" | "succeeded" | "failed";

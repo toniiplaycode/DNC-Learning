@@ -54,6 +54,18 @@ export class CourseLessonsService {
       .getMany();
   }
 
+  async findAssignmentsByCourse(courseId: number): Promise<CourseLesson[]> {
+    return this.courseLessonRepository
+      .createQueryBuilder('lesson')
+      .innerJoin('lesson.section', 'section')
+      .where('section.courseId = :courseId', { courseId })
+      .andWhere('lesson.contentType = :contentType', {
+        contentType: ContentType.ASSIGNMENT,
+      })
+      .orderBy('lesson.orderNumber', 'ASC')
+      .getMany();
+  }
+
   async update(
     id: number,
     updatedCourseLesson: Partial<CourseLesson>,
