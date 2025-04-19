@@ -31,20 +31,16 @@ export class AssignmentsController {
     return this.assignmentsService.create(createAssignmentDto);
   }
 
-  @Get()
-  @UseGuards(JwtAuthGuard)
-  findAll(
-    @Query('lessonId') lessonId?: number,
-    @Query('academicClassId') academicClassId?: number,
-    @Query('type') type?: AssignmentType,
-  ) {
-    return this.assignmentsService.findAll(lessonId, academicClassId, type);
-  }
-
   @Get(':id')
   @UseGuards(JwtAuthGuard)
   findOne(@Param('id', ParseIntPipe) id: number) {
     return this.assignmentsService.findOne(id);
+  }
+
+  @Get('/lesson/:id')
+  @UseGuards(JwtAuthGuard)
+  findByLesson(@Param('id', ParseIntPipe) id: number) {
+    return this.assignmentsService.findByLesson(id);
   }
 
   @Get('student-academic/:id')

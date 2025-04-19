@@ -4,13 +4,14 @@ import CustomContainer from "../../../components/common/CustomContainer";
 import { Card, CardContent } from "@mui/material";
 import { Typography } from "@mui/material";
 import { useAppSelector } from "../../../app/hooks";
-import { useParams } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { fetchAssignmentById } from "../../../features/assignments/assignmentsSlice";
 import { useAppDispatch } from "../../../app/hooks";
 import { selectCurrentAssignment } from "../../../features/assignments/assignmentsSelectors";
 
 export const AssessmentAssignment = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const currentAssignment = useAppSelector(selectCurrentAssignment);
 
@@ -18,7 +19,9 @@ export const AssessmentAssignment = () => {
     if (id) {
       dispatch(fetchAssignmentById(Number(id)));
     }
-  }, [id]);
+  }, [id, navigate]);
+
+  console.log("currentAssignment", currentAssignment);
 
   return (
     <CustomContainer>
@@ -41,11 +44,6 @@ export const AssessmentAssignment = () => {
             ".tsx",
           ],
           maxFiles: 5,
-        }}
-        onSubmit={(files, note) => {
-          console.log("Files:", files);
-          console.log("Note:", note);
-          // Thêm logic xử lý submit
         }}
       />
 

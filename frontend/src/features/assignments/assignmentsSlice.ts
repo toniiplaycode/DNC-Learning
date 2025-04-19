@@ -53,7 +53,7 @@ export const fetchAssignmentsByLesson = createAsyncThunk(
   "assignments/fetchByLesson",
   async (lessonId: number, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/assignments?lessonId=${lessonId}`);
+      const response = await api.get(`/assignments/lesson/${lessonId}`);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
@@ -128,12 +128,12 @@ export const createAssignment = createAsyncThunk(
 
 export const updateAssignment = createAsyncThunk(
   "assignments/update",
-  async (
-    { id, updateData }: { id: number; updateData: UpdateAssignmentData },
-    { rejectWithValue }
-  ) => {
+  async (updateData: UpdateAssignmentData, { rejectWithValue }) => {
     try {
-      const response = await api.patch(`/assignments/${id}`, updateData);
+      const response = await api.patch(
+        `/assignments/${Number(updateData.id)}`,
+        updateData
+      );
       return response.data;
     } catch (error: any) {
       return rejectWithValue(

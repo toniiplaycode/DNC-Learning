@@ -73,6 +73,19 @@ export class AssignmentsService {
     return assignment;
   }
 
+  async findByLesson(id: number): Promise<Assignment> {
+    const assignment = await this.assignmentsRepository.findOne({
+      where: { lessonId: id },
+      relations: ['lesson', 'academicClass'],
+    });
+
+    if (!assignment) {
+      throw new NotFoundException(`Assignment with ID ${id} not found`);
+    }
+
+    return assignment;
+  }
+
   async update(
     id: number,
     updateAssignmentDto: UpdateAssignmentDto,
@@ -152,6 +165,7 @@ export class AssignmentsService {
         where: {
           lessonId: In(lessons.map((lesson) => lesson.id)),
         },
+        relations: ['assignmentSubmissions'],
       });
 
       return assignments;

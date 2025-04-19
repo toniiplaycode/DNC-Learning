@@ -82,6 +82,7 @@ export interface CreateAssignmentData {
 }
 
 export interface UpdateAssignmentData {
+  id?: number;
   title?: string;
   description?: string;
   dueDate?: string;

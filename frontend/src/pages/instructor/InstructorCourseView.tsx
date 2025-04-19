@@ -576,11 +576,6 @@ const InstructorCourseView = () => {
     setOpenSettingsModal(false);
   };
 
-  const handleDeleteAssignment = (assignmentId: number) => {
-    console.log("Xóa assignment:", assignmentId);
-    // Logic xóa assignment
-  };
-
   return (
     <Box sx={{ p: 3 }}>
       {/* Course Header */}
@@ -769,7 +764,6 @@ const InstructorCourseView = () => {
               <CourseQuizAssignment
                 onEditQuiz={handleOpenEditQuizModal}
                 onEditAssignment={handleOpenEditAssignmentModal}
-                onDeleteAssignment={handleDeleteAssignment}
                 isInstructor={true}
               />
             </TabPanel>

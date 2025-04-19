@@ -28,12 +28,14 @@ import { selectAlCourseLessonlAssignments } from "../../../features/course-lesso
 import {
   createAssignment,
   fetchAssignmentByCourse,
+  updateAssignment,
 } from "../../../features/assignments/assignmentsSlice";
 import { toast } from "react-toastify";
 import { selectAssignmentsCourse } from "../../../features/assignments/assignmentsSelectors";
 
 // Định nghĩa kiểu AssignmentItem
 interface AssignmentItem {
+  id: number;
   title: string;
   description: string | null;
   lessonId: number | null;
@@ -77,10 +79,9 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
     }
   }, [dispatch, id]);
 
-  console.log(lessonData, assignmentsData);
-
   // State cho form assignment
   const [assignmentForm, setAssignmentForm] = useState<AssignmentItem>({
+    id: 0,
     title: "",
     description: null,
     lessonId: null,
@@ -102,6 +103,7 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
     if (open) {
       if (editMode && assignmentToEdit) {
         setAssignmentForm({
+          id: assignmentToEdit.id,
           title: assignmentToEdit.title || "",
           description: assignmentToEdit.description || null,
           lessonId: assignmentToEdit.lessonId || null,
@@ -114,6 +116,7 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
       } else {
         // Khi thêm mới
         setAssignmentForm({
+          id: 0,
           title: "",
           description: null,
           lessonId: null,
@@ -206,6 +209,7 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
     if (!editMode) {
       await dispatch(createAssignment(assignmentForm));
     } else if (editMode) {
+      await dispatch(updateAssignment(assignmentForm));
     }
 
     await dispatch(fetchAssignmentByCourse(Number(id)));

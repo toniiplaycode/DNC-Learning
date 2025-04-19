@@ -22,6 +22,7 @@ import {
   CardHeader,
   Divider,
   Paper,
+  InputAdornment,
 } from "@mui/material";
 import {
   CloudUpload,
@@ -42,9 +43,16 @@ import {
 } from "@mui/icons-material";
 import { useAppDispatch } from "../../../app/hooks";
 import { useAppSelector } from "../../../app/hooks";
-import { fetchSubmissionsByAssignment } from "../../../features/assignment-submissions/assignmentSubmissionsSlice";
+import {
+  createSubmission,
+  fetchSubmissionsByAssignment,
+} from "../../../features/assignment-submissions/assignmentSubmissionsSlice";
 import { selectAssignmentSubmissions } from "../../../features/assignment-submissions/assignmentSubmissionsSelectors";
 import { formatDateTime } from "../../../utils/formatters";
+import { selectCurrentUser } from "../../../features/auth/authSelectors";
+import { fetchAssignmentByCourse } from "../../../features/assignments/assignmentsSlice";
+import { useParams } from "react-router-dom";
+import { toast } from "react-toastify";
 
 interface AssignmentFile {
   id: string;
@@ -68,7 +76,14 @@ interface AssignmentContentProps {
     score?: number;
     feedback?: string;
   };
-  onSubmit: (files: File[], note: string) => void;
+}
+
+// Add interface for form state
+interface AssignmentSubmissionForm {
+  assignmentId: number | null;
+  userId: number | null;
+  submissionText: string;
+  fileUrl: string | null;
 }
 
 const getFileIcon = (fileType: string) => {
@@ -82,10 +97,11 @@ const getFileIcon = (fileType: string) => {
 
 const AssignmentContent: React.FC<AssignmentContentProps> = ({
   assignmentData,
-  onSubmit,
 }) => {
+  const { id } = useParams();
   const dispatch = useAppDispatch();
   const assignmentSubmissions = useAppSelector(selectAssignmentSubmissions);
+  const currentUser = useAppSelector(selectCurrentUser);
 
   const [files, setFiles] = useState<AssignmentFile[]>([]);
   const [note, setNote] = useState("");
@@ -93,7 +109,18 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
   const [openPreview, setOpenPreview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  console.log(assignmentSubmissions);
+  // Add state for Google Drive link
+  const [driveLink, setDriveLink] = useState("");
+  const [submitType, setSubmitType] = useState<"file" | "drive">("drive");
+
+  // Add form state
+  const [formSubmission, setFormSubmission] =
+    useState<AssignmentSubmissionForm>({
+      assignmentId: assignmentData.assignmentId || assignmentData.id,
+      userId: Number(currentUser.id) || null,
+      submissionText: "",
+      fileUrl: null,
+    });
 
   useEffect(() => {
     if (assignmentData.assignmentId !== null) {
@@ -129,15 +156,48 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
     setFiles((prev) => prev.filter((file) => file.id !== fileId));
   };
 
+  // Update handleSubmit to use form state
   const handleSubmit = async () => {
     setUploading(true);
     try {
-      // Simulate upload delay
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      onSubmit(files as unknown as File[], note);
+      const submissionData = {
+        ...formSubmission,
+        submissionText: note,
+        fileUrl: submitType === "drive" ? driveLink : null,
+      };
+
+      await dispatch(createSubmission(submissionData));
+      await dispatch(fetchAssignmentByCourse(Number(id)));
+      dispatch(
+        fetchSubmissionsByAssignment(Number(assignmentData.assignmentId))
+      );
+
+      toast.success("Nộp bài thành công!");
+
+      console.log("submissionData", submissionData);
     } finally {
       setUploading(false);
     }
+  };
+
+  // Update note change handler
+  const handleNoteChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newNote = e.target.value;
+    setNote(newNote);
+    setFormSubmission((prev) => ({
+      ...prev,
+      submissionText: newNote,
+    }));
+  };
+
+  // Update drive link change handler
+  const handleDriveLinkChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const newLink = e.target.value;
+    setDriveLink(newLink);
+    setFormSubmission((prev) => ({
+      ...prev,
+      fileUrl: newLink,
+    }));
   };
 
   return (
@@ -325,7 +385,7 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
               <Stack direction="row" spacing={2} alignItems="center">
                 {assignmentData.dueDate && (
                   <Chip
-                    label={`Hạn nộp: ${assignmentData.dueDate}`}
+                    label={`Hạn nộp: ${formatDateTime(assignmentData.dueDate)}`}
                     color="warning"
                   />
                 )}
@@ -369,25 +429,74 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
                         }
                       >
                         <ListItemIcon>{getFileIcon(file.type)}</ListItemIcon>
+                        <ListItemText
+                          primary={file.name}
+                          secondary={`${(file.size / (1024 * 1024)).toFixed(
+                            2
+                          )} MB`}
+                        />
                       </ListItem>
                     ))}
                   </List>
                 )}
 
-                {/* Upload Button */}
-                <Box sx={{ textAlign: "center" }}>
-                  <Button
-                    variant="outlined"
-                    startIcon={<CloudUpload />}
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={files.length >= assignmentData.maxFiles}
+                {/* Upload Options */}
+                <Box>
+                  {/* Toggle Buttons */}
+                  <Stack
+                    direction="row"
+                    spacing={2}
+                    justifyContent="center"
+                    sx={{ mb: 2 }}
                   >
-                    Chọn file
-                  </Button>
-                  <Typography variant="caption" display="block" sx={{ mt: 1 }}>
-                    Định dạng cho phép:{" "}
-                    {assignmentData.allowedFileTypes.join(", ")}
-                  </Typography>
+                    <Box sx={{ textAlign: "center" }}>
+                      <Button
+                        sx={{ mr: 1 }}
+                        variant={
+                          submitType === "drive" ? "contained" : "outlined"
+                        }
+                        onClick={() => setSubmitType("drive")}
+                        startIcon={<LinkIcon />}
+                      >
+                        Google Drive
+                      </Button>
+
+                      <Button
+                        variant={
+                          submitType === "file" ? "contained" : "outlined"
+                        }
+                        startIcon={<CloudUpload />}
+                        onClick={() => {
+                          setSubmitType("file");
+                          fileInputRef.current?.click();
+                        }}
+                        disabled={files.length >= assignmentData.maxFiles}
+                      >
+                        Upload file
+                      </Button>
+                    </Box>
+                  </Stack>
+
+                  {/* Google Drive Link Section */}
+                  {submitType === "drive" && (
+                    <Box sx={{ p: 2 }}>
+                      <TextField
+                        fullWidth
+                        label="Đường dẫn Google Drive"
+                        value={driveLink}
+                        onChange={handleDriveLinkChange}
+                        placeholder="Nhập đường dẫn chia sẻ từ Google Drive"
+                        helperText="Đảm bảo file được chia sẻ công khai hoặc cho phép xem"
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <LinkIcon color="action" />
+                            </InputAdornment>
+                          ),
+                        }}
+                      />
+                    </Box>
+                  )}
                 </Box>
 
                 {/* Note */}
@@ -397,7 +506,7 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
                   rows={3}
                   label="Ghi chú"
                   value={note}
-                  onChange={(e) => setNote(e.target.value)}
+                  onChange={handleNoteChange}
                   placeholder="Nhập ghi chú về bài nộp của bạn (không bắt buộc)"
                 />
 
@@ -406,7 +515,11 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
                   <Button
                     variant="contained"
                     onClick={handleSubmit}
-                    disabled={files.length === 0 || uploading}
+                    disabled={
+                      (submitType === "file" && files.length === 0) ||
+                      (submitType === "drive" && !driveLink) ||
+                      uploading
+                    }
                   >
                     {uploading ? (
                       <Box sx={{ display: "flex", alignItems: "center" }}>
@@ -436,23 +549,29 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
       >
         <DialogTitle>Xem trước bài nộp</DialogTitle>
         <DialogContent>
-          <List>
-            {files.map((file) => (
-              <ListItem key={file.id}>
-                <ListItemIcon>{getFileIcon(file.type)}</ListItemIcon>
-              </ListItem>
-            ))}
-          </List>
-          {note && (
-            <Box sx={{ mt: 2 }}>
-              <Typography variant="subtitle2" gutterBottom>
-                Ghi chú:
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                {note}
-              </Typography>
-            </Box>
-          )}
+          <Box>
+            <List>
+              {files.map((file) => (
+                <ListItem key={file.id}>
+                  <ListItemIcon>{getFileIcon(file.type)}</ListItemIcon>
+                  <ListItemText
+                    primary={file.name}
+                    secondary={`${(file.size / (1024 * 1024)).toFixed(2)} MB`}
+                  />
+                </ListItem>
+              ))}
+            </List>
+            {note && (
+              <Box sx={{ mt: 2 }}>
+                <Typography variant="subtitle2" gutterBottom>
+                  Ghi chú:
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {note}
+                </Typography>
+              </Box>
+            )}
+          </Box>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenPreview(false)}>Đóng</Button>

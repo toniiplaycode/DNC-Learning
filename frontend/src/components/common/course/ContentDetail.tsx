@@ -16,6 +16,8 @@ import { fetchLessonDiscussions } from "../../../features/discussions/discussion
 import { useAppDispatch } from "../../../app/hooks";
 import { useAppSelector } from "../../../app/hooks";
 import { selectLessonDiscussions } from "../../../features/discussions/discussionsSelectors";
+import { fetchAssignmentsByLesson } from "../../../features/assignments/assignmentsSlice";
+import { selectLessonAssignments } from "../../../features/assignments/assignmentsSelectors";
 
 // Helper function để lấy file ID từ Google Drive URL
 function getFileIdFromUrl(url: string) {
@@ -169,9 +171,11 @@ const ContentDetail = ({ content }: { content: any }) => {
   const dispatch = useAppDispatch();
   const lessonDiscussions = useAppSelector(selectLessonDiscussions);
   const [showDiscussion, setShowDiscussion] = useState(false);
+  const currentLessonAssignment = useAppSelector(selectLessonAssignments);
 
   useEffect(() => {
     dispatch(fetchLessonDiscussions(Number(content?.id)));
+    dispatch(fetchAssignmentsByLesson(Number(content?.id)));
     if (content.type == "quiz") {
       setShowDiscussion(false);
     } else {
@@ -236,11 +240,11 @@ const ContentDetail = ({ content }: { content: any }) => {
         <Box sx={{ mb: 4 }}>
           <AssignmentContent
             assignmentData={{
-              id: content.id,
-              assignmentId: content.assignmentId,
-              title: content.title,
-              description: content.description,
-              dueDate: "23:59 15/03/2024",
+              id: currentLessonAssignment?.id,
+              assignmentId: content?.assignmentId,
+              title: currentLessonAssignment?.title,
+              description: currentLessonAssignment?.description,
+              dueDate: currentLessonAssignment?.dueDate,
               maxFileSize: 10,
               allowedFileTypes: [
                 ".pdf",
@@ -253,11 +257,6 @@ const ContentDetail = ({ content }: { content: any }) => {
                 ".tsx",
               ],
               maxFiles: 5,
-            }}
-            onSubmit={(files, note) => {
-              console.log("Files:", files);
-              console.log("Note:", note);
-              // Thêm logic xử lý submit
             }}
           />
         </Box>

@@ -39,7 +39,10 @@ import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { fetchCourseQuizzes } from "../../../features/course-lessons/courseLessonsApiSlice";
 import { fetchCourseById } from "../../../features/courses/coursesApiSlice";
-import { fetchAssignmentByCourse } from "../../../features/assignments/assignmentsSlice";
+import {
+  deleteAssignment,
+  fetchAssignmentByCourse,
+} from "../../../features/assignments/assignmentsSlice";
 import { selectAssignmentsCourse } from "../../../features/assignments/assignmentsSelectors";
 import { formatDateTime } from "../../../utils/formatters";
 
@@ -56,14 +59,12 @@ interface AssignmentItem {
 interface CourseQuizAssignmentProps {
   onEditQuiz?: (quiz: any) => void;
   onEditAssignment?: (assignment: AssignmentItem) => void;
-  onDeleteAssignment?: (assignmentId: number) => void;
   isInstructor?: boolean;
 }
 
 const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
   onEditQuiz,
   onEditAssignment,
-  onDeleteAssignment,
   isInstructor = true,
 }) => {
   const { id } = useParams();
@@ -76,6 +77,8 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
     type: "",
     id: 0,
   });
+
+  console.log(assignmentsData);
 
   useEffect(() => {
     dispatch(fetchQuizzesByCourse(Number(id)));
@@ -107,11 +110,21 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
       });
 
       await dispatch(fetchCourseQuizzes(Number(id)));
-      await dispatch(fetchCourseById(Number(id)));
       await dispatch(fetchQuizzesByCourse(Number(id)));
-    } else if (deleteDialog.type === "assignment" && onDeleteAssignment) {
-      onDeleteAssignment(deleteDialog.id);
+    } else if (deleteDialog.type === "assignment") {
+      await dispatch(deleteAssignment(deleteDialog.id)).then((result) => {
+        if (result?.error?.message == "Rejected") {
+          toast.error(
+            "Không thể xóa bài tập vì đã có học sinh/sinh viên làm !"
+          );
+          return;
+        }
+        toast.success("Xóa bài tập thành công!");
+      });
+      await dispatch(fetchAssignmentByCourse(Number(id)));
     }
+
+    await dispatch(fetchCourseById(Number(id)));
     setDeleteDialog({ open: false, type: "", id: 0 });
   };
 
@@ -284,7 +297,11 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
                               handleDeleteClick("assignment", assignment.id)
                             }
                             size="small"
-                            color="error"
+                            color={
+                              assignment?.assignmentSubmissions?.length == 0
+                                ? "primary"
+                                : "disabled"
+                            }
                           >
                             <Delete />
                           </IconButton>
@@ -292,9 +309,26 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
                       )}
                     </Stack>
 
-                    <Typography variant="body2" color="text.secondary">
-                      {assignment.description}
-                    </Typography>
+                    <Stack
+                      direction="row"
+                      alignItems="center"
+                      justifyContent="space-between"
+                    >
+                      <Typography variant="body2" color="text.secondary">
+                        {assignment.description}
+                      </Typography>
+
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <Typography
+                          variant="body2"
+                          color="primary"
+                          fontWeight={600}
+                        >
+                          Đã có {assignment?.assignmentSubmissions?.length} bài
+                          nộp
+                        </Typography>
+                      </Stack>
+                    </Stack>
 
                     <Divider />
 
