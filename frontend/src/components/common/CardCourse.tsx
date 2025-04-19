@@ -71,7 +71,7 @@ const CardCourse: React.FC<CardCourseProps> = ({
       <Box sx={{ position: "relative" }}>
         <CardMedia
           component="img"
-          height="140"
+          height="220"
           image={image}
           alt={title}
           sx={{ objectFit: "cover" }}

@@ -62,16 +62,12 @@ interface DialogSettingProps {
   open: boolean;
   onClose: () => void;
   onSave: (settings: any) => void;
-  courseId: number;
-  initialSettings?: any;
 }
 
 const DialogSetting: React.FC<DialogSettingProps> = ({
   open,
   onClose,
   onSave,
-  courseId,
-  initialSettings,
 }) => {
   const [tabValue, setTabValue] = useState(0);
   const [settings, setSettings] = useState({
@@ -103,16 +99,6 @@ const DialogSetting: React.FC<DialogSettingProps> = ({
     certificateTemplate: "default",
     certificateTitle: "",
   });
-
-  // Cập nhật settings khi initialSettings thay đổi
-  useEffect(() => {
-    if (initialSettings) {
-      setSettings({
-        ...settings,
-        ...initialSettings,
-      });
-    }
-  }, [initialSettings]);
 
   const handleChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);

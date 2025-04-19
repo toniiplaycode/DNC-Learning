@@ -4,8 +4,6 @@ import {
   IsNumber,
   IsString,
   Length,
-  Min,
-  Validate,
   ValidatorConstraint,
   ValidatorConstraintInterface,
 } from 'class-validator';
@@ -22,13 +20,7 @@ export default class CreateCoursesDto {
   @IsNotEmpty()
   @IsString()
   @Length(5, 255, { message: 'Title must be between 5 and 255 characters' })
-  @Validate(isUppercase, { message: 'Title must be uppercase' })
   title: string;
-
-  @IsNotEmpty()
-  @IsString()
-  @Length(5, 255, { message: 'Slug must be between 5 and 255 characters' })
-  slug: string;
 
   @IsNotEmpty()
   @IsString()
@@ -39,14 +31,4 @@ export default class CreateCoursesDto {
 
   @IsNumber()
   price: number;
-
-  @IsNumber()
-  @Min(1, { message: 'Duration must be greater than 1' })
-  duration: number;
-
-  @IsString()
-  @IsIn(['beginner', 'intermediate', 'advanced'], {
-    message: 'Level must be one of: beginner, intermediate, advanced',
-  })
-  level: string;
 }

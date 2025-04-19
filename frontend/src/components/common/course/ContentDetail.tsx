@@ -181,7 +181,7 @@ const ContentDetail = ({ content }: { content: any }) => {
     } else {
       setShowDiscussion(true);
     }
-  }, [dispatch, content?.id]);
+  }, [dispatch, content?.id, content]);
 
   return (
     <Box>

@@ -135,13 +135,5 @@ import { CourseLessonsModule } from './modules/course-lessons/course-lessons.mod
   providers: [AppService, AuthMiddleware, InstructorMiddleware],
 })
 export class AppModule implements NestModule {
-  configure(consumer: MiddlewareConsumer) {
-    consumer
-      .apply(AuthMiddleware, InstructorMiddleware)
-      .forRoutes(
-        { path: 'courses', method: RequestMethod.POST },
-        { path: 'courses/:id', method: RequestMethod.PATCH },
-        { path: 'courses/:id', method: RequestMethod.DELETE },
-      );
-  }
+  configure(consumer: MiddlewareConsumer) {}
 }

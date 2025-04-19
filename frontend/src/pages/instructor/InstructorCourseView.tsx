@@ -21,8 +21,6 @@ import {
   Settings,
   Description,
   Quiz,
-  VideoCall,
-  MenuBook,
   Link as LinkIcon,
   Add,
   PictureAsPdf,
@@ -30,7 +28,7 @@ import {
   TextSnippet,
   Slideshow,
 } from "@mui/icons-material";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams } from "react-router-dom";
 
 import ContentDocuments from "../../components/common/course/ContentDocuments";
 import ContentDetail from "../../components/common/course/ContentDetail";
@@ -70,179 +68,6 @@ interface ContentItem {
   prerequisites?: string[];
   keywords?: string[];
 }
-
-// Mock data
-const mockCourseData = {
-  id: 1,
-  title: "React & TypeScript Masterclass",
-  description:
-    "Khóa học toàn diện về React và TypeScript cho lập trình viên Frontend",
-  thumbnail: "/src/assets/logo.png",
-  status: "published",
-  lastUpdated: "2024-03-15",
-  totalStudents: 234,
-  rating: 4.8,
-  totalRatings: 150,
-  totalLessons: 42,
-  totalDuration: "52 giờ",
-  sections: [
-    {
-      id: 1,
-      title: "Giới thiệu khóa học",
-      progress: 75,
-      contents: [
-        {
-          id: 1,
-          type: "video",
-          title: "Tổng quan khóa học",
-          description: `Bài học này sẽ giới thiệu tổng quan về khóa học React & TypeScript, bao gồm:
-            • Các kiến thức sẽ được học
-            • Cách thức học tập hiệu quả
-            • Lộ trình học tập chi tiết
-            • Cài đặt môi trường phát triển`,
-          duration: "10:00",
-          url: "https://example.com/video1",
-          completed: true,
-          locked: false,
-          objectives: [
-            "Hiểu được mục tiêu và nội dung khóa học",
-            "Chuẩn bị môi trường phát triển",
-            "Nắm được lộ trình học tập",
-          ],
-          keywords: ["Overview", "Setup", "Learning Path"],
-        },
-        {
-          id: 2,
-          type: "slide",
-          title: "Slide bài giảng: React Fundamentals",
-          description: `Slide trình bày các khái niệm cơ bản của React:
-            • Components và Props
-            • State và Lifecycle
-            • Event Handling
-            • Conditional Rendering
-            • Lists và Keys`,
-          url: "https://example.com/slide1",
-          completed: true,
-          locked: false,
-          keywords: ["React", "Components", "Props", "State"],
-        },
-        {
-          id: 3,
-          type: "meet",
-          title: "Live session: Q&A về React Hooks",
-          description: `Buổi thảo luận trực tuyến về React Hooks:
-            • Giải đáp thắc mắc về useState, useEffect
-            • Demo các use cases phổ biến
-            • Tips và best practices
-            • Review code của học viên`,
-          duration: "60:00",
-          url: "https://meet.google.com/xyz",
-          completed: false,
-          locked: false,
-          prerequisites: [
-            "Đã hoàn thành các bài học về React Hooks",
-            "Chuẩn bị câu hỏi trước buổi học",
-          ],
-        },
-        {
-          id: 4,
-          type: "quiz",
-          title: "Kiểm tra kiến thức React cơ bản",
-          description: `Bài kiểm tra đánh giá kiến thức:
-            • 20 câu hỏi trắc nghiệm
-            • Thời gian làm bài: 30 phút
-            • Yêu cầu đạt: 70% số câu đúng
-            • Được phép làm lại 2 lần`,
-          duration: "30:00",
-          url: "https://example.com/quiz1",
-          completed: false,
-          locked: false,
-          maxAttempts: 2,
-          passingScore: 70,
-        },
-        {
-          id: 5,
-          type: "assignment",
-          title: "Bài tập: Xây dựng Todo App",
-          description: `Bài tập thực hành:
-            • Xây dựng ứng dụng Todo List với React
-            • Sử dụng TypeScript để type checking
-            • Implement CRUD operations
-            • Styling với CSS modules
-            • Deployment lên Vercel`,
-          duration: "120:00",
-          url: "https://example.com/assignment1",
-          completed: false,
-          locked: false,
-          objectives: [
-            "Áp dụng kiến thức về React Components",
-            "Thực hành TypeScript với React",
-            "Hiểu về state management cơ bản",
-          ],
-        },
-      ],
-      materials: [
-        {
-          id: 101,
-          title: "Tài liệu hướng dẫn",
-          type: "pdf",
-          url: "https://example.com/guide.pdf",
-        },
-        {
-          id: 102,
-          title: "Tài liệu tham khảo",
-          type: "link",
-          url: "https://reactjs.org",
-        },
-      ],
-    },
-    {
-      id: 2,
-      title: "React Fundamentals",
-      progress: 30,
-      contents: [
-        {
-          id: 6,
-          type: "video",
-          title: "Components và Props",
-          duration: "15:00",
-          url: "https://example.com/video2",
-          completed: false,
-          locked: false,
-        },
-        {
-          id: 7,
-          type: "assignment",
-          title: "Bài tập Components",
-          url: "https://example.com/assignment1",
-          completed: false,
-          locked: true,
-          description: "Xây dựng các components cơ bản",
-          maxAttempts: 3,
-          passingScore: 80,
-        },
-      ],
-      assessment: {
-        id: 201,
-        title: "Kiểm tra cuối chương",
-        type: "quiz",
-        questions: 10,
-        duration: "30:00",
-        passingScore: 80,
-        maxAttempts: 2,
-        locked: true,
-      },
-      materials: [
-        {
-          id: 103,
-          title: "React Documentation",
-          type: "link",
-          url: "https://reactjs.org/docs",
-        },
-      ],
-    },
-  ],
-};
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -342,13 +167,6 @@ const InstructorCourseView = () => {
   const [uploadError, setUploadError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Form state bổ sung trường cho document
-  const [documentForm, setDocumentForm] = useState({
-    title: "",
-    description: "",
-    section: "",
-  });
-
   // Thêm state quản lý section modals
   const [openAddSectionModal, setOpenAddSectionModal] = useState(false);
   const [openEditSectionModal, setOpenEditSectionModal] = useState(false);
@@ -368,18 +186,6 @@ const InstructorCourseView = () => {
 
   // Thêm state cho modal cài đặt
   const [openSettingsModal, setOpenSettingsModal] = useState(false);
-  const [courseSettings, setCourseSettings] = useState({
-    isPublished: mockCourseData.status === "published",
-    visibility: "public",
-    allowPreview: true,
-    requireEnrollment: true,
-    price: mockCourseData.price || 0,
-    salePrice: 0,
-    enrollmentLimit: 0,
-    passingScore: 70,
-    certificateEnabled: true,
-    discountCodes: [],
-  });
 
   const handleContentClick = (content: any) => {
     // Kích hoạt tab "Nội dung" (giả sử tab nội dung có index là 0)
@@ -550,12 +356,6 @@ const InstructorCourseView = () => {
     setOpenEditQuizModal(true);
   };
 
-  // Hàm mở modal thêm assignment
-  const handleOpenAddAssignmentModal = (sectionId?: number) => {
-    setCurrentSectionId(sectionId || null);
-    setOpenAddAssignmentModal(true);
-  };
-
   // Hàm mở modal sửa assignment
   const handleOpenEditAssignmentModal = (
     assignment: any,
@@ -570,7 +370,6 @@ const InstructorCourseView = () => {
   const handleSaveSettings = (settings: any) => {
     console.log("Lưu cài đặt khóa học:", settings);
     // Cập nhật cài đặt vào state hoặc gọi API
-    setCourseSettings(settings);
 
     // Đóng dialog
     setOpenSettingsModal(false);
@@ -637,7 +436,7 @@ const InstructorCourseView = () => {
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <PlayCircle color="action" />
                     <Typography>
-                      {courseData?.sections.length} bài học (
+                      {courseData?.sections.length} phần (
                       {courseData?.sections.reduce(
                         (total, section) => total + section.lessons.length,
                         0
@@ -669,8 +468,6 @@ const InstructorCourseView = () => {
         open={openSettingsModal}
         onClose={() => setOpenSettingsModal(false)}
         onSave={handleSaveSettings}
-        courseId={mockCourseData.id}
-        initialSettings={courseSettings}
       />
 
       {/* Course Content */}

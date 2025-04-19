@@ -214,6 +214,7 @@ const assignmentsSlice = createSlice({
       })
       .addCase(fetchAssignmentsByLesson.rejected, (state, action) => {
         state.status = "failed";
+        state.lessonAssignments = [];
         state.error = action.payload as string;
       })
 

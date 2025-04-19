@@ -22,17 +22,28 @@ import {
   Search,
   Add,
   MoreVert,
-  School,
   People,
   Star,
   Visibility,
   Delete,
+  Edit,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { selectCurrentUser } from "../../features/auth/authSelectors";
-import { fetchCoursesByInstructor } from "../../features/courses/coursesApiSlice";
+import {
+  deleteCourse,
+  fetchCoursesByInstructor,
+} from "../../features/courses/coursesApiSlice";
 import { selectCoursesByInstructor } from "../../features/courses/coursesSelector";
+import DialogAddEditCourse from "../../components/instructor/course/DialogAddEditCourse";
+import Dialog from "@mui/material/Dialog";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContent from "@mui/material/DialogContent";
+import DialogContentText from "@mui/material/DialogContentText";
+import DialogTitle from "@mui/material/DialogTitle";
+import { toast } from "react-toastify";
+import { setISODay } from "date-fns";
 
 const InstructorCourses = () => {
   const navigate = useNavigate();
@@ -44,6 +55,13 @@ const InstructorCourses = () => {
   const [ratingFilter, setRatingFilter] = useState("all");
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
+  const [openAddDialog, setOpenAddDialog] = useState(false);
+  const [deleteConfirmDialog, setDeleteConfirmDialog] = useState({
+    open: false,
+    courseId: null as string | null,
+    hasEnrollments: false,
+  });
+  const [courseToEdit, setCourseToEdit] = useState<Course | null>(null);
 
   useEffect(() => {
     dispatch(fetchCoursesByInstructor(currentUser?.userInstructor?.id));
@@ -60,6 +78,37 @@ const InstructorCourses = () => {
   const handleMenuClose = () => {
     setAnchorEl(null);
     setSelectedCourse(null);
+  };
+
+  const handleDeleteCourse = (courseId: string) => {
+    const course = courses.find((c) => c.id === courseId);
+    if (course) {
+      setDeleteConfirmDialog({
+        open: true,
+        courseId,
+        hasEnrollments: course.enrollments.length > 0,
+      });
+    }
+    handleMenuClose();
+  };
+
+  const handleConfirmDelete = async () => {
+    if (deleteConfirmDialog.courseId) {
+      try {
+        await dispatch(deleteCourse(deleteConfirmDialog.courseId));
+        await dispatch(
+          fetchCoursesByInstructor(currentUser?.userInstructor?.id)
+        );
+        toast.success("Xóa khóa học thành công!");
+      } catch (error) {
+        toast.error("Không thể xóa khóa học. Vui lòng thử lại!");
+      }
+    }
+    setDeleteConfirmDialog({
+      open: false,
+      courseId: null,
+      hasEnrollments: false,
+    });
   };
 
   // Filter and sort courses based on search query, students, and rating
@@ -99,6 +148,12 @@ const InstructorCourses = () => {
       return 0;
     });
 
+  const handleEditCourse = (course: Course) => {
+    setCourseToEdit(course);
+    setOpenAddDialog(true);
+    handleMenuClose();
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       {/* Header */}
@@ -121,7 +176,7 @@ const InstructorCourses = () => {
             bgcolor: "primary.main",
             "&:hover": { bgcolor: "primary.dark" },
           }}
-          onClick={() => navigate("/instructor/courses/create")}
+          onClick={() => setOpenAddDialog(true)}
         >
           Tạo Khóa Học
         </Button>
@@ -293,7 +348,7 @@ const InstructorCourses = () => {
                                   0
                                 ) / course.reviews.length
                               ).toFixed(1)
-                            : "N/A"}{" "}
+                            : "Chưa có đánh giá"}{" "}
                           ({course.reviews.length})
                         </Typography>
                       </Box>
@@ -341,13 +396,85 @@ const InstructorCourses = () => {
             sx={{ mr: 1, color: "text.secondary" }}
             fontSize="small"
           />
-          Xem và chỉnh sửa khóa học
+          Xem khóa học
         </MenuItem>
-        <MenuItem onClick={handleMenuClose} sx={{ color: "error.main" }}>
+
+        <MenuItem
+          onClick={() => {
+            const course = courses.find((c) => c.id === selectedCourse);
+            if (course) {
+              handleEditCourse(course);
+            }
+          }}
+        >
+          <Edit sx={{ mr: 1, color: "text.secondary" }} fontSize="small" />
+          Chỉnh sửa khóa học
+        </MenuItem>
+
+        <MenuItem
+          onClick={() => handleDeleteCourse(selectedCourse as string)}
+          sx={{ color: "error.main" }}
+        >
           <Delete sx={{ mr: 1 }} fontSize="small" />
           Xóa khóa học
         </MenuItem>
       </Menu>
+
+      <DialogAddEditCourse
+        open={openAddDialog}
+        onClose={() => {
+          setOpenAddDialog(false);
+          setCourseToEdit(null);
+        }}
+        courseToEdit={courseToEdit}
+        editMode={!!courseToEdit}
+      />
+
+      <Dialog
+        open={deleteConfirmDialog.open}
+        onClose={() =>
+          setDeleteConfirmDialog({
+            open: false,
+            courseId: null,
+            hasEnrollments: false,
+          })
+        }
+      >
+        <DialogTitle>
+          {deleteConfirmDialog.hasEnrollments
+            ? "Không thể xóa khóa học"
+            : "Xác nhận xóa khóa học"}
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {deleteConfirmDialog.hasEnrollments
+              ? "Không thể xóa khóa học này vì đã có học viên đăng ký. Vui lòng xem xét ẩn hoặc lưu trữ khóa học thay vì xóa."
+              : "Bạn có chắc chắn muốn xóa khóa học này? Hành động này không thể hoàn tác."}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() =>
+              setDeleteConfirmDialog({
+                open: false,
+                courseId: null,
+                hasEnrollments: false,
+              })
+            }
+          >
+            Hủy
+          </Button>
+          {!deleteConfirmDialog.hasEnrollments && (
+            <Button
+              onClick={handleConfirmDelete}
+              color="error"
+              variant="contained"
+            >
+              Xóa
+            </Button>
+          )}
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

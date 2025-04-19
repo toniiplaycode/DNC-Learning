@@ -10,6 +10,19 @@ export class CoursesService {
     private readonly courseRepository: Repository<Course>,
   ) {}
 
+  // Add this helper function at the top of the class
+  private formatDate(date: string | Date | null): string | null {
+    if (!date) return null;
+    const d = new Date(date);
+    return (
+      d.getFullYear() +
+      '-' +
+      String(d.getMonth() + 1).padStart(2, '0') +
+      '-' +
+      String(d.getDate()).padStart(2, '0')
+    );
+  }
+
   async findAll(): Promise<Course[]> {
     return await this.courseRepository.find({
       relations: {
@@ -157,13 +170,27 @@ export class CoursesService {
     });
   }
 
-  async create(course: any): Promise<Course> {
-    this.courseRepository.create(course);
-    return this.courseRepository.save(course);
+  async create(course: any): Promise<any> {
+    // Format dates before saving
+    const formattedCourse = {
+      ...course,
+      startDate: this.formatDate(course.startDate),
+      endDate: this.formatDate(course.endDate),
+    };
+
+    const newCourse = this.courseRepository.create(formattedCourse);
+    return this.courseRepository.save(newCourse);
   }
 
   async update(id: number, course: any): Promise<Course | null> {
-    await this.courseRepository.update(id, course);
+    // Format dates before updating
+    const formattedCourse = {
+      ...course,
+      startDate: this.formatDate(course.startDate),
+      endDate: this.formatDate(course.endDate),
+    };
+
+    await this.courseRepository.update(id, formattedCourse);
     return this.courseRepository.findOne({ where: { id } });
   }
 

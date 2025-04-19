@@ -378,6 +378,35 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
             </CardContent>
           </Card>
         </Box>
+      ) : !assignmentData.assignmentId ? (
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            p: 4,
+            textAlign: "center",
+            bgcolor: "background.paper",
+            borderRadius: 2,
+            border: "1px dashed",
+            borderColor: "divider",
+          }}
+        >
+          <Typography
+            variant="h5"
+            color="text.secondary"
+            fontWeight={"bold"}
+            gutterBottom
+          >
+            Chưa tạo bài tập
+          </Typography>
+          {currentUser.role === "instructor" && (
+            <Typography variant="body2" color="text.secondary">
+              Hãy qua tab "BÀI KIỂM TRA/BÀI TẬP" để thêm bài tập
+            </Typography>
+          )}
+        </Box>
       ) : (
         <>
           <Card sx={{ mb: 3 }}>

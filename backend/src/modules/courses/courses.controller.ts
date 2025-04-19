@@ -32,9 +32,10 @@ export class CoursesController {
   }
 
   @Post()
-  create(@Body() course: CreateCoursesDto): Promise<Course> {
+  create(@Body() course: any): Promise<Course> {
     return this.coursesService.create(course);
   }
+
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -42,6 +43,7 @@ export class CoursesController {
   ): Promise<Course | null> {
     return this.coursesService.update(+id, course);
   }
+
   @Delete(':id')
   remove(@Param('id') id: string): Promise<{ message: string }> {
     return this.coursesService.remove(+id);

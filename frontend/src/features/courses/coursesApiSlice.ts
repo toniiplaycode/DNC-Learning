@@ -1,5 +1,6 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { api } from "../../services/api";
+import { Response } from "express";
 
 export interface Course {
   id: number;
@@ -81,7 +82,7 @@ export const fetchCoursesByInstructor = createAsyncThunk(
 // Create a new course
 export const createCourse = createAsyncThunk(
   "courses/createCourse",
-  async (courseData: Partial<Course>, { rejectWithValue }) => {
+  async (courseData: any, { rejectWithValue }) => {
     try {
       const response = await api.post("/courses", courseData);
       return response.data;
@@ -116,7 +117,8 @@ export const deleteCourse = createAsyncThunk(
   "courses/deleteCourse",
   async (id: number, { rejectWithValue }) => {
     try {
-      await api.delete(`/courses/${id}`);
+      const response = await api.delete(`/courses/${id}`);
+      console.log(response);
       return id;
     } catch (error: any) {
       return rejectWithValue(error.response?.data || "Không thể xóa khóa học");
