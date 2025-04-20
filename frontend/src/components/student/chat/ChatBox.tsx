@@ -178,31 +178,98 @@ const ChatBox = () => {
   useEffect(() => {
     if (!messages?.length || !currentUser?.id) return;
 
-    const processedRooms = processMessages(messages);
-    setChatRooms(processedRooms);
+    try {
+      const processedRooms = processMessages(messages);
+      setChatRooms(processedRooms);
 
-    // Update selected room if exists
-    if (selectedRoom) {
-      const updatedRoom = processedRooms.find(
-        (room) => room.id === selectedRoom.id
-      );
-      if (updatedRoom) {
-        setSelectedRoom(updatedRoom);
+      // Update selected room if exists
+      if (selectedRoom) {
+        const updatedRoom = processedRooms.find(
+          (room) => room.id === selectedRoom.id
+        );
+        if (updatedRoom) {
+          setSelectedRoom(updatedRoom);
+        }
       }
+    } catch (error) {
+      console.error("Error processing messages:", error);
     }
-  }, [messages, currentUser?.id]);
+  }, [messages, currentUser?.id, selectedRoom?.id]);
 
   // Handle sending messages
   const handleSend = () => {
     if (!currentUser || !message.trim() || !selectedRoom || !socketRef.current)
       return;
 
+    // Create temporary message structure matching Message interface
+    const tempMessage: Message = {
+      id: Date.now(), // temporary id
+      messageText: message.trim(),
+      isRead: false,
+      createdAt: new Date().toISOString(),
+      sender: {
+        id: currentUser.id,
+        username: currentUser.username,
+        email: currentUser.email,
+        role: currentUser.role,
+        avatarUrl: currentUser.avatarUrl,
+        userStudent: currentUser.userStudent,
+        userStudentAcademic: currentUser.userStudentAcademic,
+        userInstructor: currentUser.userInstructor,
+      },
+      receiver: {
+        id: selectedRoom.instructor.id,
+        username: selectedRoom.instructor.fullName,
+        email: "",
+        role: selectedRoom.instructor.role,
+        avatarUrl: selectedRoom.instructor.avatarUrl,
+      },
+    };
+
+    // Add to Redux store immediately
+    dispatch(addMessage(tempMessage));
+
+    // Update local state
+    setChatRooms((prev) =>
+      prev.map((room) => {
+        if (room.id === selectedRoom.id) {
+          return {
+            ...room,
+            messages: [
+              ...room.messages,
+              {
+                id: tempMessage.id,
+                content: tempMessage.messageText,
+                sender: "user",
+                timestamp: tempMessage.createdAt,
+                avatar: currentUser.avatarUrl,
+                name: currentUser.username,
+                isRead: false,
+                senderId: currentUser.id,
+                receiverId: selectedRoom.instructor.id,
+              },
+            ].sort(
+              (a, b) =>
+                new Date(a.timestamp).getTime() -
+                new Date(b.timestamp).getTime()
+            ),
+          };
+        }
+        return room;
+      })
+    );
+
+    // Emit message through socket
     socketRef.current.emit("sendMessage", {
       receiverId: selectedRoom.instructor.id,
       messageText: message.trim(),
     });
 
+    // Clear input
     setMessage("");
+
+    // Scroll to bottom
+    scrollToBottom();
   };
 
   // Keep only one state declaration
@@ -330,11 +397,11 @@ const ChatBox = () => {
     }
   }, [messages, currentUser]);
 
-  // Update WebSocket connection useEffect
+  // Socket connection effect
   useEffect(() => {
     if (!currentUser?.id) return;
 
-    console.log("Attempting to connect to WebSocket...");
+    console.log("Connecting to WebSocket...");
     socketRef.current = io("http://localhost:3000", {
       auth: {
         userId: currentUser.id,
@@ -342,79 +409,16 @@ const ChatBox = () => {
       },
     });
 
-    // Message received handler
-    socketRef.current.on("newMessage", (message: Message) => {
-      console.log("New message received:", message);
-
-      setChatRooms((prev) => {
-        const otherUserId =
-          message.sender.id === currentUser.id
-            ? message.receiver.id
-            : message.sender.id;
-
-        const existingRoom = prev.find(
-          (room) => room.id === Number(otherUserId)
-        );
-
-        if (existingRoom) {
-          return prev.map((room) => {
-            if (room.id === Number(otherUserId)) {
-              const updatedMessages = [
-                ...room.messages,
-                {
-                  id: message.id,
-                  content: message.messageText,
-                  sender:
-                    message.sender.id === currentUser.id ? "user" : "support",
-                  timestamp: message.createdAt,
-                  avatar: message.sender.avatarUrl,
-                  name:
-                    message.sender.userInstructor?.fullName ||
-                    message.sender.userStudent?.fullName ||
-                    message.sender.username,
-                  isRead: message.isRead,
-                  senderId: message.sender.id,
-                  receiverId: message.receiver.id,
-                },
-              ].sort(
-                (a, b) =>
-                  new Date(a.timestamp).getTime() -
-                  new Date(b.timestamp).getTime()
-              );
-
-              return {
-                ...room,
-                messages: updatedMessages,
-                unread:
-                  message.sender.id !== currentUser.id
-                    ? room.unread + 1
-                    : room.unread,
-              };
-            }
-            return room;
-          });
-        }
-        // ... rest of the code for new rooms
-      });
-
-      // Scroll to bottom after message update
-      scrollToBottom();
-    });
-
-    // Connection event handlers
+    // Connection events
     socketRef.current.on("connect", () => {
-      console.log("WebSocket Connected!", socketRef.current?.id);
+      console.log("WebSocket Connected!");
     });
 
     socketRef.current.on("connect_error", (error) => {
-      console.error("WebSocket Connection Error:", error.message);
+      console.error("Connection Error:", error.message);
     });
 
-    socketRef.current.on("disconnect", (reason) => {
-      console.log("WebSocket Disconnected:", reason);
-    });
-
-    // Update message handling
+    // Single message handler for both new and sent messages
     socketRef.current.on("newMessage", (message: Message) => {
       console.log("New message received:", message);
 
@@ -424,49 +428,59 @@ const ChatBox = () => {
             ? message.receiver.id
             : message.sender.id;
 
-        const updatedRooms = prev.map((room) => {
-          if (room.id === Number(otherUserId)) {
-            // Remove temporary message if this is a confirmation
-            const filteredMessages = room.messages.filter(
-              (msg) =>
-                !(
-                  msg.senderId === currentUser.id &&
-                  msg.content === message.messageText &&
-                  !msg.id
+        // Make a copy of previous rooms
+        const updatedRooms = [...prev];
+        const roomIndex = updatedRooms.findIndex(
+          (room) => room.id === Number(otherUserId)
+        );
+
+        if (roomIndex >= 0) {
+          // Update existing room
+          const room = { ...updatedRooms[roomIndex] };
+
+          // Remove temporary message if this is a confirmation of our own message
+          const filteredMessages =
+            message.sender.id === currentUser.id
+              ? room.messages.filter(
+                  (msg) =>
+                    !(
+                      msg.senderId === currentUser.id &&
+                      msg.content === message.messageText &&
+                      typeof msg.id === "number" &&
+                      msg.id > Date.now() - 5000
+                    )
                 )
-            );
+              : room.messages;
 
-            return {
-              ...room,
-              messages: [
-                ...filteredMessages,
-                {
-                  id: message.id,
-                  content: message.messageText,
-                  sender:
-                    message.sender.id === currentUser.id ? "user" : "support",
-                  timestamp: message.createdAt,
-                  avatar: message.sender.avatarUrl,
-                  name:
-                    message.sender.userStudent?.fullName ||
-                    message.sender.userInstructor?.fullName ||
-                    message.sender.username,
-                  isRead: message.isRead,
-                  senderId: message.sender.id,
-                  receiverId: message.receiver.id,
-                },
-              ],
-              unread:
-                message.sender.id !== currentUser.id
-                  ? room.unread + 1
-                  : room.unread,
-            };
+          // Add new message
+          room.messages = [
+            ...filteredMessages,
+            {
+              id: message.id,
+              content: message.messageText,
+              sender: message.sender.id === currentUser.id ? "user" : "support",
+              timestamp: message.createdAt,
+              avatar: message.sender.avatarUrl,
+              name:
+                message.sender.userStudent?.fullName ||
+                message.sender.userInstructor?.fullName ||
+                message.sender.username,
+              isRead: message.isRead,
+              senderId: message.sender.id,
+              receiverId: message.receiver.id,
+            },
+          ].sort(
+            (a, b) =>
+              new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+          );
+
+          if (message.sender.id !== currentUser.id) {
+            room.unread++;
           }
-          return room;
-        });
 
-        // If this is a new conversation, add a new room
-        if (!prev.some((room) => room.id === Number(otherUserId))) {
+          updatedRooms[roomIndex] = room;
+        } else {
+          // Create new room if it doesn't exist
           const otherUser =
             message.sender.id === currentUser.id
               ? message.receiver
@@ -511,35 +525,18 @@ const ChatBox = () => {
         return updatedRooms;
       });
 
-      // Update Redux store
+      // Update Redux store after local state
       dispatch(addMessage(message));
-    });
 
-    // Add message sent confirmation handler
-    socketRef.current.on("messageSent", (message: Message) => {
-      console.log("Message sent confirmation:", message);
-      // Update message in Redux store with server-generated ID and timestamp
-      dispatch(addMessage(message));
-    });
-
-    // Listen for read receipts with logging
-    socketRef.current.on("messageRead", (messageId: number) => {
-      console.log("Message marked as read:", messageId);
-      dispatch(markMessageAsRead(messageId));
-    });
-
-    // Add listener for messages response
-    socketRef.current.on("messages", (messages) => {
-      console.log("Received message history:", messages);
-      dispatch(setMessages(messages));
+      // Scroll to bottom
+      scrollToBottom();
     });
 
     return () => {
-      console.log("Cleaning up WebSocket connection...");
       if (socketRef.current) {
         socketRef.current.off("newMessage");
-        socketRef.current.off("messageSent");
-        socketRef.current.off("messageRead");
+        socketRef.current.off("connect");
+        socketRef.current.off("connect_error");
         socketRef.current.disconnect();
       }
     };
@@ -610,8 +607,8 @@ const ChatBox = () => {
             bottom: 24,
             right: 24,
             width: "100%",
-            maxWidth: 360,
-            height: 480,
+            maxWidth: 500,
+            height: 700,
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
