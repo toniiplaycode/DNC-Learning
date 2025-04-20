@@ -49,6 +49,20 @@ const messagesSlice = createSlice({
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
     },
+    updateMessageStatus: (
+      state,
+      action: PayloadAction<{
+        messageId: number;
+        status: { isRead?: boolean; id?: number };
+      }>
+    ) => {
+      const message = state.messages.find(
+        (m) => m.id === action.payload.messageId
+      );
+      if (message) {
+        Object.assign(message, action.payload.status);
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -74,6 +88,7 @@ export const {
   markMessageAsRead,
   setLoading,
   setError,
+  updateMessageStatus,
 } = messagesSlice.actions;
 
 export default messagesSlice.reducer;

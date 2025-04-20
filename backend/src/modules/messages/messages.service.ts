@@ -14,13 +14,35 @@ export class MessagesService {
   async create(
     senderId: number,
     createMessageDto: CreateMessageDto,
-  ): Promise<Message> {
+  ): Promise<Message | null> {
     const message = this.messageRepository.create({
       senderId,
       receiverId: createMessageDto.receiverId,
       messageText: createMessageDto.messageText,
     });
-    return this.messageRepository.save(message);
+
+    const savedMessage = await this.messageRepository.save(message);
+
+    // Fetch complete message with relations after saving
+    return this.messageRepository.findOne({
+      where: { id: savedMessage.id },
+      relations: {
+        sender: {
+          userStudent: true,
+          userInstructor: true,
+          userStudentAcademic: {
+            academicClass: true,
+          },
+        },
+        receiver: {
+          userStudent: true,
+          userInstructor: true,
+          userStudentAcademic: {
+            academicClass: true,
+          },
+        },
+      },
+    });
   }
 
   async getConversation(userId1: number, userId2: number): Promise<Message[]> {

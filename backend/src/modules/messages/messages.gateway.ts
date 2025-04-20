@@ -4,6 +4,7 @@ import {
   SubscribeMessage,
   OnGatewayConnection,
   OnGatewayDisconnect,
+  WsException,
 } from '@nestjs/websockets';
 import { Server, Socket } from 'socket.io';
 import { MessagesService } from './messages.service';
@@ -45,21 +46,37 @@ export class MessagesGateway
 
   @SubscribeMessage('sendMessage')
   async handleMessage(client: Socket, payload: CreateMessageDto) {
-    const userId = client.handshake.auth.userId;
+    try {
+      const userId = client.handshake.auth.userId;
+      if (!userId) {
+        throw new WsException('Unauthorized');
+      }
 
-    // Save message to database
-    const message = await this.messagesService.create(userId, payload);
+      // Create and save the message with full relations
+      const newMessage = await this.messagesService.create(userId, payload);
 
-    // Get receiver's socket
-    const receiverSocketId = this.connectedClients.get(payload.receiverId);
+      // Get receiver's socket
+      const receiverSocketId = this.connectedClients.get(payload.receiverId);
 
-    if (receiverSocketId) {
-      // Send to specific client
-      this.server.to(receiverSocketId).emit('newMessage', message);
+      // Send to receiver if online
+      if (receiverSocketId) {
+        this.server.to(receiverSocketId).emit('newMessage', newMessage);
+      }
+
+      // Send back to sender
+      client.emit('messageSent', newMessage);
+
+      return {
+        event: 'messageSent',
+        data: newMessage,
+      };
+    } catch (error) {
+      console.error('Error handling message:', error);
+      return {
+        event: 'error',
+        data: 'Could not send message',
+      };
     }
-
-    // Send back to sender
-    return message;
   }
 
   @SubscribeMessage('markAsRead')

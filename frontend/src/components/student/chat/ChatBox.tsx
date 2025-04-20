@@ -42,6 +42,7 @@ import {
   selectAllMessages,
   selectMessagesLoading,
 } from "../../../features/messages/messagesSelector";
+import ChatErrorBoundary from "./ChatErrorBoundary";
 
 interface Message {
   id: number;
@@ -132,9 +133,148 @@ interface ChatRoom {
 const ChatBox = () => {
   const currentUser = useAppSelector(selectCurrentUser);
   const navigate = useNavigate();
-  const [open, setOpen] = useState(false);
+  const dispatch = useAppDispatch();
+  const messages = useAppSelector(selectAllMessages);
+  const loading = useAppSelector(selectMessagesLoading);
 
-  // Return early if no user with login prompt
+  const [open, setOpen] = useState(false);
+  const [showInstructors, setShowInstructors] = useState(true);
+  const [selectedRoom, setSelectedRoom] = useState<ChatRoom | null>(null);
+  const [message, setMessage] = useState("");
+  const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
+
+  const socketRef = useRef<Socket | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Socket connection
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    socketRef.current = io("http://localhost:3000", {
+      auth: {
+        userId: currentUser.id,
+        authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+
+    // Handle new messages
+    socketRef.current.on("newMessage", (newMessage: Message) => {
+      console.log("New message received:", newMessage);
+      dispatch(addMessage(newMessage));
+    });
+
+    // Handle sent message confirmation
+    socketRef.current.on("messageSent", (sentMessage: Message) => {
+      console.log("Message sent confirmation:", sentMessage);
+      dispatch(addMessage(sentMessage));
+    });
+
+    return () => {
+      socketRef.current?.disconnect();
+    };
+  }, [currentUser?.id, dispatch]);
+
+  // Process messages into chat rooms
+  useEffect(() => {
+    if (!messages?.length || !currentUser?.id) return;
+
+    const processedRooms = processMessages(messages);
+    setChatRooms(processedRooms);
+
+    // Update selected room if exists
+    if (selectedRoom) {
+      const updatedRoom = processedRooms.find(
+        (room) => room.id === selectedRoom.id
+      );
+      if (updatedRoom) {
+        setSelectedRoom(updatedRoom);
+      }
+    }
+  }, [messages, currentUser?.id]);
+
+  // Handle sending messages
+  const handleSend = () => {
+    if (!currentUser || !message.trim() || !selectedRoom || !socketRef.current)
+      return;
+
+    socketRef.current.emit("sendMessage", {
+      receiverId: selectedRoom.instructor.id,
+      messageText: message.trim(),
+    });
+
+    setMessage("");
+  };
+
+  // Keep only one state declaration
+  const processMessages = (messages: Message[]) => {
+    if (!currentUser?.id || !messages) return [];
+
+    const instructorMessages = messages.reduce((acc, message) => {
+      if (!message?.sender?.id || !message?.receiver?.id) return acc;
+
+      const otherUserId =
+        message.sender.id === currentUser.id
+          ? message.receiver.id
+          : message.sender.id;
+
+      if (!acc[otherUserId]) {
+        const otherUser =
+          message.sender.id === currentUser.id
+            ? message.receiver
+            : message.sender;
+
+        acc[otherUserId] = {
+          id: Number(otherUserId),
+          instructor: {
+            id: otherUser.id,
+            fullName:
+              otherUser.userInstructor?.fullName ||
+              otherUser.userStudent?.fullName ||
+              otherUser.username,
+            avatarUrl: otherUser.avatarUrl || "",
+            role:
+              otherUser.userInstructor?.professionalTitle ||
+              otherUser.role?.charAt(0).toUpperCase() +
+                otherUser.role?.slice(1),
+            online: false,
+          },
+          messages: [],
+          unread: 0,
+        };
+      }
+
+      acc[otherUserId].messages.push({
+        id: message.id,
+        content: message.messageText,
+        sender: message.sender.id === currentUser.id ? "user" : "support",
+        timestamp: message.createdAt,
+        avatar: message.sender.avatarUrl,
+        name:
+          message.sender.userInstructor?.fullName ||
+          message.sender.userStudent?.fullName ||
+          message.sender.username,
+        isRead: message.isRead,
+        senderId: message.sender.id,
+        receiverId: message.receiver.id,
+      });
+
+      // Sort messages by timestamp after adding new message
+      acc[otherUserId].messages.sort(
+        (a, b) =>
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      );
+
+      if (!message.isRead && message.sender.id !== currentUser.id) {
+        acc[otherUserId].unread++;
+      }
+
+      return acc;
+    }, {} as Record<string, ChatRoom>);
+
+    return Object.values(instructorMessages);
+  };
+
+  // Return early if no user
   if (!currentUser) {
     return (
       <Grow in={true}>
@@ -156,14 +296,13 @@ const ChatBox = () => {
     );
   }
 
-  const [showInstructors, setShowInstructors] = useState(true);
-  const [selectedRoom, setSelectedRoom] = useState<ChatRoom | null>(null);
-  const [message, setMessage] = useState("");
-  const socketRef = useRef<Socket | null>(null);
-  const dispatch = useAppDispatch();
-  const messages = useAppSelector(selectAllMessages);
-  const loading = useAppSelector(selectMessagesLoading);
-  // const unreadCount = useAppSelector(selectUnreadMessagesCount);
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [selectedRoom?.messages]);
 
   // Add null checks in useEffect
   useEffect(() => {
@@ -174,77 +313,24 @@ const ChatBox = () => {
 
   console.log(messages);
 
-  const processMessages = (messages: Message[]) => {
-    const instructorMessages = messages.reduce((acc, message) => {
-      const otherUserId =
-        message.sender.id === currentUser.id
-          ? message.receiver.id
-          : message.sender.id;
-
-      if (!acc[otherUserId]) {
-        const otherUser =
-          message.sender.id === currentUser.id
-            ? message.receiver
-            : message.sender;
-
-        acc[otherUserId] = {
-          id: Number(otherUserId),
-          instructor: {
-            id: otherUser.id,
-            fullName:
-              otherUser.userInstructor?.fullName ||
-              otherUser.userStudent?.fullName ||
-              otherUser.userStudentAcademic?.fullName ||
-              otherUser.username,
-            avatarUrl: otherUser.avatarUrl,
-            role:
-              otherUser.userInstructor?.professionalTitle ||
-              otherUser.role.charAt(0).toUpperCase() + otherUser.role.slice(1),
-            online: false,
-          },
-          messages: [],
-          unread: 0,
-        };
-      }
-
-      acc[otherUserId].messages.push({
-        id: message.id,
-        content: message.messageText,
-        sender: message.sender.id === currentUser.id ? "user" : "support",
-        timestamp: message.createdAt,
-        avatar: message.sender.avatarUrl,
-        name:
-          message.sender.userInstructor?.fullName ||
-          message.sender.userStudent?.fullName ||
-          message.sender.userStudentAcademic?.fullName ||
-          message.sender.username,
-        isRead: message.isRead,
-        senderId: message.sender.id,
-        receiverId: message.receiver.id,
-      });
-
-      if (!message.isRead && message.sender.id !== currentUser.id) {
-        acc[otherUserId].unread++;
-      }
-
-      return acc;
-    }, {} as Record<string, ChatRoom>);
-
-    return Object.values(instructorMessages);
-  };
-
-  // Update state initialization
-  const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
-
   // Update useEffect to process messages when they change
   useEffect(() => {
-    if (messages.length > 0) {
+    if (!messages?.length || !currentUser?.id) {
+      console.log("No messages or user to process");
+      return;
+    }
+
+    try {
       const processedRooms = processMessages(messages);
-      setChatRooms(processedRooms);
+      if (processedRooms.length > 0) {
+        setChatRooms(processedRooms);
+      }
+    } catch (error) {
+      console.error("Error in message processing effect:", error);
     }
   }, [messages, currentUser]);
 
-  // Add null check in WebSocket connection
+  // Update WebSocket connection useEffect
   useEffect(() => {
     if (!currentUser?.id) return;
 
@@ -252,8 +338,67 @@ const ChatBox = () => {
     socketRef.current = io("http://localhost:3000", {
       auth: {
         userId: currentUser.id,
-        authorization: `Bearer ${localStorage.getItem("token")}`, // Add this line
+        authorization: `Bearer ${localStorage.getItem("token")}`,
       },
+    });
+
+    // Message received handler
+    socketRef.current.on("newMessage", (message: Message) => {
+      console.log("New message received:", message);
+
+      setChatRooms((prev) => {
+        const otherUserId =
+          message.sender.id === currentUser.id
+            ? message.receiver.id
+            : message.sender.id;
+
+        const existingRoom = prev.find(
+          (room) => room.id === Number(otherUserId)
+        );
+
+        if (existingRoom) {
+          return prev.map((room) => {
+            if (room.id === Number(otherUserId)) {
+              const updatedMessages = [
+                ...room.messages,
+                {
+                  id: message.id,
+                  content: message.messageText,
+                  sender:
+                    message.sender.id === currentUser.id ? "user" : "support",
+                  timestamp: message.createdAt,
+                  avatar: message.sender.avatarUrl,
+                  name:
+                    message.sender.userInstructor?.fullName ||
+                    message.sender.userStudent?.fullName ||
+                    message.sender.username,
+                  isRead: message.isRead,
+                  senderId: message.sender.id,
+                  receiverId: message.receiver.id,
+                },
+              ].sort(
+                (a, b) =>
+                  new Date(a.timestamp).getTime() -
+                  new Date(b.timestamp).getTime()
+              );
+
+              return {
+                ...room,
+                messages: updatedMessages,
+                unread:
+                  message.sender.id !== currentUser.id
+                    ? room.unread + 1
+                    : room.unread,
+              };
+            }
+            return room;
+          });
+        }
+        // ... rest of the code for new rooms
+      });
+
+      // Scroll to bottom after message update
+      scrollToBottom();
     });
 
     // Connection event handlers
@@ -269,9 +414,111 @@ const ChatBox = () => {
       console.log("WebSocket Disconnected:", reason);
     });
 
-    // Listen for new messages with logging
+    // Update message handling
     socketRef.current.on("newMessage", (message: Message) => {
       console.log("New message received:", message);
+
+      setChatRooms((prev) => {
+        const otherUserId =
+          message.sender.id === currentUser.id
+            ? message.receiver.id
+            : message.sender.id;
+
+        const updatedRooms = prev.map((room) => {
+          if (room.id === Number(otherUserId)) {
+            // Remove temporary message if this is a confirmation
+            const filteredMessages = room.messages.filter(
+              (msg) =>
+                !(
+                  msg.senderId === currentUser.id &&
+                  msg.content === message.messageText &&
+                  !msg.id
+                )
+            );
+
+            return {
+              ...room,
+              messages: [
+                ...filteredMessages,
+                {
+                  id: message.id,
+                  content: message.messageText,
+                  sender:
+                    message.sender.id === currentUser.id ? "user" : "support",
+                  timestamp: message.createdAt,
+                  avatar: message.sender.avatarUrl,
+                  name:
+                    message.sender.userStudent?.fullName ||
+                    message.sender.userInstructor?.fullName ||
+                    message.sender.username,
+                  isRead: message.isRead,
+                  senderId: message.sender.id,
+                  receiverId: message.receiver.id,
+                },
+              ],
+              unread:
+                message.sender.id !== currentUser.id
+                  ? room.unread + 1
+                  : room.unread,
+            };
+          }
+          return room;
+        });
+
+        // If this is a new conversation, add a new room
+        if (!prev.some((room) => room.id === Number(otherUserId))) {
+          const otherUser =
+            message.sender.id === currentUser.id
+              ? message.receiver
+              : message.sender;
+
+          updatedRooms.push({
+            id: Number(otherUserId),
+            instructor: {
+              id: otherUser.id,
+              fullName:
+                otherUser.userInstructor?.fullName ||
+                otherUser.userStudent?.fullName ||
+                otherUser.username,
+              avatarUrl: otherUser.avatarUrl,
+              role:
+                otherUser.userInstructor?.professionalTitle ||
+                otherUser.role.charAt(0).toUpperCase() +
+                  otherUser.role.slice(1),
+              online: false,
+            },
+            messages: [
+              {
+                id: message.id,
+                content: message.messageText,
+                sender:
+                  message.sender.id === currentUser.id ? "user" : "support",
+                timestamp: message.createdAt,
+                avatar: message.sender.avatarUrl,
+                name:
+                  message.sender.userStudent?.fullName ||
+                  message.sender.userInstructor?.fullName ||
+                  message.sender.username,
+                isRead: message.isRead,
+                senderId: message.sender.id,
+                receiverId: message.receiver.id,
+              },
+            ],
+            unread: message.sender.id !== currentUser.id ? 1 : 0,
+          });
+        }
+
+        return updatedRooms;
+      });
+
+      // Update Redux store
+      dispatch(addMessage(message));
+    });
+
+    // Add message sent confirmation handler
+    socketRef.current.on("messageSent", (message: Message) => {
+      console.log("Message sent confirmation:", message);
+      // Update message in Redux store with server-generated ID and timestamp
       dispatch(addMessage(message));
     });
 
@@ -289,66 +536,16 @@ const ChatBox = () => {
 
     return () => {
       console.log("Cleaning up WebSocket connection...");
-      socketRef.current?.disconnect();
-      socketRef.current?.off("messages");
+      if (socketRef.current) {
+        socketRef.current.off("newMessage");
+        socketRef.current.off("messageSent");
+        socketRef.current.off("messageRead");
+        socketRef.current.disconnect();
+      }
     };
   }, [currentUser?.id, dispatch]);
 
-  // Add null check in handleSend
-  const handleSend = () => {
-    if (
-      !currentUser ||
-      !message.trim() ||
-      !selectedRoom ||
-      !socketRef.current
-    ) {
-      return;
-    }
-
-    console.log("Sending message to:", selectedRoom.instructor.fullName);
-
-    const newMessage: Message = {
-      id: Date.now(),
-      messageText: message,
-      isRead: false,
-      createdAt: new Date().toISOString(),
-      sender: {
-        id: currentUser?.id.toString(),
-        username: currentUser?.username,
-        email: currentUser?.email,
-        role: currentUser?.role,
-        avatarUrl: currentUser?.avatarUrl,
-      },
-      receiver: {
-        id: selectedRoom.instructor.id,
-        username: selectedRoom.instructor.fullName,
-        email: "",
-        role: selectedRoom.instructor.role,
-        avatarUrl: selectedRoom.instructor.avatarUrl,
-      },
-    };
-
-    // Emit message through WebSocket
-    socketRef.current.emit("sendMessage", {
-      receiverId: selectedRoom.instructor.id,
-      messageText: message,
-    });
-    console.log("Message sent:", newMessage);
-
-    // Update local state
-    setChatRooms((prev) =>
-      prev.map((room) =>
-        room.id === selectedRoom.id
-          ? {
-              ...room,
-              messages: [...room.messages, newMessage],
-            }
-          : room
-      )
-    );
-    setMessage("");
-  };
-
+  // Update handleSend function
   const handleMarkAsRead = (messageId: number) => {
     if (socketRef.current) {
       console.log("Marking message as read:", messageId);
@@ -560,78 +757,76 @@ const ChatBox = () => {
               <>
                 <Box sx={{ flex: 1, overflowY: "auto", p: 2 }}>
                   <Stack spacing={2}>
-                    {selectedRoom?.messages.map((msg) => (
-                      <Box
-                        key={msg.id}
-                        sx={{
-                          display: "flex",
-                          justifyContent:
-                            msg.sender === "user" ? "flex-end" : "flex-start",
-                        }}
-                      >
-                        <Card
+                    {selectedRoom?.messages
+                      .slice() // Create a copy to avoid mutating original array
+                      .sort(
+                        (a, b) =>
+                          new Date(a.timestamp).getTime() -
+                          new Date(b.timestamp).getTime()
+                      )
+                      .map((msg) => (
+                        <Box
+                          key={msg.id}
                           sx={{
-                            maxWidth: "80%",
-                            bgcolor:
-                              msg.sender === "user"
-                                ? "primary.main"
-                                : "grey.100",
+                            display: "flex",
+                            justifyContent:
+                              msg.sender === "user" ? "flex-end" : "flex-start",
                           }}
                         >
-                          <Box sx={{ p: 2 }}>
-                            {msg.sender === "support" && (
+                          <Card
+                            sx={{
+                              maxWidth: "80%",
+                              bgcolor:
+                                msg.sender === "user"
+                                  ? "primary.main"
+                                  : "grey.100",
+                            }}
+                          >
+                            <Box sx={{ p: 2 }}>
+                              {msg.sender === "support" && (
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 1,
+                                    mb: 1,
+                                  }}
+                                >
+                                  <Avatar
+                                    src={msg.avatar}
+                                    sx={{ width: 24, height: 24 }}
+                                  />
+                                  <Stack>
+                                    <Typography variant="subtitle2">
+                                      {msg.name}
+                                    </Typography>
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                    >
+                                      {selectedRoom.instructor.role}
+                                    </Typography>
+                                  </Stack>
+                                </Box>
+                              )}
+                              <Typography
+                                color={
+                                  msg.sender === "user"
+                                    ? "white"
+                                    : "text.primary"
+                                }
+                              >
+                                {msg.content}
+                              </Typography>
                               <Box
                                 sx={{
                                   display: "flex",
                                   alignItems: "center",
+                                  justifyContent: "flex-end",
                                   gap: 1,
-                                  mb: 1,
+                                  mt: 1,
                                 }}
                               >
-                                <Avatar
-                                  src={msg.avatar}
-                                  sx={{ width: 24, height: 24 }}
-                                />
-                                <Stack>
-                                  <Typography variant="subtitle2">
-                                    {msg.name}
-                                  </Typography>
-                                  <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                  >
-                                    {selectedRoom.instructor.role}
-                                  </Typography>
-                                </Stack>
-                              </Box>
-                            )}
-                            <Typography
-                              color={
-                                msg.sender === "user" ? "white" : "text.primary"
-                              }
-                            >
-                              {msg.content}
-                            </Typography>
-                            <Box
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "flex-end",
-                                gap: 1,
-                                mt: 1,
-                              }}
-                            >
-                              <Typography
-                                variant="caption"
-                                color={
-                                  msg.sender === "user"
-                                    ? "white"
-                                    : "text.secondary"
-                                }
-                              >
-                                {new Date(msg.timestamp).toLocaleString()}
-                              </Typography>
-                              {msg.sender === "user" && (
                                 <Typography
                                   variant="caption"
                                   color={
@@ -640,14 +835,36 @@ const ChatBox = () => {
                                       : "text.secondary"
                                   }
                                 >
-                                  {msg.isRead ? "Đã xem" : "Đã gửi"}
+                                  {new Date(msg.timestamp).toLocaleString(
+                                    "vi-VN",
+                                    {
+                                      hour: "2-digit",
+                                      minute: "2-digit",
+                                      hour12: false,
+                                      day: "2-digit",
+                                      month: "2-digit",
+                                      year: "numeric",
+                                    }
+                                  )}
                                 </Typography>
-                              )}
+                                {msg.sender === "user" && (
+                                  <Typography
+                                    variant="caption"
+                                    color={
+                                      msg.sender === "user"
+                                        ? "white"
+                                        : "text.secondary"
+                                    }
+                                  >
+                                    {msg.isRead ? "Đã xem" : "Đã gửi"}
+                                  </Typography>
+                                )}
+                              </Box>
                             </Box>
-                          </Box>
-                        </Card>
-                      </Box>
-                    ))}
+                          </Card>
+                        </Box>
+                      ))}
+                    <div ref={messagesEndRef} />
                   </Stack>
                 </Box>
 
@@ -686,4 +903,10 @@ const ChatBox = () => {
   );
 };
 
-export default ChatBox;
+export default function WrappedChatBox() {
+  return (
+    <ChatErrorBoundary>
+      <ChatBox />
+    </ChatErrorBoundary>
+  );
+}
