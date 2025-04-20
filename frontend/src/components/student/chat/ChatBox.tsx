@@ -1,10 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
   Fab,
-  Dialog,
-  DialogTitle,
-  DialogContent,
   TextField,
   IconButton,
   Typography,
@@ -30,14 +27,83 @@ import {
   Person,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
+import { io, Socket } from "socket.io-client";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import {
+  setMessages,
+  addMessage,
+  setSelectedReceiver,
+  markMessageAsRead,
+  fetchMessagesByUser,
+} from "../../../features/messages/messagesSlice";
+
+import { selectCurrentUser } from "../../../features/auth/authSelectors";
+import {
+  selectAllMessages,
+  selectMessagesLoading,
+} from "../../../features/messages/messagesSelector";
 
 interface Message {
   id: number;
-  content: string;
-  sender: "user" | "support";
-  timestamp: string;
-  avatar?: string;
-  name?: string;
+  messageText: string;
+  isRead: boolean;
+  createdAt: string;
+  sender: {
+    id: string;
+    username: string;
+    email: string;
+    role: string;
+    avatarUrl: string;
+    userStudent?: {
+      id: string;
+      fullName: string;
+      gender: string;
+      educationLevel: string;
+      occupation: string;
+      bio: string;
+    };
+    userStudentAcademic?: {
+      id: string;
+      studentCode: string;
+      fullName: string;
+      academicYear: string;
+      status: string;
+      academicClass: {
+        id: string;
+        classCode: string;
+        className: string;
+      };
+    };
+    userInstructor?: {
+      id: string;
+      fullName: string;
+      professionalTitle: string;
+      specialization?: string;
+      bio?: string;
+      verificationStatus?: string;
+    };
+  };
+  receiver: {
+    id: string;
+    username: string;
+    email: string;
+    role: string;
+    avatarUrl: string;
+    userStudent?: {
+      id: string;
+      fullName: string;
+    };
+    userStudentAcademic?: {
+      id: string;
+      fullName: string;
+      studentCode: string;
+    };
+    userInstructor?: {
+      id: string;
+      fullName: string;
+      professionalTitle: string;
+    };
+  };
 }
 
 interface Instructor {
@@ -51,103 +117,266 @@ interface Instructor {
 
 interface ChatRoom {
   id: number;
-  instructor: Instructor;
+  instructor: {
+    id: string;
+    fullName: string;
+    avatarUrl: string;
+    role: string;
+    online?: boolean; // This would need to come from socket status
+  };
   messages: Message[];
   unread: number;
 }
 
+// Or for a more detailed approach with login prompt:
 const ChatBox = () => {
+  const currentUser = useAppSelector(selectCurrentUser);
+  const navigate = useNavigate();
   const [open, setOpen] = useState(false);
+
+  // Return early if no user with login prompt
+  if (!currentUser) {
+    return (
+      <Grow in={true}>
+        <Fab
+          color="primary"
+          onClick={() => navigate("/login")}
+          sx={{
+            position: "fixed",
+            bottom: 24,
+            right: 24,
+            zIndex: 1000,
+          }}
+        >
+          <Badge color="error" variant="dot">
+            <ChatIcon />
+          </Badge>
+        </Fab>
+      </Grow>
+    );
+  }
+
   const [showInstructors, setShowInstructors] = useState(true);
   const [selectedRoom, setSelectedRoom] = useState<ChatRoom | null>(null);
   const [message, setMessage] = useState("");
-  const navigate = useNavigate();
+  const socketRef = useRef<Socket | null>(null);
+  const dispatch = useAppDispatch();
+  const messages = useAppSelector(selectAllMessages);
+  const loading = useAppSelector(selectMessagesLoading);
+  // const unreadCount = useAppSelector(selectUnreadMessagesCount);
 
-  // Mock data giảng viên
-  const mockInstructors: Instructor[] = [
-    {
-      id: 1,
-      name: "TS. Nguyễn Văn A",
-      avatar: "/src/assets/avatar.png",
-      role: "Giảng viên React",
-      online: true,
-    },
-    {
-      id: 2,
-      name: "ThS. Trần Thị B",
-      avatar: "/src/assets/avatar.png",
-      role: "Giảng viên TypeScript",
-      online: false,
-      lastSeen: "2 giờ trước",
-    },
-    {
-      id: 3,
-      name: "Hỗ trợ viên",
-      avatar: "/src/assets/avatar.png",
-      role: "Tư vấn viên",
-      online: true,
-    },
-  ];
+  // Add null checks in useEffect
+  useEffect(() => {
+    if (!currentUser?.id) return;
 
-  // Mock data chat rooms
-  const [chatRooms, setChatRooms] = useState<ChatRoom[]>(
-    mockInstructors.map((instructor) => ({
-      id: instructor.id,
-      instructor,
-      messages: [],
-      unread: 0,
-    }))
-  );
+    dispatch(fetchMessagesByUser(Number(currentUser.id)));
+  }, [dispatch, currentUser?.id]);
 
-  const handleSend = () => {
-    if (message.trim() && selectedRoom) {
-      const newMessage: Message = {
-        id: Date.now(),
-        content: message,
-        sender: "user",
-        timestamp: new Date().toISOString(),
-      };
+  console.log(messages);
 
-      setChatRooms((prev) =>
-        prev.map((room) =>
-          room.id === selectedRoom.id
-            ? {
-                ...room,
-                messages: [...room.messages, newMessage],
-              }
-            : room
-        )
-      );
-      setMessage("");
+  const processMessages = (messages: Message[]) => {
+    const instructorMessages = messages.reduce((acc, message) => {
+      const otherUserId =
+        message.sender.id === currentUser.id
+          ? message.receiver.id
+          : message.sender.id;
 
-      // Giả lập phản hồi
-      setTimeout(() => {
-        const response: Message = {
-          id: Date.now() + 1,
-          content: `Cảm ơn bạn đã nhắn tin. Tôi là ${selectedRoom.instructor.name}, tôi có thể giúp gì cho bạn?`,
-          sender: "support",
-          timestamp: new Date().toISOString(),
-          name: selectedRoom.instructor.name,
-          avatar: selectedRoom.instructor.avatar,
+      if (!acc[otherUserId]) {
+        const otherUser =
+          message.sender.id === currentUser.id
+            ? message.receiver
+            : message.sender;
+
+        acc[otherUserId] = {
+          id: Number(otherUserId),
+          instructor: {
+            id: otherUser.id,
+            fullName:
+              otherUser.userInstructor?.fullName ||
+              otherUser.userStudent?.fullName ||
+              otherUser.userStudentAcademic?.fullName ||
+              otherUser.username,
+            avatarUrl: otherUser.avatarUrl,
+            role:
+              otherUser.userInstructor?.professionalTitle ||
+              otherUser.role.charAt(0).toUpperCase() + otherUser.role.slice(1),
+            online: false,
+          },
+          messages: [],
+          unread: 0,
         };
+      }
 
-        setChatRooms((prev) =>
-          prev.map((room) =>
-            room.id === selectedRoom.id
-              ? {
-                  ...room,
-                  messages: [...room.messages, response],
-                }
-              : room
-          )
-        );
-      }, 1000);
+      acc[otherUserId].messages.push({
+        id: message.id,
+        content: message.messageText,
+        sender: message.sender.id === currentUser.id ? "user" : "support",
+        timestamp: message.createdAt,
+        avatar: message.sender.avatarUrl,
+        name:
+          message.sender.userInstructor?.fullName ||
+          message.sender.userStudent?.fullName ||
+          message.sender.userStudentAcademic?.fullName ||
+          message.sender.username,
+        isRead: message.isRead,
+        senderId: message.sender.id,
+        receiverId: message.receiver.id,
+      });
+
+      if (!message.isRead && message.sender.id !== currentUser.id) {
+        acc[otherUserId].unread++;
+      }
+
+      return acc;
+    }, {} as Record<string, ChatRoom>);
+
+    return Object.values(instructorMessages);
+  };
+
+  // Update state initialization
+  const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
+
+  // Update useEffect to process messages when they change
+  useEffect(() => {
+    if (messages.length > 0) {
+      const processedRooms = processMessages(messages);
+      setChatRooms(processedRooms);
+    }
+  }, [messages, currentUser]);
+
+  // Add null check in WebSocket connection
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    console.log("Attempting to connect to WebSocket...");
+    socketRef.current = io("http://localhost:3000", {
+      auth: {
+        userId: currentUser.id,
+        authorization: `Bearer ${localStorage.getItem("token")}`, // Add this line
+      },
+    });
+
+    // Connection event handlers
+    socketRef.current.on("connect", () => {
+      console.log("WebSocket Connected!", socketRef.current?.id);
+    });
+
+    socketRef.current.on("connect_error", (error) => {
+      console.error("WebSocket Connection Error:", error.message);
+    });
+
+    socketRef.current.on("disconnect", (reason) => {
+      console.log("WebSocket Disconnected:", reason);
+    });
+
+    // Listen for new messages with logging
+    socketRef.current.on("newMessage", (message: Message) => {
+      console.log("New message received:", message);
+      dispatch(addMessage(message));
+    });
+
+    // Listen for read receipts with logging
+    socketRef.current.on("messageRead", (messageId: number) => {
+      console.log("Message marked as read:", messageId);
+      dispatch(markMessageAsRead(messageId));
+    });
+
+    // Add listener for messages response
+    socketRef.current.on("messages", (messages) => {
+      console.log("Received message history:", messages);
+      dispatch(setMessages(messages));
+    });
+
+    return () => {
+      console.log("Cleaning up WebSocket connection...");
+      socketRef.current?.disconnect();
+      socketRef.current?.off("messages");
+    };
+  }, [currentUser?.id, dispatch]);
+
+  // Add null check in handleSend
+  const handleSend = () => {
+    if (
+      !currentUser ||
+      !message.trim() ||
+      !selectedRoom ||
+      !socketRef.current
+    ) {
+      return;
+    }
+
+    console.log("Sending message to:", selectedRoom.instructor.fullName);
+
+    const newMessage: Message = {
+      id: Date.now(),
+      messageText: message,
+      isRead: false,
+      createdAt: new Date().toISOString(),
+      sender: {
+        id: currentUser?.id.toString(),
+        username: currentUser?.username,
+        email: currentUser?.email,
+        role: currentUser?.role,
+        avatarUrl: currentUser?.avatarUrl,
+      },
+      receiver: {
+        id: selectedRoom.instructor.id,
+        username: selectedRoom.instructor.fullName,
+        email: "",
+        role: selectedRoom.instructor.role,
+        avatarUrl: selectedRoom.instructor.avatarUrl,
+      },
+    };
+
+    // Emit message through WebSocket
+    socketRef.current.emit("sendMessage", {
+      receiverId: selectedRoom.instructor.id,
+      messageText: message,
+    });
+    console.log("Message sent:", newMessage);
+
+    // Update local state
+    setChatRooms((prev) =>
+      prev.map((room) =>
+        room.id === selectedRoom.id
+          ? {
+              ...room,
+              messages: [...room.messages, newMessage],
+            }
+          : room
+      )
+    );
+    setMessage("");
+  };
+
+  const handleMarkAsRead = (messageId: number) => {
+    if (socketRef.current) {
+      console.log("Marking message as read:", messageId);
+      socketRef.current.emit("markAsRead", messageId);
     }
   };
 
   const handleSelectRoom = (room: ChatRoom) => {
+    dispatch(setSelectedReceiver(room.instructor.id));
     setSelectedRoom(room);
     setShowInstructors(false);
+
+    // Fetch message history when selecting a room
+    if (socketRef.current) {
+      console.log("Fetching messages for room:", room.id);
+      socketRef.current.emit("getMessages", room.instructor.id);
+    }
+
+    // Mark unread messages as read
+    if (room.unread > 0) {
+      room.messages
+        .filter((msg) => !msg.isRead && msg.sender.role === "support")
+        .forEach((msg) => handleMarkAsRead(msg.id));
+
+      setChatRooms((prev) =>
+        prev.map((r) => (r.id === room.id ? { ...r, unread: 0 } : r))
+      );
+    }
   };
 
   const handleClose = () => {
@@ -219,7 +448,7 @@ const ChatBox = () => {
                   <Typography variant="h6">
                     {showInstructors
                       ? "Chọn người để chat"
-                      : selectedRoom?.instructor.name}
+                      : selectedRoom?.instructor.fullName}
                   </Typography>
                   {!showInstructors && selectedRoom?.instructor.online && (
                     <Circle sx={{ color: "#4caf50", fontSize: 12 }} />
@@ -289,11 +518,11 @@ const ChatBox = () => {
                         variant="dot"
                         color={room.instructor.online ? "success" : "default"}
                       >
-                        <Avatar src={room.instructor.avatar} />
+                        <Avatar src={room.instructor.avatarUrl} />
                       </Badge>
                     </ListItemAvatar>
                     <ListItemText
-                      primary={room.instructor.name}
+                      primary={room.instructor.fullName}
                       secondary={
                         <Box
                           sx={{
@@ -363,9 +592,17 @@ const ChatBox = () => {
                                   src={msg.avatar}
                                   sx={{ width: 24, height: 24 }}
                                 />
-                                <Typography variant="subtitle2">
-                                  {msg.name}
-                                </Typography>
+                                <Stack>
+                                  <Typography variant="subtitle2">
+                                    {msg.name}
+                                  </Typography>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                  >
+                                    {selectedRoom.instructor.role}
+                                  </Typography>
+                                </Stack>
                               </Box>
                             )}
                             <Typography
@@ -375,21 +612,38 @@ const ChatBox = () => {
                             >
                               {msg.content}
                             </Typography>
-                            <Typography
-                              variant="caption"
-                              color={
-                                msg.sender === "user"
-                                  ? "white"
-                                  : "text.secondary"
-                              }
+                            <Box
                               sx={{
-                                display: "block",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "flex-end",
+                                gap: 1,
                                 mt: 1,
-                                textAlign: "right",
                               }}
                             >
-                              {new Date(msg.timestamp).toLocaleTimeString()}
-                            </Typography>
+                              <Typography
+                                variant="caption"
+                                color={
+                                  msg.sender === "user"
+                                    ? "white"
+                                    : "text.secondary"
+                                }
+                              >
+                                {new Date(msg.timestamp).toLocaleString()}
+                              </Typography>
+                              {msg.sender === "user" && (
+                                <Typography
+                                  variant="caption"
+                                  color={
+                                    msg.sender === "user"
+                                      ? "white"
+                                      : "text.secondary"
+                                  }
+                                >
+                                  {msg.isRead ? "Đã xem" : "Đã gửi"}
+                                </Typography>
+                              )}
+                            </Box>
                           </Box>
                         </Card>
                       </Box>

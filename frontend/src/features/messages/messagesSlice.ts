@@ -1,0 +1,79 @@
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { Message } from "../../types/message.types";
+import { api } from "../../services/api";
+
+interface MessagesState {
+  messages: Message[];
+  loading: boolean;
+  error: string | null;
+  selectedReceiverId: number | null;
+}
+
+const initialState: MessagesState = {
+  messages: [],
+  loading: false,
+  error: null,
+  selectedReceiverId: null,
+};
+
+export const fetchMessagesByUser = createAsyncThunk(
+  "messages/fetchByUser",
+  async (userId: number) => {
+    const response = await api.get(`/messages/user/${userId}`);
+    return response.data;
+  }
+);
+
+const messagesSlice = createSlice({
+  name: "messages",
+  initialState,
+  reducers: {
+    setMessages: (state, action: PayloadAction<Message[]>) => {
+      state.messages = action.payload;
+    },
+    addMessage: (state, action: PayloadAction<Message>) => {
+      state.messages.unshift(action.payload);
+    },
+    setSelectedReceiver: (state, action: PayloadAction<number>) => {
+      state.selectedReceiverId = action.payload;
+    },
+    markMessageAsRead: (state, action: PayloadAction<number>) => {
+      const message = state.messages.find((m) => m.id === action.payload);
+      if (message) {
+        message.isRead = true;
+      }
+    },
+    setLoading: (state, action: PayloadAction<boolean>) => {
+      state.loading = action.payload;
+    },
+    setError: (state, action: PayloadAction<string | null>) => {
+      state.error = action.payload;
+    },
+  },
+  extraReducers: (builder) => {
+    builder
+      .addCase(fetchMessagesByUser.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchMessagesByUser.fulfilled, (state, action) => {
+        state.loading = false;
+        state.messages = action.payload;
+      })
+      .addCase(fetchMessagesByUser.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Không thể tải tin nhắn";
+      });
+  },
+});
+
+export const {
+  setMessages,
+  addMessage,
+  setSelectedReceiver,
+  markMessageAsRead,
+  setLoading,
+  setError,
+} = messagesSlice.actions;
+
+export default messagesSlice.reducer;

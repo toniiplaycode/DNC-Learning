@@ -18,6 +18,8 @@ import usersReducer from "../features/users/usersApiSlice";
 import academicClassInstructorsReducer from "../features/academic-class-instructors/academicClassInstructorsSlice";
 import courseSectionsReducer from "../features/course-sections/courseSectionSlice";
 import courseLessonsReducer from "../features/course-lessons/courseLessonsSlice";
+import messagesReducer from "../features/messages/messagesSlice";
+
 // Import các reducer khác nếu có
 
 export const store = configureStore({
@@ -41,6 +43,7 @@ export const store = configureStore({
     academicClassInstructors: academicClassInstructorsReducer,
     courseSections: courseSectionsReducer,
     courseLessons: courseLessonsReducer,
+    messages: messagesReducer,
     // Thêm các reducer khác nếu có
   },
   middleware: (getDefaultMiddleware) =>

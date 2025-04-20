@@ -56,6 +56,8 @@ import { AcademicClassInstructorsModule } from './modules/academic-class-instruc
 import { AcademicClassInstructor } from './entities/AcademicClassInstructor';
 import { CourseSectionModule } from './modules/course-sections/course-section.module';
 import { CourseLessonsModule } from './modules/course-lessons/course-lessons.module';
+import { MessagesModule } from './modules/messages/messages.module';
+import { Message } from './entities/Message';
 
 @Module({
   imports: [
@@ -107,6 +109,7 @@ import { CourseLessonsModule } from './modules/course-lessons/course-lessons.mod
           UserStudentAcademic,
           AssignmentSubmission,
           AcademicClassInstructor,
+          Message,
         ],
         // synchronize: true, // tự động tạo bảng trong entity (chỉ dùng trong môi tường dev)
       }),
@@ -130,6 +133,7 @@ import { CourseLessonsModule } from './modules/course-lessons/course-lessons.mod
     AcademicClassInstructorsModule,
     CourseSectionModule,
     CourseLessonsModule,
+    MessagesModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthMiddleware, InstructorMiddleware],
