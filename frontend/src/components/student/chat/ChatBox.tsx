@@ -25,6 +25,7 @@ import {
   Circle,
   ArrowBack,
   Person,
+  Search,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
@@ -43,6 +44,8 @@ import {
   selectMessagesLoading,
 } from "../../../features/messages/messagesSelector";
 import ChatErrorBoundary from "./ChatErrorBoundary";
+import { fetchUsers } from "../../../features/users/usersApiSlice";
+import { selectAllUsers } from "../../../features/users/usersSelectors";
 
 interface Message {
   id: number;
@@ -129,6 +132,22 @@ interface ChatRoom {
   unread: number;
 }
 
+// Thêm hàm để sắp xếp chat rooms
+const sortChatRooms = (rooms: ChatRoom[]) => {
+  return [...rooms].sort((a, b) => {
+    const latestMessageA = a.messages[a.messages.length - 1];
+    const latestMessageB = b.messages[b.messages.length - 1];
+
+    if (!latestMessageA) return 1;
+    if (!latestMessageB) return -1;
+
+    return (
+      new Date(latestMessageB.timestamp).getTime() -
+      new Date(latestMessageA.timestamp).getTime()
+    );
+  });
+};
+
 // Or for a more detailed approach with login prompt:
 const ChatBox = () => {
   const currentUser = useAppSelector(selectCurrentUser);
@@ -136,6 +155,7 @@ const ChatBox = () => {
   const dispatch = useAppDispatch();
   const messages = useAppSelector(selectAllMessages);
   const loading = useAppSelector(selectMessagesLoading);
+  const allUsers = useAppSelector(selectAllUsers);
 
   const [open, setOpen] = useState(false);
   const [showInstructors, setShowInstructors] = useState(true);
@@ -143,8 +163,18 @@ const ChatBox = () => {
   const [message, setMessage] = useState("");
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
 
+  // Add new state for search
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<typeof allUsers>([]);
+
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    dispatch(fetchUsers());
+  }, []);
+
+  console.log(allUsers);
 
   // Socket connection
   useEffect(() => {
@@ -378,8 +408,6 @@ const ChatBox = () => {
     dispatch(fetchMessagesByUser(Number(currentUser.id)));
   }, [dispatch, currentUser?.id]);
 
-  console.log(messages);
-
   // Update useEffect to process messages when they change
   useEffect(() => {
     if (!messages?.length || !currentUser?.id) {
@@ -542,7 +570,125 @@ const ChatBox = () => {
     };
   }, [currentUser?.id, dispatch]);
 
-  // Update handleSend function
+  // Cập nhật useEffect xử lý tin nhắn mới
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    socketRef.current = io("http://localhost:3000", {
+      auth: {
+        userId: currentUser.id,
+        authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+
+    socketRef.current.on("newMessage", (message: Message) => {
+      console.log("New message received:", message);
+
+      setChatRooms((prev) => {
+        const otherUserId =
+          message.sender.id === currentUser.id
+            ? message.receiver.id
+            : message.sender.id;
+
+        const updatedRooms = [...prev];
+        const roomIndex = updatedRooms.findIndex(
+          (room) => room.id === Number(otherUserId)
+        );
+
+        if (roomIndex >= 0) {
+          // Update existing room
+          const room = { ...updatedRooms[roomIndex] };
+
+          // Remove room from current position
+          updatedRooms.splice(roomIndex, 1);
+
+          // Add new message
+          room.messages = [
+            ...room.messages,
+            {
+              id: message.id,
+              content: message.messageText,
+              sender: message.sender.id === currentUser.id ? "user" : "support",
+              timestamp: message.createdAt,
+              avatar: message.sender.avatarUrl,
+              name:
+                message.sender.userStudent?.fullName ||
+                message.sender.userInstructor?.fullName ||
+                message.sender.username,
+              isRead: message.isRead,
+              senderId: message.sender.id,
+              receiverId: message.receiver.id,
+            },
+          ].sort(
+            (a, b) =>
+              new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+          );
+
+          if (message.sender.id !== currentUser.id) {
+            room.unread++;
+          }
+
+          // Add room to beginning of array
+          updatedRooms.unshift(room);
+        } else {
+          // Create new room
+          const otherUser =
+            message.sender.id === currentUser.id
+              ? message.receiver
+              : message.sender;
+
+          // Add new room to beginning of array
+          updatedRooms.unshift({
+            id: Number(otherUserId),
+            instructor: {
+              id: otherUser.id,
+              fullName:
+                otherUser.userInstructor?.fullName ||
+                otherUser.userStudent?.fullName ||
+                otherUser.username,
+              avatarUrl: otherUser.avatarUrl,
+              role:
+                otherUser.userInstructor?.professionalTitle ||
+                otherUser.role.charAt(0).toUpperCase() +
+                  otherUser.role.slice(1),
+              online: false,
+            },
+            messages: [
+              {
+                id: message.id,
+                content: message.messageText,
+                sender:
+                  message.sender.id === currentUser.id ? "user" : "support",
+                timestamp: message.createdAt,
+                avatar: message.sender.avatarUrl,
+                name:
+                  otherUser.userInstructor?.fullName ||
+                  otherUser.userStudent?.fullName ||
+                  otherUser.username,
+                isRead: message.isRead,
+                senderId: message.sender.id,
+                receiverId: message.receiver.id,
+              },
+            ],
+            unread: message.sender.id !== currentUser.id ? 1 : 0,
+          });
+        }
+
+        return updatedRooms;
+      });
+
+      dispatch(addMessage(message));
+      scrollToBottom();
+    });
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.off("newMessage");
+        socketRef.current.disconnect();
+      }
+    };
+  }, [currentUser?.id, dispatch]);
+
   const handleMarkAsRead = (messageId: number) => {
     if (socketRef.current) {
       console.log("Marking message as read:", messageId);
@@ -576,6 +722,34 @@ const ChatBox = () => {
   const handleClose = () => {
     setOpen(false);
     setShowInstructors(true);
+  };
+
+  // Add search function
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    const results = allUsers.filter((user) => {
+      const fullName =
+        user.userStudent?.fullName ||
+        user.userInstructor?.fullName ||
+        user.userStudentAcademic?.fullName ||
+        user.username;
+
+      const searchLower = query.toLowerCase();
+
+      return (
+        fullName.toLowerCase().includes(searchLower) ||
+        user.email.toLowerCase().includes(searchLower) ||
+        user.username.toLowerCase().includes(searchLower)
+      );
+    });
+
+    setSearchResults(results);
   };
 
   return (
@@ -696,59 +870,138 @@ const ChatBox = () => {
           >
             {showInstructors ? (
               // Danh sách giảng viên
-              <List sx={{ flex: 1, overflowY: "auto" }}>
-                {chatRooms.map((room) => (
-                  <ListItemButton
-                    key={room.id}
-                    onClick={() => handleSelectRoom(room)}
-                  >
-                    <ListItemAvatar>
-                      <Badge
-                        overlap="circular"
-                        anchorOrigin={{
-                          vertical: "bottom",
-                          horizontal: "right",
-                        }}
-                        variant="dot"
-                        color={room.instructor.online ? "success" : "default"}
-                      >
-                        <Avatar src={room.instructor.avatarUrl} />
-                      </Badge>
-                    </ListItemAvatar>
-                    <ListItemText
-                      primary={room.instructor.fullName}
-                      secondary={
-                        <Box
-                          sx={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "center",
-                          }}
-                        >
-                          <Typography variant="body2" color="text.secondary">
-                            {room.instructor.role}
-                          </Typography>
-                          {!room.instructor.online && (
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              {room.instructor.lastSeen}
-                            </Typography>
-                          )}
-                        </Box>
+              <>
+                <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
+                  <TextField
+                    fullWidth
+                    size="small"
+                    placeholder="Tìm kiếm người dùng..."
+                    value={searchQuery}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Search />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                </Box>
+
+                <List sx={{ flex: 1, overflowY: "auto" }}>
+                  {(searchQuery ? searchResults : sortChatRooms(chatRooms)).map(
+                    (item) => {
+                      // For search results
+                      if (searchQuery) {
+                        const fullName =
+                          item.userStudent?.fullName ||
+                          item.userInstructor?.fullName ||
+                          item.userStudentAcademic?.fullName ||
+                          item.username;
+                        const role =
+                          item.userInstructor?.professionalTitle ||
+                          item.role.charAt(0).toUpperCase() +
+                            item.role.slice(1);
+
+                        return (
+                          <ListItemButton
+                            key={item.id}
+                            onClick={() => {
+                              // Create new chat room if doesn't exist
+                              const existingRoom = chatRooms.find(
+                                (room) => room.id === Number(item.id)
+                              );
+                              if (!existingRoom) {
+                                const newRoom: ChatRoom = {
+                                  id: Number(item.id),
+                                  instructor: {
+                                    id: item.id,
+                                    fullName: fullName,
+                                    avatarUrl: item.avatarUrl || "",
+                                    role: role,
+                                    online: false,
+                                  },
+                                  messages: [],
+                                  unread: 0,
+                                };
+                                setChatRooms((prev) => [...prev, newRoom]);
+                                handleSelectRoom(newRoom);
+                              } else {
+                                handleSelectRoom(existingRoom);
+                              }
+                            }}
+                          >
+                            <ListItemAvatar>
+                              <Avatar src={item.avatarUrl || ""} />
+                            </ListItemAvatar>
+                            <ListItemText
+                              primary={fullName}
+                              secondary={
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
+                                  {role}
+                                </Typography>
+                              }
+                            />
+                          </ListItemButton>
+                        );
                       }
-                    />
-                    {room.unread > 0 && (
-                      <Badge
-                        badgeContent={room.unread}
-                        color="error"
-                        sx={{ ml: 2 }}
-                      />
-                    )}
-                  </ListItemButton>
-                ))}
-              </List>
+
+                      // For existing chat rooms
+                      return (
+                        <ListItemButton
+                          key={item.id}
+                          onClick={() => handleSelectRoom(item)}
+                        >
+                          <ListItemAvatar>
+                            <Badge
+                              overlap="circular"
+                              anchorOrigin={{
+                                vertical: "bottom",
+                                horizontal: "right",
+                              }}
+                              variant="dot"
+                              color={
+                                item.instructor.online ? "success" : "default"
+                              }
+                            >
+                              <Avatar src={item.instructor.avatarUrl} />
+                            </Badge>
+                          </ListItemAvatar>
+                          <ListItemText
+                            primary={item.instructor.fullName}
+                            secondary={
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "center",
+                                }}
+                              >
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                >
+                                  {item.instructor.role}
+                                </Typography>
+                              </Box>
+                            }
+                          />
+                          {item.unread > 0 && (
+                            <Badge
+                              badgeContent={item.unread}
+                              color="error"
+                              sx={{ ml: 2 }}
+                            />
+                          )}
+                        </ListItemButton>
+                      );
+                    }
+                  )}
+                </List>
+              </>
             ) : (
               // Chat room
               <>
