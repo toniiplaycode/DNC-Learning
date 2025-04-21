@@ -6,6 +6,7 @@ import { User } from 'src/entities/User';
 import { UserStudent } from 'src/entities/UserStudent';
 import { UserInstructor } from 'src/entities/UserInstructor';
 import { UserStudentAcademic } from '../../entities/UserStudentAcademic';
+import { AcademicClass } from 'src/entities/AcademicClass';
 
 @Module({
   controllers: [UsersController],
@@ -16,6 +17,7 @@ import { UserStudentAcademic } from '../../entities/UserStudentAcademic';
       UserStudent,
       UserInstructor,
       UserStudentAcademic,
+      AcademicClass,
     ]),
   ],
   exports: [UsersService],

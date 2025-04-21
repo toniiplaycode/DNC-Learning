@@ -4,6 +4,7 @@ import { User, UserRole } from 'src/entities/User';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { UserStudentAcademic } from '../../entities/UserStudentAcademic';
+import { AcademicClass } from '../../entities/AcademicClass';
 
 interface StudentUserData {
   user: {
@@ -28,13 +29,19 @@ export class UsersService {
     private userRepository: Repository<User>,
     @InjectRepository(UserStudentAcademic)
     private userStudentAcademic: Repository<UserStudentAcademic>,
+    @InjectRepository(AcademicClass)
+    private academicClass: Repository<AcademicClass>,
   ) {}
   findAll(): Promise<User[]> {
     return this.userRepository.find({
-      relations: {
-        userStudent: true,
-        userStudentAcademic: true,
-        userInstructor: true,
+      relations: [
+        'userStudent',
+        'userStudentAcademic',
+        'userStudentAcademic.academicClass',
+        'userInstructor',
+      ],
+      order: {
+        createdAt: 'DESC',
       },
     });
   }

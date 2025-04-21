@@ -1292,6 +1292,17 @@ const UserInfoDialog = ({ open, onClose, user, allUsers }: UserDialogProps) => {
                     {userData.userStudentAcademic.academicYear}
                   </Typography>
                 </Box>
+
+                {userData.userStudentAcademic.academicClass && (
+                  <Box sx={{ mb: 1 }}>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Mã Lớp
+                    </Typography>
+                    <Typography>
+                      {userData.userStudentAcademic.academicClass.classCode}
+                    </Typography>
+                  </Box>
+                )}
                 {userData.userStudentAcademic.academicClass && (
                   <Box sx={{ mb: 1 }}>
                     <Typography variant="subtitle2" color="text.secondary">

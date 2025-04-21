@@ -1,4 +1,7 @@
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
+import { io, Socket } from "socket.io-client";
+import { addMessage } from "../../../features/messages/messagesSlice";
+import { useAppDispatch } from "../../../app/hooks";
 import {
   Box,
   Drawer,
@@ -13,13 +16,9 @@ import {
   AppBar,
   Toolbar,
   Tooltip,
-  Typography,
-  Divider,
-  Avatar,
-  Menu,
-  MenuItem,
   Alert,
   Button,
+  Badge,
 } from "@mui/material";
 import {
   Menu as MenuIcon,
@@ -41,6 +40,7 @@ import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import Logo from "../../../assets/logo.png";
 import { useAppSelector } from "../../../app/hooks";
 import { selectCurrentUser } from "../../../features/auth/authSelectors";
+import { selectAllMessages } from "../../../features/messages/messagesSelector";
 
 const DRAWER_WIDTH = 280;
 const COLLAPSED_DRAWER_WIDTH = 70;
@@ -99,6 +99,10 @@ const InstructorLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const currentUser = useAppSelector(selectCurrentUser);
+  const messages = useAppSelector(selectAllMessages);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const dispatch = useAppDispatch();
+  const socketRef = useRef<Socket | null>(null);
 
   // Thêm state kiểm tra xem có phải admin đang impersonate không
   const [adminImpersonating, setAdminImpersonating] = useState(false);
@@ -132,9 +136,108 @@ const InstructorLayout = () => {
     navigate("/admin/instructors");
   };
 
+  const unreadMessagesCount = useMemo(() => {
+    if (!messages || !currentUser) return 0;
+    return messages.filter(
+      (msg) => !msg.isRead && msg.receiver.id === currentUser.id
+    ).length;
+  }, [messages, currentUser]);
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    socketRef.current = io("http://localhost:3000", {
+      auth: {
+        userId: currentUser.id,
+        authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      reconnection: true,
+      reconnectionAttempts: 5,
+    });
+
+    const handleNewMessage = (message: any) => {
+      dispatch(addMessage(message));
+
+      // Force immediate badge update
+      if (message.receiver.id === currentUser.id && !message.isRead) {
+        setUnreadCount((prev) => prev + 1);
+      }
+    };
+
+    const handleMessageRead = ({ messageId }: { messageId: number }) => {
+      // Update messages in Redux store
+      dispatch({
+        type: "messages/messageRead",
+        payload: messageId,
+      });
+
+      // Force immediate badge update
+      setUnreadCount((prev) => {
+        const newCount = messages.filter(
+          (msg) =>
+            !msg.isRead &&
+            msg.id !== messageId &&
+            msg.receiver.id === currentUser.id
+        ).length;
+        return newCount;
+      });
+    };
+
+    socketRef.current.on("connect", () => {
+      console.log("Socket connected in InstructorLayout");
+    });
+
+    socketRef.current.on("newMessage", handleNewMessage);
+    socketRef.current.on("messageRead", handleMessageRead);
+
+    // Cleanup function
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.off("connect");
+        socketRef.current.off("newMessage", handleNewMessage);
+        socketRef.current.off("messageRead", handleMessageRead);
+        socketRef.current.disconnect();
+      }
+    };
+  }, [currentUser?.id, dispatch, messages]);
+
+  useEffect(() => {
+    setUnreadCount(unreadMessagesCount);
+  }, [unreadMessagesCount]);
+
   const handleDrawerToggle = () => {
     setMobileOpen(!mobileOpen);
   };
+
+  const menuItemsWithBadges = useMemo(
+    () =>
+      menuItems.map((item) => {
+        if (item.text === "Tin nhắn") {
+          return {
+            ...item,
+            icon: (
+              <Badge
+                badgeContent={unreadCount}
+                color="error"
+                max={99}
+                sx={{
+                  "& .MuiBadge-badge": {
+                    right: -3,
+                    top: 3,
+                    border: `2px solid ${theme.palette.primary.main}`,
+                    padding: "0 4px",
+                  },
+                }}
+              >
+                <Message />
+              </Badge>
+            ),
+          };
+        }
+        return item;
+      }),
+    [unreadCount, theme.palette.primary.main]
+  );
 
   const drawer = (isMobileDrawer = false) => (
     <Box
@@ -174,7 +277,7 @@ const InstructorLayout = () => {
 
       {/* Menu Items */}
       <List sx={{ mt: 1 }}>
-        {menuItems.map((item) => (
+        {menuItemsWithBadges.map((item) => (
           <ListItem key={item.text} disablePadding>
             <Tooltip
               title={!isExpanded && !isMobileDrawer ? item.text : ""}

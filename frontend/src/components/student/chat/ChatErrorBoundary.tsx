@@ -13,6 +13,7 @@ interface State {
   hasError: boolean;
   userId: string | null;
   isReloading: boolean;
+  dataLoaded: boolean; // Add new state to track data loading
 }
 
 class ChatErrorBoundary extends React.Component<Props, State> {
@@ -20,7 +21,34 @@ class ChatErrorBoundary extends React.Component<Props, State> {
     hasError: false,
     userId: null,
     isReloading: false,
+    dataLoaded: false,
   };
+
+  async componentDidMount() {
+    const currentUser = (window as any).__CURRENT_USER__;
+    const dispatch = (window as any).__DISPATCH__;
+
+    if (currentUser?.id) {
+      try {
+        await Promise.all([
+          dispatch(fetchUsers()),
+          dispatch(fetchMessagesByUser(currentUser.id)),
+        ]);
+        this.setState({
+          userId: currentUser.id,
+          isReloading: false,
+          dataLoaded: true,
+        });
+      } catch (error) {
+        console.error("Initial load failed:", error);
+        this.setState({
+          hasError: true,
+          isReloading: false,
+          dataLoaded: true,
+        });
+      }
+    }
+  }
 
   static getDerivedStateFromError(_: Error): Partial<State> {
     return { hasError: true };
@@ -34,9 +62,9 @@ class ChatErrorBoundary extends React.Component<Props, State> {
 
     if (currentUser?.id !== state.userId) {
       return {
-        hasError: false,
         userId: currentUser?.id || null,
         isReloading: true,
+        dataLoaded: false,
       };
     }
     return null;
@@ -46,10 +74,10 @@ class ChatErrorBoundary extends React.Component<Props, State> {
     const currentUser = (window as any).__CURRENT_USER__;
     const dispatch = (window as any).__DISPATCH__;
 
-    // Only reload data when user changes and we're in loading state
     if (
       this.state.isReloading &&
       currentUser?.id &&
+      !this.state.dataLoaded &&
       prevState.userId !== currentUser.id
     ) {
       try {
@@ -57,17 +85,17 @@ class ChatErrorBoundary extends React.Component<Props, State> {
           dispatch(fetchUsers()),
           dispatch(fetchMessagesByUser(currentUser.id)),
         ]);
-
-        // Update state after successful data load
         this.setState({
           isReloading: false,
           hasError: false,
+          dataLoaded: true,
         });
       } catch (error) {
         console.error("Failed to load chat data:", error);
         this.setState({
           isReloading: false,
           hasError: true,
+          dataLoaded: true,
         });
       }
     }
@@ -104,7 +132,16 @@ class ChatErrorBoundary extends React.Component<Props, State> {
   };
 
   render() {
-    if (this.state.isReloading) {
+    const { isReloading, hasError, dataLoaded } = this.state;
+    const currentUser = (window as any).__CURRENT_USER__;
+
+    // Show nothing until we know if there's a user
+    if (!currentUser) {
+      return null;
+    }
+
+    // Show loading state only during initial load or reloading
+    if (isReloading || !dataLoaded) {
       return (
         <Box
           sx={{
