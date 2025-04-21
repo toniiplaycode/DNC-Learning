@@ -81,15 +81,39 @@ export class MessagesGateway
 
   @SubscribeMessage('markAsRead')
   async handleMarkAsRead(client: Socket, messageId: number) {
-    await this.messagesService.markAsRead(messageId);
-    const message = await this.messagesService.findOne(messageId);
-
-    // Notify sender that message was read
-    if (message) {
-      const senderSocketId = this.connectedClients.get(message.senderId);
-      if (senderSocketId) {
-        this.server.to(senderSocketId).emit('messageRead', messageId);
+    try {
+      const userId = client.handshake.auth.userId;
+      if (!userId) {
+        throw new WsException('Unauthorized');
       }
+
+      // Mark message as read in database
+      await this.messagesService.markAsRead(messageId);
+
+      // Get the updated message with relations
+      const message = await this.messagesService.findOne(messageId);
+
+      if (message) {
+        // Notify sender that message was read
+        const senderSocketId = this.connectedClients.get(message.senderId);
+        if (senderSocketId) {
+          this.server.to(senderSocketId).emit('messageRead', {
+            messageId: messageId,
+            readAt: new Date(),
+          });
+        }
+      }
+
+      return {
+        event: 'messageRead',
+        data: { messageId, success: true },
+      };
+    } catch (error) {
+      console.error('Error marking message as read:', error);
+      return {
+        event: 'error',
+        data: 'Could not mark message as read',
+      };
     }
   }
 

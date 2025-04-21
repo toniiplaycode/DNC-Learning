@@ -1,987 +1,1389 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Box,
-  Grid,
-  Card,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemAvatar,
-  Avatar,
-  Typography,
+  Fab,
   TextField,
   IconButton,
-  InputAdornment,
+  Typography,
   Stack,
+  Avatar,
+  Card,
+  InputAdornment,
   Badge,
-  LinearProgress,
+  List,
+  ListItemAvatar,
+  ListItemText,
+  ListItemButton,
+  Paper,
+  Slide,
+  Grow,
+  FormControlLabel,
+  Switch,
   Dialog,
   DialogTitle,
   DialogContent,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Chip,
+  Grid,
   Tabs,
   Tab,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
 } from "@mui/material";
 import {
-  Send,
-  AttachFile,
-  Search,
-  Info,
+  Chat as ChatIcon,
   Close,
-  School,
+  Send,
+  Circle,
+  ArrowBack,
   Person,
-  AdminPanelSettings,
+  Search,
 } from "@mui/icons-material";
-import { styled } from "@mui/material/styles";
-import { alpha } from "@mui/material/styles";
-import { useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
+import { io, Socket } from "socket.io-client";
+import {
+  setMessages,
+  addMessage,
+  setSelectedReceiver,
+  markMessageAsRead,
+  fetchMessagesByUser,
+} from "../../features/messages/messagesSlice";
 
-// Mock data học viên
-const mockStudentChats = [
-  {
-    id: 1,
-    name: "Nguyễn Văn A",
-    avatar: "/src/assets/avatar.png",
-    lastMessage: "Em cảm ơn thầy ạ",
-    timestamp: "10:30",
-    unread: 2,
-    course: "React & TypeScript Masterclass",
-    replied: true,
-    userType: "student", // Thêm loại người dùng
-    studentInfo: {
-      courseEnrolled: "React & TypeScript Masterclass",
-      enrollDate: "15/03/2024",
-      progress: 65,
-      email: "nguyenvana@gmail.com",
-      phone: "0987654321",
-    },
-    messages: [
-      {
-        id: 1,
-        sender: "student",
-        content: "Thầy ơi, em có thắc mắc về bài React Hooks ạ",
-        timestamp: "10:15",
-      },
-      {
-        id: 2,
-        sender: "instructor",
-        content: "Em cứ hỏi, thầy sẽ giải đáp giúp em",
-        timestamp: "10:20",
-      },
-      {
-        id: 3,
-        sender: "student",
-        content: "Em cảm ơn thầy ạ",
-        timestamp: "10:30",
-      },
-    ],
-  },
-  {
-    id: 2,
-    name: "Trần Thị B",
-    avatar: "/src/assets/avatar.png",
-    lastMessage: "Em sẽ nộp bài sớm ạ",
-    timestamp: "Hôm qua",
-    unread: 0,
-    course: "Node.js Advanced Concepts",
-    replied: false,
-    userType: "student",
-    messages: [
-      {
-        id: 1,
-        sender: "instructor",
-        content: "Em nhớ nộp bài tập đúng hạn nhé",
-        timestamp: "Hôm qua",
-      },
-      {
-        id: 2,
-        sender: "student",
-        content: "Em sẽ nộp bài sớm ạ",
-        timestamp: "Hôm qua",
-      },
-    ],
-  },
+import { selectCurrentUser } from "../../features/auth/authSelectors";
+import {
+  selectAllMessages,
+  selectMessagesLoading,
+} from "../../features/messages/messagesSelector";
+import { fetchUsers } from "../../features/users/usersApiSlice";
+import { selectAllUsers } from "../../features/users/usersSelectors";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
+
+interface Message {
+  id: number;
+  messageText: string;
+  isRead: boolean;
+  createdAt: string;
+  sender: {
+    id: string;
+    username: string;
+    email: string;
+    role: string;
+    avatarUrl: string;
+    userStudent?: {
+      id: string;
+      fullName: string;
+      gender: string;
+      educationLevel: string;
+      occupation: string;
+      bio: string;
+    };
+    userStudentAcademic?: {
+      id: string;
+      studentCode: string;
+      fullName: string;
+      academicYear: string;
+      status: string;
+      academicClass: {
+        id: string;
+        classCode: string;
+        className: string;
+      };
+    };
+    userInstructor?: {
+      id: string;
+      fullName: string;
+      professionalTitle: string;
+      specialization?: string;
+      bio?: string;
+      verificationStatus?: string;
+    };
+  };
+  receiver: {
+    id: string;
+    username: string;
+    email: string;
+    role: string;
+    avatarUrl: string;
+    userStudent?: {
+      id: string;
+      fullName: string;
+    };
+    userStudentAcademic?: {
+      id: string;
+      fullName: string;
+      studentCode: string;
+    };
+    userInstructor?: {
+      id: string;
+      fullName: string;
+      professionalTitle: string;
+    };
+  };
+}
+
+interface Instructor {
+  id: number;
+  name: string;
+  avatar: string;
+  role: string;
+  online: boolean;
+  lastSeen?: string;
+}
+
+interface ChatRoom {
+  id: number;
+  instructor: {
+    id: string;
+    fullName: string;
+    avatarUrl: string;
+    role: string;
+    online?: boolean; // This would need to come from socket status
+  };
+  messages: Message[];
+  unread: number;
+}
+
+// Thêm hàm để sắp xếp chat rooms
+const sortChatRooms = (rooms: ChatRoom[]) => {
+  return [...rooms].sort((a, b) => {
+    const latestMessageA = a.messages[a.messages.length - 1];
+    const latestMessageB = b.messages[b.messages.length - 1];
+
+    if (!latestMessageA) return 1;
+    if (!latestMessageB) return -1;
+
+    return (
+      new Date(latestMessageB.timestamp).getTime() -
+      new Date(latestMessageA.timestamp).getTime()
+    );
+  });
+};
+
+// Thêm hàm format thời gian
+const formatLastMessageTime = (timestamp: string) => {
+  const now = new Date();
+  const messageDate = new Date(timestamp);
+  const diffInHours =
+    (now.getTime() - messageDate.getTime()) / (1000 * 60 * 60);
+
+  if (diffInHours < 24) {
+    return messageDate.toLocaleTimeString("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+      hour12: false,
+    });
+  } else if (diffInHours < 48) {
+    return "Hôm qua";
+  } else {
+    return messageDate.toLocaleDateString("vi-VN", {
+      day: "2-digit",
+      month: "2-digit",
+      year: "2-digit",
+    });
+  }
+};
+
+// Add this interface for filter options
+interface FilterOption {
+  value: string;
+  label: string;
+}
+
+// Add filter options constant
+const USER_TYPE_OPTIONS: FilterOption[] = [
+  { value: "all", label: "Tất cả" },
+  { value: "student", label: "Học viên" },
+  { value: "student_academic", label: "Sinh viên học thuật" },
+  { value: "instructor", label: "Giảng viên" },
+  { value: "admin", label: "Quản trị viên" },
 ];
 
-// Mock data sinh viên trường
-const mockAcademicStudentChats = [
-  {
-    id: 3,
-    name: "Lê Minh C",
-    avatar: "/src/assets/avatar.png",
-    lastMessage: "Em đã hiểu rồi, cảm ơn thầy",
-    timestamp: "08:45",
-    unread: 1,
-    faculty: "Công nghệ thông tin",
-    class: "K44A",
-    replied: true,
-    userType: "academic_student",
-    studentInfo: {
-      studentCode: "SV001",
-      faculty: "Công nghệ thông tin",
-      class: "K44A",
-      email: "leminhc@edu.vn",
-      phone: "0912345678",
-    },
-    messages: [
-      {
-        id: 1,
-        sender: "student",
-        content: "Thầy ơi, em không hiểu bài tập về cấu trúc dữ liệu",
-        timestamp: "08:30",
-      },
-      {
-        id: 2,
-        sender: "instructor",
-        content: "Em đang gặp khó khăn ở phần nào vậy?",
-        timestamp: "08:35",
-      },
-      {
-        id: 3,
-        sender: "student",
-        content: "Em đã hiểu rồi, cảm ơn thầy",
-        timestamp: "08:45",
-      },
-    ],
-  },
-];
+// Or for a more detailed approach with login prompt:
+const ChatCommon = () => {
+  const currentUser = useAppSelector(selectCurrentUser);
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const messages = useAppSelector(selectAllMessages);
+  const loading = useAppSelector(selectMessagesLoading);
+  const allUsers = useAppSelector(selectAllUsers);
+  const [showInstructors, setShowInstructors] = useState(true);
+  const [selectedRoom, setSelectedRoom] = useState<ChatRoom | null>(null);
+  const [message, setMessage] = useState("");
+  const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
+  const [userInfoOpen, setUserInfoOpen] = useState(false);
+  const [userTypeFilter, setUserTypeFilter] = useState("all");
 
-// Mock data giảng viên
-const mockInstructorChats = [
-  {
-    id: 4,
-    name: "Giảng viên Đặng Văn D",
-    avatar: "/src/assets/avatar.png",
-    lastMessage: "Tôi đã cập nhật nội dung khóa học",
-    timestamp: "15:20",
-    unread: 3,
-    department: "Khoa Công nghệ thông tin",
-    replied: false,
-    userType: "instructor",
-    instructorInfo: {
-      department: "Khoa Công nghệ thông tin",
-      specialization: "Web Development",
-      email: "dangvand@edu.vn",
-      phone: "0987123456",
-      totalCourses: 5,
-    },
-    messages: [
-      {
-        id: 1,
-        sender: "admin",
-        content: "Bạn cần cập nhật nội dung khóa học React trước thứ 6",
-        timestamp: "14:30",
+  // Hàm filter chat rooms
+  const getFilteredChatRooms = () => {
+    let rooms = [...chatRooms];
+
+    // Filter by user type
+    if (userTypeFilter !== "all") {
+      rooms = rooms.filter((room) => {
+        const user = allUsers.find((u) => u.id === room.instructor.id);
+        return user?.role === userTypeFilter;
+      });
+    }
+
+    // Filter unread messages
+    if (filterUnread) {
+      rooms = rooms.filter((room) => room.unread > 0);
+    }
+
+    return sortChatRooms(rooms);
+  };
+
+  // Add new state for search
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<typeof allUsers>([]);
+
+  // Thêm vào phần khai báo state trong ChatCommon component
+  const [filterUnread, setFilterUnread] = useState(false);
+
+  const socketRef = useRef<Socket | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    dispatch(fetchUsers());
+  }, []);
+
+  // Socket connection
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    socketRef.current = io("http://localhost:3000", {
+      auth: {
+        userId: currentUser.id,
+        authorization: `Bearer ${localStorage.getItem("token")}`,
       },
-      {
-        id: 2,
-        sender: "instructor",
-        content: "Tôi đã cập nhật nội dung khóa học",
-        timestamp: "15:20",
+    });
+
+    // Handle new messages
+    socketRef.current.on("newMessage", (newMessage: Message) => {
+      console.log("New message received:", newMessage);
+      dispatch(addMessage(newMessage));
+    });
+
+    // Handle sent message confirmation
+    socketRef.current.on("messageSent", (sentMessage: Message) => {
+      console.log("Message sent confirmation:", sentMessage);
+      dispatch(addMessage(sentMessage));
+    });
+
+    return () => {
+      socketRef.current?.disconnect();
+    };
+  }, [currentUser?.id, dispatch]);
+
+  // Process messages into chat rooms
+  useEffect(() => {
+    if (!messages?.length || !currentUser?.id) return;
+
+    try {
+      const processedRooms = processMessages(messages);
+      setChatRooms(processedRooms);
+
+      // Update selected room if exists
+      if (selectedRoom) {
+        const updatedRoom = processedRooms.find(
+          (room) => room.id === selectedRoom.id
+        );
+        if (updatedRoom) {
+          setSelectedRoom(updatedRoom);
+        }
+      }
+    } catch (error) {
+      console.error("Error processing messages:", error);
+    }
+  }, [messages, currentUser?.id, selectedRoom?.id]);
+
+  // Handle sending messages
+  const handleSend = () => {
+    if (!currentUser || !message.trim() || !selectedRoom || !socketRef.current)
+      return;
+
+    // Create temporary message structure matching Message interface
+    const tempMessage: Message = {
+      id: Date.now(), // temporary id
+      messageText: message.trim(),
+      isRead: false,
+      createdAt: new Date().toISOString(),
+      sender: {
+        id: currentUser.id,
+        username: currentUser.username,
+        email: currentUser.email,
+        role: currentUser.role,
+        avatarUrl: currentUser.avatarUrl,
+        userStudent: currentUser.userStudent,
+        userStudentAcademic: currentUser.userStudentAcademic,
+        userInstructor: currentUser.userInstructor,
       },
-    ],
-  },
-];
-
-// Mock data admin
-const mockAdminChats = [
-  {
-    id: 5,
-    name: "Admin Nguyễn Văn E",
-    avatar: "/src/assets/avatar.png",
-    lastMessage: "Hệ thống sẽ bảo trì vào cuối tuần",
-    timestamp: "Hôm qua",
-    unread: 0,
-    department: "IT Support",
-    replied: true,
-    userType: "admin",
-    messages: [
-      {
-        id: 1,
-        sender: "admin",
-        content: "Hệ thống sẽ bảo trì vào cuối tuần",
-        timestamp: "Hôm qua",
+      receiver: {
+        id: selectedRoom.instructor.id,
+        username: selectedRoom.instructor.fullName,
+        email: "",
+        role: selectedRoom.instructor.role,
+        avatarUrl: selectedRoom.instructor.avatarUrl,
       },
-      {
-        id: 2,
-        sender: "instructor",
-        content: "Tôi đã nhận được thông báo, cảm ơn bạn",
-        timestamp: "Hôm qua",
+    };
+
+    // Add to Redux store immediately
+    dispatch(addMessage(tempMessage));
+
+    // Update local state
+    setChatRooms((prev) =>
+      prev.map((room) => {
+        if (room.id === selectedRoom.id) {
+          return {
+            ...room,
+            messages: [
+              ...room.messages,
+              {
+                id: tempMessage.id,
+                content: tempMessage.messageText,
+                sender: "user",
+                timestamp: tempMessage.createdAt,
+                avatar: currentUser.avatarUrl,
+                name: currentUser.username,
+                isRead: false,
+                senderId: currentUser.id,
+                receiverId: selectedRoom.instructor.id,
+              },
+            ].sort(
+              (a, b) =>
+                new Date(a.timestamp).getTime() -
+                new Date(b.timestamp).getTime()
+            ),
+          };
+        }
+        return room;
+      })
+    );
+
+    // Emit message through socket
+    socketRef.current.emit("sendMessage", {
+      receiverId: selectedRoom.instructor.id,
+      messageText: message.trim(),
+    });
+
+    // Clear input
+    setMessage("");
+
+    // Scroll to bottom
+    scrollToBottom();
+  };
+
+  // Keep only one state declaration
+  const processMessages = (messages: Message[]) => {
+    if (!currentUser?.id || !messages) return [];
+
+    const instructorMessages = messages.reduce((acc, message) => {
+      if (!message?.sender?.id || !message?.receiver?.id) return acc;
+
+      const otherUserId =
+        message.sender.id === currentUser.id
+          ? message.receiver.id
+          : message.sender.id;
+
+      if (!acc[otherUserId]) {
+        const otherUser =
+          message.sender.id === currentUser.id
+            ? message.receiver
+            : message.sender;
+
+        acc[otherUserId] = {
+          id: Number(otherUserId),
+          instructor: {
+            id: otherUser.id,
+            fullName:
+              otherUser.userInstructor?.fullName ||
+              otherUser.userStudent?.fullName ||
+              otherUser.username,
+            avatarUrl: otherUser.avatarUrl || "",
+            role:
+              otherUser.userInstructor?.professionalTitle ||
+              otherUser.role?.charAt(0).toUpperCase() +
+                otherUser.role?.slice(1),
+            online: false,
+          },
+          messages: [],
+          unread: 0,
+        };
+      }
+
+      acc[otherUserId].messages.push({
+        id: message.id,
+        content: message.messageText,
+        sender: message.sender.id === currentUser.id ? "user" : "support",
+        timestamp: message.createdAt,
+        avatar: message.sender.avatarUrl,
+        name:
+          message.sender.userInstructor?.fullName ||
+          message.sender.userStudent?.fullName ||
+          message.sender.username,
+        isRead: message.isRead,
+        senderId: message.sender.id,
+        receiverId: message.receiver.id,
+      });
+
+      // Sort messages by timestamp after adding new message
+      acc[otherUserId].messages.sort(
+        (a, b) =>
+          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+      );
+
+      if (!message.isRead && message.sender.id !== currentUser.id) {
+        acc[otherUserId].unread++;
+      }
+
+      return acc;
+    }, {} as Record<string, ChatRoom>);
+
+    return Object.values(instructorMessages);
+  };
+
+  // Return early if no user
+  if (!currentUser) {
+    return (
+      <Grow in={true}>
+        <Fab
+          color="primary"
+          onClick={() => navigate("/login")}
+          sx={{
+            position: "fixed",
+            bottom: 24,
+            right: 24,
+            zIndex: 1000,
+          }}
+        >
+          <Badge color="error" variant="dot">
+            <ChatIcon />
+          </Badge>
+        </Fab>
+      </Grow>
+    );
+  }
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [selectedRoom?.messages]);
+
+  // Add null checks in useEffect
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    dispatch(fetchMessagesByUser(Number(currentUser.id)));
+  }, [dispatch, currentUser?.id]);
+
+  // Update useEffect to process messages when they change
+  useEffect(() => {
+    if (!messages?.length || !currentUser?.id) {
+      console.log("No messages or user to process");
+      return;
+    }
+
+    try {
+      const processedRooms = processMessages(messages);
+      if (processedRooms.length > 0) {
+        setChatRooms(processedRooms);
+      }
+    } catch (error) {
+      console.error("Error in message processing effect:", error);
+    }
+  }, [messages, currentUser]);
+
+  // Socket connection effect
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    console.log("Connecting to WebSocket...");
+    socketRef.current = io("http://localhost:3000", {
+      auth: {
+        userId: currentUser.id,
+        authorization: `Bearer ${localStorage.getItem("token")}`,
       },
-    ],
-  },
-];
+    });
 
-// Danh sách khóa học
-const courses = [
-  "Tất cả",
-  "React & TypeScript Masterclass",
-  "Node.js Advanced Concepts",
-  "Docker & Kubernetes",
-];
+    // Connection events
+    socketRef.current.on("connect", () => {
+      console.log("WebSocket Connected!");
+    });
 
-// Danh sách khoa (faculty)
-const faculties = [
-  "Tất cả",
-  "Công nghệ thông tin",
-  "Kinh tế",
-  "Ngoại ngữ",
-  "Kỹ thuật",
-];
+    socketRef.current.on("connect_error", (error) => {
+      console.error("Connection Error:", error.message);
+    });
 
-// Styles cho list chat
-const StyledListItem = styled(ListItem)(({ theme }) => ({
-  padding: theme.spacing(1.5, 2),
-  transition: "all 0.2s ease",
-  borderRadius: theme.spacing(1),
-  margin: theme.spacing(0.5, 1),
-  width: "auto",
-  "&:hover": {
-    backgroundColor: alpha(theme.palette.primary.main, 0.08),
-  },
-  "&.Mui-selected": {
-    backgroundColor: alpha(theme.palette.primary.main, 0.12),
-    "&:hover": {
-      backgroundColor: alpha(theme.palette.primary.main, 0.15),
-    },
-  },
-}));
+    // Single message handler for both new and sent messages
+    socketRef.current.on("newMessage", (message: Message) => {
+      console.log("New message received:", message);
 
-// Dialog thông tin người dùng
-const UserInfoDialog = ({ user, open, onClose }) => {
-  if (!user) return null;
+      setChatRooms((prev) => {
+        const otherUserId =
+          message.sender.id === currentUser.id
+            ? message.receiver.id
+            : message.sender.id;
+
+        // Make a copy of previous rooms
+        const updatedRooms = [...prev];
+        const roomIndex = updatedRooms.findIndex(
+          (room) => room.id === Number(otherUserId)
+        );
+
+        if (roomIndex >= 0) {
+          // Update existing room
+          const room = { ...updatedRooms[roomIndex] };
+
+          // Remove temporary message if this is a confirmation of our own message
+          const filteredMessages =
+            message.sender.id === currentUser.id
+              ? room.messages.filter(
+                  (msg) =>
+                    !(
+                      msg.senderId === currentUser.id &&
+                      msg.content === message.messageText &&
+                      typeof msg.id === "number" &&
+                      msg.id > Date.now() - 5000
+                    )
+                )
+              : room.messages;
+
+          // Add new message
+          room.messages = [
+            ...filteredMessages,
+            {
+              id: message.id,
+              content: message.messageText,
+              sender: message.sender.id === currentUser.id ? "user" : "support",
+              timestamp: message.createdAt,
+              avatar: message.sender.avatarUrl,
+              name:
+                message.sender.userStudent?.fullName ||
+                message.sender.userInstructor?.fullName ||
+                message.sender.username,
+              isRead: message.isRead,
+              senderId: message.sender.id,
+              receiverId: message.receiver.id,
+            },
+          ].sort(
+            (a, b) =>
+              new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+          );
+
+          if (message.sender.id !== currentUser.id) {
+            room.unread++;
+          }
+
+          updatedRooms[roomIndex] = room;
+        } else {
+          // Create new room if it doesn't exist
+          const otherUser =
+            message.sender.id === currentUser.id
+              ? message.receiver
+              : message.sender;
+
+          updatedRooms.push({
+            id: Number(otherUserId),
+            instructor: {
+              id: otherUser.id,
+              fullName:
+                otherUser.userInstructor?.fullName ||
+                otherUser.userStudent?.fullName ||
+                otherUser.username,
+              avatarUrl: otherUser.avatarUrl,
+              role:
+                otherUser.userInstructor?.professionalTitle ||
+                otherUser.role.charAt(0).toUpperCase() +
+                  otherUser.role.slice(1),
+              online: false,
+            },
+            messages: [
+              {
+                id: message.id,
+                content: message.messageText,
+                sender:
+                  message.sender.id === currentUser.id ? "user" : "support",
+                timestamp: message.createdAt,
+                avatar: message.sender.avatarUrl,
+                name:
+                  message.sender.userInstructor?.fullName ||
+                  message.sender.userStudent?.fullName ||
+                  message.sender.username,
+                isRead: message.isRead,
+                senderId: message.sender.id,
+                receiverId: message.receiver.id,
+              },
+            ],
+            unread: message.sender.id !== currentUser.id ? 1 : 0,
+          });
+        }
+
+        return updatedRooms;
+      });
+
+      // Update Redux store after local state
+      dispatch(addMessage(message));
+
+      // Scroll to bottom
+      scrollToBottom();
+    });
+
+    // Trong useEffect xử lý socket
+    socketRef.current.on(
+      "messageRead",
+      (data: { messageId: number; readAt: string }) => {
+        console.log("Message marked as read:", data);
+
+        // Update Redux store
+        dispatch(markMessageAsRead(data.messageId));
+
+        // Update local state
+        setChatRooms((prev) =>
+          prev.map((room) => ({
+            ...room,
+            messages: room.messages.map((msg) =>
+              msg.id === data.messageId ? { ...msg, isRead: true } : msg
+            ),
+            unread: room.messages.filter(
+              (msg) => !msg.isRead && msg.id !== data.messageId
+            ).length,
+          }))
+        );
+      }
+    );
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.off("newMessage");
+        socketRef.current.off("connect");
+        socketRef.current.off("connect_error");
+        socketRef.current.disconnect();
+      }
+    };
+  }, [currentUser?.id, dispatch]);
+
+  // Cập nhật useEffect xử lý tin nhắn mới
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    socketRef.current = io("http://localhost:3000", {
+      auth: {
+        userId: currentUser.id,
+        authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+
+    socketRef.current.on("newMessage", (message: Message) => {
+      console.log("New message received:", message);
+
+      setChatRooms((prev) => {
+        const otherUserId =
+          message.sender.id === currentUser.id
+            ? message.receiver.id
+            : message.sender.id;
+
+        const updatedRooms = [...prev];
+        const roomIndex = updatedRooms.findIndex(
+          (room) => room.id === Number(otherUserId)
+        );
+
+        if (roomIndex >= 0) {
+          // Update existing room
+          const room = { ...updatedRooms[roomIndex] };
+
+          // Remove room from current position
+          updatedRooms.splice(roomIndex, 1);
+
+          // Add new message
+          room.messages = [
+            ...room.messages,
+            {
+              id: message.id,
+              content: message.messageText,
+              sender: message.sender.id === currentUser.id ? "user" : "support",
+              timestamp: message.createdAt,
+              avatar: message.sender.avatarUrl,
+              name:
+                message.sender.userStudent?.fullName ||
+                message.sender.userInstructor?.fullName ||
+                message.sender.username,
+              isRead: message.isRead,
+              senderId: message.sender.id,
+              receiverId: message.receiver.id,
+            },
+          ].sort(
+            (a, b) =>
+              new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+          );
+
+          if (message.sender.id !== currentUser.id) {
+            room.unread++;
+          }
+
+          // Add room to beginning of array
+          updatedRooms.unshift(room);
+        } else {
+          // Create new room
+          const otherUser =
+            message.sender.id === currentUser.id
+              ? message.receiver
+              : message.sender;
+
+          // Add new room to beginning of array
+          updatedRooms.unshift({
+            id: Number(otherUserId),
+            instructor: {
+              id: otherUser.id,
+              fullName:
+                otherUser.userInstructor?.fullName ||
+                otherUser.userStudent?.fullName ||
+                otherUser.username,
+              avatarUrl: otherUser.avatarUrl,
+              role:
+                otherUser.userInstructor?.professionalTitle ||
+                otherUser.role.charAt(0).toUpperCase() +
+                  otherUser.role.slice(1),
+              online: false,
+            },
+            messages: [
+              {
+                id: message.id,
+                content: message.messageText,
+                sender:
+                  message.sender.id === currentUser.id ? "user" : "support",
+                timestamp: message.createdAt,
+                avatar: message.sender.avatarUrl,
+                name:
+                  otherUser.userInstructor?.fullName ||
+                  otherUser.userStudent?.fullName ||
+                  otherUser.username,
+                isRead: message.isRead,
+                senderId: message.sender.id,
+                receiverId: message.receiver.id,
+              },
+            ],
+            unread: message.sender.id !== currentUser.id ? 1 : 0,
+          });
+        }
+
+        return updatedRooms;
+      });
+
+      dispatch(addMessage(message));
+      scrollToBottom();
+    });
+
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.off("newMessage");
+        socketRef.current.disconnect();
+      }
+    };
+  }, [currentUser?.id, dispatch]);
+
+  const handleMarkAsRead = (messageId: number) => {
+    if (socketRef.current) {
+      console.log("Marking message as read:", messageId);
+      socketRef.current.emit("markAsRead", messageId);
+    }
+  };
+
+  const handleSelectRoom = (room: ChatRoom) => {
+    dispatch(setSelectedReceiver(room.instructor.id));
+    setSelectedRoom(room);
+    setShowInstructors(false);
+
+    // Mark unread messages as read
+    if (room.unread > 0) {
+      room.messages
+        .filter((msg) => !msg.isRead && msg.senderId !== currentUser.id)
+        .forEach((msg) => {
+          if (socketRef.current) {
+            socketRef.current.emit("markAsRead", msg.id);
+            dispatch(markMessageAsRead(msg.id));
+          }
+        });
+
+      // Update chat rooms to show messages as read
+      setChatRooms((prev) =>
+        prev.map((r) => {
+          if (r.id === room.id) {
+            return {
+              ...r,
+              unread: 0,
+              messages: r.messages.map((msg) => ({
+                ...msg,
+                isRead: true,
+              })),
+            };
+          }
+          return r;
+        })
+      );
+    }
+  };
+
+  // Add search function
+  const handleSearch = (query: string) => {
+    setSearchQuery(query);
+
+    if (!query.trim()) {
+      setSearchResults([]);
+      return;
+    }
+
+    const results = allUsers.filter((user) => {
+      const fullName =
+        user.userStudent?.fullName ||
+        user.userInstructor?.fullName ||
+        user.userStudentAcademic?.fullName ||
+        user.username;
+
+      const searchLower = query.toLowerCase();
+
+      return (
+        fullName.toLowerCase().includes(searchLower) ||
+        user.email.toLowerCase().includes(searchLower) ||
+        user.username.toLowerCase().includes(searchLower)
+      );
+    });
+
+    setSearchResults(results);
+  };
+
+  return (
+    <Box sx={{ height: "100%", display: "flex" }}>
+      {/* Left Panel - Chat List */}
+      <Paper
+        elevation={2}
+        sx={{
+          width: 360,
+          height: "100%",
+          display: "flex",
+          flexDirection: "column",
+          borderRadius: "4px 0 0 4px",
+        }}
+      >
+        {/* Header */}
+        <Box
+          sx={{
+            p: 2,
+          }}
+        >
+          <Typography variant="h5" fontWeight={600}>
+            Tin nhắn
+          </Typography>
+        </Box>
+
+        {/* Search and Filters */}
+        <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
+          <TextField
+            fullWidth
+            size="small"
+            placeholder="Tìm kiếm người dùng..."
+            value={searchQuery}
+            onChange={(e) => handleSearch(e.target.value)}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <Search />
+                </InputAdornment>
+              ),
+            }}
+            sx={{ mb: 2 }}
+          />
+
+          <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+            <FormControl size="small" sx={{ minWidth: 200 }}>
+              <InputLabel>Lọc theo vai trò</InputLabel>
+              <Select
+                value={userTypeFilter}
+                label="Lọc theo vai trò"
+                onChange={(e) => setUserTypeFilter(e.target.value)}
+              >
+                {USER_TYPE_OPTIONS.map((option) => (
+                  <MenuItem key={option.value} value={option.value}>
+                    {option.label}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={filterUnread}
+                  onChange={(e) => setFilterUnread(e.target.checked)}
+                  size="small"
+                />
+              }
+              label="Chưa đọc"
+            />
+          </Box>
+        </Box>
+
+        {/* Chat List */}
+        <List sx={{ flex: 1, overflowY: "auto" }}>
+          {(searchQuery ? searchResults : getFilteredChatRooms()).map(
+            (item) => (
+              <ListItemButton
+                key={item.id}
+                selected={selectedRoom?.id === item.id}
+                onClick={() => handleSelectRoom(item)}
+                sx={{
+                  borderBottom: "1px solid",
+                  borderColor: "divider",
+                  "&:hover": { bgcolor: "action.hover" },
+                  "&.Mui-selected": { bgcolor: "action.selected" },
+                }}
+              >
+                <ListItemAvatar>
+                  <Badge
+                    overlap="circular"
+                    anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                    badgeContent={item.unread > 0 ? item.unread : null}
+                    color="error"
+                  >
+                    <Avatar src={item.instructor.avatarUrl} />
+                  </Badge>
+                </ListItemAvatar>
+                <ListItemText
+                  primary={
+                    <Box
+                      sx={{ display: "flex", justifyContent: "space-between" }}
+                    >
+                      <Box>
+                        <Typography fontWeight={item.unread > 0 ? 600 : 400}>
+                          {item.instructor.fullName}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {USER_TYPE_OPTIONS.find(
+                            (opt) =>
+                              opt.value ===
+                              allUsers.find((u) => u.id === item.instructor.id)
+                                ?.role
+                          )?.label || item.instructor.role}
+                        </Typography>
+                      </Box>
+                      {item.messages.length > 0 && (
+                        <Typography variant="caption" color="text.secondary">
+                          {formatLastMessageTime(
+                            item.messages[item.messages.length - 1].timestamp
+                          )}
+                        </Typography>
+                      )}
+                    </Box>
+                  }
+                  secondary={
+                    <Box sx={{ display: "flex", flexDirection: "column" }}>
+                      <Typography
+                        variant="body2"
+                        color={
+                          item.unread > 0 ? "text.primary" : "text.secondary"
+                        }
+                        sx={{
+                          fontWeight: item.unread > 0 ? 500 : 400,
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {item.messages.length > 0
+                          ? item.messages[item.messages.length - 1].content
+                          : "Chưa có tin nhắn"}
+                      </Typography>
+                      {item.instructor.role === "student_academic" && (
+                        <Typography variant="caption" color="primary">
+                          {`Mã SV: ${
+                            allUsers.find((u) => u.id === item.instructor.id)
+                              ?.userStudentAcademic?.studentCode || ""
+                          }`}
+                        </Typography>
+                      )}
+                    </Box>
+                  }
+                />
+              </ListItemButton>
+            )
+          )}
+        </List>
+      </Paper>
+
+      {/* Right Panel - Chat Content */}
+      <Paper
+        elevation={2}
+        sx={{
+          flex: 1,
+          height: "100vh",
+          display: "flex",
+          flexDirection: "column",
+          borderRadius: "0 4px 4px 0",
+          borderLeft: "1px solid",
+          borderColor: "divider",
+        }}
+      >
+        {selectedRoom ? (
+          <>
+            {/* Chat Header */}
+            <Box
+              sx={{
+                p: 2,
+                display: "flex",
+                borderBottom: "1px solid",
+                borderColor: "divider",
+                alignItems: "center",
+                justifyContent: "space-between",
+              }}
+            >
+              <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                <Avatar src={selectedRoom.instructor.avatarUrl} />
+                <Box>
+                  <Typography variant="subtitle1">
+                    {selectedRoom.instructor.fullName}
+                  </Typography>
+                  <Typography variant="caption">
+                    {selectedRoom.instructor.role}
+                  </Typography>
+                </Box>
+              </Box>
+              <IconButton
+                size="small"
+                sx={{
+                  "&:hover": { bgcolor: "rgba(255, 255, 255, 0.1)" },
+                }}
+                onClick={() => setUserInfoOpen(true)}
+              >
+                <Person />
+              </IconButton>
+            </Box>
+
+            {/* Messages */}
+            <Box sx={{ flex: 1, overflowY: "auto", p: 2, bgcolor: "grey.50" }}>
+              <Stack spacing={2}>
+                {selectedRoom.messages.map((msg) => (
+                  <Box
+                    key={msg.id}
+                    sx={{
+                      display: "flex",
+                      justifyContent:
+                        msg.sender === "user" ? "flex-end" : "flex-start",
+                    }}
+                  >
+                    {msg.sender !== "user" && (
+                      <Avatar
+                        src={msg.avatar}
+                        sx={{ width: 32, height: 32, mr: 1 }}
+                      />
+                    )}
+                    <Box
+                      sx={{
+                        maxWidth: "70%",
+                        p: 2,
+                        bgcolor:
+                          msg.sender === "user"
+                            ? "primary.main"
+                            : "background.paper",
+                        color: msg.sender === "user" ? "white" : "text.primary",
+                        borderRadius: 2,
+                        boxShadow: 1,
+                      }}
+                    >
+                      <Typography>{msg.content}</Typography>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "flex-end",
+                          gap: 1,
+                          mt: 0.5,
+                        }}
+                      >
+                        <Typography
+                          variant="caption"
+                          color={
+                            msg.sender === "user" ? "white" : "text.secondary"
+                          }
+                        >
+                          {formatLastMessageTime(msg.timestamp)}
+                        </Typography>
+                        {msg.sender === "user" && (
+                          <Typography variant="caption" color="white">
+                            {msg.isRead ? "Đã xem" : "Đã gửi"}
+                          </Typography>
+                        )}
+                      </Box>
+                    </Box>
+                  </Box>
+                ))}
+                <div ref={messagesEndRef} />
+              </Stack>
+            </Box>
+
+            {/* Message Input */}
+            <Box sx={{ p: 2, borderTop: 1, borderColor: "divider" }}>
+              <TextField
+                fullWidth
+                multiline
+                maxRows={4}
+                placeholder="Nhập tin nhắn..."
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSend();
+                  }
+                }}
+                InputProps={{
+                  endAdornment: (
+                    <InputAdornment position="end">
+                      <IconButton
+                        color="primary"
+                        onClick={handleSend}
+                        disabled={!message.trim()}
+                      >
+                        <Send />
+                      </IconButton>
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{
+                  "& .MuiOutlinedInput-root": {
+                    borderRadius: 2,
+                  },
+                }}
+              />
+            </Box>
+          </>
+        ) : (
+          // Empty state
+          <Box
+            sx={{
+              flex: 1,
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              justifyContent: "center",
+              color: "text.secondary",
+            }}
+          >
+            <ChatIcon sx={{ fontSize: 48, mb: 2, opacity: 0.5 }} />
+            <Typography variant="h6">Chọn một cuộc trò chuyện</Typography>
+            <Typography variant="body2">
+              Hoặc bắt đầu cuộc trò chuyện mới từ danh sách bên trái
+            </Typography>
+          </Box>
+        )}
+      </Paper>
+
+      {/* User Info Dialog */}
+      {selectedRoom && (
+        <UserInfoDialog
+          open={userInfoOpen}
+          onClose={() => setUserInfoOpen(false)}
+          user={selectedRoom.instructor}
+          allUsers={allUsers}
+        />
+      )}
+    </Box>
+  );
+};
+
+// Update the UserInfoDialog interface
+interface UserDialogProps {
+  open: boolean;
+  onClose: () => void;
+  user: {
+    id: string;
+    fullName: string;
+    role: string;
+    avatarUrl: string;
+  };
+  allUsers: Array<any>; // Use your User interface type here
+}
+
+const UserInfoDialog = ({ open, onClose, user, allUsers }: UserDialogProps) => {
+  // Find full user data
+  const userData = allUsers.find((u) => u.id === user.id);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
       <DialogTitle>
-        <Box display="flex" justifyContent="space-between" alignItems="center">
-          <Typography variant="h6">Thông tin chi tiết</Typography>
-          <IconButton onClick={onClose} size="small">
-            <Close />
-          </IconButton>
-        </Box>
+        Thông tin người dùng
+        <IconButton
+          onClick={onClose}
+          sx={{ position: "absolute", right: 8, top: 8 }}
+        >
+          <Close />
+        </IconButton>
       </DialogTitle>
-      <DialogContent dividers>
-        <Box textAlign="center" mb={2}>
+      <DialogContent>
+        <Box sx={{ textAlign: "center", mb: 3, mt: 2 }}>
           <Avatar
-            src={user.avatar}
+            src={user.avatarUrl}
             sx={{ width: 100, height: 100, mx: "auto", mb: 2 }}
           />
-          <Typography variant="h6">{user.name}</Typography>
-
-          {user.userType === "student" && (
-            <Chip
-              icon={<Person />}
-              label="Học viên"
-              color="primary"
-              size="small"
-            />
-          )}
-
-          {user.userType === "academic_student" && (
-            <Chip
-              icon={<School />}
-              label="Sinh viên trường"
-              color="secondary"
-              size="small"
-            />
-          )}
-
-          {user.userType === "instructor" && (
-            <Chip
-              icon={<School />}
-              label="Giảng viên"
-              color="info"
-              size="small"
-            />
-          )}
-
-          {user.userType === "admin" && (
-            <Chip
-              icon={<AdminPanelSettings />}
-              label="Quản trị viên"
-              color="error"
-              size="small"
-            />
-          )}
+          <Typography variant="h6">{user.fullName}</Typography>
+          <Typography variant="subtitle1" color="primary">
+            {user.role === "student"
+              ? "Học viên"
+              : user.role === "student_academic"
+              ? "Sinh viên học thuật"
+              : user.role === "instructor"
+              ? "Giảng viên"
+              : user.role === "admin"
+              ? "Quản trị viên"
+              : user.role}
+          </Typography>
         </Box>
 
-        {/* Thông tin học viên */}
-        {user.userType === "student" && user.studentInfo && (
-          <Box>
-            <Typography variant="subtitle1" gutterBottom>
-              Thông tin học viên
+        <Grid container spacing={2}>
+          {/* Basic Info */}
+          <Grid item xs={12}>
+            <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+              Thông tin cơ bản
             </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2">Khóa học</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {user.studentInfo.courseEnrolled}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2">Ngày đăng ký</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {user.studentInfo.enrollDate}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2">Email</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {user.studentInfo.email}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2">Số điện thoại</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {user.studentInfo.phone}
-                </Typography>
-              </Grid>
-              <Grid item xs={12}>
-                <Typography variant="subtitle2" gutterBottom>
-                  Tiến độ học tập
-                </Typography>
-                <LinearProgress
-                  variant="determinate"
-                  value={user.studentInfo.progress}
-                  sx={{ height: 8, borderRadius: 1 }}
-                />
-                <Typography variant="caption">
-                  {user.studentInfo.progress}% hoàn thành
-                </Typography>
-              </Grid>
-            </Grid>
-          </Box>
-        )}
-
-        {/* Thông tin sinh viên trường */}
-        {user.userType === "academic_student" && user.studentInfo && (
-          <Box>
-            <Typography variant="subtitle1" gutterBottom>
-              Thông tin sinh viên
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2">Mã sinh viên</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {user.studentInfo.studentCode}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2">Khoa</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {user.studentInfo.faculty}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2">Lớp</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {user.studentInfo.class}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2">Email</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {user.studentInfo.email}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2">Số điện thoại</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {user.studentInfo.phone}
-                </Typography>
-              </Grid>
-            </Grid>
-          </Box>
-        )}
-
-        {/* Thông tin giảng viên */}
-        {user.userType === "instructor" && user.instructorInfo && (
-          <Box>
-            <Typography variant="subtitle1" gutterBottom>
-              Thông tin giảng viên
-            </Typography>
-            <Grid container spacing={2}>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2">Khoa phòng</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {user.instructorInfo.department}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2">Chuyên môn</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {user.instructorInfo.specialization}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2">Email</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {user.instructorInfo.email}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2">Số điện thoại</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {user.instructorInfo.phone}
-                </Typography>
-              </Grid>
-              <Grid item xs={12} sm={6}>
-                <Typography variant="subtitle2">Số khóa học</Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {user.instructorInfo.totalCourses} khóa học
-                </Typography>
-              </Grid>
-            </Grid>
-          </Box>
-        )}
-      </DialogContent>
-    </Dialog>
-  );
-};
-
-const ChatCommon = () => {
-  const [selectedChat, setSelectedChat] = useState(null);
-  const [message, setMessage] = useState("");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [courseFilter, setCourseFilter] = useState("Tất cả");
-  const [facultyFilter, setFacultyFilter] = useState("Tất cả");
-  const [userTypeFilter, setUserTypeFilter] = useState("all");
-  const [infoDialogOpen, setInfoDialogOpen] = useState(false);
-  const [userRole, setUserRole] = useState(""); // "instructor" hoặc "admin"
-  const [readStatusFilter, setReadStatusFilter] = useState("all"); // Giá trị: "all", "unread", "read"
-
-  const location = useLocation();
-
-  // Xác định vai trò người dùng dựa trên URL
-  useEffect(() => {
-    if (location.pathname.includes("/admin")) {
-      setUserRole("admin");
-    } else if (location.pathname.includes("/instructor")) {
-      setUserRole("instructor");
-    }
-  }, [location]);
-
-  // Danh sách chat dựa vào vai trò người dùng
-  const getAllChats = () => {
-    if (userRole === "admin") {
-      // Admin chỉ chat với giảng viên và admin khác
-      return [...mockInstructorChats, ...mockAdminChats];
-    } else {
-      // Instructor chat với học viên, sinh viên và admin
-      return [
-        ...mockStudentChats,
-        ...mockAcademicStudentChats,
-        ...mockAdminChats,
-      ];
-    }
-  };
-
-  // Lọc chat theo bộ lọc
-  const getFilteredChats = () => {
-    let chats = getAllChats();
-
-    // Lọc theo tìm kiếm
-    if (searchQuery) {
-      chats = chats.filter((chat) =>
-        chat.name.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-    }
-
-    // Lọc theo loại người dùng
-    if (userTypeFilter !== "all") {
-      chats = chats.filter((chat) => chat.userType === userTypeFilter);
-    }
-
-    // Lọc theo khóa học (chỉ áp dụng cho học viên)
-    if (courseFilter !== "Tất cả") {
-      chats = chats.filter(
-        (chat) => chat.userType !== "student" || chat.course === courseFilter
-      );
-    }
-
-    // Lọc theo khoa (chỉ áp dụng cho sinh viên trường)
-    if (facultyFilter !== "Tất cả") {
-      chats = chats.filter(
-        (chat) =>
-          chat.userType !== "academic_student" || chat.faculty === facultyFilter
-      );
-    }
-
-    // Lọc theo trạng thái đọc
-    if (
-      readStatusFilter === "unread" &&
-      chats.some((chat) => chat.unread === 0)
-    ) {
-      chats = chats.filter((chat) => chat.unread > 0);
-    }
-    if (readStatusFilter === "read" && chats.some((chat) => chat.unread > 0)) {
-      chats = chats.filter((chat) => chat.unread === 0);
-    }
-
-    return chats;
-  };
-
-  const filteredChats = getFilteredChats();
-
-  // Xử lý gửi tin nhắn
-  const handleSendMessage = () => {
-    if (!message.trim() || !selectedChat) return;
-
-    // Thêm tin nhắn mới vào cuộc trò chuyện
-    const newMessage = {
-      id: selectedChat.messages.length + 1,
-      sender: userRole === "admin" ? "admin" : "instructor",
-      content: message,
-      timestamp: new Date().toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      }),
-    };
-
-    // Cập nhật selectedChat
-    setSelectedChat({
-      ...selectedChat,
-      messages: [...selectedChat.messages, newMessage],
-      lastMessage: message,
-      timestamp: newMessage.timestamp,
-      replied: true,
-      unread: 0,
-    });
-
-    setMessage("");
-  };
-
-  return (
-    <Box>
-      <Typography marginLeft={1} variant="h4" gutterBottom>
-        {userRole === "admin"
-          ? "Trò chuyện quản trị"
-          : "Trò chuyện với học viên"}
-      </Typography>
-
-      <Grid container spacing={2}>
-        {/* Danh sách người chat */}
-        <Grid item xs={12} md={4}>
-          <Card
-            sx={{ height: "85vh", display: "flex", flexDirection: "column" }}
-          >
-            {/* Bộ lọc và tìm kiếm */}
-            <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
-              <TextField
-                fullWidth
-                placeholder="Tìm kiếm..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Search />
-                    </InputAdornment>
-                  ),
-                }}
-                size="small"
-                sx={{ mb: 2 }}
-              />
-
-              {/* Bộ lọc người dùng phù hợp với từng vai trò */}
-              <FormControl fullWidth size="small" sx={{ mb: 2 }}>
-                <InputLabel>Loại người dùng</InputLabel>
-                <Select
-                  value={userTypeFilter}
-                  onChange={(e) => setUserTypeFilter(e.target.value)}
-                  label="Loại người dùng"
-                >
-                  <MenuItem value="all">Tất cả</MenuItem>
-
-                  {userRole === "instructor" && (
-                    <>
-                      <MenuItem value="student">Học viên</MenuItem>
-                      <MenuItem value="academic_student">
-                        Sinh viên trường
-                      </MenuItem>
-                      <MenuItem value="admin">Quản trị viên</MenuItem>
-                    </>
-                  )}
-
-                  {userRole === "admin" && (
-                    <>
-                      <MenuItem value="instructor">Giảng viên</MenuItem>
-                      <MenuItem value="admin">Quản trị viên</MenuItem>
-                    </>
-                  )}
-                </Select>
-              </FormControl>
-
-              {/* Bộ lọc khóa học (chỉ hiển thị cho instructor khi đang xem học viên) */}
-              {userRole === "instructor" && userTypeFilter === "student" && (
-                <FormControl fullWidth size="small" sx={{ mb: 2 }}>
-                  <InputLabel>Khóa học</InputLabel>
-                  <Select
-                    value={courseFilter}
-                    onChange={(e) => setCourseFilter(e.target.value)}
-                    label="Khóa học"
-                  >
-                    {courses.map((course) => (
-                      <MenuItem key={course} value={course}>
-                        {course}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+            <Paper sx={{ p: 2 }}>
+              {userData?.email && (
+                <Box sx={{ mb: 1 }}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Email
+                  </Typography>
+                  <Typography>{userData.email}</Typography>
+                </Box>
               )}
+              {userData?.phone && (
+                <Box sx={{ mb: 1 }}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Số điện thoại
+                  </Typography>
+                  <Typography>{userData.phone}</Typography>
+                </Box>
+              )}
+            </Paper>
+          </Grid>
 
-              {/* Bộ lọc khoa (chỉ hiển thị cho instructor khi đang xem sinh viên trường) */}
-              {userRole === "instructor" &&
-                userTypeFilter === "academic_student" && (
-                  <FormControl fullWidth size="small" sx={{ mb: 2 }}>
-                    <InputLabel>Khoa</InputLabel>
-                    <Select
-                      value={facultyFilter}
-                      onChange={(e) => setFacultyFilter(e.target.value)}
-                      label="Khoa"
-                    >
-                      {faculties.map((faculty) => (
-                        <MenuItem key={faculty} value={faculty}>
-                          {faculty}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                )}
-
-              {/* Bộ lọc theo trạng thái đọc */}
-              <FormControl fullWidth size="small" sx={{ mb: 2 }}>
-                <InputLabel>Trạng thái</InputLabel>
-                <Select
-                  value={readStatusFilter}
-                  label="Trạng thái"
-                  onChange={(e) => setReadStatusFilter(e.target.value)}
-                >
-                  <MenuItem value="all">Tất cả</MenuItem>
-                  <MenuItem value="unread">Chưa đọc</MenuItem>
-                  <MenuItem value="read">Đã đọc</MenuItem>
-                </Select>
-              </FormControl>
-            </Box>
-
-            {/* Danh sách chat */}
-            <List
-              sx={{
-                overflow: "auto",
-                flexGrow: 1,
-                p: 0,
-              }}
-            >
-              {filteredChats.map((chat) => (
-                <StyledListItem
-                  key={chat.id}
-                  selected={selectedChat?.id === chat.id}
-                  onClick={() => setSelectedChat(chat)}
-                  disableRipple
-                >
-                  <ListItemAvatar>
-                    <Badge
-                      color="error"
-                      badgeContent={chat.unread}
-                      overlap="circular"
-                      anchorOrigin={{
-                        vertical: "bottom",
-                        horizontal: "right",
-                      }}
-                    >
-                      <Avatar src={chat.avatar} />
-                    </Badge>
-                  </ListItemAvatar>
-                  <ListItemText
-                    primary={
-                      <Box
-                        sx={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                        }}
-                      >
-                        <Typography
-                          variant="subtitle2"
-                          sx={{
-                            fontWeight: chat.unread ? "bold" : "normal",
-                            maxWidth: "70%",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {chat.name}
-                        </Typography>
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            color: chat.unread
-                              ? "error.main"
-                              : "text.secondary",
-                          }}
-                        >
-                          {chat.timestamp}
-                        </Typography>
-                      </Box>
-                    }
-                    secondary={
-                      <Box>
-                        <Typography
-                          variant="body2"
-                          sx={{
-                            color: chat.unread
-                              ? "text.primary"
-                              : "text.secondary",
-                            fontWeight: chat.unread ? "medium" : "normal",
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {chat.lastMessage}
-                        </Typography>
-                        <Box
-                          sx={{
-                            mt: 0.5,
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 0.5,
-                          }}
-                        >
-                          {/* Hiển thị icon tương ứng với loại người dùng */}
-                          {chat.userType === "student" && (
-                            <Person fontSize="small" color="action" />
-                          )}
-                          {chat.userType === "academic_student" && (
-                            <School fontSize="small" color="action" />
-                          )}
-                          {chat.userType === "instructor" && (
-                            <School fontSize="small" color="primary" />
-                          )}
-                          {chat.userType === "admin" && (
-                            <AdminPanelSettings
-                              fontSize="small"
-                              color="error"
-                            />
-                          )}
-
-                          <Typography
-                            variant="caption"
-                            sx={{ color: "text.secondary" }}
-                          >
-                            {chat.userType === "student" && chat.course}
-                            {chat.userType === "academic_student" &&
-                              `${chat.faculty} - ${chat.class}`}
-                            {chat.userType === "instructor" && chat.department}
-                            {chat.userType === "admin" && "Quản trị viên"}
-                          </Typography>
-                        </Box>
-                      </Box>
-                    }
-                  />
-                </StyledListItem>
-              ))}
-
-              {filteredChats.length === 0 && (
-                <Box sx={{ p: 4, textAlign: "center" }}>
-                  <Typography color="text.secondary">
-                    Không tìm thấy cuộc trò chuyện
+          {/* Student Academic Info */}
+          {userData?.userStudentAcademic && (
+            <Grid item xs={12}>
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                gutterBottom
+              >
+                Thông tin học thuật
+              </Typography>
+              <Paper sx={{ p: 2 }}>
+                <Box sx={{ mb: 1 }}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Mã sinh viên
+                  </Typography>
+                  <Typography>
+                    {userData.userStudentAcademic.studentCode}
                   </Typography>
                 </Box>
-              )}
-            </List>
-          </Card>
-        </Grid>
-
-        {/* Nội dung chat */}
-        <Grid item xs={12} md={8}>
-          <Card
-            sx={{ height: "85vh", display: "flex", flexDirection: "column" }}
-          >
-            {selectedChat ? (
-              <Box
-                sx={{
-                  display: "flex",
-                  flexDirection: "column",
-                  height: "100%",
-                }}
-              >
-                {/* Header chat */}
-                <Box
-                  sx={{
-                    p: 2,
-                    borderBottom: 1,
-                    borderColor: "divider",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "space-between",
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <Avatar src={selectedChat.avatar} sx={{ mr: 1.5 }} />
-                    <Box>
-                      <Typography variant="subtitle1">
-                        {selectedChat.name}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        {selectedChat.userType === "student" && (
-                          <>Học viên • {selectedChat.course}</>
-                        )}
-                        {selectedChat.userType === "academic_student" && (
-                          <>
-                            Sinh viên • {selectedChat.faculty} -{" "}
-                            {selectedChat.class}
-                          </>
-                        )}
-                        {selectedChat.userType === "instructor" && (
-                          <>Giảng viên • {selectedChat.department}</>
-                        )}
-                        {selectedChat.userType === "admin" && (
-                          <>Quản trị viên</>
-                        )}
-                      </Typography>
-                    </Box>
+                <Box sx={{ mb: 1 }}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Khóa học
+                  </Typography>
+                  <Typography>
+                    {userData.userStudentAcademic.academicYear}
+                  </Typography>
+                </Box>
+                {userData.userStudentAcademic.academicClass && (
+                  <Box sx={{ mb: 1 }}>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Lớp
+                    </Typography>
+                    <Typography>
+                      {userData.userStudentAcademic.academicClass.className}
+                    </Typography>
                   </Box>
-                  <IconButton onClick={() => setInfoDialogOpen(true)}>
-                    <Info />
-                  </IconButton>
-                </Box>
+                )}
+              </Paper>
+            </Grid>
+          )}
 
-                {/* Chat messages */}
-                <Box
-                  sx={{
-                    p: 2,
-                    flexGrow: 1,
-                    overflow: "auto",
-                    bgcolor: "grey.50",
-                  }}
-                >
-                  {selectedChat.messages.map((msg) => (
-                    <Box
-                      key={msg.id}
-                      sx={{
-                        display: "flex",
-                        justifyContent:
-                          (userRole === "admin" && msg.sender === "admin") ||
-                          (userRole === "instructor" &&
-                            msg.sender === "instructor")
-                            ? "flex-end"
-                            : "flex-start",
-                        mb: 2,
-                      }}
-                    >
-                      <Box
-                        sx={{
-                          maxWidth: "70%",
-                          p: 2,
-                          borderRadius: 2,
-                          bgcolor:
-                            (userRole === "admin" && msg.sender === "admin") ||
-                            (userRole === "instructor" &&
-                              msg.sender === "instructor")
-                              ? "primary.main"
-                              : "background.paper",
-                          color:
-                            (userRole === "admin" && msg.sender === "admin") ||
-                            (userRole === "instructor" &&
-                              msg.sender === "instructor")
-                              ? "white"
-                              : "text.primary",
-                          boxShadow: 1,
-                        }}
-                      >
-                        <Typography variant="body2">{msg.content}</Typography>
-                        <Typography
-                          variant="caption"
-                          sx={{
-                            display: "block",
-                            textAlign: "right",
-                            mt: 0.5,
-                            opacity: 0.8,
-                          }}
-                        >
-                          {msg.timestamp}
-                        </Typography>
-                      </Box>
-                    </Box>
-                  ))}
-                </Box>
-
-                {/* Message Input */}
-                <Box sx={{ p: 2, borderTop: 1, borderColor: "divider" }}>
-                  <TextField
-                    fullWidth
-                    placeholder="Nhập tin nhắn..."
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault();
-                        handleSendMessage();
-                      }
-                    }}
-                    multiline
-                    maxRows={4}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton>
-                            <AttachFile />
-                          </IconButton>
-                          <IconButton
-                            color="primary"
-                            onClick={handleSendMessage}
-                            disabled={!message.trim()}
-                          >
-                            <Send />
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                </Box>
-              </Box>
-            ) : (
-              <Box
-                sx={{
-                  height: "100%",
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  flexDirection: "column",
-                  p: 3,
-                }}
+          {/* Student Info */}
+          {userData?.userStudent && (
+            <Grid item xs={12}>
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                gutterBottom
               >
-                <Typography color="text.secondary" variant="h6" gutterBottom>
-                  Chọn một cuộc trò chuyện để bắt đầu
-                </Typography>
-                <Typography
-                  color="text.secondary"
-                  variant="body2"
-                  textAlign="center"
-                >
-                  {userRole === "admin"
-                    ? "Bạn có thể nhắn tin với giảng viên để trao đổi thông tin quan trọng."
-                    : "Bạn có thể nhắn tin với học viên, sinh viên để hỗ trợ trong quá trình học tập."}
-                </Typography>
-              </Box>
-            )}
-          </Card>
-        </Grid>
-      </Grid>
+                Thông tin học viên
+              </Typography>
+              <Paper sx={{ p: 2 }}>
+                <Box sx={{ mb: 1 }}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Trình độ học vấn
+                  </Typography>
+                  <Typography>{userData.userStudent.educationLevel}</Typography>
+                </Box>
+                <Box sx={{ mb: 1 }}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Nghề nghiệp
+                  </Typography>
+                  <Typography>{userData.userStudent.occupation}</Typography>
+                </Box>
+                {userData.userStudent.bio && (
+                  <Box sx={{ mb: 1 }}>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Giới thiệu
+                    </Typography>
+                    <Typography>{userData.userStudent.bio}</Typography>
+                  </Box>
+                )}
+              </Paper>
+            </Grid>
+          )}
 
-      {/* User Info Dialog */}
-      <UserInfoDialog
-        user={selectedChat}
-        open={infoDialogOpen}
-        onClose={() => setInfoDialogOpen(false)}
-      />
-    </Box>
+          {/* Instructor Info */}
+          {userData?.userInstructor && (
+            <Grid item xs={12}>
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                gutterBottom
+              >
+                Thông tin giảng viên
+              </Typography>
+              <Paper sx={{ p: 2 }}>
+                <Box sx={{ mb: 1 }}>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Chức danh
+                  </Typography>
+                  <Typography>
+                    {userData.userInstructor.professionalTitle}
+                  </Typography>
+                </Box>
+                {userData.userInstructor.specialization && (
+                  <Box sx={{ mb: 1 }}>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Chuyên môn
+                    </Typography>
+                    <Typography>
+                      {userData.userInstructor.specialization}
+                    </Typography>
+                  </Box>
+                )}
+                {userData.userInstructor.bio && (
+                  <Box sx={{ mb: 1 }}>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Giới thiệu
+                    </Typography>
+                    <Typography>{userData.userInstructor.bio}</Typography>
+                  </Box>
+                )}
+              </Paper>
+            </Grid>
+          )}
+        </Grid>
+      </DialogContent>
+    </Dialog>
   );
 };
 

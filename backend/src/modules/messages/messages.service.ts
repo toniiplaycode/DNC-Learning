@@ -57,11 +57,35 @@ export class MessagesService {
   }
 
   async markAsRead(messageId: number): Promise<void> {
-    await this.messageRepository.update(messageId, { isRead: true });
+    await this.messageRepository.update(
+      { id: messageId },
+      {
+        isRead: true,
+        updatedAt: new Date(),
+      },
+    );
   }
 
-  async findOne(id: number) {
-    return this.messageRepository.findOne({ where: { id } });
+  async findOne(id: number): Promise<Message | null> {
+    return this.messageRepository.findOne({
+      where: { id },
+      relations: {
+        sender: {
+          userStudent: true,
+          userInstructor: true,
+          userStudentAcademic: {
+            academicClass: true,
+          },
+        },
+        receiver: {
+          userStudent: true,
+          userInstructor: true,
+          userStudentAcademic: {
+            academicClass: true,
+          },
+        },
+      },
+    });
   }
 
   async findUserMessages(userId: number) {
