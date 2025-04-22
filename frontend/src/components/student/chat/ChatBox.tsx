@@ -58,7 +58,7 @@ const CHATBOT = {
   fullName: "DNC Assistant",
   email: "chatbot@dnc.com",
   role: "chatbot",
-  avatarUrl: "/chatbot-avatar.png",
+  avatarUrl: "/src/assets/chatbot.png",
   online: true,
 };
 
@@ -1155,6 +1155,11 @@ const ChatBox = () => {
     };
   }, [currentUser?.id, dispatch]);
 
+  // Add function to calculate total unread messages
+  const getTotalUnreadMessages = (rooms: ChatRoom[]) => {
+    return rooms.reduce((total, room) => total + (room.unread || 0), 0);
+  };
+
   return (
     <>
       {/* Chat Icon */}
@@ -1169,7 +1174,11 @@ const ChatBox = () => {
             zIndex: 1000,
           }}
         >
-          <Badge color="error" variant="dot">
+          <Badge
+            badgeContent={getTotalUnreadMessages(chatRooms)}
+            color="error"
+            invisible={getTotalUnreadMessages(chatRooms) === 0}
+          >
             <ChatIcon />
           </Badge>
         </Fab>
@@ -1183,8 +1192,7 @@ const ChatBox = () => {
             position: "fixed",
             bottom: 10,
             right: 10,
-            width: "100%",
-            maxWidth: 350,
+            width: "500px",
             height: "88%",
             display: "flex",
             flexDirection: "column",
@@ -1312,7 +1320,6 @@ const ChatBox = () => {
                       </Typography>
                     </Box>
                   ) : (
-                    // ... existing list items code
                     <>
                       {/* Chatbot List Item */}
                       <ListItemButton
@@ -1624,12 +1631,12 @@ const ChatBox = () => {
                           display: "flex",
                           alignItems: "center",
                           gap: 1,
-                          p: 2,
+                          // p: 2,
                         }}
                       >
                         <Avatar
                           src={CHATBOT.avatarUrl}
-                          sx={{ width: 32, height: 32 }}
+                          sx={{ width: 28, height: 28 }}
                         />
                         <Card
                           sx={{
