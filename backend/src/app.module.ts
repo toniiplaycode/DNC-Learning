@@ -59,6 +59,7 @@ import { CourseLessonsModule } from './modules/course-lessons/course-lessons.mod
 import { MessagesModule } from './modules/messages/messages.module';
 import { Message } from './entities/Message';
 import { ChatbotResponse } from './entities/ChatbotResponse';
+import { CliModule } from './modules/chatbot-response/cli.module';
 
 @Module({
   imports: [
@@ -136,6 +137,7 @@ import { ChatbotResponse } from './entities/ChatbotResponse';
     CourseSectionModule,
     CourseLessonsModule,
     MessagesModule,
+    CliModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthMiddleware, InstructorMiddleware],

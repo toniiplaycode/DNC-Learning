@@ -5,7 +5,10 @@ export class ChatbotResponse {
   @PrimaryGeneratedColumn()
   id: number;
 
-  @Column('text', { array: true })
+  @Column({
+    type: 'json',
+    nullable: false,
+  })
   keywords: string[];
 
   @Column('text')
@@ -14,6 +17,6 @@ export class ChatbotResponse {
   @Column('varchar', { length: 50 })
   category: string;
 
-  @Column('float')
+  @Column('float', { precision: 3, scale: 2 })
   confidence: number;
 }

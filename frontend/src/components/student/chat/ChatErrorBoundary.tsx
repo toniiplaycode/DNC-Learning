@@ -1,5 +1,7 @@
 import React from "react";
 import { Box, Typography, Button } from "@mui/material";
+import { selectCurrentUser } from "../../../features/auth/authSelectors";
+import { useAppSelector } from "../../../app/hooks";
 
 interface Props {
   children: React.ReactNode;
@@ -9,7 +11,10 @@ interface State {
   hasError: boolean;
 }
 
-class ChatErrorBoundary extends React.Component<Props, State> {
+class ChatErrorBoundaryClass extends React.Component<
+  Props & { isAuthenticated: boolean },
+  State
+> {
   public state: State = {
     hasError: false,
   };
@@ -24,6 +29,11 @@ class ChatErrorBoundary extends React.Component<Props, State> {
   }
 
   render() {
+    // Don't show error if user is not authenticated
+    if (!this.props.isAuthenticated) {
+      return null;
+    }
+
     if (this.state.hasError) {
       return (
         <Box sx={{ p: 2, textAlign: "center" }}>
@@ -40,5 +50,16 @@ class ChatErrorBoundary extends React.Component<Props, State> {
     return this.props.children;
   }
 }
+
+// Wrapper component to provide authentication state
+const ChatErrorBoundary: React.FC<Props> = ({ children }) => {
+  const currentUser = useAppSelector(selectCurrentUser);
+
+  return (
+    <ChatErrorBoundaryClass isAuthenticated={!!currentUser}>
+      {children}
+    </ChatErrorBoundaryClass>
+  );
+};
 
 export default ChatErrorBoundary;

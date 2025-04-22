@@ -43,11 +43,19 @@ export class ChatbotService {
   ): Promise<ChatbotResponse | null> {
     this.logger.debug(`Finding best response for: "${messageText}"`);
 
-    const allResponses = await this.chatbotResponseRepo.find();
+    // Get all responses, ordered by newest first
+    const allResponses = await this.chatbotResponseRepo.find({
+      order: {
+        id: 'DESC', // Newest responses first
+      },
+    });
+
     this.logger.debug(`Found ${allResponses.length} possible responses`);
 
-    let bestMatch: ChatbotResponse | null = null;
-    let highestConfidence = 0;
+    let bestMatches: Array<{
+      response: ChatbotResponse;
+      confidence: number;
+    }> = [];
 
     const messageLower = messageText.toLowerCase().trim();
 
@@ -58,13 +66,11 @@ export class ChatbotService {
         if (Array.isArray(response.keywords)) {
           keywords = response.keywords;
         } else if (typeof response.keywords === 'string') {
-          // Handle string array format from database
           try {
             keywords = JSON.parse(response.keywords as string);
           } catch {
-            // If JSON.parse fails, try splitting by comma
             keywords = (response.keywords as string)
-              .replace(/[[\]"']/g, '') // Remove brackets and quotes
+              .replace(/[[\]"']/g, '')
               .split(',')
               .map((k) => k.trim())
               .filter((k) => k.length > 0);
@@ -75,11 +81,6 @@ export class ChatbotService {
           );
           continue;
         }
-
-        this.logger.debug(`Processing response ${response.id}:`, {
-          category: response.category,
-          keywords,
-        });
 
         // Check each keyword
         for (const keyword of keywords) {
@@ -93,12 +94,11 @@ export class ChatbotService {
               `Match found for "${keywordLower}" with confidence ${confidence}`,
             );
 
-            if (confidence > highestConfidence) {
-              highestConfidence = confidence;
-              bestMatch = response;
-              this.logger.debug(`New best match: ${response.category}`);
-            }
-            break;
+            bestMatches.push({
+              response: response,
+              confidence: confidence,
+            });
+            break; // Found a match for this response, move to next
           }
         }
       } catch (error) {
@@ -107,10 +107,22 @@ export class ChatbotService {
       }
     }
 
+    // Sort matches by confidence and creation date (using ID as proxy for creation date)
+    bestMatches.sort((a, b) => {
+      if (a.confidence === b.confidence) {
+        // If same confidence, prefer newer response (higher ID)
+        return b.response.id - a.response.id;
+      }
+      return b.confidence - a.confidence;
+    });
+
+    const bestMatch = bestMatches[0]?.response || null;
+
     if (bestMatch) {
       this.logger.debug(`Selected response:`, {
+        id: bestMatch.id,
         category: bestMatch.category,
-        confidence: highestConfidence,
+        confidence: bestMatch.confidence,
         response: bestMatch.response,
       });
     } else {

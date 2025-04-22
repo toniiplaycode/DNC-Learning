@@ -1,0 +1,35 @@
+import { Module } from '@nestjs/common';
+import { TypeOrmModule } from '@nestjs/typeorm';
+import { ChatbotResponse } from '../../entities/ChatbotResponse';
+import { Course } from '../../entities/Course';
+import { UserInstructor } from '../../entities/UserInstructor';
+import { AnalyzeChatbotDataCommand } from '../chatbot-response/chatbot-analyzer.command';
+import { ChatbotAnalyzerService } from '../chatbot-response/chatbot-analyzer.service';
+import { Review } from 'src/entities/Review';
+import { Quiz } from 'src/entities/Quiz';
+import { Assignment } from 'src/entities/Assignment';
+import { Certificate } from 'src/entities/Certificate';
+import { Enrollment } from 'src/entities/Enrollment';
+import { Forum } from 'src/entities/Forum';
+import { Category } from 'src/entities/Category';
+import { Document } from 'src/entities/Document';
+
+@Module({
+  imports: [
+    TypeOrmModule.forFeature([
+      ChatbotResponse,
+      Course,
+      UserInstructor,
+      Review,
+      Quiz,
+      Assignment,
+      Certificate,
+      Enrollment,
+      Forum,
+      Document,
+      Category,
+    ]),
+  ],
+  providers: [ChatbotAnalyzerService, AnalyzeChatbotDataCommand],
+})
+export class CliModule {}

@@ -1176,21 +1176,22 @@ const ChatBox = () => {
       </Grow>
 
       {/* Chat Box */}
-      <Slide direction="up" in={open} mountOnEnter unmountOnExit>
+      <Slide direction="left" in={open} mountOnEnter unmountOnExit>
         <Paper
           elevation={6}
           sx={{
             position: "fixed",
-            bottom: 24,
-            right: 24,
+            bottom: 10,
+            right: 10,
             width: "100%",
             maxWidth: 350,
-            height: 550,
+            height: "88%",
             display: "flex",
             flexDirection: "column",
             overflow: "hidden",
-            zIndex: 1000,
+            zIndex: 99999999,
             borderRadius: 2,
+            transformOrigin: "right",
           }}
         >
           {/* Header */}
@@ -1199,7 +1200,8 @@ const ChatBox = () => {
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
-              p: 2,
+              px: 2,
+              py: 0.5,
               bgcolor: "primary.main",
               color: "white",
             }}
@@ -1226,7 +1228,7 @@ const ChatBox = () => {
                   )}
                 </Box>
                 {!showInstructors && selectedRoom?.instructor.role && (
-                  <Typography variant="caption" sx={{ opacity: 0.8 }}>
+                  <Typography sx={{ fontSize: 13, opacity: 0.8 }}>
                     {selectedRoom.instructor.role}
                   </Typography>
                 )}
@@ -1657,7 +1659,12 @@ const ChatBox = () => {
                     placeholder="Nhập tin nhắn..."
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
-                    onKeyPress={(e) => e.key === "Enter" && handleSend()}
+                    onKeyPress={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault(); // Prevent default to avoid newline
+                        handleSend();
+                      }
+                    }}
                     InputProps={{
                       endAdornment: (
                         <InputAdornment position="end">
