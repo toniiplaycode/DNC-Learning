@@ -58,6 +58,7 @@ import { CourseSectionModule } from './modules/course-sections/course-section.mo
 import { CourseLessonsModule } from './modules/course-lessons/course-lessons.module';
 import { MessagesModule } from './modules/messages/messages.module';
 import { Message } from './entities/Message';
+import { ChatbotResponse } from './entities/ChatbotResponse';
 
 @Module({
   imports: [
@@ -110,6 +111,7 @@ import { Message } from './entities/Message';
           AssignmentSubmission,
           AcademicClassInstructor,
           Message,
+          ChatbotResponse,
         ],
         // synchronize: true, // tự động tạo bảng trong entity (chỉ dùng trong môi tường dev)
       }),

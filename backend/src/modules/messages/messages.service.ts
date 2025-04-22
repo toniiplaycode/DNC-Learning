@@ -12,37 +12,45 @@ export class MessagesService {
   ) {}
 
   async create(
-    senderId: number,
+    userId: number,
     createMessageDto: CreateMessageDto,
   ): Promise<Message | null> {
-    const message = this.messageRepository.create({
-      senderId,
-      receiverId: createMessageDto.receiverId,
-      messageText: createMessageDto.messageText,
-    });
+    try {
+      // Special handling for chatbot messages
+      if (createMessageDto.receiverId === -1 || userId === -1) {
+        console.log('🤖 Creating chatbot message');
+        const message = this.messageRepository.create({
+          senderId: userId,
+          receiverId: createMessageDto.receiverId,
+          messageText: createMessageDto.messageText,
+          isRead: true, // Chatbot messages are always read
+        });
 
-    const savedMessage = await this.messageRepository.save(message);
+        const savedMessage = await this.messageRepository.save(message);
+        return this.messageRepository.findOne({
+          where: { id: savedMessage.id },
+          relations: ['sender', 'receiver'],
+        });
+      }
 
-    // Fetch complete message with relations after saving
-    return this.messageRepository.findOne({
-      where: { id: savedMessage.id },
-      relations: {
-        sender: {
-          userStudent: true,
-          userInstructor: true,
-          userStudentAcademic: {
-            academicClass: true,
-          },
-        },
-        receiver: {
-          userStudent: true,
-          userInstructor: true,
-          userStudentAcademic: {
-            academicClass: true,
-          },
-        },
-      },
-    });
+      // Regular message handling
+      console.log('💬 Creating regular message');
+      const message = this.messageRepository.create({
+        senderId: userId,
+        receiverId: createMessageDto.receiverId,
+        messageText: createMessageDto.messageText,
+        isRead: false,
+      });
+
+      const savedMessage = await this.messageRepository.save(message);
+      return this.messageRepository.findOne({
+        where: { id: savedMessage.id },
+        relations: ['sender', 'receiver'],
+      });
+    } catch (error) {
+      console.error('Error creating message:', error);
+      throw new Error('Could not create message');
+    }
   }
 
   async getConversation(userId1: number, userId2: number): Promise<Message[]> {

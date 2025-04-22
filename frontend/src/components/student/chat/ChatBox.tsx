@@ -23,6 +23,7 @@ import {
   DialogTitle,
   DialogContent,
   Grid,
+  CircularProgress,
 } from "@mui/material";
 import {
   Chat as ChatIcon,
@@ -32,6 +33,7 @@ import {
   ArrowBack,
   Person,
   Search,
+  SmartToy,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
@@ -45,13 +47,20 @@ import {
 } from "../../../features/messages/messagesSlice";
 
 import { selectCurrentUser } from "../../../features/auth/authSelectors";
-import {
-  selectAllMessages,
-  selectMessagesLoading,
-} from "../../../features/messages/messagesSelector";
+import { selectAllMessages } from "../../../features/messages/messagesSelector";
 import ChatErrorBoundary from "./ChatErrorBoundary";
 import { fetchUsers } from "../../../features/users/usersApiSlice";
 import { selectAllUsers } from "../../../features/users/usersSelectors";
+
+// Add CHATBOT constant at the top
+const CHATBOT = {
+  id: "-1",
+  fullName: "DNC Assistant",
+  email: "chatbot@dnc.com",
+  role: "chatbot",
+  avatarUrl: "/chatbot-avatar.png",
+  online: true,
+};
 
 interface Message {
   id: number;
@@ -138,6 +147,11 @@ interface ChatRoom {
   unread: number;
 }
 
+// Add ChatbotRoom interface
+interface ChatbotRoom extends ChatRoom {
+  isChatbot: true;
+}
+
 // Thêm hàm để sắp xếp chat rooms
 const sortChatRooms = (rooms: ChatRoom[]) => {
   return [...rooms].sort((a, b) => {
@@ -180,13 +194,69 @@ const formatLastMessageTime = (timestamp: string) => {
 
 // Or for a more detailed approach with login prompt:
 const ChatBox = () => {
-  const currentUser = useAppSelector(selectCurrentUser);
-  const navigate = useNavigate();
   const dispatch = useAppDispatch();
+  const currentUser = useAppSelector(selectCurrentUser);
   const messages = useAppSelector(selectAllMessages);
-  const loading = useAppSelector(selectMessagesLoading);
-  const allUsers = useAppSelector(selectAllUsers);
+  const [isLoadingMessages, setIsLoadingMessages] = useState(true);
+  const [isMessagesInitialized, setIsMessagesInitialized] = useState(false);
 
+  // Add new state for chatbot typing
+  const [isChatbotTyping, setIsChatbotTyping] = useState(false);
+
+  // Primary useEffect for fetching messages
+  useEffect(() => {
+    const initializeMessages = async () => {
+      if (!currentUser?.id || isMessagesInitialized) return;
+
+      setIsLoadingMessages(true);
+
+      try {
+        const userId = Number(currentUser.id);
+        if (isNaN(userId)) {
+          throw new Error("Invalid user ID");
+        }
+
+        const result = await dispatch(fetchMessagesByUser(userId)).unwrap();
+
+        if (result?.length > 0) {
+          const processedRooms = processMessages(result);
+          setChatRooms(processedRooms);
+        }
+
+        setIsMessagesInitialized(true);
+      } catch (error) {
+        console.error("❌ Failed to fetch messages:", error);
+      } finally {
+        setIsLoadingMessages(false);
+      }
+    };
+
+    initializeMessages();
+  }, [currentUser, isMessagesInitialized, dispatch]);
+
+  // Secondary effects that depend on messages being loaded
+  useEffect(() => {
+    if (!isMessagesInitialized || !messages?.length) return;
+
+    try {
+      const processedRooms = processMessages(messages);
+      setChatRooms(processedRooms);
+    } catch (error) {
+      console.error("Error processing messages:", error);
+    }
+  }, [messages, isMessagesInitialized]);
+
+  // Cleanup effect
+  useEffect(() => {
+    return () => {
+      setIsMessagesInitialized(false);
+      setChatRooms([]);
+      dispatch(setMessages([]));
+    };
+  }, []);
+
+  const navigate = useNavigate();
+  const allUsers = useAppSelector(selectAllUsers);
   const [open, setOpen] = useState(false);
   const [showInstructors, setShowInstructors] = useState(true);
   const [selectedRoom, setSelectedRoom] = useState<ChatRoom | null>(null);
@@ -194,281 +264,137 @@ const ChatBox = () => {
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
   const [userInfoOpen, setUserInfoOpen] = useState(false);
 
-  // Hàm filter chat rooms
-  const getFilteredChatRooms = () => {
-    let rooms = [...chatRooms];
-    if (filterUnread) {
-      rooms = rooms.filter((room) => room.unread > 0);
-    }
-    return sortChatRooms(rooms);
-  };
-
-  // Add new state for search
-  const [searchQuery, setSearchQuery] = useState("");
-  const [searchResults, setSearchResults] = useState<typeof allUsers>([]);
-
-  // Thêm vào phần khai báo state trong ChatBox component
-  const [filterUnread, setFilterUnread] = useState(false);
-
-  const socketRef = useRef<Socket | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    dispatch(fetchUsers());
-  }, []);
-
-  // Socket connection
-  useEffect(() => {
-    if (!currentUser?.id) return;
-
-    socketRef.current = io("http://localhost:3000", {
-      auth: {
-        userId: currentUser.id,
-        authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-    });
-
-    // Handle new messages
-    socketRef.current.on("newMessage", (newMessage: Message) => {
-      console.log("New message received:", newMessage);
-      dispatch(addMessage(newMessage));
-    });
-
-    // Handle sent message confirmation
-    socketRef.current.on("messageSent", (sentMessage: Message) => {
-      console.log("Message sent confirmation:", sentMessage);
-      dispatch(addMessage(sentMessage));
-    });
-
-    return () => {
-      socketRef.current?.disconnect();
-
-      // Clear chat rooms and messages on unmount
-      setChatRooms([]);
-      dispatch(setMessages([]));
-    };
-  }, [currentUser?.id, dispatch]);
-
-  // Process messages into chat rooms
-  useEffect(() => {
-    if (!messages?.length || !currentUser?.id) return;
-
-    try {
-      const processedRooms = processMessages(messages);
-      setChatRooms(processedRooms);
-
-      // Update selected room if exists
-      if (selectedRoom) {
-        const updatedRoom = processedRooms.find(
-          (room) => room.id === selectedRoom.id
-        );
-        if (updatedRoom) {
-          setSelectedRoom(updatedRoom);
-        }
-      }
-    } catch (error) {
-      console.error("Error processing messages:", error);
-    }
-  }, [messages, currentUser?.id, selectedRoom?.id]);
-
-  // Handle sending messages
-  const handleSend = () => {
-    if (!currentUser || !message.trim() || !selectedRoom || !socketRef.current)
-      return;
-
-    // Create temporary message structure matching Message interface
-    const tempMessage: Message = {
-      id: Date.now(), // temporary id
-      messageText: message.trim(),
-      isRead: false,
-      createdAt: new Date().toISOString(),
-      sender: {
-        id: currentUser.id,
-        username: currentUser.username,
-        email: currentUser.email,
-        role: currentUser.role,
-        avatarUrl: currentUser.avatarUrl,
-        userStudent: currentUser.userStudent,
-        userStudentAcademic: currentUser.userStudentAcademic,
-        userInstructor: currentUser.userInstructor,
-      },
-      receiver: {
-        id: selectedRoom.instructor.id,
-        username: selectedRoom.instructor.fullName,
-        email: "",
-        role: selectedRoom.instructor.role,
-        avatarUrl: selectedRoom.instructor.avatarUrl,
-      },
-    };
-
-    // Add to Redux store immediately
-    dispatch(addMessage(tempMessage));
-
-    // Update local state
-    setChatRooms((prev) =>
-      prev.map((room) => {
-        if (room.id === selectedRoom.id) {
-          return {
-            ...room,
-            messages: [
-              ...room.messages,
-              {
-                id: tempMessage.id,
-                content: tempMessage.messageText,
-                sender: "user",
-                timestamp: tempMessage.createdAt,
-                avatar: currentUser.avatarUrl,
-                name: currentUser.username,
-                isRead: false,
-                senderId: currentUser.id,
-                receiverId: selectedRoom.instructor.id,
-              },
-            ].sort(
-              (a, b) =>
-                new Date(a.timestamp).getTime() -
-                new Date(b.timestamp).getTime()
-            ),
-          };
-        }
-        return room;
-      })
-    );
-
-    // Emit message through socket
-    socketRef.current.emit("sendMessage", {
-      receiverId: selectedRoom.instructor.id,
-      messageText: message.trim(),
-    });
-
-    // Clear input
-    setMessage("");
-
-    // Scroll to bottom
-    scrollToBottom();
-  };
-
   // Keep only one state declaration
   const processMessages = (messages: Message[]) => {
     if (!currentUser?.id || !messages) return [];
 
-    const instructorMessages = messages.reduce((acc, message) => {
-      if (!message?.sender?.id || !message?.receiver?.id) return acc;
+    // Create chatbot room first
+    const chatbotRoom: ChatbotRoom = {
+      id: -1,
+      instructor: {
+        id: "-1",
+        fullName: CHATBOT.fullName,
+        avatarUrl: CHATBOT.avatarUrl,
+        role: CHATBOT.role,
+        online: true,
+      },
+      messages: messages
+        .filter((msg) => msg.sender.id === "-1" || msg.receiver.id === "-1")
+        .map((msg) => ({
+          id: msg.id,
+          content: msg.messageText,
+          sender: msg.sender.id === currentUser.id ? "user" : "support",
+          timestamp: msg.createdAt,
+          avatar:
+            msg.sender.id === currentUser.id
+              ? currentUser.avatarUrl
+              : CHATBOT.avatarUrl,
+          name:
+            msg.sender.id === currentUser.id
+              ? currentUser.username
+              : CHATBOT.fullName,
+          isRead: true,
+          senderId: msg.sender.id,
+          receiverId: msg.receiver.id,
+        })),
+      unread: 0,
+      isChatbot: true,
+    };
 
-      const otherUserId =
-        message.sender.id === currentUser.id
-          ? message.receiver.id
-          : message.sender.id;
+    // Process regular messages
+    const instructorMessages = messages
+      .filter(
+        (message) => message.sender.id !== "-1" && message.receiver.id !== "-1"
+      )
+      .reduce((acc, message) => {
+        if (!message?.sender?.id || !message?.receiver?.id) return acc;
 
-      if (!acc[otherUserId]) {
-        const otherUser =
+        const otherUserId =
           message.sender.id === currentUser.id
-            ? message.receiver
-            : message.sender;
+            ? message.receiver.id
+            : message.sender.id;
 
-        acc[otherUserId] = {
-          id: Number(otherUserId),
-          instructor: {
-            id: otherUser.id,
-            fullName:
-              otherUser.userInstructor?.fullName ||
-              otherUser.userStudent?.fullName ||
-              otherUser.username,
-            avatarUrl: otherUser.avatarUrl || "",
-            role:
-              otherUser.userInstructor?.professionalTitle ||
-              otherUser.role?.charAt(0).toUpperCase() +
-                otherUser.role?.slice(1),
-            online: false,
-          },
-          messages: [],
-          unread: 0,
-        };
-      }
+        if (!acc[otherUserId]) {
+          const otherUser =
+            message.sender.id === currentUser.id
+              ? message.receiver
+              : message.sender;
 
-      acc[otherUserId].messages.push({
-        id: message.id,
-        content: message.messageText,
-        sender: message.sender.id === currentUser.id ? "user" : "support",
-        timestamp: message.createdAt,
-        avatar: message.sender.avatarUrl,
-        name:
-          message.sender.userInstructor?.fullName ||
-          message.sender.userStudent?.fullName ||
-          message.sender.username,
-        isRead: message.isRead,
-        senderId: message.sender.id,
-        receiverId: message.receiver.id,
-      });
+          acc[otherUserId] = {
+            id: Number(otherUserId),
+            instructor: {
+              id: otherUser.id,
+              fullName:
+                otherUser.userInstructor?.fullName ||
+                otherUser.userStudent?.fullName ||
+                otherUser.username,
+              avatarUrl: otherUser.avatarUrl || "",
+              role:
+                otherUser.userInstructor?.professionalTitle ||
+                otherUser.role?.charAt(0).toUpperCase() +
+                  otherUser.role?.slice(1),
+              online: false,
+            },
+            messages: [],
+            unread: 0,
+          };
+        }
 
-      // Sort messages by timestamp after adding new message
-      acc[otherUserId].messages.sort(
-        (a, b) =>
-          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-      );
+        acc[otherUserId].messages.push({
+          id: message.id,
+          content: message.messageText,
+          sender: message.sender.id === currentUser.id ? "user" : "support",
+          timestamp: message.createdAt,
+          avatar: message.sender.avatarUrl,
+          name:
+            message.sender.userInstructor?.fullName ||
+            message.sender.userStudent?.fullName ||
+            message.sender.username,
+          isRead: message.isRead,
+          senderId: message.sender.id,
+          receiverId: message.receiver.id,
+        });
 
-      if (!message.isRead && message.sender.id !== currentUser.id) {
-        acc[otherUserId].unread++;
-      }
+        // Sort messages by timestamp after adding new message
+        acc[otherUserId].messages.sort(
+          (a, b) =>
+            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
 
-      return acc;
-    }, {} as Record<string, ChatRoom>);
+        if (!message.isRead && message.sender.id !== currentUser.id) {
+          acc[otherUserId].unread++;
+        }
 
-    return Object.values(instructorMessages);
+        return acc;
+      }, {} as Record<string, ChatRoom>);
+
+    // Combine chatbot room with other rooms
+    return [chatbotRoom, ...Object.values(instructorMessages)];
   };
 
-  // Return early if no user
-  if (!currentUser) {
-    return (
-      <Grow in={true}>
-        <Fab
-          color="primary"
-          onClick={() => navigate("/login")}
-          sx={{
-            position: "fixed",
-            bottom: 24,
-            right: 24,
-            zIndex: 1000,
-          }}
-        >
-          <Badge color="error" variant="dot">
-            <ChatIcon />
-          </Badge>
-        </Fab>
-      </Grow>
-    );
-  }
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  useEffect(() => {
-    scrollToBottom();
-  }, [selectedRoom?.messages]);
-
-  // Add null checks in useEffect
+  // Update the fetch messages effect
   useEffect(() => {
     if (!currentUser?.id) return;
 
-    dispatch(fetchMessagesByUser(Number(currentUser.id)));
-  }, [dispatch, currentUser?.id]);
+    setIsLoadingMessages(true);
+    console.log("🔄 Fetching messages for user:", currentUser.id);
 
-  // Update useEffect to process messages when they change
-  useEffect(() => {
-    if (!messages?.length || !currentUser?.id) {
-      console.log("No messages or user to process");
-      return;
-    }
-
-    try {
-      const processedRooms = processMessages(messages);
-      if (processedRooms.length > 0) {
-        setChatRooms(processedRooms);
-      }
-    } catch (error) {
-      console.error("Error in message processing effect:", error);
-    }
-  }, [messages, currentUser]);
+    // Immediate fetch
+    dispatch(fetchMessagesByUser(Number(currentUser.id)))
+      .unwrap()
+      .then((messages) => {
+        if (messages?.length > 0) {
+          const processedRooms = processMessages(messages);
+          setChatRooms(processedRooms);
+        }
+      })
+      .catch((error) => {
+        console.error("❌ Error fetching messages:", error);
+      })
+      .finally(() => {
+        setIsLoadingMessages(false);
+      });
+  }, [currentUser, dispatch, navigate]);
 
   // Socket connection effect
   useEffect(() => {
@@ -495,7 +421,45 @@ const ChatBox = () => {
     socketRef.current.on("newMessage", (message: Message) => {
       console.log("New message received:", message);
 
+      // Hide typing indicator when receiving chatbot message
+      if (message.sender.id === "-1") {
+        setIsChatbotTyping(false);
+      }
+
       setChatRooms((prev) => {
+        // Handle chatbot messages
+        if (message.sender.id === "-1" || message.receiver.id === "-1") {
+          return prev.map((room) => {
+            if (room.id === -1) {
+              return {
+                ...room,
+                messages: [
+                  ...room.messages,
+                  {
+                    id: message.id,
+                    content: message.messageText,
+                    sender:
+                      message.sender.id === currentUser.id ? "user" : "support",
+                    timestamp: message.createdAt,
+                    avatar:
+                      message.sender.id === currentUser.id
+                        ? currentUser.avatarUrl
+                        : CHATBOT.avatarUrl,
+                    name:
+                      message.sender.id === currentUser.id
+                        ? currentUser.username
+                        : CHATBOT.fullName,
+                    isRead: true,
+                    senderId: message.sender.id,
+                    receiverId: message.receiver.id,
+                  },
+                ],
+              };
+            }
+            return room;
+          });
+        }
+
         const otherUserId =
           message.sender.id === currentUser.id
             ? message.receiver.id
@@ -583,9 +547,9 @@ const ChatBox = () => {
                 timestamp: message.createdAt,
                 avatar: message.sender.avatarUrl,
                 name:
-                  message.sender.userInstructor?.fullName ||
-                  message.sender.userStudent?.fullName ||
-                  message.sender.username,
+                  otherUser.userInstructor?.fullName ||
+                  otherUser.userStudent?.fullName ||
+                  otherUser.username,
                 isRead: message.isRead,
                 senderId: message.sender.id,
                 receiverId: message.receiver.id,
@@ -639,7 +603,258 @@ const ChatBox = () => {
         dispatch(setMessages([]));
       }
     };
-  }, [currentUser?.id, dispatch]);
+  }, [currentUser, dispatch]);
+
+  // Hàm filter chat rooms
+  const getFilteredChatRooms = () => {
+    let rooms = [...chatRooms];
+    if (filterUnread) {
+      rooms = rooms.filter((room) => room.unread > 0);
+    }
+    return sortChatRooms(rooms);
+  };
+
+  // Add new state for search
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchResults, setSearchResults] = useState<typeof allUsers>([]);
+
+  // Thêm vào phần khai báo state trong ChatBox component
+  const [filterUnread, setFilterUnread] = useState(false);
+
+  const socketRef = useRef<Socket | null>(null);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    dispatch(fetchUsers());
+  }, []);
+
+  // Socket connection
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    socketRef.current = io("http://localhost:3000", {
+      auth: {
+        userId: currentUser.id,
+        authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+
+    // Handle new messages
+    socketRef.current.on("newMessage", (newMessage: Message) => {
+      console.log("New message received:", newMessage);
+      dispatch(addMessage(newMessage));
+    });
+
+    // Handle sent message confirmation
+    socketRef.current.on("messageSent", (sentMessage: Message) => {
+      console.log("Message sent confirmation:", sentMessage);
+      dispatch(addMessage(sentMessage));
+    });
+
+    return () => {
+      socketRef.current?.disconnect();
+
+      // Clear chat rooms and messages on unmount
+      setChatRooms([]);
+      dispatch(setMessages([]));
+    };
+  }, [currentUser, dispatch]);
+
+  // Add after existing useEffect for messages
+  useEffect(() => {
+    if (!currentUser.id) return;
+
+    // Create chatbot room
+    const chatbotRoom: ChatbotRoom = {
+      id: -1,
+      instructor: {
+        id: CHATBOT.id,
+        fullName: CHATBOT.fullName,
+        avatarUrl: CHATBOT.avatarUrl,
+        role: CHATBOT.role,
+        online: true,
+      },
+      messages: [],
+      unread: 0,
+      isChatbot: true,
+    };
+
+    setChatRooms((prev) => {
+      const existingRooms = prev.filter((room) => room.id !== -1);
+      return [chatbotRoom, ...existingRooms];
+    });
+  }, [currentUser]);
+
+  // Process messages into chat rooms
+  useEffect(() => {
+    if (!messages.length || !currentUser.id) return;
+
+    try {
+      const processedRooms = processMessages(messages);
+      setChatRooms(processedRooms);
+
+      // Update selected room if exists
+      if (selectedRoom) {
+        const updatedRoom = processedRooms.find(
+          (room) => room.id === selectedRoom.id
+        );
+        if (updatedRoom) {
+          setSelectedRoom(updatedRoom);
+        }
+      }
+    } catch (error) {
+      console.error("Error processing messages:", error);
+    }
+  }, [messages, currentUser, selectedRoom?.id]);
+
+  // Update handleSend function
+  const handleSend = async () => {
+    if (!message.trim() || !selectedRoom || !socketRef.current) return;
+
+    // Handle chatbot messages
+    if (selectedRoom.id === -1) {
+      console.log("💬 Sending message to chatbot:", {
+        message: message.trim(),
+        userId: currentUser.id,
+      });
+
+      // Clear input before sending
+      const messageText = message.trim();
+      setMessage("");
+
+      // Show typing indicator
+      setIsChatbotTyping(true);
+
+      // Only emit message, don't update UI here
+      console.log("🚀 Sending to chatbot:", messageText);
+      socketRef.current.emit("chatbotMessage", {
+        messageText: messageText,
+      });
+
+      scrollToBottom();
+      return;
+    }
+
+    if (!currentUser || !message.trim() || !selectedRoom || !socketRef.current)
+      return;
+
+    // Create temporary message structure matching Message interface
+    const tempMessage: Message = {
+      id: Date.now(), // temporary id
+      messageText: message.trim(),
+      isRead: false,
+      createdAt: new Date().toISOString(),
+      sender: {
+        id: currentUser.id,
+        username: currentUser.username,
+        email: currentUser.email,
+        role: currentUser.role,
+        avatarUrl: currentUser.avatarUrl,
+        userStudent: currentUser.userStudent,
+        userStudentAcademic: currentUser.userStudentAcademic,
+        userInstructor: currentUser.userInstructor,
+      },
+      receiver: {
+        id: selectedRoom.instructor.id,
+        username: selectedRoom.instructor.fullName,
+        email: "",
+        role: selectedRoom.instructor.role,
+        avatarUrl: selectedRoom.instructor.avatarUrl,
+      },
+    };
+
+    // Add to Redux store immediately
+    dispatch(addMessage(tempMessage));
+
+    // Update local state
+    setChatRooms((prev) =>
+      prev.map((room) => {
+        if (room.id === selectedRoom.id) {
+          return {
+            ...room,
+            messages: [
+              ...room.messages,
+              {
+                id: tempMessage.id,
+                content: tempMessage.messageText,
+                sender: "user",
+                timestamp: tempMessage.createdAt,
+                avatar: currentUser.avatarUrl,
+                name: currentUser.username,
+                isRead: false,
+                senderId: currentUser.id,
+                receiverId: selectedRoom.instructor.id,
+              },
+            ].sort(
+              (a, b) =>
+                new Date(a.timestamp).getTime() -
+                new Date(b.timestamp).getTime()
+            ),
+          };
+        }
+        return room;
+      })
+    );
+
+    // Emit message through socket
+    socketRef.current.emit("sendMessage", {
+      receiverId: selectedRoom.instructor.id,
+      messageText: message.trim(),
+    });
+
+    // Clear input
+    setMessage("");
+
+    // Scroll to bottom
+    scrollToBottom();
+  };
+
+  // Return early if no user
+  if (!currentUser) {
+    return (
+      <Grow in={true}>
+        <Fab
+          color="primary"
+          onClick={() => navigate("/login")}
+          sx={{
+            position: "fixed",
+            bottom: 24,
+            right: 24,
+            zIndex: 1000,
+          }}
+        >
+          <Badge color="error" variant="dot">
+            <ChatIcon />
+          </Badge>
+        </Fab>
+      </Grow>
+    );
+  }
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [selectedRoom?.messages]);
+
+  // Update useEffect to process messages when they change
+  useEffect(() => {
+    if (!messages?.length || !currentUser?.id) {
+      console.log("No messages or user to process");
+      return;
+    }
+
+    try {
+      const processedRooms = processMessages(messages);
+      if (processedRooms.length > 0) {
+        setChatRooms(processedRooms);
+      }
+    } catch (error) {
+      console.error("Error in message processing effect:", error);
+    }
+  }, [messages, currentUser]);
 
   // Cập nhật useEffect xử lý tin nhắn mới
   useEffect(() => {
@@ -758,7 +973,73 @@ const ChatBox = () => {
         socketRef.current.disconnect();
       }
     };
-  }, [currentUser?.id, dispatch]);
+  }, [currentUser, dispatch]);
+
+  // Add to your existing socket connection useEffect
+  useEffect(() => {
+    if (!currentUser?.id || !socketRef.current) return;
+
+    // Add chatbot response handler
+    socketRef.current.on("chatbotResponse", (response) => {
+      console.log("📩 Received chatbot response:", response);
+
+      // Add bot response to Redux store
+      dispatch(
+        addMessage({
+          id: response.id,
+          messageText: response.messageText,
+          isRead: true,
+          createdAt: response.createdAt,
+          sender: {
+            id: "-1",
+            username: "DNC Assistant",
+            email: "chatbot@dnc.com",
+            role: "chatbot",
+            avatarUrl: "/chatbot-avatar.png",
+          },
+          receiver: {
+            id: currentUser.id,
+            username: currentUser.username,
+            email: currentUser.email,
+            role: currentUser.role,
+            avatarUrl: currentUser.avatarUrl,
+          },
+        })
+      );
+
+      // Update chat rooms with bot response
+      setChatRooms((prev) => {
+        return prev.map((room) => {
+          if (room.id === -1) {
+            return {
+              ...room,
+              messages: [
+                ...room.messages,
+                {
+                  id: response.id,
+                  content: response.messageText,
+                  sender: "support",
+                  timestamp: response.createdAt,
+                  avatar: CHATBOT.avatarUrl,
+                  name: CHATBOT.fullName,
+                  isRead: true,
+                  senderId: "-1",
+                  receiverId: currentUser.id,
+                },
+              ],
+            };
+          }
+          return room;
+        });
+      });
+
+      scrollToBottom();
+    });
+
+    return () => {
+      socketRef.current?.off("chatbotResponse");
+    };
+  }, [currentUser]);
 
   const handleMarkAsRead = (messageId: number) => {
     if (socketRef.current) {
@@ -767,10 +1048,23 @@ const ChatBox = () => {
     }
   };
 
-  const handleSelectRoom = (room: ChatRoom) => {
-    dispatch(setSelectedReceiver(room.instructor.id));
+  const handleSelectRoom = (room: ChatRoom | ChatbotRoom) => {
+    console.log("🔄 Selecting room:", {
+      roomId: room.id,
+      isChatbot: room.id === -1,
+    });
+
     setSelectedRoom(room);
     setShowInstructors(false);
+
+    // Special handling for chatbot
+    if (room.id === -1) {
+      console.log("🤖 Selected chatbot room");
+      dispatch(setSelectedReceiver("-1"));
+      return;
+    }
+
+    dispatch(setSelectedReceiver(room.instructor.id));
 
     // Mark unread messages as read
     if (room.unread > 0) {
@@ -834,6 +1128,32 @@ const ChatBox = () => {
 
     setSearchResults(results);
   };
+
+  // Update socket effect for chatbot messages
+  useEffect(() => {
+    if (!currentUser?.id || !socketRef.current) return;
+
+    // Handle all new messages
+    socketRef.current.on("newMessage", (message: Message) => {
+      console.log("📩 New message received:", message);
+
+      // Turn off typing indicator if message is from chatbot
+      if (message.sender.id === "-1") {
+        setIsChatbotTyping(false);
+      }
+    });
+
+    // Add error handler
+    socketRef.current.on("error", () => {
+      setIsChatbotTyping(false); // Turn off typing on error
+    });
+
+    return () => {
+      socketRef.current?.off("newMessage");
+      socketRef.current?.off("error");
+      setIsChatbotTyping(false); // Reset on unmount
+    };
+  }, [currentUser?.id, dispatch]);
 
   return (
     <>
@@ -949,178 +1269,236 @@ const ChatBox = () => {
             }}
           >
             {showInstructors ? (
-              // Danh sách giảng viên
               <>
-                <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
-                  <Box sx={{ display: "flex", gap: 2, mb: 2 }}>
-                    <TextField
-                      fullWidth
-                      size="small"
-                      placeholder="Tìm kiếm người dùng..."
-                      value={searchQuery}
-                      onChange={(e) => handleSearch(e.target.value)}
-                      InputProps={{
-                        startAdornment: (
-                          <InputAdornment position="start">
-                            <Search />
-                          </InputAdornment>
-                        ),
-                      }}
-                    />
-                    <Box sx={{ display: "flex", alignItems: "center" }}>
-                      <FormControlLabel
-                        control={
-                          <Switch
-                            checked={filterUnread}
-                            onChange={(e) => setFilterUnread(e.target.checked)}
-                            size="small"
-                          />
-                        }
-                        label="Chưa đọc"
+                <Box sx={{ p: 2 }}>
+                  <TextField
+                    fullWidth
+                    placeholder="Tìm kiếm..."
+                    variant="outlined"
+                    size="small"
+                    value={searchQuery}
+                    onChange={(e) => handleSearch(e.target.value)}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <Search />
+                        </InputAdornment>
+                      ),
+                    }}
+                  />
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={filterUnread}
+                        onChange={(e) => setFilterUnread(e.target.checked)}
                       />
-                    </Box>
-                  </Box>
+                    }
+                    label="Chỉ hiện tin nhắn chưa đọc"
+                  />
                 </Box>
 
                 <List sx={{ flex: 1, overflowY: "auto" }}>
-                  {(searchQuery ? searchResults : getFilteredChatRooms()).map(
-                    (item) => {
-                      // For existing chat rooms
-                      if (!searchQuery) {
-                        const lastMessage =
-                          item.messages[item.messages.length - 1];
-                        return (
-                          <ListItemButton
-                            key={item.id}
-                            onClick={() => handleSelectRoom(item)}
+                  {isLoadingMessages ? (
+                    <Box sx={{ p: 2, textAlign: "center" }}>
+                      <CircularProgress size={24} />
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ mt: 1 }}
+                      >
+                        Đang tải tin nhắn...
+                      </Typography>
+                    </Box>
+                  ) : (
+                    // ... existing list items code
+                    <>
+                      {/* Chatbot List Item */}
+                      <ListItemButton
+                        key="chatbot"
+                        selected={selectedRoom?.id === -1}
+                        onClick={() => {
+                          const chatbotRoom = chatRooms.find(
+                            (room) => room.id === -1
+                          );
+                          if (chatbotRoom) {
+                            handleSelectRoom(chatbotRoom);
+                          }
+                        }}
+                        sx={{
+                          borderBottom: 1,
+                          borderColor: "divider",
+                          bgcolor: (theme) =>
+                            selectedRoom?.id === -1
+                              ? theme.palette.action.selected
+                              : "transparent",
+                        }}
+                      >
+                        <ListItemAvatar>
+                          <Avatar
+                            src={CHATBOT.avatarUrl}
+                            sx={{ bgcolor: "primary.main" }}
                           >
-                            <ListItemAvatar>
-                              <Badge
-                                overlap="circular"
-                                anchorOrigin={{
-                                  vertical: "bottom",
-                                  horizontal: "right",
-                                }}
-                                variant="dot"
-                                color={
-                                  item.instructor.online ? "success" : "default"
-                                }
+                            <SmartToy />
+                          </Avatar>
+                        </ListItemAvatar>
+                        <ListItemText
+                          primary={
+                            <Typography fontWeight={500}>
+                              {CHATBOT.fullName}
+                            </Typography>
+                          }
+                          secondary={
+                            <Typography variant="body2" color="text.secondary">
+                              AI Assistant
+                            </Typography>
+                          }
+                        />
+                      </ListItemButton>
+
+                      {/* Regular chat rooms */}
+                      {(searchQuery ? searchResults : getFilteredChatRooms())
+                        .filter((item) => item.id !== -1)
+                        .map((item) => {
+                          // For existing chat rooms
+                          if (!searchQuery) {
+                            const lastMessage =
+                              item.messages[item.messages.length - 1];
+                            return (
+                              <ListItemButton
+                                key={item.id}
+                                onClick={() => handleSelectRoom(item)}
                               >
-                                <Avatar src={item.instructor.avatarUrl} />
-                              </Badge>
-                            </ListItemAvatar>
-                            <ListItemText
-                              primary={
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                  }}
-                                >
-                                  <Typography>
-                                    {item.instructor.fullName}
-                                  </Typography>
-                                  {lastMessage && (
-                                    <Typography
-                                      variant="caption"
-                                      color="text.secondary"
+                                <ListItemAvatar>
+                                  <Badge
+                                    overlap="circular"
+                                    anchorOrigin={{
+                                      vertical: "bottom",
+                                      horizontal: "right",
+                                    }}
+                                    variant="dot"
+                                    color={
+                                      item.instructor.online
+                                        ? "success"
+                                        : "default"
+                                    }
+                                  >
+                                    <Avatar src={item.instructor.avatarUrl} />
+                                  </Badge>
+                                </ListItemAvatar>
+                                <ListItemText
+                                  primary={
+                                    <Box
+                                      sx={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                      }}
                                     >
-                                      {formatLastMessageTime(
-                                        lastMessage.timestamp
+                                      <Typography>
+                                        {item.instructor.fullName}
+                                      </Typography>
+                                      {lastMessage && (
+                                        <Typography
+                                          variant="caption"
+                                          color="text.secondary"
+                                        >
+                                          {formatLastMessageTime(
+                                            lastMessage.timestamp
+                                          )}
+                                        </Typography>
                                       )}
-                                    </Typography>
-                                  )}
-                                </Box>
-                              }
-                              secondary={
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                    alignItems: "center",
-                                  }}
-                                >
+                                    </Box>
+                                  }
+                                  secondary={
+                                    <Box
+                                      sx={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        alignItems: "center",
+                                      }}
+                                    >
+                                      <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                        sx={{
+                                          maxWidth: "70%",
+                                          overflow: "hidden",
+                                          textOverflow: "ellipsis",
+                                          whiteSpace: "nowrap",
+                                        }}
+                                      >
+                                        {lastMessage
+                                          ? lastMessage.content
+                                          : "Không có tin nhắn"}
+                                      </Typography>
+                                      {item.unread > 0 && (
+                                        <Badge
+                                          badgeContent={item.unread}
+                                          color="error"
+                                        />
+                                      )}
+                                    </Box>
+                                  }
+                                />
+                              </ListItemButton>
+                            );
+                          }
+                          // For search results
+                          const fullName =
+                            item.userStudent?.fullName ||
+                            item.userInstructor?.fullName ||
+                            item.userStudentAcademic?.fullName ||
+                            item.username;
+                          const role =
+                            item.userInstructor?.professionalTitle ||
+                            item.role.charAt(0).toUpperCase() +
+                              item.role.slice(1);
+
+                          return (
+                            <ListItemButton
+                              key={item.id}
+                              onClick={() => {
+                                // Create new chat room if doesn't exist
+                                const existingRoom = chatRooms.find(
+                                  (room) => room.id === Number(item.id)
+                                );
+                                if (!existingRoom) {
+                                  const newRoom: ChatRoom = {
+                                    id: Number(item.id),
+                                    instructor: {
+                                      id: item.id,
+                                      fullName: fullName,
+                                      avatarUrl: item.avatarUrl || "",
+                                      role: role,
+                                      online: false,
+                                    },
+                                    messages: [],
+                                    unread: 0,
+                                  };
+                                  setChatRooms((prev) => [...prev, newRoom]);
+                                  handleSelectRoom(newRoom);
+                                } else {
+                                  handleSelectRoom(existingRoom);
+                                }
+                              }}
+                            >
+                              <ListItemAvatar>
+                                <Avatar src={item.avatarUrl || ""} />
+                              </ListItemAvatar>
+                              <ListItemText
+                                primary={fullName}
+                                secondary={
                                   <Typography
                                     variant="body2"
                                     color="text.secondary"
-                                    sx={{
-                                      maxWidth: "70%",
-                                      overflow: "hidden",
-                                      textOverflow: "ellipsis",
-                                      whiteSpace: "nowrap",
-                                    }}
                                   >
-                                    {lastMessage
-                                      ? lastMessage.content
-                                      : "Không có tin nhắn"}
+                                    {role}
                                   </Typography>
-                                  {item.unread > 0 && (
-                                    <Badge
-                                      badgeContent={item.unread}
-                                      color="error"
-                                    />
-                                  )}
-                                </Box>
-                              }
-                            />
-                          </ListItemButton>
-                        );
-                      }
-                      // For search results
-                      const fullName =
-                        item.userStudent?.fullName ||
-                        item.userInstructor?.fullName ||
-                        item.userStudentAcademic?.fullName ||
-                        item.username;
-                      const role =
-                        item.userInstructor?.professionalTitle ||
-                        item.role.charAt(0).toUpperCase() + item.role.slice(1);
-
-                      return (
-                        <ListItemButton
-                          key={item.id}
-                          onClick={() => {
-                            // Create new chat room if doesn't exist
-                            const existingRoom = chatRooms.find(
-                              (room) => room.id === Number(item.id)
-                            );
-                            if (!existingRoom) {
-                              const newRoom: ChatRoom = {
-                                id: Number(item.id),
-                                instructor: {
-                                  id: item.id,
-                                  fullName: fullName,
-                                  avatarUrl: item.avatarUrl || "",
-                                  role: role,
-                                  online: false,
-                                },
-                                messages: [],
-                                unread: 0,
-                              };
-                              setChatRooms((prev) => [...prev, newRoom]);
-                              handleSelectRoom(newRoom);
-                            } else {
-                              handleSelectRoom(existingRoom);
-                            }
-                          }}
-                        >
-                          <ListItemAvatar>
-                            <Avatar src={item.avatarUrl || ""} />
-                          </ListItemAvatar>
-                          <ListItemText
-                            primary={fullName}
-                            secondary={
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                              >
-                                {role}
-                              </Typography>
-                            }
-                          />
-                        </ListItemButton>
-                      );
-                    }
+                                }
+                              />
+                            </ListItemButton>
+                          );
+                        })}
+                    </>
                   )}
                 </List>
               </>
@@ -1237,6 +1615,37 @@ const ChatBox = () => {
                         </Box>
                       ))}
                     <div ref={messagesEndRef} />
+                    {/* Add typing indicator component in the chat messages area */}
+                    {selectedRoom?.id === -1 && isChatbotTyping && (
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                          p: 2,
+                        }}
+                      >
+                        <Avatar
+                          src={CHATBOT.avatarUrl}
+                          sx={{ width: 32, height: 32 }}
+                        />
+                        <Card
+                          sx={{
+                            bgcolor: "grey.100",
+                            px: 2,
+                            py: 1,
+                            display: "flex",
+                            alignItems: "center",
+                            gap: 0.5,
+                          }}
+                        >
+                          <CircularProgress size={8} />
+                          <Typography variant="body2" color="text.secondary">
+                            Đang suy nghĩ...
+                          </Typography>
+                        </Card>
+                      </Box>
+                    )}
                   </Stack>
                 </Box>
 

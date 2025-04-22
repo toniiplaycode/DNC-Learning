@@ -10,6 +10,8 @@ import { UserInstructor } from 'src/entities/UserInstructor';
 import { UserStudent } from 'src/entities/UserStudent';
 import { UserStudentAcademic } from 'src/entities/UserStudentAcademic';
 import { WsJwtAuthGuard } from 'src/guards/ws-jwt.guard';
+import { ChatbotResponse } from '../../entities/ChatbotResponse';
+import { ChatbotService } from '../chatbot-response/chatbot-response.service';
 
 @Module({
   controllers: [MessagesController],
@@ -20,12 +22,13 @@ import { WsJwtAuthGuard } from 'src/guards/ws-jwt.guard';
       UserStudent,
       UserInstructor,
       UserStudentAcademic,
+      ChatbotResponse,
     ]),
     JwtModule.register({
       secret: process.env.JWT_SECRET,
     }),
   ],
-  providers: [MessagesService, MessagesGateway, WsJwtAuthGuard],
+  providers: [MessagesService, MessagesGateway, WsJwtAuthGuard, ChatbotService],
   exports: [MessagesService],
 })
 export class MessagesModule {}
