@@ -227,34 +227,55 @@ export class AssignmentSubmissionsService {
     gradeSubmissionDto: GradeSubmissionDto,
     instructorId: number,
   ): Promise<AssignmentSubmission> {
-    const submission = await this.findOne(id);
+    try {
+      // Find submission with all relations
+      const submission = await this.submissionsRepository.findOne({
+        where: { id },
+        relations: [
+          'assignment',
+          'assignment.lesson',
+          'assignment.lesson.section',
+          'assignment.academicClass',
+          'user',
+        ],
+      });
 
-    // Cập nhật thông tin chấm điểm
-    Object.assign(submission, {
-      score: gradeSubmissionDto.score,
-      feedback: gradeSubmissionDto.feedback,
-      status: gradeSubmissionDto.status || SubmissionStatus.GRADED,
-    });
+      if (!submission) {
+        throw new NotFoundException('Không tìm thấy bài nộp');
+      }
 
-    const gradedSubmission = await this.submissionsRepository.save(submission);
+      // Update submission status only
+      submission.status = SubmissionStatus.GRADED;
 
-    // Tạo bản ghi điểm trong user_grades
-    await this.userGradesService.create({
-      userId: submission.userId,
-      courseId: submission.assignment.lessonId
-        ? submission.assignment.lesson.section.courseId
-        : 0,
-      gradedBy: instructorId,
-      lessonId: submission.assignment.lessonId ?? undefined,
-      assignmentId: submission.assignmentId,
-      gradeType: GradeType.ASSIGNMENT,
-      score: gradeSubmissionDto.score,
-      maxScore: submission.assignment.maxScore || 100,
-      weight: 1,
-      feedback: gradeSubmissionDto.feedback,
-    });
+      // Save submission first
+      const gradedSubmission =
+        await this.submissionsRepository.save(submission);
 
-    return gradedSubmission;
+      // Get courseId based on assignment type
+      const courseId = submission.assignment.lesson?.section?.courseId;
+
+      // Create grade record in user_grades table
+      await this.userGradesService.create({
+        userId: submission.userId,
+        courseId: courseId, // This is now optional
+        gradedBy: instructorId,
+        lessonId: submission.assignment.lessonId || undefined, // Convert null to undefined
+        assignmentSubmissionId: submission.id,
+        assignmentId: submission.assignmentId,
+        gradeType: GradeType.ASSIGNMENT,
+        score: gradeSubmissionDto.score,
+        maxScore: submission.assignment.maxScore || 100,
+        weight: gradeSubmissionDto.weight,
+        feedback: gradeSubmissionDto.feedback,
+      });
+
+      return gradedSubmission;
+    } catch (error) {
+      console.error('Error grading submission:', error);
+      throw new BadRequestException(
+        error.message || 'Không thể chấm điểm bài nộp',
+      );
+    }
   }
 
   async remove(

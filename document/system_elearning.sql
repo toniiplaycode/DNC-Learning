@@ -194,8 +194,6 @@ CREATE TABLE `assignment_submissions` (
   `submission_text` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `file_url` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `submitted_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
-  `score` decimal(5,2) DEFAULT NULL,
-  `feedback` text CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci,
   `status` enum('submitted','graded','late','resubmit') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'submitted',
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

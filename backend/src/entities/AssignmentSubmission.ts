@@ -43,12 +43,6 @@ export class AssignmentSubmission {
   })
   submittedAt: Date;
 
-  @Column('decimal', { precision: 5, scale: 2, nullable: true })
-  score: number | null;
-
-  @Column('text', { nullable: true })
-  feedback: string | null;
-
   @Column({
     type: 'enum',
     enum: SubmissionStatus,

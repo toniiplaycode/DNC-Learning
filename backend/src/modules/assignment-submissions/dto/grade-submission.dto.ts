@@ -7,6 +7,14 @@ export class GradeSubmissionDto {
   @Type(() => Number)
   score: number;
 
+  @IsNumber()
+  @Type(() => Number)
+  weight: number;
+
+  @IsNumber()
+  @Type(() => Number)
+  instructorId: number;
+
   @IsString()
   @IsOptional()
   feedback?: string;

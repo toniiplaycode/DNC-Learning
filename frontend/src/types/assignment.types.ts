@@ -40,8 +40,6 @@ export interface AssignmentSubmission {
   fileUrl: string;
   comment: string;
   status: SubmissionStatus;
-  score: number | null;
-  feedback: string | null;
   createdAt: string;
   updatedAt: string;
 

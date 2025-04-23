@@ -75,14 +75,12 @@ export class AssignmentSubmissionsController {
   }
 
   @Patch(':id/grade')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.INSTRUCTOR)
   grade(
     @Param('id', ParseIntPipe) id: number,
     @Body() gradeSubmissionDto: GradeSubmissionDto,
     @GetUser() user,
   ) {
-    const instructorId = user.instructorId || user.id;
+    const instructorId = gradeSubmissionDto.instructorId || user.id;
     return this.submissionsService.grade(id, gradeSubmissionDto, instructorId);
   }
 

@@ -73,8 +73,6 @@ interface AssignmentContentProps {
     allowedFileTypes: string[];
     maxFiles: number;
     status?: "not_started" | "in_progress" | "submitted" | "graded";
-    score?: number;
-    feedback?: string;
   };
 }
 
@@ -229,25 +227,15 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
                       <Typography
                         variant="h4"
                         sx={{
-                          color: assignmentSubmissions.score
-                            ? "success.main"
-                            : "text.secondary",
                           fontWeight: "bold",
                         }}
                       >
-                        {assignmentSubmissions.score || "Chưa chấm điểm"}
+                        "Chưa chấm điểm"
                       </Typography>
-                      {assignmentSubmissions.assignment?.maxScore && (
-                        <Typography variant="h5" color="text.secondary">
-                          / {assignmentSubmissions.assignment.maxScore}
-                        </Typography>
-                      )}
                     </Stack>
                   </Box>
                 </Box>
-
                 <Divider />
-
                 {/* Thời gian nộp */}
                 <Box sx={{ display: "flex", alignItems: "flex-start" }}>
                   <AccessTime sx={{ mr: 2, color: "info.main" }} />
@@ -271,7 +259,7 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
                   </Box>
                 </Box>
 
-                {/* Feedback */}
+                {/* Feedback
                 {assignmentSubmissions.feedback && (
                   <>
                     <Divider />
@@ -301,7 +289,7 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
                       </Box>
                     </Box>
                   </>
-                )}
+                )} */}
 
                 {/* File đã nộp */}
                 {assignmentSubmissions.fileUrl && (
@@ -342,7 +330,6 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
                     </Box>
                   </>
                 )}
-
                 {/* Ghi chú khi nộp bài */}
                 {assignmentSubmissions.submissionText && (
                   <>

@@ -119,7 +119,7 @@ export const updateSubmission = createAsyncThunk(
 export const gradeSubmission = createAsyncThunk(
   "assignmentSubmissions/grade",
   async (
-    { submissionId, data }: { submissionId: number; data: GradeSubmissionData },
+    { submissionId, data }: { submissionId: number; data: any },
     { rejectWithValue }
   ) => {
     try {

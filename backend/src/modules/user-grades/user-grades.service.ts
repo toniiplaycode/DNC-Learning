@@ -90,24 +90,15 @@ export class UserGradesService {
       }
     }
 
+    console.log(createUserGradeDto);
+
     if (createUserGradeDto.assignmentId) {
       const assignment = await this.assignmentSubmissionsRepository.findOne({
-        where: { id: createUserGradeDto.assignmentId },
+        where: { id: Number(createUserGradeDto.assignmentId) },
       });
       if (!assignment) {
         throw new NotFoundException(
           `Không tìm thấy bài tập với ID ${createUserGradeDto.assignmentId}`,
-        );
-      }
-    }
-
-    if (createUserGradeDto.quizId) {
-      const quiz = await this.quizAttemptsRepository.findOne({
-        where: { id: createUserGradeDto.quizId },
-      });
-      if (!quiz) {
-        throw new NotFoundException(
-          `Không tìm thấy bài kiểm tra với ID ${createUserGradeDto.quizId}`,
         );
       }
     }

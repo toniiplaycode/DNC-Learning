@@ -58,9 +58,13 @@ import {
 import DialogAddEditAssignment from "../../components/instructor/course/DialogAddEditAssignment";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { selectCurrentUser } from "../../features/auth/authSelectors";
-import { fetchSubmissionsByInstructor } from "../../features/assignment-submissions/assignmentSubmissionsSlice";
+import {
+  fetchSubmissionsByInstructor,
+  gradeSubmission,
+} from "../../features/assignment-submissions/assignmentSubmissionsSlice";
 import { selectInstructorSubmissions } from "../../features/assignment-submissions/assignmentSubmissionsSelectors";
 import { formatDateTime } from "../../utils/formatters";
+import { toast } from "react-toastify";
 
 const InstructorAssignments = () => {
   const dispatch = useAppDispatch();
@@ -81,6 +85,7 @@ const InstructorAssignments = () => {
   const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [tabValue, setTabValue] = useState(0);
+  const [weight, setWeight] = useState<number>(1.0);
 
   // Thêm state và các hàm xử lý để mở dialog tạo bài tập
   const [openAddAssignmentModal, setOpenAddAssignmentModal] = useState(false);
@@ -127,13 +132,41 @@ const InstructorAssignments = () => {
     });
 
     setScore(submission.score || "");
+    setWeight(submission.weight || 1.0);
     setFeedback(submission.feedback || "");
     setGradeDialogOpen(true);
   };
 
-  const handleSubmitGrade = () => {
-    // TODO: Implement grade submission logic
-    setGradeDialogOpen(false);
+  const handleSubmitGrade = async () => {
+    try {
+      if (!selectedSubmission || score === "") return;
+
+      const gradeData = {
+        score: Number(score),
+        weight: weight,
+        feedback: feedback || "",
+        instructorId: Number(currentUser.userInstructor.id),
+      };
+
+      console.log(gradeData, selectedSubmission.id);
+
+      await dispatch(
+        gradeSubmission({
+          submissionId: selectedSubmission.id,
+          data: gradeData,
+        })
+      ).unwrap();
+
+      // Refresh submissions list
+      await dispatch(
+        fetchSubmissionsByInstructor(currentUser.userInstructor.id)
+      );
+
+      setGradeDialogOpen(false);
+      toast.success("Chấm điểm thành công!");
+    } catch (error) {
+      toast.error("Có lỗi xảy ra khi chấm điểm");
+    }
   };
 
   const handleViewFiles = (submission: any) => {
@@ -709,27 +742,52 @@ const InstructorAssignments = () => {
                 </Typography>
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={4}>
-                    <TextField
-                      label="Điểm (0-100)"
-                      type="number"
-                      value={score}
-                      onChange={(e) => {
-                        const val = parseInt(e.target.value);
-                        if (isNaN(val)) {
-                          setScore("");
-                        } else {
-                          setScore(Math.min(Math.max(val, 0), 100));
-                        }
-                      }}
-                      fullWidth
-                      variant="outlined"
-                      InputProps={{
-                        inputProps: {
-                          min: 0,
-                          max: 100,
-                        },
-                      }}
-                    />
+                    <Stack spacing={2}>
+                      <TextField
+                        label="Điểm (0-100)"
+                        type="number"
+                        value={score}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value);
+                          if (isNaN(val)) {
+                            setScore("");
+                          } else {
+                            setScore(Math.min(Math.max(val, 0), 100));
+                          }
+                        }}
+                        fullWidth
+                        variant="outlined"
+                        InputProps={{
+                          inputProps: {
+                            min: 0,
+                            max: 100,
+                          },
+                        }}
+                      />
+                      <TextField
+                        label="Trọng số điểm"
+                        type="number"
+                        value={weight}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value);
+                          if (isNaN(val)) {
+                            setWeight(1.0);
+                          } else {
+                            setWeight(Math.min(Math.max(val, 0.1), 2.0));
+                          }
+                        }}
+                        fullWidth
+                        variant="outlined"
+                        helperText="Trọng số từ 0.1 đến 1.0"
+                        InputProps={{
+                          inputProps: {
+                            min: 0.1,
+                            max: 1.0,
+                            step: 0.1,
+                          },
+                        }}
+                      />
+                    </Stack>
                   </Grid>
                   <Grid item xs={12} sm={8}>
                     <TextField

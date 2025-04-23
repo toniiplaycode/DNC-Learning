@@ -1,14 +1,6 @@
-import {
-  IsEnum,
-  IsNotEmpty,
-  IsNumber,
-  IsOptional,
-  IsString,
-  Max,
-  Min,
-} from 'class-validator';
-import { GradeType } from '../../../entities/UserGrade';
+import { IsNumber, IsEnum, IsOptional, Min, Max } from 'class-validator';
 import { Type } from 'class-transformer';
+import { GradeType } from '../../../entities/UserGrade';
 
 export class CreateUserGradeDto {
   @IsNumber()
@@ -16,8 +8,9 @@ export class CreateUserGradeDto {
   userId: number;
 
   @IsNumber()
+  @IsOptional()
   @Type(() => Number)
-  courseId: number;
+  courseId?: number;
 
   @IsNumber()
   @Type(() => Number)
@@ -31,34 +24,33 @@ export class CreateUserGradeDto {
   @IsNumber()
   @IsOptional()
   @Type(() => Number)
-  assignmentId?: number;
+  assignmentSubmissionId?: number;
 
   @IsNumber()
   @IsOptional()
   @Type(() => Number)
-  quizId?: number;
+  assignmentId?: number;
 
   @IsEnum(GradeType)
   gradeType: GradeType;
 
   @IsNumber()
   @Min(0)
+  @Max(100)
   @Type(() => Number)
   score: number;
 
   @IsNumber()
-  @IsNotEmpty()
+  @Min(0)
   @Type(() => Number)
   maxScore: number;
 
   @IsNumber()
-  @Min(0)
-  @Max(100)
-  @IsOptional()
+  @Min(0.1)
+  @Max(1.0)
   @Type(() => Number)
-  weight?: number;
+  weight: number;
 
-  @IsString()
   @IsOptional()
   feedback?: string;
 }

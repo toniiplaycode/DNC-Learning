@@ -15,8 +15,6 @@ export interface AssignmentSubmission {
   submissionText: string | null;
   fileUrl: string | null;
   submittedAt: string;
-  score: number | null;
-  feedback: string | null;
   status: SubmissionStatus;
   createdAt: string;
   updatedAt: string;
@@ -48,7 +46,5 @@ export interface UpdateSubmissionData {
 }
 
 export interface GradeSubmissionData {
-  score: number;
-  feedback?: string;
   status?: SubmissionStatus;
 }
