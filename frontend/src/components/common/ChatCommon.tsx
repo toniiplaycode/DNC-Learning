@@ -29,6 +29,7 @@ import {
   MenuItem,
   FormControl,
   InputLabel,
+  CircularProgress,
 } from "@mui/material";
 import {
   Chat as ChatIcon,
@@ -38,6 +39,7 @@ import {
   ArrowBack,
   Person,
   Search,
+  SmartToy,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
@@ -143,6 +145,41 @@ interface ChatRoom {
   unread: number;
 }
 
+// Add this type for search results
+interface SearchUser {
+  id: string;
+  username: string;
+  email: string;
+  role: string;
+  avatarUrl?: string;
+  userStudent?: {
+    fullName: string;
+  };
+  userStudentAcademic?: {
+    fullName: string;
+    studentCode: string;
+  };
+  userInstructor?: {
+    fullName: string;
+    professionalTitle: string;
+  };
+}
+
+// Add CHATBOT constant at the top
+const CHATBOT = {
+  id: "-1",
+  fullName: "DNC Assistant",
+  email: "chatbot@dnc.com",
+  role: "chatbot",
+  avatarUrl: "/src/assets/chatbot.png",
+  online: true,
+};
+
+// Add ChatbotRoom interface
+interface ChatbotRoom extends ChatRoom {
+  isChatbot: true;
+}
+
 // Thêm hàm để sắp xếp chat rooms
 const sortChatRooms = (rooms: ChatRoom[]) => {
   return [...rooms].sort((a, b) => {
@@ -212,6 +249,9 @@ const ChatCommon = () => {
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
   const [userInfoOpen, setUserInfoOpen] = useState(false);
   const [userTypeFilter, setUserTypeFilter] = useState("all");
+
+  // Add chatbot typing state
+  const [isChatbotTyping, setIsChatbotTyping] = useState(false);
 
   // Hàm filter chat rooms
   const getFilteredChatRooms = () => {
@@ -302,6 +342,28 @@ const ChatCommon = () => {
     if (!currentUser || !message.trim() || !selectedRoom || !socketRef.current)
       return;
 
+    // Handle chatbot messages
+    if (selectedRoom.id === -1) {
+      console.log("💬 Sending message to chatbot:", {
+        message: message.trim(),
+        userId: currentUser.id,
+      });
+
+      const messageText = message.trim();
+      setMessage("");
+
+      // Show typing indicator
+      setIsChatbotTyping(true);
+
+      // Emit chatbot message
+      socketRef.current.emit("chatbotMessage", {
+        messageText: messageText,
+      });
+
+      scrollToBottom();
+      return;
+    }
+
     // Create temporary message structure matching Message interface
     const tempMessage: Message = {
       id: Date.now(), // temporary id
@@ -377,69 +439,112 @@ const ChatCommon = () => {
   const processMessages = (messages: Message[]) => {
     if (!currentUser?.id || !messages) return [];
 
-    const instructorMessages = messages.reduce((acc, message) => {
-      if (!message?.sender?.id || !message?.receiver?.id) return acc;
+    // Create chatbot room first
+    const chatbotRoom: ChatbotRoom = {
+      id: -1,
+      instructor: {
+        id: CHATBOT.id,
+        fullName: CHATBOT.fullName,
+        avatarUrl: CHATBOT.avatarUrl,
+        role: CHATBOT.role,
+        online: true,
+      },
+      messages: messages
+        .filter((msg) => msg.sender.id === "-1" || msg.receiver.id === "-1")
+        .map((msg) => ({
+          id: msg.id,
+          content: msg.messageText,
+          sender: msg.sender.id === currentUser.id ? "user" : "support",
+          timestamp: msg.createdAt,
+          avatar:
+            msg.sender.id === currentUser.id
+              ? currentUser.avatarUrl
+              : CHATBOT.avatarUrl,
+          name:
+            msg.sender.id === currentUser.id
+              ? currentUser.username
+              : CHATBOT.fullName,
+          isRead: true,
+          senderId: msg.sender.id,
+          receiverId: msg.receiver.id,
+        }))
+        .sort(
+          (a, b) =>
+            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        ), // Sort ascending by time
+      unread: 0,
+      isChatbot: true,
+    };
 
-      const otherUserId =
-        message.sender.id === currentUser.id
-          ? message.receiver.id
-          : message.sender.id;
+    const instructorMessages = messages
+      .filter(
+        (message) => message.sender.id !== "-1" && message.receiver.id !== "-1"
+      )
+      .reduce((acc, message) => {
+        if (!message?.sender?.id || !message?.receiver?.id) return acc;
 
-      if (!acc[otherUserId]) {
-        const otherUser =
+        const otherUserId =
           message.sender.id === currentUser.id
-            ? message.receiver
-            : message.sender;
+            ? message.receiver.id
+            : message.sender.id;
 
-        acc[otherUserId] = {
-          id: Number(otherUserId),
-          instructor: {
-            id: otherUser.id,
-            fullName:
-              otherUser.userInstructor?.fullName ||
-              otherUser.userStudent?.fullName ||
-              otherUser.username,
-            avatarUrl: otherUser.avatarUrl || "",
-            role:
-              otherUser.userInstructor?.professionalTitle ||
-              otherUser.role?.charAt(0).toUpperCase() +
-                otherUser.role?.slice(1),
-            online: false,
-          },
-          messages: [],
-          unread: 0,
-        };
-      }
+        if (!acc[otherUserId]) {
+          const otherUser =
+            message.sender.id === currentUser.id
+              ? message.receiver
+              : message.sender;
 
-      acc[otherUserId].messages.push({
-        id: message.id,
-        content: message.messageText,
-        sender: message.sender.id === currentUser.id ? "user" : "support",
-        timestamp: message.createdAt,
-        avatar: message.sender.avatarUrl,
-        name:
-          message.sender.userInstructor?.fullName ||
-          message.sender.userStudent?.fullName ||
-          message.sender.username,
-        isRead: message.isRead,
-        senderId: message.sender.id,
-        receiverId: message.receiver.id,
-      });
+          acc[otherUserId] = {
+            id: Number(otherUserId),
+            instructor: {
+              id: otherUser.id,
+              fullName:
+                otherUser.userInstructor?.fullName ||
+                otherUser.userStudent?.fullName ||
+                otherUser.userStudentAcademic?.fullName ||
+                otherUser.username, // Fallback to username
+              avatarUrl: otherUser.avatarUrl || "",
+              role:
+                otherUser.userInstructor?.professionalTitle ||
+                otherUser.role?.charAt(0).toUpperCase() +
+                  otherUser.role?.slice(1),
+              online: false,
+            },
+            messages: [],
+            unread: 0,
+          };
+        }
 
-      // Sort messages by timestamp after adding new message
-      acc[otherUserId].messages.sort(
-        (a, b) =>
-          new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
-      );
+        acc[otherUserId].messages.push({
+          id: message.id,
+          content: message.messageText,
+          sender: message.sender.id === currentUser.id ? "user" : "support",
+          timestamp: message.createdAt,
+          avatar: message.sender.avatarUrl,
+          name:
+            message.sender.userInstructor?.fullName ||
+            message.sender.userStudent?.fullName ||
+            message.sender.userStudentAcademic?.fullName ||
+            message.sender.username, // Fallback to username
+          isRead: message.isRead,
+          senderId: message.sender.id,
+          receiverId: message.receiver.id,
+        });
 
-      if (!message.isRead && message.sender.id !== currentUser.id) {
-        acc[otherUserId].unread++;
-      }
+        // Sort messages by timestamp after adding new message
+        acc[otherUserId].messages.sort(
+          (a, b) =>
+            new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+        );
 
-      return acc;
-    }, {} as Record<string, ChatRoom>);
+        if (!message.isRead && message.sender.id !== currentUser.id) {
+          acc[otherUserId].unread++;
+        }
 
-    return Object.values(instructorMessages);
+        return acc;
+      }, {} as Record<string, ChatRoom>);
+
+    return [chatbotRoom, ...Object.values(instructorMessages)];
   };
 
   // Return early if no user
@@ -521,6 +626,11 @@ const ChatCommon = () => {
     socketRef.current.on("newMessage", (message: Message) => {
       console.log("New message received:", message);
 
+      // Turn off typing indicator if message is from chatbot
+      if (message.sender.id === "-1") {
+        setIsChatbotTyping(false);
+      }
+
       setChatRooms((prev) => {
         const otherUserId =
           message.sender.id === currentUser.id
@@ -592,7 +702,8 @@ const ChatCommon = () => {
               fullName:
                 otherUser.userInstructor?.fullName ||
                 otherUser.userStudent?.fullName ||
-                otherUser.username,
+                otherUser.userStudentAcademic?.fullName ||
+                otherUser.username, // Fallback to username
               avatarUrl: otherUser.avatarUrl,
               role:
                 otherUser.userInstructor?.professionalTitle ||
@@ -609,9 +720,10 @@ const ChatCommon = () => {
                 timestamp: message.createdAt,
                 avatar: message.sender.avatarUrl,
                 name:
-                  message.sender.userInstructor?.fullName ||
-                  message.sender.userStudent?.fullName ||
-                  message.sender.username,
+                  otherUser.userInstructor?.fullName ||
+                  otherUser.userStudent?.fullName ||
+                  otherUser.userStudentAcademic?.fullName ||
+                  otherUser.username, // Fallback to username
                 isRead: message.isRead,
                 senderId: message.sender.id,
                 receiverId: message.receiver.id,
@@ -631,7 +743,6 @@ const ChatCommon = () => {
       scrollToBottom();
     });
 
-    // Trong useEffect xử lý socket
     socketRef.current.on(
       "messageRead",
       (data: { messageId: number; readAt: string }) => {
@@ -655,6 +766,10 @@ const ChatCommon = () => {
       }
     );
 
+    socketRef.current.on("error", () => {
+      setIsChatbotTyping(false);
+    });
+
     return () => {
       if (socketRef.current) {
         socketRef.current.off("newMessage");
@@ -662,6 +777,7 @@ const ChatCommon = () => {
         socketRef.current.off("connect_error");
         socketRef.current.disconnect();
       }
+      setIsChatbotTyping(false);
     };
   }, [currentUser?.id, dispatch]);
 
@@ -740,7 +856,8 @@ const ChatCommon = () => {
               fullName:
                 otherUser.userInstructor?.fullName ||
                 otherUser.userStudent?.fullName ||
-                otherUser.username,
+                otherUser.userStudentAcademic?.fullName ||
+                otherUser.username, // Fallback to username
               avatarUrl: otherUser.avatarUrl,
               role:
                 otherUser.userInstructor?.professionalTitle ||
@@ -759,7 +876,8 @@ const ChatCommon = () => {
                 name:
                   otherUser.userInstructor?.fullName ||
                   otherUser.userStudent?.fullName ||
-                  otherUser.username,
+                  otherUser.userStudentAcademic?.fullName ||
+                  otherUser.username, // Fallback to username
                 isRead: message.isRead,
                 senderId: message.sender.id,
                 receiverId: message.receiver.id,
@@ -854,6 +972,32 @@ const ChatCommon = () => {
     setSearchResults(results);
   };
 
+  // Update socket effect for chatbot messages
+  useEffect(() => {
+    if (!currentUser?.id || !socketRef.current) return;
+
+    // Handle all new messages
+    socketRef.current.on("newMessage", (message: Message) => {
+      console.log("📩 New message received:", message);
+
+      // Turn off typing indicator if message is from chatbot
+      if (message.sender.id === "-1") {
+        setIsChatbotTyping(false);
+      }
+    });
+
+    // Add error handler
+    socketRef.current.on("error", () => {
+      setIsChatbotTyping(false); // Turn off typing on error
+    });
+
+    return () => {
+      socketRef.current?.off("newMessage");
+      socketRef.current?.off("error");
+      setIsChatbotTyping(false); // Reset on unmount
+    };
+  }, [currentUser?.id, dispatch]);
+
   return (
     <Box sx={{ height: "100%", display: "flex" }}>
       {/* Left Panel - Chat List */}
@@ -927,88 +1071,158 @@ const ChatCommon = () => {
 
         {/* Chat List */}
         <List sx={{ flex: 1, overflowY: "auto" }}>
-          {(searchQuery ? searchResults : getFilteredChatRooms()).map(
-            (item) => (
-              <ListItemButton
-                key={item.id}
-                selected={selectedRoom?.id === item.id}
-                onClick={() => handleSelectRoom(item)}
-                sx={{
-                  borderBottom: "1px solid",
-                  borderColor: "divider",
-                  "&:hover": { bgcolor: "action.hover" },
-                  "&.Mui-selected": { bgcolor: "action.selected" },
-                }}
-              >
-                <ListItemAvatar>
-                  <Badge
-                    overlap="circular"
-                    anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-                    badgeContent={item.unread > 0 ? item.unread : null}
-                    color="error"
-                  >
-                    <Avatar src={item.instructor.avatarUrl} />
-                  </Badge>
-                </ListItemAvatar>
-                <ListItemText
-                  primary={
-                    <Box
-                      sx={{ display: "flex", justifyContent: "space-between" }}
-                    >
-                      <Box>
-                        <Typography fontWeight={item.unread > 0 ? 600 : 400}>
-                          {item.instructor.fullName}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {USER_TYPE_OPTIONS.find(
-                            (opt) =>
-                              opt.value ===
-                              allUsers.find((u) => u.id === item.instructor.id)
-                                ?.role
-                          )?.label || item.instructor.role}
-                        </Typography>
-                      </Box>
-                      {item.messages.length > 0 && (
-                        <Typography variant="caption" color="text.secondary">
-                          {formatLastMessageTime(
-                            item.messages[item.messages.length - 1].timestamp
-                          )}
-                        </Typography>
-                      )}
-                    </Box>
+          <ListItemButton
+            key="chatbot"
+            selected={selectedRoom?.id === -1}
+            onClick={() => {
+              const chatbotRoom = chatRooms.find((room) => room.id === -1);
+              if (chatbotRoom) {
+                handleSelectRoom(chatbotRoom);
+              }
+            }}
+            sx={{
+              borderBottom: 1,
+              borderColor: "divider",
+              bgcolor: (theme) =>
+                selectedRoom?.id === -1
+                  ? theme.palette.action.selected
+                  : "transparent",
+            }}
+          >
+            <ListItemAvatar>
+              <Avatar src={CHATBOT.avatarUrl} sx={{ bgcolor: "primary.main" }}>
+                <SmartToy />
+              </Avatar>
+            </ListItemAvatar>
+            <ListItemText
+              primary={
+                <Typography fontWeight={500}>{CHATBOT.fullName}</Typography>
+              }
+              secondary={
+                <Typography variant="body2" color="text.secondary">
+                  AI Assistant
+                </Typography>
+              }
+            />
+          </ListItemButton>
+
+          {(searchQuery ? searchResults : getFilteredChatRooms())
+            .filter((item) => item.id !== -1)
+            .map((item) => {
+              // For search results, construct chat room structure
+              const roomData = searchQuery
+                ? {
+                    id: Number(item.id),
+                    instructor: {
+                      id: item.id,
+                      fullName:
+                        item.userInstructor?.fullName ||
+                        item.userStudent?.fullName ||
+                        item.userStudentAcademic?.fullName ||
+                        item.username, // Fallback to username
+                      avatarUrl: item.avatarUrl || "", // Provide default empty string
+                      role: item.role,
+                      online: false,
+                    },
+                    messages: [],
+                    unread: 0,
                   }
-                  secondary={
-                    <Box sx={{ display: "flex", flexDirection: "column" }}>
-                      <Typography
-                        variant="body2"
-                        color={
-                          item.unread > 0 ? "text.primary" : "text.secondary"
-                        }
+                : item;
+
+              return (
+                <ListItemButton
+                  key={roomData.id}
+                  selected={selectedRoom?.id === roomData.id}
+                  onClick={() => handleSelectRoom(roomData)}
+                  sx={{
+                    borderBottom: "1px solid",
+                    borderColor: "divider",
+                    "&:hover": { bgcolor: "action.hover" },
+                    "&.Mui-selected": { bgcolor: "action.selected" },
+                  }}
+                >
+                  <ListItemAvatar>
+                    <Badge
+                      overlap="circular"
+                      anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                      badgeContent={
+                        roomData.unread > 0 ? roomData.unread : null
+                      }
+                      color="error"
+                    >
+                      <Avatar src={roomData.instructor.avatarUrl || ""} />
+                    </Badge>
+                  </ListItemAvatar>
+                  <ListItemText
+                    primary={
+                      <Box
                         sx={{
-                          fontWeight: item.unread > 0 ? 500 : 400,
-                          overflow: "hidden",
-                          textOverflow: "ellipsis",
-                          whiteSpace: "nowrap",
+                          display: "flex",
+                          justifyContent: "space-between",
                         }}
                       >
-                        {item.messages.length > 0
-                          ? item.messages[item.messages.length - 1].content
-                          : "Chưa có tin nhắn"}
-                      </Typography>
-                      {item.instructor.role === "student_academic" && (
-                        <Typography variant="caption" color="primary">
-                          {`Mã SV: ${
-                            allUsers.find((u) => u.id === item.instructor.id)
-                              ?.userStudentAcademic?.studentCode || ""
-                          }`}
+                        <Box>
+                          <Typography
+                            fontWeight={roomData.unread > 0 ? 600 : 400}
+                          >
+                            {roomData.instructor.fullName}
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            {USER_TYPE_OPTIONS.find(
+                              (opt) =>
+                                opt.value ===
+                                allUsers.find(
+                                  (u) => u.id === roomData.instructor.id
+                                )?.role
+                            )?.label || roomData.instructor.role}
+                          </Typography>
+                        </Box>
+                        {roomData.messages.length > 0 && (
+                          <Typography variant="caption" color="text.secondary">
+                            {formatLastMessageTime(
+                              roomData.messages[roomData.messages.length - 1]
+                                .timestamp
+                            )}
+                          </Typography>
+                        )}
+                      </Box>
+                    }
+                    secondary={
+                      <Box sx={{ display: "flex", flexDirection: "column" }}>
+                        <Typography
+                          variant="body2"
+                          color={
+                            roomData.unread > 0
+                              ? "text.primary"
+                              : "text.secondary"
+                          }
+                          sx={{
+                            fontWeight: roomData.unread > 0 ? 500 : 400,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {roomData.messages.length > 0
+                            ? roomData.messages[roomData.messages.length - 1]
+                                .content
+                            : "Chưa có tin nhắn"}
                         </Typography>
-                      )}
-                    </Box>
-                  }
-                />
-              </ListItemButton>
-            )
-          )}
+                        {roomData.instructor.role === "student_academic" && (
+                          <Typography variant="caption" color="primary">
+                            {`Mã SV: ${
+                              allUsers.find(
+                                (u) => u.id === roomData.instructor.id
+                              )?.userStudentAcademic?.studentCode || ""
+                            }`}
+                          </Typography>
+                        )}
+                      </Box>
+                    }
+                  />
+                </ListItemButton>
+              );
+            })}
         </List>
       </Paper>
 
@@ -1041,11 +1255,19 @@ const ChatCommon = () => {
               <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                 <Avatar src={selectedRoom.instructor.avatarUrl} />
                 <Box>
-                  <Typography variant="subtitle1">
+                  <Typography variant="subtitle1" fontWeight={"500"}>
                     {selectedRoom.instructor.fullName}
                   </Typography>
                   <Typography variant="caption">
-                    {selectedRoom.instructor.role}
+                    {selectedRoom.instructor.role === "Student_academic"
+                      ? "Sinh viên học thuật"
+                      : selectedRoom.instructor.role === "Student"
+                      ? "Sinh viên"
+                      : selectedRoom.instructor.role === "Snstructor"
+                      ? "Giảng viên"
+                      : selectedRoom.instructor.role === "Admin"
+                      ? "Quản trị viên"
+                      : selectedRoom.instructor.role}
                   </Typography>
                 </Box>
               </Box>
@@ -1117,6 +1339,31 @@ const ChatCommon = () => {
                     </Box>
                   </Box>
                 ))}
+                {selectedRoom?.id === -1 && isChatbotTyping && (
+                  <Box
+                    sx={{ display: "flex", alignItems: "center", gap: 1, p: 2 }}
+                  >
+                    <Avatar
+                      src={CHATBOT.avatarUrl}
+                      sx={{ width: 28, height: 28 }}
+                    />
+                    <Card
+                      sx={{
+                        bgcolor: "grey.100",
+                        px: 2,
+                        py: 1,
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.5,
+                      }}
+                    >
+                      <CircularProgress size={8} />
+                      <Typography variant="body2" color="text.secondary">
+                        Đang suy nghĩ...
+                      </Typography>
+                    </Card>
+                  </Box>
+                )}
                 <div ref={messagesEndRef} />
               </Stack>
             </Box>
@@ -1227,13 +1474,13 @@ const UserInfoDialog = ({ open, onClose, user, allUsers }: UserDialogProps) => {
           />
           <Typography variant="h6">{user.fullName}</Typography>
           <Typography variant="subtitle1" color="primary">
-            {user.role === "student"
+            {user.role === "Student"
               ? "Học viên"
-              : user.role === "student_academic"
+              : user.role === "Student_academic"
               ? "Sinh viên học thuật"
-              : user.role === "instructor"
+              : user.role === "Instructor"
               ? "Giảng viên"
-              : user.role === "admin"
+              : user.role === "Admin"
               ? "Quản trị viên"
               : user.role}
           </Typography>

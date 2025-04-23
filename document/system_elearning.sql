@@ -29,8 +29,6 @@ CREATE TABLE `academic_class_courses` (
   `class_id` bigint NOT NULL,
   `course_id` bigint NOT NULL,
   `instructor_id` bigint NOT NULL COMMENT 'Instructor sở hữu khóa học',
-  `start_date` date DEFAULT NULL,
-  `end_date` date DEFAULT NULL,
   `created_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
   PRIMARY KEY (`id`),

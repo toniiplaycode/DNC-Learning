@@ -48,12 +48,23 @@ import {
 } from "../../features/users/usersApiSlice";
 import { toast } from "react-toastify";
 import { EditStudentDialog } from "./component/EditStudentDialog";
-import { Add, School } from "@mui/icons-material";
+import { Add, AddBox, School } from "@mui/icons-material";
+import { AddClassCoursesDialog } from "./component/AddClassCoursesDialog";
+import { fetchClassCourses } from "../../features/academic-class-courses/academicClassCoursesSlice";
+import { selectAllClassCourses } from "../../features/academic-class-courses/academicClassCoursesSelectors";
+import { AddEditClassAcademicDialog } from "./component/AddEditClassAcademicDialog";
+import { AcademicClassStatus } from "../../types/academic-class.types";
+import {
+  createAcademicClass,
+  deleteAcademicClass,
+  updateAcademicClass,
+} from "../../features/academic-classes/academicClassesSlice";
 
 const InstructorStudentsAcademic = () => {
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector(selectCurrentUser);
   const currentClassInstructor = useAppSelector(selectCurrentClassInstructor);
+  const classCourses = useAppSelector(selectAllClassCourses);
   const [searchTerm, setSearchTerm] = useState("");
   const [semesterFilter, setSemesterFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -68,9 +79,14 @@ const InstructorStudentsAcademic = () => {
   const [studentToDelete, setStudentToDelete] = useState(null);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [openAddCourses, setOpenAddCourses] = useState(false);
+  const [openAddClass, setOpenAddClass] = useState(false);
+  const [openDeleteClassDialog, setOpenDeleteClassDialog] = useState(false);
+  const [selectedEditClass, setSelectedEditClass] = useState(null);
 
   useEffect(() => {
     dispatch(fetchClassInstructorById(Number(currentUser?.userInstructor?.id)));
+    dispatch(fetchClassCourses());
   }, [dispatch, currentUser]);
 
   const handleOpenMenu = (event, classData) => {
@@ -201,6 +217,63 @@ const InstructorStudentsAcademic = () => {
     setPage(0);
   };
 
+  const handleAddClass = async (classData: {
+    classCode: string;
+    className: string;
+    semester: string;
+    status: AcademicClassStatus;
+  }) => {
+    const newClassData = {
+      ...classData,
+      instructorId: currentUser?.userInstructor?.id,
+    };
+    try {
+      await dispatch(createAcademicClass(newClassData)).unwrap();
+      toast.success("Thêm lớp học thành công!");
+      setOpenAddClass(false);
+      dispatch(
+        fetchClassInstructorById(Number(currentUser?.userInstructor?.id))
+      );
+    } catch (error: any) {
+      toast.error(error?.message || "Có lỗi xảy ra khi thêm lớp học!");
+    }
+  };
+
+  const handleEditClass = async (classData: {
+    id: number;
+    classCode: string;
+    className: string;
+    semester: string;
+    status: AcademicClassStatus;
+  }) => {
+    try {
+      await dispatch(updateAcademicClass(classData)).unwrap();
+      toast.success("Cập nhật lớp học thành công!");
+      setOpenAddClass(false);
+      dispatch(
+        fetchClassInstructorById(Number(currentUser?.userInstructor?.id))
+      );
+    } catch (error: any) {
+      toast.error(error?.message || "Có lỗi xảy ra khi cập nhật lớp học!");
+    }
+  };
+
+  const handleDeleteClass = async () => {
+    try {
+      await dispatch(
+        deleteAcademicClass(selectedClass.academicClass.id)
+      ).unwrap();
+      toast.success("Xóa lớp học thành công!");
+      setOpenDeleteClassDialog(false);
+      handleCloseMenu();
+      dispatch(
+        fetchClassInstructorById(Number(currentUser?.userInstructor?.id))
+      );
+    } catch (error: any) {
+      toast.error(error?.message || "Có lỗi xảy ra khi xóa lớp học!");
+    }
+  };
+
   const filteredClasses = currentClassInstructor?.filter((classInstructor) => {
     const matchesSearch =
       classInstructor.academicClass.className
@@ -239,10 +312,24 @@ const InstructorStudentsAcademic = () => {
   return (
     <Box sx={{ p: 3 }}>
       {/* Header Section */}
-      <Box sx={{ mb: 4 }}>
-        <Typography variant="h5" fontWeight="bold" gutterBottom>
+      <Box
+        sx={{
+          mb: 4,
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <Typography variant="h5" fontWeight="bold">
           Quản Lý Lớp Học
         </Typography>
+        <Button
+          variant="contained"
+          startIcon={<Add />}
+          onClick={() => setOpenAddClass(true)}
+        >
+          Thêm Lớp Học
+        </Button>
       </Box>
       {/* Filters Section */}
       <Paper sx={{ p: 2, mb: 3 }}>
@@ -285,7 +372,8 @@ const InstructorStudentsAcademic = () => {
             >
               <MenuItem value="all">Tất cả trạng thái</MenuItem>
               <MenuItem value="active">Đang hoạt động</MenuItem>
-              <MenuItem value="inactive">Không hoạt động</MenuItem>
+              <MenuItem value="completed">Đã hoàn thành</MenuItem>
+              <MenuItem value="cancelled">Đã hủy</MenuItem>
             </Select>
           </FormControl>
 
@@ -339,7 +427,9 @@ const InstructorStudentsAcademic = () => {
                 label={`Trạng thái: ${
                   statusFilter === "active"
                     ? "Đang hoạt động"
-                    : "Không hoạt động"
+                    : statusFilter === "completed"
+                    ? "Đã hoàn thành"
+                    : "Đã hủy"
                 }`}
                 onDelete={() => setStatusFilter("all")}
                 size="small"
@@ -364,6 +454,7 @@ const InstructorStudentsAcademic = () => {
               <TableCell>Mã Lớp</TableCell>
               <TableCell>Học Kỳ</TableCell>
               <TableCell>Số Sinh Viên</TableCell>
+              <TableCell>Số Khóa học</TableCell>
               <TableCell>Trạng Thái</TableCell>
               <TableCell align="right">Thao Tác</TableCell>
             </TableRow>
@@ -399,16 +490,27 @@ const InstructorStudentsAcademic = () => {
                       0}
                   </TableCell>
                   <TableCell>
+                    {
+                      classCourses.filter(
+                        (cc) => cc.classId === classInstructor.academicClass.id
+                      ).length
+                    }
+                  </TableCell>
+                  <TableCell>
                     <Chip
                       label={
                         classInstructor.academicClass.status === "active"
                           ? "Đang hoạt động"
-                          : "Không hoạt động"
+                          : classInstructor.academicClass.status === "completed"
+                          ? "Đã hoàn thành"
+                          : "Đã hủy"
                       }
                       color={
                         classInstructor.academicClass.status === "active"
                           ? "success"
-                          : "default"
+                          : classInstructor.academicClass.status === "completed"
+                          ? "info"
+                          : "error"
                       }
                       size="small"
                     />
@@ -431,6 +533,12 @@ const InstructorStudentsAcademic = () => {
         open={Boolean(anchorEl)}
         onClose={handleCloseMenu}
       >
+        <MenuItemMUI onClick={() => setOpenAddCourses(true)}>
+          <ListItemIcon>
+            <AddBox fontSize="small" />
+          </ListItemIcon>
+          Thêm khóa học cho lớp
+        </MenuItemMUI>
         <MenuItemMUI onClick={handleViewStudents}>
           <ListItemIcon>
             <PeopleIcon fontSize="small" />
@@ -443,7 +551,18 @@ const InstructorStudentsAcademic = () => {
           </ListItemIcon>
           Thêm sinh viên
         </MenuItemMUI>
-        <MenuItemMUI>
+        <MenuItemMUI
+          onClick={() => {
+            setSelectedEditClass(selectedClass.academicClass);
+            setOpenAddClass(true);
+          }}
+        >
+          <ListItemIcon>
+            <EditIcon fontSize="small" />
+          </ListItemIcon>
+          Chỉnh sửa
+        </MenuItemMUI>
+        <MenuItemMUI onClick={() => setOpenDeleteClassDialog(true)}>
           <ListItemIcon>
             <DeleteIcon fontSize="small" />
           </ListItemIcon>
@@ -642,6 +761,135 @@ const InstructorStudentsAcademic = () => {
           >
             Xóa
           </Button>
+        </DialogActions>
+      </Dialog>
+      <AddClassCoursesDialog
+        open={openAddCourses}
+        onClose={() => setOpenAddCourses(false)}
+        classData={selectedClass}
+      />
+      <AddEditClassAcademicDialog
+        open={openAddClass}
+        onClose={() => {
+          setOpenAddClass(false);
+          setSelectedEditClass(null);
+        }}
+        initialData={selectedEditClass}
+        onSubmit={(classData) => {
+          if (selectedEditClass) {
+            handleEditClass(classData);
+          } else {
+            handleAddClass(classData);
+          }
+        }}
+      />
+      <Dialog
+        open={openDeleteClassDialog}
+        onClose={() => setOpenDeleteClassDialog(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <DeleteIcon color="error" />
+            <Typography variant="h6">Xóa lớp học</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          {selectedClass?.academicClass.studentsAcademic?.length > 0 ||
+          classCourses.filter(
+            (cc) => cc.classId === selectedClass?.academicClass.id
+          ).length > 0 ? (
+            <>
+              <Typography color="error" gutterBottom>
+                Không thể xóa lớp học này!
+              </Typography>
+              <Typography variant="body2" gutterBottom>
+                Lớp học "{selectedClass?.academicClass.className}" (
+                {selectedClass?.academicClass.classCode}) hiện đang có:
+              </Typography>
+              <Stack spacing={1} sx={{ mt: 1, mb: 2 }}>
+                {selectedClass?.academicClass.studentsAcademic?.length > 0 && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      p: 1,
+                      bgcolor: "error.lighter",
+                      borderRadius: 1,
+                    }}
+                  >
+                    <PeopleIcon color="error" fontSize="small" />
+                    <Typography variant="body2">
+                      {selectedClass.academicClass.studentsAcademic.length} sinh
+                      viên đang theo học
+                    </Typography>
+                  </Box>
+                )}
+                {classCourses.filter(
+                  (cc) => cc.classId === selectedClass?.academicClass.id
+                ).length > 0 && (
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      p: 1,
+                      bgcolor: "error.lighter",
+                      borderRadius: 1,
+                    }}
+                  >
+                    <School color="error" fontSize="small" />
+                    <Typography variant="body2">
+                      {
+                        classCourses.filter(
+                          (cc) => cc.classId === selectedClass?.academicClass.id
+                        ).length
+                      }{" "}
+                      khóa học được gán
+                    </Typography>
+                  </Box>
+                )}
+              </Stack>
+              <Typography variant="body2" sx={{ mt: 2 }}>
+                Vui lòng xóa tất cả sinh viên và khóa học trước khi xóa lớp học.
+              </Typography>
+            </>
+          ) : (
+            <>
+              <Typography>
+                Bạn có chắc chắn muốn xóa lớp học "
+                {selectedClass?.academicClass.className}" (
+                {selectedClass?.academicClass.classCode})?
+              </Typography>
+              <Typography color="error" sx={{ mt: 2 }}>
+                Lưu ý: Hành động này không thể hoàn tác sau khi xóa!
+              </Typography>
+            </>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDeleteClassDialog(false)}>
+            {selectedClass?.academicClass.studentsAcademic?.length > 0 ||
+            classCourses.filter(
+              (cc) => cc.classId === selectedClass?.academicClass.id
+            ).length > 0
+              ? "Đóng"
+              : "Hủy"}
+          </Button>
+          {selectedClass?.academicClass.studentsAcademic?.length === 0 &&
+            classCourses.filter(
+              (cc) => cc.classId === selectedClass?.academicClass.id
+            ).length === 0 && (
+              <Button
+                variant="contained"
+                color="error"
+                onClick={handleDeleteClass}
+              >
+                Xác nhận xóa
+              </Button>
+            )}
         </DialogActions>
       </Dialog>
     </Box>

@@ -60,6 +60,9 @@ import { MessagesModule } from './modules/messages/messages.module';
 import { Message } from './entities/Message';
 import { ChatbotResponse } from './entities/ChatbotResponse';
 import { CliModule } from './modules/chatbot-response/cli.module';
+import { AcademicClassCourse } from './entities/AcademicClassCourse';
+import { AcademicClassCoursesModule } from './modules/academic-class-courses/academic-class-courses.module';
+import { AcademicClassesModule } from './modules/academic-classes/academic-class.module';
 
 @Module({
   imports: [
@@ -113,6 +116,7 @@ import { CliModule } from './modules/chatbot-response/cli.module';
           AcademicClassInstructor,
           Message,
           ChatbotResponse,
+          AcademicClassCourse,
         ],
         // synchronize: true, // tự động tạo bảng trong entity (chỉ dùng trong môi tường dev)
       }),
@@ -138,6 +142,8 @@ import { CliModule } from './modules/chatbot-response/cli.module';
     CourseLessonsModule,
     MessagesModule,
     CliModule,
+    AcademicClassCoursesModule,
+    AcademicClassesModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthMiddleware, InstructorMiddleware],
