@@ -17,6 +17,8 @@ export const selectSubmissionsStatus = (state: RootState) =>
   state.assignmentSubmissions.status;
 export const selectSubmissionsError = (state: RootState) =>
   state.assignmentSubmissions.error;
+export const selectInstructorSubmissions = (state: RootState) =>
+  state.assignmentSubmissions.instructorSubmissions;
 
 // Derived selectors
 export const selectSubmissionsByStatus = (status: SubmissionStatus) =>
@@ -73,3 +75,32 @@ export const selectSubmissionById = (id: number) =>
     (submissions) =>
       submissions.find((submission) => submission.id === id) || null
   );
+
+export const selectInstructorSubmissionsByStatus = (status: SubmissionStatus) =>
+  createSelector([selectInstructorSubmissions], (submissions) =>
+    submissions.filter((submission) => submission.status === status)
+  );
+
+export const selectInstructorPendingSubmissions = createSelector(
+  [selectInstructorSubmissions],
+  (submissions) =>
+    submissions.filter(
+      (submission) => submission.status === SubmissionStatus.SUBMITTED
+    )
+);
+
+export const selectInstructorGradedSubmissions = createSelector(
+  [selectInstructorSubmissions],
+  (submissions) =>
+    submissions.filter(
+      (submission) => submission.status === SubmissionStatus.GRADED
+    )
+);
+
+export const selectInstructorLateSubmissions = createSelector(
+  [selectInstructorSubmissions],
+  (submissions) =>
+    submissions.filter(
+      (submission) => submission.status === SubmissionStatus.LATE
+    )
+);

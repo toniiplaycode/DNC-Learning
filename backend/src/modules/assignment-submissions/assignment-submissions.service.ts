@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, Brackets } from 'typeorm';
 import {
   AssignmentSubmission,
   SubmissionStatus,
@@ -138,6 +138,44 @@ export class AssignmentSubmissionsService {
     }
 
     return submission;
+  }
+
+  async findAllSubmissionsByInstructor(
+    instructorId: number,
+  ): Promise<AssignmentSubmission[]> {
+    try {
+      const submissions = await this.submissionsRepository
+        .createQueryBuilder('submission')
+        .leftJoinAndSelect('submission.assignment', 'assignment')
+        .leftJoinAndSelect('submission.user', 'user')
+        .leftJoinAndSelect('user.userStudent', 'userStudent')
+        .leftJoinAndSelect('user.userStudentAcademic', 'userStudentAcademic')
+        .leftJoinAndSelect('assignment.lesson', 'lesson')
+        .leftJoinAndSelect('lesson.section', 'section')
+        .leftJoinAndSelect('section.course', 'course')
+        .leftJoinAndSelect('course.instructor', 'courseInstructor')
+        .leftJoinAndSelect('assignment.academicClass', 'academicClass')
+        .leftJoinAndSelect('academicClass.instructors', 'classInstructor')
+        .where(
+          new Brackets((qb) => {
+            qb.where('courseInstructor.id = :instructorId', {
+              instructorId,
+            }).orWhere('classInstructor.instructorId = :instructorId', {
+              instructorId,
+            });
+          }),
+        )
+        .getMany();
+
+      if (!submissions) {
+        return [];
+      }
+
+      return submissions;
+    } catch (error) {
+      console.error('Error getting submissions:', error);
+      throw new BadRequestException('Không thể lấy danh sách bài nộp');
+    }
   }
 
   async update(

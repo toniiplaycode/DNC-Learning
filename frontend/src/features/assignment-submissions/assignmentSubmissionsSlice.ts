@@ -15,6 +15,7 @@ const initialState: AssignmentSubmissionState = {
   currentSubmission: null,
   status: "idle",
   error: null,
+  instructorSubmissions: [], // Add this new field
 };
 
 // Async actions
@@ -144,6 +145,23 @@ export const deleteSubmission = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Không thể xóa bài nộp"
+      );
+    }
+  }
+);
+
+export const fetchSubmissionsByInstructor = createAsyncThunk(
+  "assignmentSubmissions/fetchByInstructor",
+  async (instructorId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get(
+        `/assignment-submissions/instructor/${instructorId}`
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          "Không thể lấy danh sách bài nộp cho giảng viên"
       );
     }
   }
@@ -330,6 +348,21 @@ const assignmentSubmissionsSlice = createSlice({
       })
       .addCase(deleteSubmission.rejected, (state, action) => {
         state.status = "failed";
+        state.error = action.payload as string;
+      })
+
+      // Fetch submissions by instructor
+      .addCase(fetchSubmissionsByInstructor.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchSubmissionsByInstructor.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.instructorSubmissions = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchSubmissionsByInstructor.rejected, (state, action) => {
+        state.status = "failed";
+        state.instructorSubmissions = [];
         state.error = action.payload as string;
       });
   },

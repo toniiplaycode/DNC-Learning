@@ -28,6 +28,7 @@ export interface AssignmentSubmissionState {
   submissions: AssignmentSubmission[];
   userSubmissions: AssignmentSubmission[];
   assignmentSubmissions: AssignmentSubmission[];
+  instructorSubmissions: AssignmentSubmission[]; // Add this new field
   currentSubmission: AssignmentSubmission | null;
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;

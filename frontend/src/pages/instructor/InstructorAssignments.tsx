@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Card,
@@ -56,159 +56,21 @@ import {
   FilterAlt,
 } from "@mui/icons-material";
 import DialogAddEditAssignment from "../../components/instructor/course/DialogAddEditAssignment";
-
-// Mock data
-const mockAssignments = [
-  {
-    id: 1,
-    courseId: 1,
-    courseName: "React & TypeScript Masterclass",
-    title: "Assignment 1: React Hooks",
-    dueDate: "2024-03-20",
-    submissions: [
-      {
-        id: 1,
-        studentId: 1,
-        studentName: "Nguyễn Văn A",
-        studentAvatar: "/src/assets/logo.png",
-        studentType: "student", // Học viên bên ngoài
-        submittedDate: "2024-03-18",
-        fileUrl: "path/to/file.pdf",
-        status: "submitted", // submitted, graded, late
-        score: null,
-        feedback: "",
-        files: [
-          {
-            id: 1,
-            name: "react-hooks-assignment.pdf",
-            type: "pdf",
-            size: "2.4 MB",
-            url: "path/to/file.pdf",
-          },
-          {
-            id: 2,
-            name: "source-code.zip",
-            type: "zip",
-            size: "1.2 MB",
-            url: "path/to/file.zip",
-          },
-          {
-            id: 3,
-            name: "screenshot.png",
-            type: "image",
-            size: "856 KB",
-            url: "path/to/image.png",
-          },
-        ],
-      },
-      {
-        id: 2,
-        studentId: 2,
-        studentName: "Trần Thị B",
-        studentAvatar: "/src/assets/logo.png",
-        studentType: "student", // Học viên bên ngoài
-        submittedDate: "2024-03-21",
-        fileUrl: "path/to/file.pdf",
-        status: "late",
-        score: null,
-        feedback: "",
-        files: [
-          {
-            id: 1,
-            name: "react-hooks-assignment-b.pdf",
-            type: "pdf",
-            size: "1.9 MB",
-            url: "path/to/file-b.pdf",
-          },
-        ],
-      },
-      // Sinh viên trường học
-      {
-        id: 3,
-        studentId: 3,
-        studentCode: "SV001", // Mã số sinh viên
-        studentName: "Phạm Văn C",
-        studentAvatar: "/src/assets/logo.png",
-        studentType: "student_academic", // Sinh viên trường
-        className: "CNTT-K44A", // Lớp học
-        faculty: "Công nghệ thông tin", // Khoa
-        submittedDate: "2024-03-19",
-        fileUrl: "path/to/file.pdf",
-        status: "submitted",
-        score: null,
-        feedback: "",
-        files: [
-          {
-            id: 1,
-            name: "assignment1-pham-van-c.pdf",
-            type: "pdf",
-            size: "2.1 MB",
-            url: "path/to/file-c.pdf",
-          },
-          {
-            id: 2,
-            name: "source-code-c.zip",
-            type: "zip",
-            size: "1.5 MB",
-            url: "path/to/file-c.zip",
-          },
-        ],
-      },
-      {
-        id: 4,
-        studentId: 4,
-        studentCode: "SV002", // Mã số sinh viên
-        studentName: "Lê Thị D",
-        studentAvatar: "/src/assets/logo.png",
-        studentType: "student_academic", // Sinh viên trường
-        className: "CNTT-K44B", // Lớp học
-        faculty: "Công nghệ thông tin", // Khoa
-        submittedDate: "2024-03-17",
-        fileUrl: "path/to/file.pdf",
-        status: "graded", // Đã chấm điểm
-        score: 85,
-        feedback: "Bài làm tốt, nhưng cần cải thiện phần UI/UX",
-        files: [
-          {
-            id: 1,
-            name: "assignment1-le-thi-d.pdf",
-            type: "pdf",
-            size: "2.0 MB",
-            url: "path/to/file-d.pdf",
-          },
-        ],
-      },
-    ],
-  },
-  // Thêm bài tập khác nếu cần
-];
-
-// Danh sách lớp học
-const mockClasses = [
-  "Tất cả",
-  "CNTT-K44A",
-  "CNTT-K44B",
-  "CNTT-K45A",
-  "KHMT-K44A",
-  "KTPM-K44A",
-];
-
-// Danh sách khoa
-const mockFaculties = [
-  "Tất cả",
-  "Công nghệ thông tin",
-  "Kỹ thuật điện tử",
-  "Kinh tế",
-];
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import { selectCurrentUser } from "../../features/auth/authSelectors";
+import { fetchSubmissionsByInstructor } from "../../features/assignment-submissions/assignmentSubmissionsSlice";
+import { selectInstructorSubmissions } from "../../features/assignment-submissions/assignmentSubmissionsSelectors";
+import { formatDateTime } from "../../utils/formatters";
 
 const InstructorAssignments = () => {
+  const dispatch = useAppDispatch();
+  const currentUser = useAppSelector(selectCurrentUser);
+  const instructorSubmissions = useAppSelector(selectInstructorSubmissions);
   const [searchQuery, setSearchQuery] = useState("");
   const [courseFilter, setCourseFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [studentTypeFilter, setStudentTypeFilter] = useState("all"); // all, student, student_academic
   const [classFilter, setClassFilter] = useState("Tất cả");
-  const [facultyFilter, setFacultyFilter] = useState("Tất cả");
-
   const [page, setPage] = useState(1);
   const [gradeDialogOpen, setGradeDialogOpen] = useState(false);
   const [selectedSubmission, setSelectedSubmission] = useState<any>(null);
@@ -231,8 +93,39 @@ const InstructorAssignments = () => {
     ],
   });
 
+  useEffect(() => {
+    dispatch(fetchSubmissionsByInstructor(currentUser.userInstructor.id));
+  }, [dispatch, currentUser]);
+
+  console.log(instructorSubmissions);
+
   const handleGrade = (submission: any) => {
-    setSelectedSubmission(submission);
+    const file = submission.fileUrl
+      ? {
+          id: 1,
+          name: submission.fileUrl.split("/").pop(),
+          url: submission.fileUrl,
+          type: submission.fileUrl.split(".").pop()?.toLowerCase() || "unknown",
+        }
+      : null;
+
+    setSelectedSubmission({
+      ...submission,
+      assignmentTitle: submission.assignment.title,
+      courseName:
+        submission.assignment.academicClass?.className ||
+        submission.assignment.lesson?.title,
+      studentAvatar: submission.user.avatarUrl,
+      studentName:
+        submission.user.userStudentAcademic?.fullName ||
+        submission.user.userStudent?.fullName,
+      studentType: submission.user.role,
+      studentCode: submission.user.userStudentAcademic?.studentCode,
+      className: submission.assignment.academicClass?.classCode,
+      submittedDate: formatDateTime(submission.submittedAt),
+      files: file ? [file] : [],
+    });
+
     setScore(submission.score || "");
     setFeedback(submission.feedback || "");
     setGradeDialogOpen(true);
@@ -243,8 +136,22 @@ const InstructorAssignments = () => {
     setGradeDialogOpen(false);
   };
 
-  const handleViewFiles = (files: any[]) => {
-    setSelectedFiles(files);
+  const handleViewFiles = (submission: any) => {
+    if (!submission.fileUrl) {
+      setSelectedFiles([]);
+      setFilesDialogOpen(true);
+      return;
+    }
+
+    // Create a file object from the fileUrl
+    const file = {
+      id: 1,
+      name: submission.fileUrl.split("/").pop(), // Get filename from URL
+      url: submission.fileUrl,
+      type: submission.fileUrl.split(".").pop()?.toLowerCase() || "unknown", // Get file extension
+    };
+
+    setSelectedFiles([file]);
     setFilesDialogOpen(true);
   };
 
@@ -322,66 +229,49 @@ const InstructorAssignments = () => {
 
   // Lọc submissions dựa trên các filter
   const getFilteredSubmissions = () => {
-    let assignmentSubmissions: any[] = [];
+    return instructorSubmissions.filter((submission) => {
+      const isStudentAcademic = submission.user.role === "student_academic";
 
-    // Gộp tất cả các submission từ tất cả các bài tập
-    mockAssignments.forEach((assignment) => {
-      if (
-        courseFilter === "all" ||
-        courseFilter === assignment.courseId.toString()
-      ) {
-        assignment.submissions.forEach((submission) => {
-          assignmentSubmissions.push({
-            ...submission,
-            assignmentTitle: assignment.title,
-            courseName: assignment.courseName,
-            dueDate: assignment.dueDate,
-          });
-        });
+      // Lọc theo loại học viên
+      if (studentTypeFilter !== "all") {
+        if (studentTypeFilter === "student_academic" && !isStudentAcademic)
+          return false;
+        if (studentTypeFilter === "student" && isStudentAcademic) return false;
       }
-    });
 
-    // Áp dụng các bộ lọc
-    return assignmentSubmissions.filter((submission) => {
+      // Lọc theo khóa học/lớp học
+      if (courseFilter !== "all") {
+        if (submission.assignment.academicClassId) {
+          if (
+            courseFilter !== submission.assignment.academicClass?.id.toString()
+          )
+            return false;
+        }
+      }
+
       // Lọc theo trạng thái
       if (statusFilter !== "all" && submission.status !== statusFilter) {
         return false;
       }
 
-      // Lọc theo loại học viên
-      if (
-        studentTypeFilter !== "all" &&
-        submission.studentType !== studentTypeFilter
-      ) {
-        return false;
-      }
-
-      // Lọc theo lớp (chỉ áp dụng cho sinh viên trường)
-      if (
-        submission.studentType === "student_academic" &&
-        classFilter !== "Tất cả" &&
-        submission.className !== classFilter
-      ) {
-        return false;
-      }
-
-      // Lọc theo khoa (chỉ áp dụng cho sinh viên trường)
-      if (
-        submission.studentType === "student_academic" &&
-        facultyFilter !== "Tất cả" &&
-        submission.faculty !== facultyFilter
-      ) {
-        return false;
+      // Lọc theo lớp học (cho sinh viên trường)
+      if (isStudentAcademic && classFilter !== "Tất cả") {
+        if (submission.assignment.academicClass?.classCode !== classFilter)
+          return false;
       }
 
       // Lọc theo từ khóa tìm kiếm
       if (searchQuery) {
         const query = searchQuery.toLowerCase();
         return (
-          submission.studentName.toLowerCase().includes(query) ||
-          (submission.studentCode &&
-            submission.studentCode.toLowerCase().includes(query)) ||
-          submission.assignmentTitle.toLowerCase().includes(query)
+          submission.user.userStudentAcademic?.fullName
+            .toLowerCase()
+            .includes(query) ||
+          submission.user.userStudent?.fullName.toLowerCase().includes(query) ||
+          submission.user.userStudentAcademic?.studentCode
+            ?.toLowerCase()
+            .includes(query) ||
+          submission.assignment.title.toLowerCase().includes(query)
         );
       }
 
@@ -411,7 +301,6 @@ const InstructorAssignments = () => {
   const handleAddAssignment = (assignmentData: any) => {
     console.log("Thêm bài tập mới:", assignmentData);
     console.log("Dành cho sinh viên thuộc lớp:", classFilter);
-    console.log("Thuộc khoa:", facultyFilter);
 
     // Thực hiện thêm bài tập (gọi API)
     alert(`Đã tạo bài tập "${assignmentData.title}" thành công!`);
@@ -460,12 +349,20 @@ const InstructorAssignments = () => {
                     label="Khóa học"
                   >
                     <MenuItem value="all">Tất cả khóa học</MenuItem>
-                    {mockAssignments.map((assignment) => (
-                      <MenuItem
-                        key={assignment.courseId}
-                        value={assignment.courseId.toString()}
-                      >
-                        {assignment.courseName}
+                    {[
+                      ...new Map(
+                        instructorSubmissions
+                          .filter(
+                            (sub) => sub.assignment.lesson?.section?.course
+                          )
+                          .map((sub) => [
+                            sub.assignment.lesson.section.course.id,
+                            sub.assignment.lesson.section.course,
+                          ])
+                      ).values(),
+                    ].map((course) => (
+                      <MenuItem key={course.id} value={course.id.toString()}>
+                        {course.title}
                       </MenuItem>
                     ))}
                   </Select>
@@ -496,26 +393,18 @@ const InstructorAssignments = () => {
                         }
                         label="Lớp"
                       >
-                        {mockClasses.map((className) => (
-                          <MenuItem key={className} value={className}>
-                            {className}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-
-                    <FormControl size="small" sx={{ minWidth: 150 }}>
-                      <InputLabel>Khoa</InputLabel>
-                      <Select
-                        value={facultyFilter}
-                        onChange={(e) =>
-                          setFacultyFilter(e.target.value as string)
-                        }
-                        label="Khoa"
-                      >
-                        {mockFaculties.map((faculty) => (
-                          <MenuItem key={faculty} value={faculty}>
-                            {faculty}
+                        <MenuItem value="Tất cả">Tất cả</MenuItem>
+                        {Array.from(
+                          new Set(
+                            instructorSubmissions
+                              .filter((sub) => sub.assignment.academicClass)
+                              .map(
+                                (sub) => sub.assignment.academicClass.classCode
+                              )
+                          )
+                        ).map((classCode) => (
+                          <MenuItem key={classCode} value={classCode}>
+                            {classCode}
                           </MenuItem>
                         ))}
                       </Select>
@@ -582,7 +471,7 @@ const InstructorAssignments = () => {
                 </>
               )}
               <TableCell>Bài tập</TableCell>
-              <TableCell>Khóa học</TableCell>
+              <TableCell>Lớp/Khóa học</TableCell>
               <TableCell>Ngày nộp</TableCell>
               <TableCell>Trạng thái</TableCell>
               <TableCell>Thao tác</TableCell>
@@ -595,37 +484,38 @@ const InstructorAssignments = () => {
                   <TableCell>
                     <Stack direction="row" spacing={1} alignItems="center">
                       <Avatar
-                        src={submission.studentAvatar}
+                        src={submission.user.avatarUrl}
                         sx={{ width: 24, height: 24 }}
                       />
                       <Typography variant="body2">
-                        {submission.studentName}
+                        {submission.user.userStudentAcademic?.fullName ||
+                          submission.user.userStudent?.fullName}
                       </Typography>
                       <Tooltip
                         title={
-                          submission.studentType === "student_academic"
+                          submission.user.role === "student_academic"
                             ? "Sinh viên trường"
                             : "Học viên bên ngoài"
                         }
                       >
                         <Chip
                           icon={
-                            submission.studentType === "student_academic" ? (
+                            submission.user.role === "student_academic" ? (
                               <School fontSize="small" />
                             ) : (
                               <Person fontSize="small" />
                             )
                           }
                           label={
-                            submission.studentType === "student_academic"
+                            submission.user.role === "student_academic"
                               ? "SV"
                               : "HV"
                           }
                           size="small"
                           color={
-                            submission.studentType === "student_academic"
-                              ? "secondary"
-                              : "primary"
+                            submission.user.role === "student_academic"
+                              ? "primary"
+                              : "info"
                           }
                           variant="outlined"
                         />
@@ -635,14 +525,29 @@ const InstructorAssignments = () => {
 
                   {studentTypeFilter === "student_academic" && (
                     <>
-                      <TableCell>{submission.studentCode || "-"}</TableCell>
-                      <TableCell>{submission.className || "-"}</TableCell>
+                      <TableCell>
+                        {submission.user.userStudentAcademic?.studentCode ||
+                          "-"}
+                      </TableCell>
+                      <TableCell>
+                        {submission.assignment.academicClass?.classCode || "-"}
+                      </TableCell>
                     </>
                   )}
 
-                  <TableCell>{submission.assignmentTitle}</TableCell>
-                  <TableCell>{submission.courseName}</TableCell>
-                  <TableCell>{submission.submittedDate}</TableCell>
+                  <TableCell>{submission.assignment.title}</TableCell>
+                  <TableCell>
+                    {submission.assignment.academicClass?.className
+                      ? "Lớp: " +
+                        submission.assignment.academicClass?.className +
+                        " - " +
+                        submission.assignment.academicClass?.classCode
+                      : "Khóa học: " +
+                        submission.assignment.lesson?.section?.course?.title}
+                  </TableCell>
+                  <TableCell>
+                    {formatDateTime(submission.submittedAt)}
+                  </TableCell>
                   <TableCell>
                     {getStatusChip(submission.status, submission.score)}
                   </TableCell>
@@ -651,7 +556,7 @@ const InstructorAssignments = () => {
                       <Tooltip title="Xem files">
                         <IconButton
                           size="small"
-                          onClick={() => handleViewFiles(submission.files)}
+                          onClick={() => handleViewFiles(submission)}
                         >
                           <Description fontSize="small" />
                         </IconButton>
@@ -704,7 +609,7 @@ const InstructorAssignments = () => {
         <DialogContent>
           {selectedSubmission && (
             <>
-              <Box sx={{ mb: 3 }}>
+              <Box>
                 <Typography variant="h6">
                   {selectedSubmission.assignmentTitle}
                 </Typography>
@@ -715,7 +620,7 @@ const InstructorAssignments = () => {
                   direction="row"
                   spacing={1}
                   alignItems="center"
-                  sx={{ mt: 1 }}
+                  sx={{ my: 1 }}
                 >
                   <Avatar
                     src={selectedSubmission.studentAvatar}
@@ -741,28 +646,62 @@ const InstructorAssignments = () => {
                 </Typography>
               </Box>
 
+              {selectedSubmission.submissionText && (
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    my: 3,
+                    p: 2,
+                    bgcolor: "background.paper",
+                    borderRadius: 1,
+                    borderColor: "divider",
+                  }}
+                >
+                  <Stack spacing={1}>
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Lời nhắn từ học viên:
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      sx={{
+                        fontStyle: "italic",
+                        whiteSpace: "pre-wrap",
+                        color: "text.primary",
+                      }}
+                    >
+                      {selectedSubmission.submissionText}
+                    </Typography>
+                  </Stack>
+                </Paper>
+              )}
+
               <Typography variant="subtitle1" gutterBottom>
                 Files đã nộp:
               </Typography>
-              <List dense>
-                {selectedSubmission.files.map((file: any) => (
-                  <ListItem key={file.id} disablePadding>
-                    <ListItemButton
-                      onClick={() => handlePreviewFile(file)}
-                      sx={{ borderRadius: 1 }}
-                    >
-                      <ListItemIcon>{getFileIcon(file.type)}</ListItemIcon>
-                      <ListItemText
-                        primary={file.name}
-                        secondary={file.size}
-                        primaryTypographyProps={{
-                          variant: "body2",
-                        }}
-                      />
-                    </ListItemButton>
-                  </ListItem>
-                ))}
-              </List>
+              {selectedSubmission.files.length > 0 ? (
+                <List dense>
+                  {selectedSubmission.files.map((file: any) => (
+                    <ListItem key={file.id} disablePadding>
+                      <ListItemButton
+                        onClick={() => handlePreviewFile(file)}
+                        sx={{ borderRadius: 1 }}
+                      >
+                        <ListItemIcon>{getFileIcon(file.type)}</ListItemIcon>
+                        <ListItemText
+                          primary={file.name}
+                          primaryTypographyProps={{
+                            variant: "body2",
+                          }}
+                        />
+                      </ListItemButton>
+                    </ListItem>
+                  ))}
+                </List>
+              ) : (
+                <Typography variant="body2" color="text.secondary">
+                  Không có file đính kèm
+                </Typography>
+              )}
 
               <Box sx={{ mt: 3 }}>
                 <Typography variant="subtitle1" gutterBottom>
@@ -831,58 +770,63 @@ const InstructorAssignments = () => {
         <DialogTitle>Danh sách file đã nộp</DialogTitle>
         <DialogContent>
           <List>
-            {selectedFiles.map((file) => (
-              <ListItem
-                key={file.id}
-                disablePadding
-                secondaryAction={
-                  <Stack direction="row" spacing={1}>
-                    {(file.type === "pdf" || file.type === "image") && (
-                      <Tooltip title="Xem trước">
+            {selectedFiles && selectedFiles.length > 0 ? (
+              selectedFiles.map((file) => (
+                <ListItem
+                  key={file.id}
+                  disablePadding
+                  secondaryAction={
+                    <Stack direction="row" spacing={1}>
+                      {(file.type === "pdf" || file.type === "image") && (
+                        <Tooltip title="Xem trước">
+                          <IconButton
+                            edge="end"
+                            size="small"
+                            onClick={() => handlePreviewFile(file)}
+                          >
+                            <Description />
+                          </IconButton>
+                        </Tooltip>
+                      )}
+                      <Tooltip title="Tải xuống">
                         <IconButton
                           edge="end"
                           size="small"
-                          onClick={() => handlePreviewFile(file)}
+                          onClick={() => window.open(file.url)}
                         >
-                          <Description />
+                          <Download />
                         </IconButton>
                       </Tooltip>
-                    )}
-                    <Tooltip title="Tải xuống">
-                      <IconButton
-                        edge="end"
-                        size="small"
-                        onClick={() => window.open(file.url)}
-                      >
-                        <Download />
-                      </IconButton>
-                    </Tooltip>
-                  </Stack>
-                }
-              >
-                <ListItemButton
-                  sx={{
-                    borderRadius: 1,
-                    mb: 1,
-                    "&:hover": {
-                      bgcolor: "action.hover",
-                    },
-                  }}
+                    </Stack>
+                  }
                 >
-                  <ListItemIcon>{getFileIcon(file.type)}</ListItemIcon>
-                  <ListItemText
-                    primary={file.name}
-                    secondary={file.size}
-                    primaryTypographyProps={{
-                      variant: "body2",
+                  <ListItemButton
+                    sx={{
+                      borderRadius: 1,
+                      mb: 1,
+                      "&:hover": {
+                        bgcolor: "action.hover",
+                      },
                     }}
-                    secondaryTypographyProps={{
-                      variant: "caption",
-                    }}
-                  />
-                </ListItemButton>
-              </ListItem>
-            ))}
+                  >
+                    <ListItemIcon>{getFileIcon(file.type)}</ListItemIcon>
+                    <ListItemText
+                      primary={file.name}
+                      primaryTypographyProps={{
+                        variant: "body2",
+                      }}
+                      secondaryTypographyProps={{
+                        variant: "caption",
+                      }}
+                    />
+                  </ListItemButton>
+                </ListItem>
+              ))
+            ) : (
+              <Typography variant="body2" color="text.secondary" align="center">
+                Không có file đính kèm
+              </Typography>
+            )}
           </List>
         </DialogContent>
         <DialogActions>
@@ -949,7 +893,6 @@ const InstructorAssignments = () => {
         additionalInfo={{
           targetType: "academic",
           className: classFilter !== "all" ? classFilter : "Tất cả các lớp",
-          faculty: facultyFilter !== "all" ? facultyFilter : "Tất cả các khoa",
         }}
       />
     </Box>
