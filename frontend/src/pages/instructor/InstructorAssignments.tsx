@@ -1444,22 +1444,57 @@ const AcademicClassAssignments: React.FC<AcademicClassAssignmentsProps> = ({
   onViewDetail,
   classFilter,
   onClassFilterChange,
-  onEdit, // Add this
-  onDelete, // Add this
+  onEdit,
+  onDelete,
 }) => {
-  // Get unique class codes
-  const uniqueClasses = Array.from(
-    new Set(assignments.map((a) => a.academicClass.classCode))
-  );
+  // Add search state
+  const [searchQuery, setSearchQuery] = useState("");
 
-  // Filter assignments based on selected class
-  const filteredAssignments =
-    classFilter === "Tất cả"
-      ? assignments
-      : assignments.filter((a) => a.academicClass.classCode === classFilter);
+  // Filter assignments based on selected class and search query
+  const filteredAssignments = assignments
+    .filter(
+      (a) =>
+        classFilter === "Tất cả" || a.academicClass.classCode === classFilter
+    )
+    .filter((a) => {
+      if (!searchQuery) return true;
+
+      const query = searchQuery.toLowerCase();
+      return (
+        a.title.toLowerCase().includes(query) ||
+        a.description?.toLowerCase().includes(query) ||
+        a.academicClass.classCode.toLowerCase().includes(query) ||
+        a.academicClass.className.toLowerCase().includes(query)
+      );
+    });
 
   return (
     <>
+      {/* Add search box */}
+      <Box sx={{ mb: 3 }}>
+        <TextField
+          fullWidth
+          placeholder="Tìm kiếm theo tên bài tập, mô tả, mã lớp hoặc tên lớp..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          InputProps={{
+            startAdornment: (
+              <InputAdornment position="start">
+                <Search />
+              </InputAdornment>
+            ),
+          }}
+          size="small"
+          variant="outlined"
+        />
+      </Box>
+
+      {/* Show result count */}
+      <Typography variant="body2" sx={{ mb: 2 }}>
+        Hiển thị {filteredAssignments.length} kết quả
+      </Typography>
+
+      {/* Existing table code using filteredAssignments */}
       <TableContainer component={Paper}>
         <Table size="small">
           <TableHead>
@@ -1474,109 +1509,118 @@ const AcademicClassAssignments: React.FC<AcademicClassAssignmentsProps> = ({
             </TableRow>
           </TableHead>
           <TableBody>
-            {filteredAssignments.map((assignment) => (
-              <TableRow key={assignment.id}>
-                <TableCell>
-                  <Chip
-                    label={`${assignment.academicClass.classCode}`}
-                    size="small"
-                    variant="outlined"
-                  />
-                  <Typography
-                    variant="caption"
-                    display="block"
-                    color="text.secondary"
-                  >
-                    {assignment.academicClass.className}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2">{assignment.title}</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    {assignment.description}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Chip
-                    label={
-                      {
-                        practice: "Thực hành",
-                        midterm: "Giữa kỳ",
-                        final: "Cuối kỳ",
-                        project: "Dự án",
-                      }[assignment.assignmentType] || assignment.assignmentType
-                    }
-                    size="small"
-                    color={
-                      {
-                        practice: "primary",
-                        midterm: "warning",
-                        final: "error",
-                        project: "info",
-                      }[assignment.assignmentType] as any
-                    }
-                  />
-                </TableCell>
-                <TableCell align="center">{assignment.maxScore}</TableCell>
-                <TableCell>
-                  {assignment.dueDate ? (
-                    <>
-                      <Typography variant="body2">
-                        {formatDateTime(assignment.dueDate)}
+            {filteredAssignments.length > 0 ? (
+              filteredAssignments.map((assignment) => (
+                <TableRow key={assignment.id}>
+                  <TableCell>
+                    <Chip
+                      label={`${assignment.academicClass.classCode}`}
+                      size="small"
+                      variant="outlined"
+                    />
+                    <Typography
+                      variant="caption"
+                      display="block"
+                      color="text.secondary"
+                    >
+                      {assignment.academicClass.className}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">{assignment.title}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {assignment.description}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Chip
+                      label={
+                        {
+                          practice: "Thực hành",
+                          midterm: "Giữa kỳ",
+                          final: "Cuối kỳ",
+                          project: "Dự án",
+                        }[assignment.assignmentType] ||
+                        assignment.assignmentType
+                      }
+                      size="small"
+                      color={
+                        {
+                          practice: "primary",
+                          midterm: "warning",
+                          final: "error",
+                          project: "info",
+                        }[assignment.assignmentType] as any
+                      }
+                    />
+                  </TableCell>
+                  <TableCell align="center">{assignment.maxScore}</TableCell>
+                  <TableCell>
+                    {assignment.dueDate ? (
+                      <>
+                        <Typography variant="body2">
+                          {formatDateTime(assignment.dueDate)}
 
-                        {new Date(assignment.dueDate) < new Date() && (
-                          <Typography
-                            variant="caption"
-                            color="error"
-                            fontWeight={600}
-                          >
-                            {" "}
-                            (Đã hết hạn)
-                          </Typography>
-                        )}
-                      </Typography>
-                    </>
-                  ) : (
-                    "Không có"
-                  )}
-                </TableCell>
-                <TableCell align="center">
-                  <Typography variant="body2">
-                    {assignment.assignmentSubmissions.length}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  <Stack direction="row" spacing={1}>
-                    <Tooltip title="Xem chi tiết">
-                      <IconButton
-                        size="small"
-                        onClick={() => onViewDetail(assignment)}
-                      >
-                        <Assignment fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Chỉnh sửa">
-                      <IconButton
-                        size="small"
-                        onClick={() => onEdit(assignment)} // Change this
-                      >
-                        <Edit fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Xóa">
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => onDelete(assignment)}
-                        disabled={assignment.assignmentSubmissions.length > 0}
-                      >
-                        <Delete fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                  </Stack>
+                          {new Date(assignment.dueDate) < new Date() && (
+                            <Typography
+                              variant="caption"
+                              color="error"
+                              fontWeight={600}
+                            >
+                              {" "}
+                              (Đã hết hạn)
+                            </Typography>
+                          )}
+                        </Typography>
+                      </>
+                    ) : (
+                      "Không có"
+                    )}
+                  </TableCell>
+                  <TableCell align="center">
+                    <Typography variant="body2">
+                      {assignment.assignmentSubmissions.length}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    <Stack direction="row" spacing={1}>
+                      <Tooltip title="Xem chi tiết">
+                        <IconButton
+                          size="small"
+                          onClick={() => onViewDetail(assignment)}
+                        >
+                          <Assignment fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Chỉnh sửa">
+                        <IconButton
+                          size="small"
+                          onClick={() => onEdit(assignment)} // Change this
+                        >
+                          <Edit fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Xóa">
+                        <IconButton
+                          size="small"
+                          color="error"
+                          onClick={() => onDelete(assignment)}
+                          disabled={assignment.assignmentSubmissions.length > 0}
+                        >
+                          <Delete fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Stack>
+                  </TableCell>
+                </TableRow>
+              ))
+            ) : (
+              <TableRow>
+                <TableCell colSpan={7} align="center">
+                  Không tìm thấy bài tập nào
                 </TableCell>
               </TableRow>
-            ))}
+            )}
           </TableBody>
         </Table>
       </TableContainer>

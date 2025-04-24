@@ -102,11 +102,11 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
       await dispatch(deleteQuiz(deleteDialog.id)).then((result) => {
         if (result?.payload?.error == "Rejected") {
           toast.error(
-            "Không thể xóa bài kiểm tra vì đã có học sinh/sinh viên làm !"
+            "Không thể xóa Bài trắc nghiệm vì đã có học sinh/sinh viên làm !"
           );
           return;
         }
-        toast.success("Xóa bài bài kiểm tra thành công!");
+        toast.success("Xóa bài Bài trắc nghiệm thành công!");
       });
 
       await dispatch(fetchCourseQuizzes(Number(id)));
@@ -136,7 +136,7 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
             label={
               <Stack direction="row" spacing={1} alignItems="center">
                 <Quiz />
-                <span>Bài kiểm tra ({quizzesData.length})</span>
+                <span>Bài trắc nghiệm ({quizzesData.length})</span>
               </Stack>
             }
           />
@@ -261,7 +261,7 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
         ) : (
           <Box sx={{ textAlign: "center", py: 4 }}>
             <Typography color="text.secondary">
-              Chưa có bài kiểm tra nào
+              Chưa có Bài trắc nghiệm nào
             </Typography>
           </Box>
         )}
@@ -376,12 +376,12 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
       >
         <DialogTitle>
           Xác nhận xóa{" "}
-          {deleteDialog.type === "quiz" ? "bài kiểm tra" : "bài tập"}
+          {deleteDialog.type === "quiz" ? "Bài trắc nghiệm" : "bài tập"}
         </DialogTitle>
         <DialogContent>
           <DialogContentText>
             Bạn có chắc chắn muốn xóa{" "}
-            {deleteDialog.type === "quiz" ? "bài kiểm tra" : "bài tập"} này?
+            {deleteDialog.type === "quiz" ? "Bài trắc nghiệm" : "bài tập"} này?
             Hành động này không thể hoàn tác.
           </DialogContentText>
         </DialogContent>

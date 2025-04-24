@@ -1074,7 +1074,7 @@ const InstructorStudents = () => {
                                   {grade.gradeType === "assignment" &&
                                     (grade.lesson?.title || "Bài tập:")}
                                   {grade.gradeType === "quiz" &&
-                                    (grade.lesson?.title || "Bài kiểm tra:")}
+                                    (grade.lesson?.title || "Bài trắc nghiệm:")}
                                   {grade.gradeType === "participation" &&
                                     "Điểm tham gia:"}
                                   {![

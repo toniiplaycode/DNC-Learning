@@ -485,7 +485,7 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
           </Typography>
           {currentUser.role === "instructor" && (
             <Typography variant="body2" color="text.secondary">
-              Hãy qua tab "BÀI KIỂM TRA/BÀI TẬP" để thêm bài tập
+              Hãy qua tab "Bài trắc nghiệm/BÀI TẬP" để thêm bài tập
             </Typography>
           )}
         </Box>

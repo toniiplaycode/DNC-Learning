@@ -206,7 +206,7 @@ const CourseContent = () => {
                           l.contentType === "quiz" ||
                           l.contentType === "assignment"
                       ).length || 0}{" "}
-                    bài kiểm tra hoàn thành
+                    Bài trắc nghiệm hoàn thành
                   </Typography>
                 </Stack>
               </CardContent>

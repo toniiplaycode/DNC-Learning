@@ -52,7 +52,7 @@ export const fetchCourseQuizzes = createAsyncThunk(
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data || "Không thể tải danh sách bài kiểm tra"
+        error.response?.data || "Không thể tải danh sách Bài trắc nghiệm"
       );
     }
   }

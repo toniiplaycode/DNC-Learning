@@ -495,7 +495,7 @@ const InstructorCourseView = () => {
               <Tabs value={tabValue} onChange={handleTabChange}>
                 <Tab label="Nội dung" />
                 <Tab label="Tài liệu" />
-                <Tab label="Bài kiểm tra/bài tập" />
+                <Tab label="Bài trắc nghiệm/bài tập" />
               </Tabs>
             </Box>
 
@@ -540,14 +540,14 @@ const InstructorCourseView = () => {
                   mb: 3,
                 }}
               >
-                <Typography variant="h6">Bài kiểm tra & bài tập</Typography>
+                <Typography variant="h6">Bài trắc nghiệm & bài tập</Typography>
                 <Stack direction="row" spacing={2}>
                   <Button
                     variant="contained"
                     startIcon={<Add />}
                     onClick={() => setOpenAddQuizModal(true)}
                   >
-                    Thêm bài kiểm tra
+                    Thêm Bài trắc nghiệm
                   </Button>
                   <Button
                     variant="outlined"

@@ -393,7 +393,7 @@ const AdminSettings = () => {
 
                   <FormControlLabel
                     control={<Switch defaultChecked />}
-                    label="Thông báo khi có bài kiểm tra"
+                    label="Thông báo khi có Bài trắc nghiệm"
                   />
 
                   <FormControlLabel

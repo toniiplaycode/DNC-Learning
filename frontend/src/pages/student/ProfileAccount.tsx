@@ -1265,7 +1265,7 @@ const ProfileAccount: React.FC = () => {
                                     gradeName = `${
                                       grade.quiz?.title ||
                                       grade.lesson?.title ||
-                                      "Bài kiểm tra"
+                                      "Bài trắc nghiệm"
                                     }:`;
                                   else if (grade.gradeType === "participation")
                                     gradeName = "Điểm tham gia:";

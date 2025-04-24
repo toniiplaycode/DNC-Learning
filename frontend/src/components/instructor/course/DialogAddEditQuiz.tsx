@@ -370,16 +370,16 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
 
     if (!editMode) {
       await dispatch(createQuiz(quizData));
-      toast.success("Thêm bài kiểm tra thành công!");
+      toast.success("Thêm Bài trắc nghiệm thành công!");
     } else if (editMode) {
       await dispatch(updateQuiz(quizData)).then((result) => {
         if (result?.error?.message == "Rejected") {
           toast.error(
-            "Không thể sửa bài kiểm tra vì đã có học sinh/sinh viên làm !"
+            "Không thể sửa Bài trắc nghiệm vì đã có học sinh/sinh viên làm !"
           );
           return;
         }
-        toast.success("Cập nhật bài kiểm tra thành công!");
+        toast.success("Cập nhật Bài trắc nghiệm thành công!");
       });
     }
 
@@ -458,7 +458,9 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
           alignItems="center"
         >
           <Typography variant="h6">
-            {editMode ? "Chỉnh sửa bài kiểm tra" : "Thêm bài kiểm tra mới"}
+            {editMode
+              ? "Chỉnh sửa Bài trắc nghiệm"
+              : "Thêm Bài trắc nghiệm mới"}
           </Typography>
           <IconButton onClick={onClose} size="small">
             <Close />
@@ -470,7 +472,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
         {additionalInfo && additionalInfo.targetType === "academic" && (
           <Box sx={{ bgcolor: "grey.100", p: 2, borderRadius: 1 }}>
             <Typography variant="subtitle1" gutterBottom>
-              Bài kiểm tra dành cho sinh viên trường
+              Bài trắc nghiệm dành cho sinh viên trường
             </Typography>
             <Stack direction="row" spacing={2}>
               <Typography variant="body2">
@@ -485,7 +487,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
               color="text.secondary"
               sx={{ mt: 1, display: "block" }}
             >
-              Bài kiểm tra này sẽ được gán cho tất cả sinh viên thuộc lớp và
+              Bài trắc nghiệm này sẽ được gán cho tất cả sinh viên thuộc lớp và
               khoa đã chọn.
             </Typography>
           </Box>
@@ -494,7 +496,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
         <Stack spacing={3}>
           {/* Thông tin cơ bản */}
           <TextField
-            label="Tiêu đề bài kiểm tra"
+            label="Tiêu đề Bài trắc nghiệm"
             fullWidth
             value={quizForm.title}
             onChange={(e) =>
@@ -550,7 +552,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                       {lesson.title}
                       {hasQuiz && (
                         <Typography component="span" className="quiz-indicator">
-                          &nbsp; (đã có bài kiểm tra)
+                          &nbsp; (đã có Bài trắc nghiệm)
                         </Typography>
                       )}
                     </MenuItem>
@@ -558,7 +560,8 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                 })}
               </Select>
               <FormHelperText>
-                Chọn nội dung cho bài kiểm tra hoặc 'Không thuộc nội dung nào'
+                Chọn nội dung cho Bài trắc nghiệm hoặc 'Không thuộc nội dung
+                nào'
               </FormHelperText>
             </FormControl>
           )}
@@ -566,10 +569,10 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
           {/* Cài đặt quiz */}
           <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
             <FormControl sx={{ minWidth: 200 }}>
-              <InputLabel>Loại bài kiểm tra</InputLabel>
+              <InputLabel>Loại Bài trắc nghiệm</InputLabel>
               <Select
                 value={quizForm.quizType}
-                label="Loại bài kiểm tra"
+                label="Loại Bài trắc nghiệm"
                 onChange={(e) =>
                   setQuizForm({
                     ...quizForm,
@@ -850,7 +853,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                 }}
               >
                 <Typography color="text.secondary">
-                  Chưa có câu hỏi nào. Hãy thêm câu hỏi cho bài kiểm tra.
+                  Chưa có câu hỏi nào. Hãy thêm câu hỏi cho Bài trắc nghiệm.
                 </Typography>
               </Box>
             )}
@@ -1025,7 +1028,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
           onClick={handleSubmit}
           disabled={!quizForm.title || questions.length === 0}
         >
-          {editMode ? "Cập nhật bài kiểm tra" : "Thêm bài kiểm tra"}
+          {editMode ? "Cập nhật Bài trắc nghiệm" : "Thêm Bài trắc nghiệm"}
         </Button>
       </DialogActions>
     </Dialog>

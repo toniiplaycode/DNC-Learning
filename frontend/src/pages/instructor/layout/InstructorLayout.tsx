@@ -60,7 +60,7 @@ const menuItems = [
     path: "/instructor/studentsAcademic",
   },
   { text: "Bài tập", icon: <Assignment />, path: "/instructor/assignments" },
-  { text: "Kiểm tra", icon: <Quiz />, path: "/instructor/quiz" },
+  { text: "Trắc nghiệm", icon: <Quiz />, path: "/instructor/quiz" },
   { text: "Thống kê", icon: <Assessment />, path: "/instructor/analytics" },
   { text: "Tin nhắn", icon: <Message />, path: "/instructor/chats" },
   {

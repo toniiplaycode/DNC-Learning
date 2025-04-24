@@ -46,7 +46,7 @@ const GradeOverview: React.FC = () => {
         [GradeType.FINAL]: "Bài thi cuối kỳ",
         [GradeType.PARTICIPATION]: "Điểm tham gia",
         [GradeType.ASSIGNMENT]: "Bài tập",
-        [GradeType.QUIZ]: "Bài kiểm tra",
+        [GradeType.QUIZ]: "Bài trắc nghiệm",
       };
       return gradeTypeMap[grade.gradeType] || "Không xác định";
     }

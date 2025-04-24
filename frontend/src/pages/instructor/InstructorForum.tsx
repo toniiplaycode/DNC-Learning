@@ -127,8 +127,8 @@ const mockForumPosts = [
   },
   {
     id: 5,
-    title: "Lưu ý quan trọng cho bài kiểm tra cuối kỳ",
-    content: "Bài kiểm tra cuối kỳ sẽ diễn ra vào ngày 20/04/2024...",
+    title: "Lưu ý quan trọng cho Bài trắc nghiệm cuối kỳ",
+    content: "Bài trắc nghiệm cuối kỳ sẽ diễn ra vào ngày 20/04/2024...",
     courseId: 2,
     courseName: "Node.js Advanced Concepts",
     category: "announcement",

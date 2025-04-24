@@ -99,8 +99,8 @@ const mockTasks = [
   },
   {
     id: 4,
-    title: "Tạo bài kiểm tra cuối kỳ",
-    description: "Chuẩn bị bài kiểm tra cuối kỳ cho khóa học",
+    title: "Tạo Bài trắc nghiệm cuối kỳ",
+    description: "Chuẩn bị Bài trắc nghiệm cuối kỳ cho khóa học",
     courseId: 2,
     courseName: "Node.js Advanced Concepts",
     dueDate: "2024-04-10",

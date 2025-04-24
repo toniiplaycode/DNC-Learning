@@ -126,7 +126,7 @@ const Assessment = () => {
       <Box sx={{ mb: 4 }}>
         <TextField
           fullWidth
-          placeholder="Tìm kiếm bài kiểm tra hoặc bài tập..."
+          placeholder="Tìm kiếm Bài trắc nghiệm hoặc bài tập..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           InputProps={{
@@ -319,7 +319,7 @@ const Assessment = () => {
             }}
           >
             <Typography variant="h6" color="text.secondary">
-              Không tìm thấy bài kiểm tra hoặc bài tập nào
+              Không tìm thấy Bài trắc nghiệm hoặc bài tập nào
             </Typography>
           </Box>
         )}

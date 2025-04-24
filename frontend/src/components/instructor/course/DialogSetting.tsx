@@ -78,7 +78,7 @@ const DialogSetting: React.FC<DialogSettingProps> = ({
     allowPreview: true,
     requireCompletion: false,
 
-    // Cài đặt bài kiểm tra
+    // Cài đặt Bài trắc nghiệm
     allowReAttempt: true,
     showAnswersAfterCompletion: true,
     shuffleQuestions: false,
@@ -152,7 +152,7 @@ const DialogSetting: React.FC<DialogSettingProps> = ({
           <Tab
             icon={<VerifiedUser />}
             iconPosition="start"
-            label="Bài kiểm tra"
+            label="Bài trắc nghiệm"
             id="settings-tab-1"
             aria-controls="settings-tabpanel-1"
           />
@@ -268,7 +268,7 @@ const DialogSetting: React.FC<DialogSettingProps> = ({
           </Stack>
         </TabPanel>
 
-        {/* Cài đặt bài kiểm tra */}
+        {/* Cài đặt Bài trắc nghiệm */}
         <TabPanel value={tabValue} index={1}>
           <Stack spacing={3}>
             <FormControlLabel
@@ -280,7 +280,7 @@ const DialogSetting: React.FC<DialogSettingProps> = ({
                   }
                 />
               }
-              label="Cho phép làm lại bài kiểm tra"
+              label="Cho phép làm lại Bài trắc nghiệm"
             />
 
             <FormControlLabel

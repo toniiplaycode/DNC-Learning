@@ -28,7 +28,7 @@ export const fetchQuizzes = createAsyncThunk(
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Không thể tải bài kiểm tra"
+        error.response?.data?.message || "Không thể tải Bài trắc nghiệm"
       );
     }
   }
@@ -42,7 +42,7 @@ export const fetchQuizzesByLesson = createAsyncThunk(
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Không thể tải bài kiểm tra"
+        error.response?.data?.message || "Không thể tải Bài trắc nghiệm"
       );
     }
   }
@@ -56,7 +56,7 @@ export const fetchQuizById = createAsyncThunk(
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Không thể tải bài kiểm tra"
+        error.response?.data?.message || "Không thể tải Bài trắc nghiệm"
       );
     }
   }
@@ -73,7 +73,7 @@ export const fetchQuizzesByStudentAcademic = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message ||
-          "Không thể tải bài kiểm tra cho sinh viên học thuật"
+          "Không thể tải Bài trắc nghiệm cho sinh viên học thuật"
       );
     }
   }
@@ -88,7 +88,7 @@ export const fetchQuizzesByCourse = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message ||
-          "Không thể tải bài kiểm tra cho sinh viên học thuật"
+          "Không thể tải Bài trắc nghiệm cho sinh viên học thuật"
       );
     }
   }
@@ -102,7 +102,7 @@ export const createQuiz = createAsyncThunk(
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Không thể tạo bài kiểm tra"
+        error.response?.data?.message || "Không thể tạo Bài trắc nghiệm"
       );
     }
   }
@@ -116,7 +116,7 @@ export const updateQuiz = createAsyncThunk(
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Không thể cập nhật bài kiểm tra"
+        error.response?.data?.message || "Không thể cập nhật Bài trắc nghiệm"
       );
     }
   }
@@ -130,7 +130,7 @@ export const deleteQuiz = createAsyncThunk(
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Không thể xóa bài kiểm tra"
+        error.response?.data?.message || "Không thể xóa Bài trắc nghiệm"
       );
     }
   }
@@ -173,7 +173,7 @@ export const createAttempt = createAsyncThunk(
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Không thể bắt đầu bài kiểm tra"
+        error.response?.data?.message || "Không thể bắt đầu Bài trắc nghiệm"
       );
     }
   }
@@ -192,7 +192,7 @@ export const fetchAttemptByUserIdAndQuizId = createAsyncThunk(
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Không thể tải lần thử bài kiểm tra"
+        error.response?.data?.message || "Không thể tải lần thử Bài trắc nghiệm"
       );
     }
   }
@@ -207,7 +207,7 @@ export const fetchUserAttempts = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message ||
-          "Không thể tải lịch sử làm bài kiểm tra"
+          "Không thể tải lịch sử làm Bài trắc nghiệm"
       );
     }
   }
@@ -235,7 +235,7 @@ export const submitQuizResponsesAndUpdateAttempt = createAsyncThunk(
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Không thể nộp bài kiểm tra"
+        error.response?.data?.message || "Không thể nộp Bài trắc nghiệm"
       );
     }
   }
@@ -249,7 +249,7 @@ export const fetchQuizResults = createAsyncThunk(
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Không thể tải kết quả bài kiểm tra"
+        error.response?.data?.message || "Không thể tải kết quả Bài trắc nghiệm"
       );
     }
   }

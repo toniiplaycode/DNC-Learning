@@ -462,20 +462,20 @@ const InstructorQuizs = () => {
 
   // Thêm hàm xử lý thêm quiz
   const handleAddQuiz = (quizData: any) => {
-    console.log("Thêm bài kiểm tra mới:", quizData);
+    console.log("Thêm Bài trắc nghiệm mới:", quizData);
 
-    // Xử lý thêm bài kiểm tra
+    // Xử lý thêm Bài trắc nghiệm
     // Đối với sinh viên trường, có thể lấy thông tin từ additionalInfo
     if (quizData.additionalInfo) {
       console.log(
-        "Bài kiểm tra dành cho sinh viên thuộc lớp:",
+        "Bài trắc nghiệm dành cho sinh viên thuộc lớp:",
         quizData.additionalInfo.className
       );
       console.log("Thuộc khoa:", quizData.additionalInfo.faculty);
     }
 
     // Giả lập thêm thành công
-    alert(`Đã tạo bài kiểm tra "${quizData.title}" thành công!`);
+    alert(`Đã tạo Bài trắc nghiệm "${quizData.title}" thành công!`);
     setOpenAddQuizModal(false);
   };
 
@@ -569,7 +569,7 @@ const InstructorQuizs = () => {
     );
   };
 
-  // Tổng hợp tất cả các bài nộp từ các bài kiểm tra
+  // Tổng hợp tất cả các bài nộp từ các Bài trắc nghiệm
   const getAllSubmissions = () => {
     const allSubmissions: any[] = [];
 
@@ -641,7 +641,7 @@ const InstructorQuizs = () => {
     return (
       <Box sx={{ p: 3 }}>
         <Typography variant="h5" gutterBottom fontWeight="bold">
-          Bài kiểm tra
+          Bài trắc nghiệm
         </Typography>
 
         <Card sx={{ mb: 3 }}>
@@ -652,7 +652,7 @@ const InstructorQuizs = () => {
               sx={{ mb: 2 }}
             >
               <TextField
-                placeholder="Tìm kiếm bài kiểm tra..."
+                placeholder="Tìm kiếm Bài trắc nghiệm..."
                 size="small"
                 fullWidth
                 InputProps={{
@@ -736,7 +736,7 @@ const InstructorQuizs = () => {
                   onClick={handleOpenAddQuizModal}
                   startIcon={<Add />}
                 >
-                  Tạo bài kiểm tra mới
+                  Tạo Bài trắc nghiệm mới
                 </Button>
               </Stack>
             )}
@@ -745,7 +745,7 @@ const InstructorQuizs = () => {
               <Table>
                 <TableHead>
                   <TableRow>
-                    <TableCell>Tên bài kiểm tra</TableCell>
+                    <TableCell>Tên bài trắc nghiệm</TableCell>
                     <TableCell>Khóa học</TableCell>
                     <TableCell align="center">Số câu hỏi</TableCell>
                     <TableCell align="center">Điểm đạt</TableCell>
@@ -804,7 +804,7 @@ const InstructorQuizs = () => {
     );
   }
 
-  // Render chi tiết bài kiểm tra và danh sách học viên làm bài
+  // Render chi tiết Bài trắc nghiệm và danh sách học viên làm bài
   return (
     <Box sx={{ p: 3 }}>
       <Stack direction="row" spacing={1} alignItems="center" sx={{ mb: 3 }}>
@@ -911,7 +911,7 @@ const InstructorQuizs = () => {
                           <TableCell>Lớp</TableCell>
                         </>
                       )}
-                      <TableCell>Bài kiểm tra</TableCell>
+                      <TableCell>Bài trắc nghiệm</TableCell>
                       <TableCell>Khóa học</TableCell>
                       <TableCell>Thời gian làm</TableCell>
                       <TableCell>Thời gian nộp</TableCell>

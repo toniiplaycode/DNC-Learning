@@ -327,7 +327,7 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
               <MenuItem value="docx">Word (.docx)</MenuItem>
               <MenuItem value="pdf">PDF</MenuItem>
               <MenuItem value="xlsx">Excel (.xlsx)</MenuItem>
-              <MenuItem value="quiz">Bài kiểm tra</MenuItem>
+              <MenuItem value="quiz">Bài trắc nghiệm</MenuItem>
               <MenuItem value="assignment">Bài tập</MenuItem>
             </Select>
             <FormHelperText>
