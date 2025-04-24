@@ -14,6 +14,7 @@ import { CreateAssignmentDto } from './dto/create-assignment.dto';
 import { UpdateAssignmentDto } from './dto/update-assignment.dto';
 import { UserStudentAcademic } from '../../entities/UserStudentAcademic';
 import { AcademicClassInstructor } from 'src/entities/AcademicClassInstructor';
+import { UpdateEnrollmentDto } from '../enrollments/dto/update-enrollment.dto';
 
 @Injectable()
 export class AssignmentsService {
@@ -94,6 +95,8 @@ export class AssignmentsService {
     updateAssignmentDto: UpdateAssignmentDto,
   ): Promise<Assignment> {
     const assignment = await this.findOne(id);
+
+    console.log(updateAssignmentDto);
 
     // Cập nhật các trường
     Object.assign(assignment, updateAssignmentDto);

@@ -113,7 +113,7 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
           title: assignmentToEdit.title || "",
           description: assignmentToEdit.description || null,
           lessonId: assignmentToEdit.lessonId || null,
-          academicClassId: assignmentToEdit.academicClassId || null,
+          academicClassId: Number(assignmentToEdit.academicClassId) || null,
           dueDate: assignmentToEdit.dueDate || null,
           maxScore: assignmentToEdit.maxScore || null,
           fileRequirements: assignmentToEdit.fileRequirements || null,

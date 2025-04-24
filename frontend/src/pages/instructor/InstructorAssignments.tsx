@@ -57,6 +57,9 @@ import {
   Edit,
   Delete,
   ArrowBack,
+  CloseFullscreen,
+  CloseSharp,
+  CloseOutlined,
 } from "@mui/icons-material";
 import DialogAddEditAssignment from "../../components/instructor/course/DialogAddEditAssignment";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
@@ -70,7 +73,10 @@ import { formatDateTime } from "../../utils/formatters";
 import { toast } from "react-toastify";
 import { fetchInstructorGrades } from "../../features/user-grades/userGradesSlice";
 import { selectInstructorGrades } from "../../features/user-grades/userGradesSelectors";
-import { fetchInstructorAcademicClassAssignments } from "../../features/assignments/assignmentsSlice";
+import {
+  fetchInstructorAcademicClassAssignments,
+  deleteAssignment,
+} from "../../features/assignments/assignmentsSlice";
 import { selectInstructorAcademicClassAssignments } from "../../features/assignments/assignmentsSelectors";
 
 const InstructorAssignments = () => {
@@ -106,6 +112,15 @@ const InstructorAssignments = () => {
   // Add new state for selected assignment
   const [selectedAssignmentView, setSelectedAssignmentView] =
     useState<any>(null);
+
+  // Add state for edit dialog
+  const [openEditAssignmentModal, setOpenEditAssignmentModal] = useState(false);
+  const [selectedEditAssignment, setSelectedEditAssignment] =
+    useState<any>(null);
+
+  // Add new states in InstructorAssignments component
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [assignmentToDelete, setAssignmentToDelete] = useState<any>(null);
 
   useEffect(() => {
     dispatch(fetchSubmissionsByInstructor(currentUser.userInstructor.id));
@@ -374,12 +389,50 @@ const InstructorAssignments = () => {
     setOpenAddAssignmentModal(true);
   };
 
+  // Add handler for edit button click
+  const handleOpenEditAssignment = (assignment: any) => {
+    setSelectedEditAssignment(assignment);
+    setOpenEditAssignmentModal(true);
+  };
+
+  // Add delete handler
+  const handleDeleteAssignment = (assignment: any) => {
+    setAssignmentToDelete(assignment);
+    setDeleteDialogOpen(true);
+  };
+
+  // Add confirmation handler
+  const confirmDelete = async () => {
+    if (!assignmentToDelete) return;
+
+    // Check if assignment has submissions
+    if (assignmentToDelete.assignmentSubmissions.length > 0) {
+      toast.error("Không thể xóa bài tập đã có bài nộp");
+      setDeleteDialogOpen(false);
+      setAssignmentToDelete(null);
+      return;
+    }
+
+    try {
+      await dispatch(deleteAssignment(assignmentToDelete.id)).unwrap();
+      toast.success("Xóa bài tập thành công");
+      // Refresh assignments list
+      dispatch(
+        fetchInstructorAcademicClassAssignments(currentUser.userInstructor.id)
+      );
+    } catch (error) {
+      toast.error("Có lỗi xảy ra khi xóa bài tập");
+    } finally {
+      setDeleteDialogOpen(false);
+      setAssignmentToDelete(null);
+    }
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h5" gutterBottom fontWeight="bold">
         Quản lý bài tập
       </Typography>
-
       {/* Filters */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
@@ -408,38 +461,62 @@ const InstructorAssignments = () => {
                 spacing={2}
                 alignItems={{ md: "center" }}
               >
-                {!(studentTypeFilter == "student_academic") &&
-                  tabValue === 1 && (
-                    <FormControl size="small" sx={{ minWidth: 150 }}>
-                      <InputLabel>Khóa học</InputLabel>
-                      <Select
-                        value={courseFilter}
-                        onChange={(e) => setCourseFilter(e.target.value)}
-                        label="Khóa học"
-                      >
-                        <MenuItem value="all">Tất cả khóa học</MenuItem>
-                        {[
-                          ...new Map(
-                            instructorSubmissions
-                              .filter(
-                                (sub) => sub.assignment.lesson?.section?.course
-                              )
-                              .map((sub) => [
-                                sub.assignment.lesson.section.course.id,
-                                sub.assignment.lesson.section.course,
-                              ])
-                          ).values(),
-                        ].map((course) => (
-                          <MenuItem
-                            key={course.id}
-                            value={course.id.toString()}
-                          >
+                {studentTypeFilter === "student_academic" ? (
+                  // Class filter for academic students
+                  <FormControl size="small" sx={{ minWidth: 200 }}>
+                    <InputLabel>Lớp</InputLabel>
+                    <Select
+                      value={classFilter}
+                      onChange={(e) => setClassFilter(e.target.value)}
+                      label="Lớp"
+                    >
+                      <MenuItem value="Tất cả">Tất cả lớp</MenuItem>
+                      {Array.from(
+                        new Set(
+                          instructorAssignments.map(
+                            (a) => a.academicClass.classCode
+                          )
+                        )
+                      ).map((classCode) => (
+                        <MenuItem key={classCode} value={classCode}>
+                          {classCode}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                ) : (
+                  // Course filter for external students
+                  <FormControl size="small" sx={{ minWidth: 200 }}>
+                    <InputLabel>Khóa học</InputLabel>
+                    <Select
+                      value={courseFilter}
+                      onChange={(e) => setCourseFilter(e.target.value)}
+                      label="Khóa học"
+                    >
+                      <MenuItem value="all">Tất cả khóa học</MenuItem>
+                      {Array.from(
+                        new Set(
+                          instructorSubmissions
+                            .filter((s) => s.user.role === "student")
+                            .map((s) => ({
+                              id: s.assignment.lesson?.section?.courseId,
+                              title:
+                                s.assignment.lesson?.section?.course?.title,
+                            }))
+                            .filter((c) => c.id && c.title)
+                        ),
+                        (course) => JSON.stringify(course)
+                      ).map((courseStr) => {
+                        const course = JSON.parse(courseStr);
+                        return (
+                          <MenuItem key={course.id} value={course.id}>
                             {course.title}
                           </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  )}
+                        );
+                      })}
+                    </Select>
+                  </FormControl>
+                )}
 
                 <FormControl size="small" sx={{ minWidth: 130 }}>
                   <InputLabel>Trạng thái</InputLabel>
@@ -456,36 +533,6 @@ const InstructorAssignments = () => {
                 </FormControl>
 
                 {studentTypeFilter === "student_academic" && (
-                  <>
-                    <FormControl size="small" sx={{ minWidth: 130 }}>
-                      <InputLabel>Lớp</InputLabel>
-                      <Select
-                        value={classFilter}
-                        onChange={(e) =>
-                          setClassFilter(e.target.value as string)
-                        }
-                        label="Lớp"
-                      >
-                        <MenuItem value="Tất cả">Tất cả</MenuItem>
-                        {Array.from(
-                          new Set(
-                            instructorSubmissions
-                              .filter((sub) => sub.assignment.academicClass)
-                              .map(
-                                (sub) => sub.assignment.academicClass.classCode
-                              )
-                          )
-                        ).map((classCode) => (
-                          <MenuItem key={classCode} value={classCode}>
-                            {classCode}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                  </>
-                )}
-
-                {studentTypeFilter === "student_academic" && (
                   <Button
                     variant="contained"
                     color="primary"
@@ -499,7 +546,6 @@ const InstructorAssignments = () => {
           </Grid>
         </CardContent>
       </Card>
-
       {/* Tabs to switch between student types */}
       <Box sx={{ mb: 3 }}>
         <Tabs
@@ -525,12 +571,10 @@ const InstructorAssignments = () => {
           />
         </Tabs>
       </Box>
-
       {/* Result count */}
       <Typography variant="body2" sx={{ mb: 2 }}>
         Hiển thị {filteredSubmissions.length} kết quả
       </Typography>
-
       {/* Assignments table */}
       {tabValue !== 2 && (
         <>
@@ -675,7 +719,6 @@ const InstructorAssignments = () => {
           )}
         </>
       )}
-
       {/* Grading Dialog */}
       <Dialog
         open={gradeDialogOpen}
@@ -912,7 +955,6 @@ const InstructorAssignments = () => {
           </Button>
         </DialogActions>
       </Dialog>
-
       {/* Files Dialog */}
       <Dialog
         open={filesDialogOpen}
@@ -986,7 +1028,6 @@ const InstructorAssignments = () => {
           <Button onClick={() => setFilesDialogOpen(false)}>Đóng</Button>
         </DialogActions>
       </Dialog>
-
       {/* Preview Dialog */}
       <Dialog
         open={previewDialogOpen}
@@ -1034,7 +1075,6 @@ const InstructorAssignments = () => {
           </Paper>
         </DialogContent>
       </Dialog>
-
       {/* Modal Thêm bài tập */}
       <DialogAddEditAssignment
         open={openAddAssignmentModal}
@@ -1045,7 +1085,19 @@ const InstructorAssignments = () => {
           targetType: "academic",
         }}
       />
-
+      {/* Edit Assignment Dialog */}
+      <DialogAddEditAssignment
+        open={openEditAssignmentModal}
+        onClose={() => {
+          setOpenEditAssignmentModal(false);
+          setSelectedEditAssignment(null);
+        }}
+        assignmentToEdit={selectedEditAssignment}
+        editMode={true}
+        additionalInfo={{
+          targetType: "academic",
+        }}
+      />
       {studentTypeFilter === "student_academic" && (
         <Box sx={{ mt: 3 }}>
           {selectedAssignmentView ? (
@@ -1058,19 +1110,49 @@ const InstructorAssignments = () => {
             />
           ) : (
             <>
-              <Typography variant="h6" gutterBottom>
-                Danh sách bài tập
-              </Typography>
               <AcademicClassAssignments
                 assignments={instructorAssignments}
                 onViewDetail={(assignment) =>
                   setSelectedAssignmentView(assignment)
                 }
+                classFilter={classFilter}
+                onClassFilterChange={(value) => setClassFilter(value)}
+                onEdit={handleOpenEditAssignment} // Add this
+                onDelete={handleDeleteAssignment} // Add this
               />
             </>
           )}
         </Box>
       )}
+      {/* Add confirmation dialog to JSX */}
+      <Dialog
+        open={deleteDialogOpen}
+        onClose={() => setDeleteDialogOpen(false)}
+      >
+        <DialogTitle>Xác nhận xóa bài tập</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            {assignmentToDelete?.assignmentSubmissions.length > 0 ? (
+              <Typography color="error">
+                Không thể xóa bài tập này vì đã có{" "}
+                {assignmentToDelete.assignmentSubmissions.length} bài nộp.
+              </Typography>
+            ) : (
+              `Bạn có chắc chắn muốn xóa bài tập "${assignmentToDelete?.title}" không?`
+            )}
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteDialogOpen(false)}>Hủy</Button>
+          <Button
+            onClick={confirmDelete}
+            color="error"
+            disabled={assignmentToDelete?.assignmentSubmissions.length > 0}
+          >
+            Xóa
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
@@ -1167,112 +1249,157 @@ const AssignmentSubmissionsView: React.FC<AssignmentSubmissionsViewProps> = ({
 };
 
 // Update the AcademicClassAssignments component
-const AcademicClassAssignments = ({ assignments, onViewDetail }) => {
+interface AcademicClassAssignmentsProps {
+  assignments: any[];
+  onViewDetail: (assignment: any) => void;
+  classFilter: string;
+  onClassFilterChange: (classCode: string) => void;
+  onEdit: (assignment: any) => void; // Add this
+  onDelete: (assignment: any) => void; // Add this
+}
+
+const AcademicClassAssignments: React.FC<AcademicClassAssignmentsProps> = ({
+  assignments,
+  onViewDetail,
+  classFilter,
+  onClassFilterChange,
+  onEdit, // Add this
+  onDelete, // Add this
+}) => {
+  // Get unique class codes
+  const uniqueClasses = Array.from(
+    new Set(assignments.map((a) => a.academicClass.classCode))
+  );
+
+  // Filter assignments based on selected class
+  const filteredAssignments =
+    classFilter === "Tất cả"
+      ? assignments
+      : assignments.filter((a) => a.academicClass.classCode === classFilter);
+
   return (
-    <TableContainer component={Paper}>
-      <Table size="small">
-        <TableHead>
-          <TableRow>
-            <TableCell>Lớp</TableCell>
-            <TableCell>Tiêu đề</TableCell>
-            <TableCell>Loại bài tập</TableCell>
-            <TableCell>Điểm tối đa</TableCell>
-            <TableCell>Hạn nộp</TableCell>
-            <TableCell>Số bài đã nộp</TableCell>
-            <TableCell>Thao tác</TableCell>
-          </TableRow>
-        </TableHead>
-        <TableBody>
-          {assignments.map((assignment) => (
-            <TableRow key={assignment.id}>
-              <TableCell>
-                <Chip
-                  label={`${assignment.academicClass.classCode}`}
-                  size="small"
-                  variant="outlined"
-                />
-                <Typography
-                  variant="caption"
-                  display="block"
-                  color="text.secondary"
-                >
-                  {assignment.academicClass.className}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Typography variant="body2">{assignment.title}</Typography>
-                <Typography variant="caption" color="text.secondary">
-                  {assignment.description}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Chip
-                  label={
-                    {
-                      practice: "Thực hành",
-                      midterm: "Giữa kỳ",
-                      final: "Cuối kỳ",
-                      project: "Dự án",
-                    }[assignment.assignmentType] || assignment.assignmentType
-                  }
-                  size="small"
-                  color={
-                    {
-                      practice: "primary",
-                      midterm: "warning",
-                      final: "error",
-                      project: "info",
-                    }[assignment.assignmentType] as any
-                  }
-                />
-              </TableCell>
-              <TableCell align="center">{assignment.maxScore}</TableCell>
-              <TableCell>
-                {assignment.dueDate ? (
-                  <>
-                    <Typography variant="body2">
-                      {formatDateTime(assignment.dueDate)}
-                    </Typography>
-                    {new Date(assignment.dueDate) < new Date() && (
-                      <Chip label="Đã hết hạn" size="small" color="error" />
-                    )}
-                  </>
-                ) : (
-                  "Không có"
-                )}
-              </TableCell>
-              <TableCell align="center">
-                <Typography variant="body2">
-                  {assignment.assignmentSubmissions.length}
-                </Typography>
-              </TableCell>
-              <TableCell>
-                <Stack direction="row" spacing={1}>
-                  <Tooltip title="Xem chi tiết">
-                    <IconButton
-                      size="small"
-                      onClick={() => onViewDetail(assignment)}
-                    >
-                      <Assignment fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Chỉnh sửa">
-                    <IconButton size="small">
-                      <Edit fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Xóa">
-                    <IconButton size="small" color="error">
-                      <Delete fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                </Stack>
-              </TableCell>
+    <>
+      <TableContainer component={Paper}>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Lớp</TableCell>
+              <TableCell>Tiêu đề</TableCell>
+              <TableCell>Loại bài tập</TableCell>
+              <TableCell>Điểm tối đa</TableCell>
+              <TableCell>Hạn nộp</TableCell>
+              <TableCell>Số bài đã nộp</TableCell>
+              <TableCell>Thao tác</TableCell>
             </TableRow>
-          ))}
-        </TableBody>
-      </Table>
-    </TableContainer>
+          </TableHead>
+          <TableBody>
+            {filteredAssignments.map((assignment) => (
+              <TableRow key={assignment.id}>
+                <TableCell>
+                  <Chip
+                    label={`${assignment.academicClass.classCode}`}
+                    size="small"
+                    variant="outlined"
+                  />
+                  <Typography
+                    variant="caption"
+                    display="block"
+                    color="text.secondary"
+                  >
+                    {assignment.academicClass.className}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Typography variant="body2">{assignment.title}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {assignment.description}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Chip
+                    label={
+                      {
+                        practice: "Thực hành",
+                        midterm: "Giữa kỳ",
+                        final: "Cuối kỳ",
+                        project: "Dự án",
+                      }[assignment.assignmentType] || assignment.assignmentType
+                    }
+                    size="small"
+                    color={
+                      {
+                        practice: "primary",
+                        midterm: "warning",
+                        final: "error",
+                        project: "info",
+                      }[assignment.assignmentType] as any
+                    }
+                  />
+                </TableCell>
+                <TableCell align="center">{assignment.maxScore}</TableCell>
+                <TableCell>
+                  {assignment.dueDate ? (
+                    <>
+                      <Typography variant="body2">
+                        {formatDateTime(assignment.dueDate)}
+
+                        {new Date(assignment.dueDate) < new Date() && (
+                          <Typography
+                            variant="caption"
+                            color="error"
+                            fontWeight={600}
+                          >
+                            {" "}
+                            (Đã hết hạn)
+                          </Typography>
+                        )}
+                      </Typography>
+                    </>
+                  ) : (
+                    "Không có"
+                  )}
+                </TableCell>
+                <TableCell align="center">
+                  <Typography variant="body2">
+                    {assignment.assignmentSubmissions.length}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  <Stack direction="row" spacing={1}>
+                    <Tooltip title="Xem chi tiết">
+                      <IconButton
+                        size="small"
+                        onClick={() => onViewDetail(assignment)}
+                      >
+                        <Assignment fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Chỉnh sửa">
+                      <IconButton
+                        size="small"
+                        onClick={() => onEdit(assignment)} // Change this
+                      >
+                        <Edit fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Xóa">
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => onDelete(assignment)}
+                        disabled={assignment.assignmentSubmissions.length > 0}
+                      >
+                        <Delete fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Stack>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </>
   );
 };
 
