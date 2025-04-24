@@ -9,6 +9,7 @@ import {
   UseGuards,
   Query,
   ParseIntPipe,
+  ForbiddenException,
 } from '@nestjs/common';
 import { AssignmentsService } from './assignments.service';
 import { CreateAssignmentDto } from './dto/create-assignment.dto';
@@ -59,6 +60,24 @@ export class AssignmentsController {
   @Roles(UserRole.INSTRUCTOR)
   async findAllByCourse(@Param('id', ParseIntPipe) studentAcademicId: number) {
     return this.assignmentsService.findAllByCourse(studentAcademicId);
+  }
+
+  @Get('academic-class/:academicClassId')
+  @UseGuards(JwtAuthGuard)
+  async findAllByAcademicClass(
+    @Param('academicClassId', ParseIntPipe) academicClassId: number,
+  ) {
+    return this.assignmentsService.findAllByAcademicClass(academicClassId);
+  }
+
+  @Get('instructor/:instructorId/academic-classes')
+  @UseGuards(JwtAuthGuard)
+  async findAllByInstructorAcademicClasses(
+    @Param('instructorId', ParseIntPipe) instructorId: number,
+  ) {
+    return this.assignmentsService.findAllByInstructorAcademicClasses(
+      instructorId,
+    );
   }
 
   @Patch(':id')

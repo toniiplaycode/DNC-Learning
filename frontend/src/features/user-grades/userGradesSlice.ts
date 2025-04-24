@@ -162,6 +162,35 @@ export const deleteUserGrade = createAsyncThunk(
   }
 );
 
+export const fetchInstructorGrades = createAsyncThunk(
+  "userGrades/fetchInstructorGrades",
+  async (instructorId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/user-grades/instructor/${instructorId}`);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Không thể lấy danh sách điểm đã chấm"
+      );
+    }
+  }
+);
+
+export const fetchGradeBySubmission = createAsyncThunk(
+  "userGrades/fetchGradeBySubmission",
+  async (submissionId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/user-grades/submission/${submissionId}`);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          "Không thể lấy thông tin điểm của bài nộp"
+      );
+    }
+  }
+);
+
 // Initial state
 const initialState: UserGradeState = {
   userGrades: [],
@@ -172,6 +201,8 @@ const initialState: UserGradeState = {
   performanceStats: null,
   status: "idle",
   error: null,
+  instructorGrades: [],
+  submissionGrade: null,
 };
 
 // Slice
@@ -360,6 +391,34 @@ const userGradesSlice = createSlice({
         state.error = null;
       })
       .addCase(deleteUserGrade.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
+
+      // fetchInstructorGrades
+      .addCase(fetchInstructorGrades.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchInstructorGrades.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.instructorGrades = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchInstructorGrades.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
+
+      // fetchGradeBySubmission
+      .addCase(fetchGradeBySubmission.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchGradeBySubmission.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.submissionGrade = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchGradeBySubmission.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
       });

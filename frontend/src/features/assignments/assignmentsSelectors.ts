@@ -12,6 +12,8 @@ export const selectLessonAssignments = (state: RootState) =>
   state.assignments.lessonAssignments;
 export const selectStudentAcademicAssignments = (state: RootState) =>
   state.assignments.studentAcademicAssignments;
+export const selectInstructorAcademicClassAssignments = (state: RootState) =>
+  state.assignments.instructorAcademicClassAssignments;
 export const selectAcademicClassAssignments = (state: RootState) =>
   state.assignments.academicClassAssignments;
 export const selectAssignmentsCourse = (state: RootState) =>

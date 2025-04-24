@@ -123,6 +123,21 @@ export class UserGradesController {
     return this.userGradesService.findOne(id);
   }
 
+  @Get('instructor/:instructorId')
+  async findByInstructor(
+    @Param('instructorId', ParseIntPipe) instructorId: number,
+    @GetUser() user,
+  ) {
+    return this.userGradesService.findByInstructor(instructorId);
+  }
+
+  @Get('submission/:submissionId')
+  async findByAssignmentSubmission(
+    @Param('submissionId', ParseIntPipe) submissionId: number,
+  ) {
+    return this.userGradesService.findByAssignmentSubmission(submissionId);
+  }
+
   @Patch(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.INSTRUCTOR)

@@ -15,8 +15,6 @@ import {
   IconButton,
   Stack,
   FormHelperText,
-  Switch,
-  FormControlLabel,
   InputAdornment,
   LinearProgress,
 } from "@mui/material";
@@ -32,6 +30,9 @@ import {
 } from "../../../features/assignments/assignmentsSlice";
 import { toast } from "react-toastify";
 import { selectAssignmentsCourse } from "../../../features/assignments/assignmentsSelectors";
+import { fetchClassInstructorById } from "../../../features/academic-class-instructors/academicClassInstructorsSlice";
+import { selectCurrentUser } from "../../../features/auth/authSelectors";
+import { selectCurrentClassInstructor } from "../../../features/academic-class-instructors/academicClassInstructorsSelectors";
 
 // Định nghĩa kiểu AssignmentItem
 interface AssignmentItem {
@@ -55,8 +56,6 @@ interface DialogAddEditAssignmentProps {
   editMode: boolean;
   additionalInfo?: {
     targetType: string;
-    className: string;
-    faculty: string;
   };
 }
 
@@ -71,6 +70,8 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
   const dispatch = useAppDispatch();
   const lessonData = useAppSelector(selectAlCourseLessonlAssignments);
   const assignmentsData = useAppSelector(selectAssignmentsCourse);
+  const currentUser = useAppSelector(selectCurrentUser);
+  const currentClassInstructor = useAppSelector(selectCurrentClassInstructor);
 
   useEffect(() => {
     if (id) {
@@ -78,6 +79,10 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
       dispatch(fetchAssignmentByCourse(Number(id)));
     }
   }, [dispatch, id]);
+
+  useEffect(() => {
+    dispatch(fetchClassInstructorById(Number(currentUser?.userInstructor?.id)));
+  }, [dispatch, currentUser]);
 
   // State cho form assignment
   const [assignmentForm, setAssignmentForm] = useState<AssignmentItem>({
@@ -246,23 +251,44 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
               <Typography variant="subtitle1" gutterBottom>
                 Bài tập dành cho sinh viên trường
               </Typography>
-              <Stack direction="row" spacing={2}>
-                <Typography variant="body2">
-                  <strong>Lớp:</strong> {additionalInfo.className}
-                </Typography>
-                <Typography variant="body2">
-                  <strong>Khoa:</strong> {additionalInfo.faculty}
-                </Typography>
-              </Stack>
               <Typography
                 variant="caption"
                 color="text.secondary"
                 sx={{ mt: 1, display: "block" }}
               >
-                Bài tập này sẽ được gán cho tất cả sinh viên thuộc lớp và khoa
-                đã chọn.
+                Bài tập này sẽ được gán cho tất cả sinh viên thuộc lớp đã chọn.
               </Typography>
             </Box>
+          )}
+          {/* Chọn lớp học thuật */}
+          {additionalInfo && additionalInfo.targetType === "academic" && (
+            <FormControl fullWidth>
+              <InputLabel>Chọn lớp học thuật</InputLabel>
+              <Select
+                value={assignmentForm.academicClassId || 0}
+                label="Chọn lớp học thuật"
+                onChange={(e) =>
+                  setAssignmentForm({
+                    ...assignmentForm,
+                    academicClassId: Number(e.target.value),
+                  })
+                }
+              >
+                <MenuItem value={0}>Chọn lớp học</MenuItem>
+                {currentClassInstructor?.map((classInstructor) => (
+                  <MenuItem
+                    key={classInstructor.academicClass.id}
+                    value={classInstructor.academicClass.id}
+                  >
+                    {classInstructor.academicClass.classCode} -{" "}
+                    {classInstructor.academicClass.className}
+                  </MenuItem>
+                ))}
+              </Select>
+              <FormHelperText>
+                Chọn lớp học để gán bài tập cho sinh viên
+              </FormHelperText>
+            </FormControl>
           )}
 
           {/* Tiêu đề bài tập */}
@@ -292,57 +318,59 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
           />
 
           {/* Chọn nội dung */}
-          <FormControl fullWidth>
-            <InputLabel>Nội dung</InputLabel>
-            <Select
-              value={assignmentForm.lessonId || 0}
-              label="Nội dung"
-              onChange={(e) =>
-                setAssignmentForm({
-                  ...assignmentForm,
-                  lessonId: Number(e.target.value),
-                })
-              }
-            >
-              <MenuItem value={0}>Không thuộc nội dung học nào</MenuItem>
-              {lessonData.map((lesson) => {
-                const hasAssignment = assignmentsData.some(
-                  (assignment) => assignment.lessonId === lesson.id
-                );
-                return (
-                  <MenuItem
-                    key={lesson.id}
-                    value={lesson.id}
-                    disabled={hasAssignment}
-                    sx={{
-                      ...(hasAssignment && {
-                        color: "promary.main",
-                        "& .assignment-indicator": {
-                          ml: 1,
-                          color: "warning.main",
-                          fontSize: "0.75rem",
-                        },
-                      }),
-                    }}
-                  >
-                    {lesson.title}
-                    {hasAssignment && (
-                      <Typography
-                        component="span"
-                        className="assignment-indicator"
-                      >
-                        &nbsp; (đã có bài tập)
-                      </Typography>
-                    )}
-                  </MenuItem>
-                );
-              })}
-            </Select>
-            <FormHelperText>
-              Nếu bài tập không thuộc nội dung cụ thể, chọn "Không thuộc nội
-              dung nào"
-            </FormHelperText>
-          </FormControl>
+          {!additionalInfo && (
+            <FormControl fullWidth>
+              <InputLabel>Nội dung</InputLabel>
+              <Select
+                value={assignmentForm.lessonId || 0}
+                label="Nội dung"
+                onChange={(e) =>
+                  setAssignmentForm({
+                    ...assignmentForm,
+                    lessonId: Number(e.target.value),
+                  })
+                }
+              >
+                <MenuItem value={0}>Không thuộc nội dung học nào</MenuItem>
+                {lessonData.map((lesson) => {
+                  const hasAssignment = assignmentsData.some(
+                    (assignment) => assignment.lessonId === lesson.id
+                  );
+                  return (
+                    <MenuItem
+                      key={lesson.id}
+                      value={lesson.id}
+                      disabled={hasAssignment}
+                      sx={{
+                        ...(hasAssignment && {
+                          color: "promary.main",
+                          "& .assignment-indicator": {
+                            ml: 1,
+                            color: "warning.main",
+                            fontSize: "0.75rem",
+                          },
+                        }),
+                      }}
+                    >
+                      {lesson.title}
+                      {hasAssignment && (
+                        <Typography
+                          component="span"
+                          className="assignment-indicator"
+                        >
+                          &nbsp; (đã có bài tập)
+                        </Typography>
+                      )}
+                    </MenuItem>
+                  );
+                })}
+              </Select>
+              <FormHelperText>
+                Nếu bài tập không thuộc nội dung cụ thể, chọn "Không thuộc nội
+                dung nào"
+              </FormHelperText>
+            </FormControl>
+          )}
 
           {/* Ngày hạn nộp */}
           <TextField

@@ -59,6 +59,7 @@ export interface AssignmentsState {
   lessonAssignments: Assignment[];
   academicClassAssignments: Assignment[];
   studentAcademicAssignments: Assignment[];
+  instructorAcademicClassAssignments: Assignment[];
   assignmentsCourse: Assignment[];
   userSubmissions: AssignmentSubmission[];
   currentSubmission: AssignmentSubmission | null;

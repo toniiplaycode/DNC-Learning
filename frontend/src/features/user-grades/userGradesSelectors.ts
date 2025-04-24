@@ -21,6 +21,12 @@ export const selectUserGradesStatus = (state: RootState) =>
 export const selectUserGradesError = (state: RootState) =>
   state.userGrades.error;
 
+export const selectInstructorGrades = (state: RootState) =>
+  state.userGrades.instructorGrades;
+
+export const selectSubmissionGrade = (state: RootState) =>
+  state.userGrades.submissionGrade;
+
 // Derived selectors
 export const selectUserGradeById = (id: number) =>
   createSelector([selectAllUserGrades], (grades) =>
@@ -45,6 +51,16 @@ export const selectGradesByType = (gradeType: GradeType) =>
 export const selectUserCourseGradesByType = (gradeType: GradeType) =>
   createSelector([selectUserCourseGrades], (grades) =>
     grades.filter((grade) => grade.gradeType === gradeType)
+  );
+
+export const selectInstructorGradesByType = (gradeType: GradeType) =>
+  createSelector([selectInstructorGrades], (grades) =>
+    grades.filter((grade) => grade.gradeType === gradeType)
+  );
+
+export const selectInstructorGradesByCourse = (courseId: number) =>
+  createSelector([selectInstructorGrades], (grades) =>
+    grades.filter((grade) => grade.courseId === courseId)
   );
 
 // Selector để tính điểm trung bình theo loại điểm

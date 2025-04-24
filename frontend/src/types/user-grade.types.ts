@@ -16,12 +16,12 @@ export enum GradeType {
 export interface UserGrade {
   id: number;
   userId: number;
-  courseId: number;
+  courseId?: number;
   gradedBy: number;
   lessonId?: number;
+  assignmentSubmissionId?: number;
   assignmentId?: number;
-  quizId?: number;
-  gradeType: GradeType;
+  gradeType: string;
   score: number;
   maxScore: number;
   weight: number;
@@ -29,21 +29,19 @@ export interface UserGrade {
   gradedAt: string;
   createdAt: string;
   updatedAt: string;
-  user?: Partial<User>;
-  course?: Partial<Course>;
+  user?: any;
+  course?: any;
   instructor?: Partial<UserInstructor>;
   lesson?: Partial<CourseLesson>;
   assignment?: Partial<Assignment>;
   quiz?: Partial<Quiz>;
+  assignmentSubmission?: any;
 }
 
-export interface UserGradeState {
-  userGrades: UserGrade[];
-  courseGrades: UserGrade[];
-  userCourseGrades: UserGrade[];
+export interface UserGradesState {
+  grades: UserGrade[];
+  instructorGrades: UserGrade[];
   currentGrade: UserGrade | null;
-  courseSummary: GradeSummary | null;
-  performanceStats: PerformanceStats | null;
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
 }

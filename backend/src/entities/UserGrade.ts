@@ -30,11 +30,11 @@ export class UserGrade {
   @Column({ name: 'user_id' })
   userId: number;
 
-  @Column({ name: 'course_id' })
-  courseId: number;
-
   @Column({ name: 'graded_by' })
   gradedBy: number;
+
+  @Column({ name: 'course_id', nullable: true })
+  courseId: number;
 
   @Column({ name: 'lesson_id', nullable: true })
   lessonId: number | null;

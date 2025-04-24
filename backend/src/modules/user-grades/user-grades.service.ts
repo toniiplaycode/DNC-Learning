@@ -48,68 +48,94 @@ export class UserGradesService {
   ) {}
 
   async create(createUserGradeDto: CreateUserGradeDto): Promise<UserGrade> {
-    // Kiểm tra user tồn tại
-    const user = await this.usersRepository.findOne({
-      where: { id: createUserGradeDto.userId },
-    });
-    if (!user) {
-      throw new NotFoundException(
-        `Không tìm thấy học viên với ID ${createUserGradeDto.userId}`,
-      );
-    }
+    try {
+      // Check for existing grade with same assignmentSubmissionId
+      let existingGrade: UserGrade | null = null;
+      if (createUserGradeDto.assignmentSubmissionId) {
+        existingGrade = await this.userGradesRepository.findOne({
+          where: {
+            assignmentSubmissionId: createUserGradeDto.assignmentSubmissionId,
+          },
+        });
+      }
 
-    // Kiểm tra course tồn tại
-    const course = await this.coursesRepository.findOne({
-      where: { id: createUserGradeDto.courseId },
-    });
-    if (!course) {
-      throw new NotFoundException(
-        `Không tìm thấy khóa học với ID ${createUserGradeDto.courseId}`,
-      );
-    }
+      // If grade exists, update it
+      if (existingGrade) {
+        Object.assign(existingGrade, {
+          score: createUserGradeDto.score,
+          weight: createUserGradeDto.weight,
+          feedback: createUserGradeDto.feedback,
+          gradedAt: new Date(),
+        });
 
-    // Kiểm tra instructor tồn tại
-    const instructor = await this.instructorsRepository.findOne({
-      where: { id: createUserGradeDto.gradedBy },
-    });
-    if (!instructor) {
-      throw new NotFoundException(
-        `Không tìm thấy giảng viên với ID ${createUserGradeDto.gradedBy}`,
-      );
-    }
+        return this.userGradesRepository.save(existingGrade);
+      }
 
-    // Kiểm tra các thành phần tùy chọn nếu có
-    if (createUserGradeDto.lessonId) {
-      const lesson = await this.lessonsRepository.findOne({
-        where: { id: createUserGradeDto.lessonId },
+      // If new grade, validate all required entities
+      const user = await this.usersRepository.findOne({
+        where: { id: createUserGradeDto.userId },
       });
-      if (!lesson) {
+      if (!user) {
         throw new NotFoundException(
-          `Không tìm thấy bài học với ID ${createUserGradeDto.lessonId}`,
+          `Không tìm thấy học viên với ID ${createUserGradeDto.userId}`,
         );
       }
-    }
 
-    console.log(createUserGradeDto);
-
-    if (createUserGradeDto.assignmentId) {
-      const assignment = await this.assignmentSubmissionsRepository.findOne({
-        where: { id: Number(createUserGradeDto.assignmentId) },
+      const instructor = await this.instructorsRepository.findOne({
+        where: { id: createUserGradeDto.gradedBy },
       });
-      if (!assignment) {
+      if (!instructor) {
         throw new NotFoundException(
-          `Không tìm thấy bài tập với ID ${createUserGradeDto.assignmentId}`,
+          `Không tìm thấy giảng viên với ID ${createUserGradeDto.gradedBy}`,
         );
       }
+
+      // Optional validations for course and lesson
+      if (createUserGradeDto.courseId) {
+        const course = await this.coursesRepository.findOne({
+          where: { id: createUserGradeDto.courseId },
+        });
+        if (!course) {
+          throw new NotFoundException(
+            `Không tìm thấy khóa học với ID ${createUserGradeDto.courseId}`,
+          );
+        }
+      }
+
+      if (createUserGradeDto.lessonId) {
+        const lesson = await this.lessonsRepository.findOne({
+          where: { id: createUserGradeDto.lessonId },
+        });
+        if (!lesson) {
+          throw new NotFoundException(
+            `Không tìm thấy bài học với ID ${createUserGradeDto.lessonId}`,
+          );
+        }
+      }
+
+      // Validate submission if present
+      if (createUserGradeDto.assignmentSubmissionId) {
+        const submission = await this.assignmentSubmissionsRepository.findOne({
+          where: { id: createUserGradeDto.assignmentSubmissionId },
+        });
+        if (!submission) {
+          throw new NotFoundException(
+            `Không tìm thấy bài nộp với ID ${createUserGradeDto.assignmentSubmissionId}`,
+          );
+        }
+      }
+
+      // Create new grade record
+      const userGrade = this.userGradesRepository.create({
+        ...createUserGradeDto,
+        gradedAt: new Date(),
+      });
+
+      return this.userGradesRepository.save(userGrade);
+    } catch (error) {
+      console.error('Error creating/updating grade:', error);
+      throw error;
     }
-
-    // Tạo bản ghi điểm mới
-    const userGrade = this.userGradesRepository.create({
-      ...createUserGradeDto,
-      gradedAt: new Date(),
-    });
-
-    return this.userGradesRepository.save(userGrade);
   }
 
   async findAll(
@@ -273,6 +299,40 @@ export class UserGradesService {
         createdAt: 'DESC',
       },
     });
+  }
+
+  async findByInstructor(instructorId: number): Promise<UserGrade[]> {
+    try {
+      const grades = await this.userGradesRepository.find({
+        where: {
+          gradedBy: instructorId,
+        },
+      });
+
+      if (!grades.length) {
+        return [];
+      }
+
+      return grades;
+    } catch (error) {
+      console.error('Error fetching instructor grades:', error);
+      throw new BadRequestException('Không thể lấy danh sách điểm đã chấm');
+    }
+  }
+
+  async findByAssignmentSubmission(
+    assignmentSubmissionId: number,
+  ): Promise<UserGrade | null> {
+    try {
+      const grade = await this.userGradesRepository.findOne({
+        where: { assignmentSubmissionId },
+      });
+
+      return grade;
+    } catch (error) {
+      console.error('Error fetching grade by submission:', error);
+      throw new BadRequestException('Không thể lấy thông tin điểm của bài nộp');
+    }
   }
 
   async update(

@@ -8,6 +8,7 @@ import { UserGrade } from '../../entities/UserGrade';
 import { UserStudentAcademic } from '../../entities/UserStudentAcademic';
 import { UserGradesModule } from '../user-grades/user-grades.module';
 import { AssignmentsController } from './assignments.controller';
+import { AcademicClassInstructor } from 'src/entities/AcademicClassInstructor';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { AssignmentsController } from './assignments.controller';
       Assignment,
       CourseLesson,
       AcademicClass,
+      AcademicClassInstructor,
       UserGrade,
       UserStudentAcademic,
     ]),

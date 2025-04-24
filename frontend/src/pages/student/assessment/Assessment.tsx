@@ -249,8 +249,8 @@ const Assessment = () => {
                         )?.endTime || new Date().toISOString()
                       )}`
                     : `Hạn: ${
-                        assessment?.endTime
-                          ? formatDateTime(assessment?.endTime)
+                        assessment?.dueDate
+                          ? formatDateTime(assessment?.dueDate)
                           : "Chưa có hạn"
                       }`}
 

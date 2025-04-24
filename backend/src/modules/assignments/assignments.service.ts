@@ -13,6 +13,7 @@ import { CreateAssignmentDto } from './dto/create-assignment.dto';
 
 import { UpdateAssignmentDto } from './dto/update-assignment.dto';
 import { UserStudentAcademic } from '../../entities/UserStudentAcademic';
+import { AcademicClassInstructor } from 'src/entities/AcademicClassInstructor';
 
 @Injectable()
 export class AssignmentsService {
@@ -27,6 +28,8 @@ export class AssignmentsService {
     private userGradesRepository: Repository<UserGrade>,
     @InjectRepository(UserStudentAcademic)
     private userStudentsAcademicRepository: Repository<UserStudentAcademic>,
+    @InjectRepository(AcademicClassInstructor)
+    private academicClassInstructorsRepository: Repository<AcademicClassInstructor>,
   ) {}
 
   // Các methods CRUD cơ bản
@@ -173,6 +176,90 @@ export class AssignmentsService {
       console.error('Error finding assignments by course:', error);
       throw new BadRequestException(
         'Không thể lấy danh sách bài tập cho khóa học này',
+      );
+    }
+  }
+
+  // Add this method to AssignmentsService class
+  async findAllByAcademicClass(academicClassId: number): Promise<Assignment[]> {
+    try {
+      // Verify academic class exists
+      const academicClass = await this.academicClassesRepository.findOne({
+        where: { id: academicClassId },
+      });
+
+      if (!academicClass) {
+        throw new NotFoundException(
+          `Không tìm thấy lớp học với ID ${academicClassId}`,
+        );
+      }
+
+      // Get all assignments for this academic class
+      const assignments = await this.assignmentsRepository.find({
+        where: { academicClassId },
+        relations: [
+          'academicClass',
+          'assignmentSubmissions',
+          'assignmentSubmissions.user',
+          'assignmentSubmissions.user.userStudentAcademic',
+        ],
+      });
+
+      return assignments;
+    } catch (error) {
+      console.error('Error finding assignments by academic class:', error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException(
+        'Không thể lấy danh sách bài tập cho lớp học này',
+      );
+    }
+  }
+
+  async findAllByInstructorAcademicClasses(
+    instructorId: number,
+  ): Promise<Assignment[]> {
+    try {
+      // Get all academic classes where instructor is assigned
+      const academicClassInstructors =
+        await this.academicClassInstructorsRepository
+          .createQueryBuilder('aci')
+          .leftJoinAndSelect('aci.academicClass', 'academicClass')
+          .where('aci.instructorId = :instructorId', { instructorId })
+          .getMany();
+
+      if (!academicClassInstructors.length) {
+        return [];
+      }
+
+      // Get academic class IDs
+      const academicClassIds = academicClassInstructors.map(
+        (aci) => aci.academicClass.id,
+      );
+
+      // Get all assignments for these academic classes
+      const assignments = await this.assignmentsRepository.find({
+        where: {
+          academicClassId: In(academicClassIds),
+        },
+        relations: [
+          'academicClass',
+          'assignmentSubmissions',
+          'assignmentSubmissions.user',
+          'assignmentSubmissions.user.userStudentAcademic',
+          'assignmentSubmissions.user.userStudent',
+        ],
+      });
+
+      return assignments;
+    } catch (error) {
+      console.error(
+        'Error finding instructor academic class assignments:',
+        error,
+      );
+      throw new BadRequestException(
+        'Không thể lấy danh sách bài tập của các lớp',
       );
     }
   }

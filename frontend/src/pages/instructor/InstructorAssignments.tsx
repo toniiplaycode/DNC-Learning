@@ -65,11 +65,19 @@ import {
 import { selectInstructorSubmissions } from "../../features/assignment-submissions/assignmentSubmissionsSelectors";
 import { formatDateTime } from "../../utils/formatters";
 import { toast } from "react-toastify";
+import { fetchInstructorGrades } from "../../features/user-grades/userGradesSlice";
+import { selectInstructorGrades } from "../../features/user-grades/userGradesSelectors";
+import { fetchInstructorAcademicClassAssignments } from "../../features/assignments/assignmentsSlice";
+import { selectInstructorAcademicClassAssignments } from "../../features/assignments/assignmentsSelectors";
 
 const InstructorAssignments = () => {
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector(selectCurrentUser);
   const instructorSubmissions = useAppSelector(selectInstructorSubmissions);
+  const instructorGrades = useAppSelector(selectInstructorGrades);
+  const instructorAssignments = useAppSelector(
+    selectInstructorAcademicClassAssignments
+  );
   const [searchQuery, setSearchQuery] = useState("");
   const [courseFilter, setCourseFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -90,21 +98,22 @@ const InstructorAssignments = () => {
   // Thêm state và các hàm xử lý để mở dialog tạo bài tập
   const [openAddAssignmentModal, setOpenAddAssignmentModal] = useState(false);
   const [currentSectionId, setCurrentSectionId] = useState<number | null>(null);
-  const [mockCourseData, setMockCourseData] = useState({
-    sections: [
-      { id: 1, title: "Section 1", contents: [] },
-      { id: 2, title: "Section 2", contents: [] },
-      { id: 3, title: "Section 3", contents: [] },
-    ],
-  });
 
   useEffect(() => {
     dispatch(fetchSubmissionsByInstructor(currentUser.userInstructor.id));
+    dispatch(fetchInstructorGrades(currentUser.userInstructor.id));
+    dispatch(
+      fetchInstructorAcademicClassAssignments(currentUser.userInstructor.id)
+    );
   }, [dispatch, currentUser]);
 
-  console.log(instructorSubmissions);
+  console.log(instructorAssignments);
 
   const handleGrade = (submission: any) => {
+    // Find matching grade if exists
+    const matchingGrade = instructorGrades.find(
+      (grade) => grade.assignmentSubmissionId === submission.id
+    );
     const file = submission.fileUrl
       ? {
           id: 1,
@@ -129,14 +138,17 @@ const InstructorAssignments = () => {
       className: submission.assignment.academicClass?.classCode,
       submittedDate: formatDateTime(submission.submittedAt),
       files: file ? [file] : [],
+      existingGrade: matchingGrade, // Add existing grade info
     });
 
-    setScore(submission.score || "");
-    setWeight(submission.weight || 1.0);
-    setFeedback(submission.feedback || "");
+    // Set initial values from matching grade if exists
+    setScore(matchingGrade ? Number(matchingGrade.score) : "");
+    setWeight(matchingGrade ? Number(matchingGrade.weight) : 1.0);
+    setFeedback(matchingGrade?.feedback || "");
     setGradeDialogOpen(true);
   };
 
+  // In handleSubmitGrade function in InstructorAssignments.tsx
   const handleSubmitGrade = async () => {
     try {
       if (!selectedSubmission || score === "") return;
@@ -148,8 +160,7 @@ const InstructorAssignments = () => {
         instructorId: Number(currentUser.userInstructor.id),
       };
 
-      console.log(gradeData, selectedSubmission.id);
-
+      // Refresh both submissions and grades after grading
       await dispatch(
         gradeSubmission({
           submissionId: selectedSubmission.id,
@@ -157,13 +168,17 @@ const InstructorAssignments = () => {
         })
       ).unwrap();
 
-      // Refresh submissions list
-      await dispatch(
-        fetchSubmissionsByInstructor(currentUser.userInstructor.id)
-      );
+      await Promise.all([
+        dispatch(fetchSubmissionsByInstructor(currentUser.userInstructor.id)),
+        dispatch(fetchInstructorGrades(currentUser.userInstructor.id)),
+      ]);
 
       setGradeDialogOpen(false);
-      toast.success("Chấm điểm thành công!");
+      toast.success(
+        selectedSubmission.existingGrade
+          ? "Chấm lại điểm thành công!"
+          : "Chấm điểm thành công!"
+      );
     } catch (error) {
       toast.error("Có lỗi xảy ra khi chấm điểm");
     }
@@ -245,14 +260,27 @@ const InstructorAssignments = () => {
     }
   };
 
-  const getStatusChip = (status: string, score: number | null) => {
-    switch (status) {
+  const getStatusChip = (submission: any) => {
+    // Find matching grade if exists
+    const matchingGrade = instructorGrades.find(
+      (grade) => grade.assignmentSubmissionId === submission.id
+    );
+
+    if (matchingGrade) {
+      return (
+        <Chip
+          label={`Đã chấm: ${Number(matchingGrade.score).toFixed(1)}/${Number(
+            matchingGrade.maxScore
+          ).toFixed(1)}`}
+          color="success"
+          size="small"
+        />
+      );
+    }
+
+    switch (submission.status) {
       case "submitted":
         return <Chip label="Đã nộp" color="primary" size="small" />;
-      case "graded":
-        return (
-          <Chip label={`Đã chấm: ${score}/100`} color="success" size="small" />
-        );
       case "late":
         return <Chip label="Nộp muộn" color="warning" size="small" />;
       default:
@@ -330,16 +358,6 @@ const InstructorAssignments = () => {
     setOpenAddAssignmentModal(true);
   };
 
-  // Hàm xử lý khi thêm bài tập mới
-  const handleAddAssignment = (assignmentData: any) => {
-    console.log("Thêm bài tập mới:", assignmentData);
-    console.log("Dành cho sinh viên thuộc lớp:", classFilter);
-
-    // Thực hiện thêm bài tập (gọi API)
-    alert(`Đã tạo bài tập "${assignmentData.title}" thành công!`);
-    setOpenAddAssignmentModal(false);
-  };
-
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h5" gutterBottom fontWeight="bold">
@@ -374,32 +392,38 @@ const InstructorAssignments = () => {
                 spacing={2}
                 alignItems={{ md: "center" }}
               >
-                <FormControl size="small" sx={{ minWidth: 150 }}>
-                  <InputLabel>Khóa học</InputLabel>
-                  <Select
-                    value={courseFilter}
-                    onChange={(e) => setCourseFilter(e.target.value)}
-                    label="Khóa học"
-                  >
-                    <MenuItem value="all">Tất cả khóa học</MenuItem>
-                    {[
-                      ...new Map(
-                        instructorSubmissions
-                          .filter(
-                            (sub) => sub.assignment.lesson?.section?.course
-                          )
-                          .map((sub) => [
-                            sub.assignment.lesson.section.course.id,
-                            sub.assignment.lesson.section.course,
-                          ])
-                      ).values(),
-                    ].map((course) => (
-                      <MenuItem key={course.id} value={course.id.toString()}>
-                        {course.title}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
+                {!(studentTypeFilter == "student_academic") &&
+                  tabValue === 1 && (
+                    <FormControl size="small" sx={{ minWidth: 150 }}>
+                      <InputLabel>Khóa học</InputLabel>
+                      <Select
+                        value={courseFilter}
+                        onChange={(e) => setCourseFilter(e.target.value)}
+                        label="Khóa học"
+                      >
+                        <MenuItem value="all">Tất cả khóa học</MenuItem>
+                        {[
+                          ...new Map(
+                            instructorSubmissions
+                              .filter(
+                                (sub) => sub.assignment.lesson?.section?.course
+                              )
+                              .map((sub) => [
+                                sub.assignment.lesson.section.course.id,
+                                sub.assignment.lesson.section.course,
+                              ])
+                          ).values(),
+                        ].map((course) => (
+                          <MenuItem
+                            key={course.id}
+                            value={course.id.toString()}
+                          >
+                            {course.title}
+                          </MenuItem>
+                        ))}
+                      </Select>
+                    </FormControl>
+                  )}
 
                 <FormControl size="small" sx={{ minWidth: 130 }}>
                   <InputLabel>Trạng thái</InputLabel>
@@ -443,6 +467,16 @@ const InstructorAssignments = () => {
                       </Select>
                     </FormControl>
                   </>
+                )}
+
+                {studentTypeFilter === "student_academic" && (
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleOpenAddAssignmentModal}
+                  >
+                    Hiển thị bài tập của các lớp
+                  </Button>
                 )}
 
                 {studentTypeFilter === "student_academic" && (
@@ -581,9 +615,7 @@ const InstructorAssignments = () => {
                   <TableCell>
                     {formatDateTime(submission.submittedAt)}
                   </TableCell>
-                  <TableCell>
-                    {getStatusChip(submission.status, submission.score)}
-                  </TableCell>
+                  <TableCell>{getStatusChip(submission)}</TableCell>
                   <TableCell>
                     <Stack direction="row" spacing={1}>
                       <Tooltip title="Xem files">
@@ -679,6 +711,54 @@ const InstructorAssignments = () => {
                 </Typography>
               </Box>
 
+              {selectedSubmission.existingGrade && (
+                <Paper
+                  variant="outlined"
+                  sx={{
+                    my: 3,
+                    p: 2,
+                    bgcolor: "primary.lighter",
+                    borderRadius: 1,
+                  }}
+                >
+                  <Stack spacing={1}>
+                    <Typography variant="subtitle2" color="primary">
+                      Điểm đã chấm:
+                    </Typography>
+                    <Stack direction="row" spacing={3}>
+                      <Typography variant="body2">
+                        <strong>Điểm số:</strong>{" "}
+                        {Number(selectedSubmission.existingGrade.score).toFixed(
+                          1
+                        )}
+                        /
+                        {Number(
+                          selectedSubmission.existingGrade.maxScore
+                        ).toFixed(1)}
+                      </Typography>
+                      <Typography variant="body2">
+                        <strong>Trọng số:</strong> x
+                        {Number(
+                          selectedSubmission.existingGrade.weight
+                        ).toFixed(1)}
+                      </Typography>
+                      <Typography variant="body2">
+                        <strong>Ngày chấm:</strong>{" "}
+                        {formatDateTime(
+                          selectedSubmission.existingGrade.gradedAt
+                        )}
+                      </Typography>
+                    </Stack>
+                    {selectedSubmission.existingGrade.feedback && (
+                      <Typography variant="body2">
+                        <strong>Phản hồi:</strong>{" "}
+                        {selectedSubmission.existingGrade.feedback}
+                      </Typography>
+                    )}
+                  </Stack>
+                </Paper>
+              )}
+
               {selectedSubmission.submissionText && (
                 <Paper
                   variant="outlined"
@@ -738,7 +818,9 @@ const InstructorAssignments = () => {
 
               <Box sx={{ mt: 3 }}>
                 <Typography variant="subtitle1" gutterBottom>
-                  Chấm điểm:
+                  {selectedSubmission.existingGrade
+                    ? "Chấm điểm lại:"
+                    : "Chấm điểm:"}
                 </Typography>
                 <Grid container spacing={2}>
                   <Grid item xs={12} sm={4}>
@@ -813,7 +895,7 @@ const InstructorAssignments = () => {
             onClick={handleSubmitGrade}
             disabled={score === "" || score < 0 || score > 100}
           >
-            Lưu điểm
+            {selectedSubmission?.existingGrade ? "Chấm lại điểm" : "Lưu điểm"}
           </Button>
         </DialogActions>
       </Dialog>
@@ -944,13 +1026,10 @@ const InstructorAssignments = () => {
       <DialogAddEditAssignment
         open={openAddAssignmentModal}
         onClose={() => setOpenAddAssignmentModal(false)}
-        onSubmit={handleAddAssignment}
         initialSectionId={currentSectionId || undefined}
-        sections={mockCourseData.sections}
         editMode={false}
         additionalInfo={{
           targetType: "academic",
-          className: classFilter !== "all" ? classFilter : "Tất cả các lớp",
         }}
       />
     </Box>

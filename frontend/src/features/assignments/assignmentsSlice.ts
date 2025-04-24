@@ -13,6 +13,7 @@ const initialState: AssignmentsState = {
   lessonAssignments: [],
   academicClassAssignments: [],
   studentAcademicAssignments: [],
+  instructorAcademicClassAssignments: [],
   assignmentsCourse: [],
   userSubmissions: [],
   currentSubmission: null,
@@ -68,12 +69,12 @@ export const fetchAssignmentsByAcademicClass = createAsyncThunk(
   async (academicClassId: number, { rejectWithValue }) => {
     try {
       const response = await api.get(
-        `/assignments?academicClassId=${academicClassId}`
+        `/assignments/academic-class/${academicClassId}`
       );
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Không thể tải bài tập cho lớp học"
+        error.response?.data?.message || "Không thể tải bài tập của lớp học"
       );
     }
   }
@@ -107,6 +108,22 @@ export const fetchAssignmentByCourse = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Không thể tải bài tập "
+      );
+    }
+  }
+);
+
+export const fetchInstructorAcademicClassAssignments = createAsyncThunk(
+  "assignments/fetchInstructorAcademicClassAssignments",
+  async (instructorId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get(
+        `/assignments/instructor/${instructorId}/academic-classes`
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Không thể tải bài tập của các lớp"
       );
     }
   }
@@ -221,6 +238,7 @@ const assignmentsSlice = createSlice({
       // Fetch assignments by academic class
       .addCase(fetchAssignmentsByAcademicClass.pending, (state) => {
         state.status = "loading";
+        state.academicClassAssignments = [];
       })
       .addCase(fetchAssignmentsByAcademicClass.fulfilled, (state, action) => {
         state.status = "succeeded";
@@ -229,6 +247,7 @@ const assignmentsSlice = createSlice({
       })
       .addCase(fetchAssignmentsByAcademicClass.rejected, (state, action) => {
         state.status = "failed";
+        state.academicClassAssignments = [];
         state.error = action.payload as string;
       })
 
@@ -259,6 +278,28 @@ const assignmentsSlice = createSlice({
         state.status = "failed";
         state.error = action.payload as string;
       })
+
+      // Fetch assignments by instructor academic class
+      .addCase(fetchInstructorAcademicClassAssignments.pending, (state) => {
+        state.status = "loading";
+        state.instructorAcademicClassAssignments = [];
+      })
+      .addCase(
+        fetchInstructorAcademicClassAssignments.fulfilled,
+        (state, action) => {
+          state.status = "succeeded";
+          state.instructorAcademicClassAssignments = action.payload;
+          state.error = null;
+        }
+      )
+      .addCase(
+        fetchInstructorAcademicClassAssignments.rejected,
+        (state, action) => {
+          state.status = "failed";
+          state.instructorAcademicClassAssignments = [];
+          state.error = action.payload as string;
+        }
+      )
 
       // Create assignment
       .addCase(createAssignment.pending, (state) => {

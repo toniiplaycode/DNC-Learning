@@ -40,6 +40,7 @@ import {
   InsertDriveFile,
   DownloadForOffline,
   Comment,
+  Chat,
 } from "@mui/icons-material";
 import { useAppDispatch } from "../../../app/hooks";
 import { useAppSelector } from "../../../app/hooks";
@@ -53,6 +54,8 @@ import { selectCurrentUser } from "../../../features/auth/authSelectors";
 import { fetchAssignmentByCourse } from "../../../features/assignments/assignmentsSlice";
 import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import { selectSubmissionGrade } from "../../../features/user-grades/userGradesSelectors";
+import { fetchGradeBySubmission } from "../../../features/user-grades/userGradesSlice";
 
 interface AssignmentFile {
   id: string;
@@ -99,14 +102,13 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
   const { id } = useParams();
   const dispatch = useAppDispatch();
   const assignmentSubmissions = useAppSelector(selectAssignmentSubmissions);
+  const submissionGrade = useAppSelector(selectSubmissionGrade);
   const currentUser = useAppSelector(selectCurrentUser);
-
   const [files, setFiles] = useState<AssignmentFile[]>([]);
   const [note, setNote] = useState("");
   const [uploading, setUploading] = useState(false);
   const [openPreview, setOpenPreview] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
   // Add state for Google Drive link
   const [driveLink, setDriveLink] = useState("");
   const [submitType, setSubmitType] = useState<"file" | "drive">("drive");
@@ -120,13 +122,44 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
       fileUrl: null,
     });
 
+  // Add loading state
+  const [isLoadingGrade, setIsLoadingGrade] = useState(false);
+
   useEffect(() => {
     if (assignmentData.assignmentId !== null) {
       dispatch(
         fetchSubmissionsByAssignment(Number(assignmentData.assignmentId))
       );
     }
+    dispatch(fetchGradeBySubmission(Number(assignmentData.assignmentId)));
+    setFormSubmission((prev) => ({
+      ...prev,
+      assignmentId: assignmentData.assignmentId || prev.assignmentId,
+    }));
   }, [dispatch, assignmentData]);
+
+  // Refactor useEffect for better handling
+  useEffect(() => {
+    const fetchGrade = async () => {
+      if (assignmentSubmissions?.id) {
+        setIsLoadingGrade(true);
+        try {
+          await dispatch(
+            fetchGradeBySubmission(assignmentSubmissions.id)
+          ).unwrap();
+        } catch (error) {
+          console.error("Error fetching grade:", error);
+          toast.error("Không thể tải thông tin điểm");
+        } finally {
+          setIsLoadingGrade(false);
+        }
+      }
+    };
+
+    fetchGrade();
+  }, [dispatch, assignmentSubmissions]);
+
+  console.log(submissionGrade);
 
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(event.target.files || []);
@@ -224,17 +257,79 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
                       Điểm số:
                     </Typography>
                     <Stack direction="row" spacing={1} alignItems="center">
-                      <Typography
-                        variant="h4"
-                        sx={{
-                          fontWeight: "bold",
-                        }}
-                      >
-                        "Chưa chấm điểm"
-                      </Typography>
+                      {isLoadingGrade ? (
+                        <LinearProgress sx={{ width: 100 }} />
+                      ) : (
+                        <Typography
+                          variant="h4"
+                          sx={{
+                            fontWeight: "bold",
+                          }}
+                        >
+                          {submissionGrade?.score != null
+                            ? `${submissionGrade.score}/${submissionGrade.maxScore}`
+                            : "Chưa chấm điểm"}
+                        </Typography>
+                      )}
                     </Stack>
                   </Box>
                 </Box>
+
+                {/* Nhận xét của giảng viên */}
+                {submissionGrade && submissionGrade.feedback !== null && (
+                  <Box sx={{ display: "flex", alignItems: "flex-start" }}>
+                    <Chat sx={{ mr: 2, color: "primary.main", fontSize: 28 }} />{" "}
+                    {isLoadingGrade ? (
+                      <LinearProgress sx={{ width: 100 }} />
+                    ) : (
+                      <Box>
+                        <Typography
+                          variant="body1"
+                          fontWeight="bold"
+                          gutterBottom
+                        >
+                          Nhận xét của giảng viên:
+                        </Typography>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Typography
+                            variant="h4"
+                            sx={{
+                              fontWeight: "bold",
+                            }}
+                          >
+                            {submissionGrade.feedback}
+                          </Typography>
+                        </Stack>
+                      </Box>
+                    )}
+                  </Box>
+                )}
+
+                {/* Thời gian chấm */}
+
+                {submissionGrade && submissionGrade.feedback !== null && (
+                  <Box sx={{ display: "flex", alignItems: "flex-start" }}>
+                    <AccessTime sx={{ mr: 2, color: "info.main" }} />
+                    {isLoadingGrade ? (
+                      <LinearProgress sx={{ width: 100 }} />
+                    ) : (
+                      <Box>
+                        <Typography
+                          variant="body1"
+                          fontWeight="bold"
+                          gutterBottom
+                        >
+                          Thời gian chấm:
+                        </Typography>
+                        <Typography variant="body1">
+                          {formatDateTime(submissionGrade.updatedAt)}
+                        </Typography>
+                      </Box>
+                    )}
+                  </Box>
+                )}
+
+                {/* Trạng thái */}
                 <Divider />
                 {/* Thời gian nộp */}
                 <Box sx={{ display: "flex", alignItems: "flex-start" }}>
