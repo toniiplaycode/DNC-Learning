@@ -94,14 +94,48 @@ export class AssignmentsService {
     id: number,
     updateAssignmentDto: UpdateAssignmentDto,
   ): Promise<Assignment> {
-    const assignment = await this.findOne(id);
+    try {
+      // First, check if new academic class exists if academicClassId is provided
+      if (updateAssignmentDto.academicClassId) {
+        const newAcademicClass = await this.academicClassesRepository.findOne({
+          where: { id: updateAssignmentDto.academicClassId },
+        });
 
-    console.log(updateAssignmentDto);
+        if (!newAcademicClass) {
+          throw new NotFoundException(
+            `Không tìm thấy lớp học với ID ${updateAssignmentDto.academicClassId}`,
+          );
+        }
+      }
 
-    // Cập nhật các trường
-    Object.assign(assignment, updateAssignmentDto);
+      // Find existing assignment
+      const existingAssignment = await this.assignmentsRepository.findOne({
+        where: { id },
+        relations: ['academicClass'],
+      });
 
-    return this.assignmentsRepository.save(assignment);
+      if (!existingAssignment) {
+        throw new NotFoundException(`Không tìm thấy bài tập với ID ${id}`);
+      }
+
+      // Create updated assignment data
+      const updatedAssignment = {
+        ...existingAssignment,
+        ...updateAssignmentDto,
+      };
+
+      // Save the updated assignment
+      await this.assignmentsRepository.save(updatedAssignment);
+
+      // Fetch and return the updated assignment with relations
+      return await this.findOne(id);
+    } catch (error) {
+      console.error('Error updating assignment:', error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException('Không thể cập nhật bài tập');
+    }
   }
 
   async remove(id: number): Promise<void> {

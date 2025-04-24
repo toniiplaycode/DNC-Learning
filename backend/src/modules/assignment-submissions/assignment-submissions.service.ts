@@ -165,6 +165,7 @@ export class AssignmentSubmissionsService {
             });
           }),
         )
+        .orderBy('submission.createdAt', 'DESC') // Add this line for sorting
         .getMany();
 
       if (!submissions) {
@@ -278,20 +279,10 @@ export class AssignmentSubmissionsService {
     }
   }
 
-  async remove(
-    id: number,
-    userId: number,
-    isAdmin: boolean = false,
-  ): Promise<void> {
+  async remove(id: number): Promise<void> {
     const submission = await this.findOne(id);
 
-    // Kiểm tra quyền xóa (người nộp hoặc admin)
-    if (submission.userId !== userId && !isAdmin) {
-      throw new ForbiddenException('Bạn không có quyền xóa bài nộp này');
-    }
-
-    // Kiểm tra trạng thái (nếu đã chấm điểm rồi thì không được xóa, trừ khi là admin)
-    if (submission.status === SubmissionStatus.GRADED && !isAdmin) {
+    if (submission.status === SubmissionStatus.GRADED) {
       throw new BadRequestException('Không thể xóa bài nộp đã được chấm điểm');
     }
 

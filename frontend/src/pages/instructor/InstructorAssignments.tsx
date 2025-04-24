@@ -65,6 +65,7 @@ import DialogAddEditAssignment from "../../components/instructor/course/DialogAd
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { selectCurrentUser } from "../../features/auth/authSelectors";
 import {
+  deleteSubmission,
   fetchSubmissionsByInstructor,
   gradeSubmission,
 } from "../../features/assignment-submissions/assignmentSubmissionsSlice";
@@ -121,6 +122,11 @@ const InstructorAssignments = () => {
   // Add new states in InstructorAssignments component
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [assignmentToDelete, setAssignmentToDelete] = useState<any>(null);
+
+  // Add new states
+  const [deleteSubmissionDialogOpen, setDeleteSubmissionDialogOpen] =
+    useState(false);
+  const [submissionToDelete, setSubmissionToDelete] = useState<any>(null);
 
   useEffect(() => {
     dispatch(fetchSubmissionsByInstructor(currentUser.userInstructor.id));
@@ -428,6 +434,61 @@ const InstructorAssignments = () => {
     }
   };
 
+  // Add delete handler
+  const handleDeleteSubmission = (submission: any) => {
+    // Check if submission has been graded
+    const hasGrade = instructorGrades.some(
+      (grade) => grade.assignmentSubmissionId === submission.id
+    );
+
+    if (hasGrade) {
+      toast.error("Không thể xóa bài nộp đã được chấm điểm");
+      return;
+    }
+
+    setSubmissionToDelete(submission);
+    setDeleteSubmissionDialogOpen(true);
+  };
+
+  // Add confirmation handler
+  const confirmDeleteSubmission = async () => {
+    if (!submissionToDelete) return;
+
+    try {
+      await dispatch(deleteSubmission(submissionToDelete.id)).unwrap();
+      toast.success("Xóa bài nộp thành công");
+
+      // Refresh all data
+      await Promise.all([
+        dispatch(fetchSubmissionsByInstructor(currentUser.userInstructor.id)),
+        dispatch(fetchInstructorGrades(currentUser.userInstructor.id)),
+        dispatch(
+          fetchInstructorAcademicClassAssignments(currentUser.userInstructor.id)
+        ),
+      ]);
+
+      // Update selectedAssignmentView with fresh data
+      if (selectedAssignmentView) {
+        const updatedAssignments = await dispatch(
+          fetchInstructorAcademicClassAssignments(currentUser.userInstructor.id)
+        ).unwrap();
+
+        const updatedAssignment = updatedAssignments.find(
+          (a: any) => a.id === selectedAssignmentView.id
+        );
+
+        if (updatedAssignment) {
+          setSelectedAssignmentView(updatedAssignment);
+        }
+      }
+    } catch (error) {
+      toast.error("Có lỗi xảy ra khi xóa bài nộp");
+    } finally {
+      setDeleteSubmissionDialogOpen(false);
+      setSubmissionToDelete(null);
+    }
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h5" gutterBottom fontWeight="bold">
@@ -686,6 +747,19 @@ const InstructorAssignments = () => {
                               onClick={() => handleGrade(submission)}
                             >
                               <RateReview fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Xóa">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleDeleteSubmission(submission)}
+                              disabled={instructorGrades.some(
+                                (grade) =>
+                                  grade.assignmentSubmissionId === submission.id
+                              )}
+                            >
+                              <Delete fontSize="small" />
                             </IconButton>
                           </Tooltip>
                         </Stack>
@@ -1107,6 +1181,8 @@ const InstructorAssignments = () => {
               onViewFiles={handleViewFiles}
               onGrade={handleGrade}
               getStatusChip={getStatusChip}
+              onDelete={handleDeleteSubmission}
+              instructorGrades={instructorGrades} // Add this line
             />
           ) : (
             <>
@@ -1153,27 +1229,92 @@ const InstructorAssignments = () => {
           </Button>
         </DialogActions>
       </Dialog>
+      {/* Delete Submission Dialog */}
+      <Dialog
+        open={deleteSubmissionDialogOpen}
+        onClose={() => setDeleteSubmissionDialogOpen(false)}
+      >
+        <DialogTitle>Xác nhận xóa bài nộp</DialogTitle>
+        <DialogContent>
+          {submissionToDelete ? (
+            <DialogContentText>
+              Bạn có chắc chắn muốn xóa bài nộp của sinh viên{" "}
+              <strong>
+                {submissionToDelete.user?.userStudentAcademic?.fullName ||
+                  submissionToDelete.user?.userStudent?.fullName ||
+                  "Không xác định"}
+              </strong>{" "}
+              cho bài tập{" "}
+              <strong>
+                {submissionToDelete?.assignment?.title ||
+                  (selectedAssignmentView && selectedAssignmentView.title) ||
+                  "Không xác định"}
+              </strong>{" "}
+              không?
+            </DialogContentText>
+          ) : (
+            <DialogContentText>Đang tải thông tin...</DialogContentText>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteSubmissionDialogOpen(false)}>
+            Hủy
+          </Button>
+          <Button
+            onClick={confirmDeleteSubmission}
+            color="error"
+            disabled={!submissionToDelete}
+          >
+            Xóa
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };
 
-// Add new component for assignment submissions view
 interface AssignmentSubmissionsViewProps {
   assignment: any;
   onBack: () => void;
   onViewFiles: (submission: any) => void;
   onGrade: (submission: any) => void;
   getStatusChip: (submission: any) => React.ReactNode;
+  onDelete: (submission: any) => void;
+  instructorGrades: any[]; // Add this prop
 }
 
-// Update the AssignmentSubmissionsView component
 const AssignmentSubmissionsView: React.FC<AssignmentSubmissionsViewProps> = ({
   assignment,
   onBack,
   onViewFiles,
   onGrade,
   getStatusChip,
+  onDelete,
+  instructorGrades,
 }) => {
+  const dispatch = useAppDispatch();
+  const currentUser = useAppSelector(selectCurrentUser);
+
+  // Add useEffect to fetch fresh data
+  useEffect(() => {
+    const fetchData = async () => {
+      if (assignment) {
+        await Promise.all([
+          dispatch(fetchSubmissionsByInstructor(currentUser.userInstructor.id)),
+          dispatch(fetchInstructorGrades(currentUser.userInstructor.id)),
+          dispatch(
+            fetchInstructorAcademicClassAssignments(
+              currentUser.userInstructor.id
+            )
+          ),
+        ]);
+      }
+    };
+
+    fetchData();
+  }, [dispatch, currentUser, assignment]);
+
+  // Rest of the component remains the same
   return (
     <>
       <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
@@ -1237,11 +1378,51 @@ const AssignmentSubmissionsView: React.FC<AssignmentSubmissionsViewProps> = ({
                         <RateReview fontSize="small" />
                       </IconButton>
                     </Tooltip>
+                    <Tooltip title="Xóa">
+                      <IconButton
+                        size="small"
+                        color="error"
+                        onClick={() => onDelete(submission)}
+                        disabled={instructorGrades.some(
+                          (grade) =>
+                            grade.assignmentSubmissionId === submission.id
+                        )}
+                      >
+                        <Delete fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
                   </Stack>
                 </TableCell>
               </TableRow>
             ))}
           </TableBody>
+          {assignment.assignmentSubmissions.length === 0 && (
+            <TableBody>
+              <TableRow>
+                <TableCell colSpan={5} align="center" sx={{ py: 8 }}>
+                  <Box sx={{ textAlign: "center" }}>
+                    <Assignment
+                      sx={{
+                        fontSize: 48,
+                        color: "text.disabled",
+                        mb: 2,
+                      }}
+                    />
+                    <Typography
+                      variant="h6"
+                      color="text.secondary"
+                      gutterBottom
+                    >
+                      Chưa có bài nộp
+                    </Typography>
+                    <Typography variant="body2" color="text.disabled">
+                      Sinh viên chưa nộp bài tập này
+                    </Typography>
+                  </Box>
+                </TableCell>
+              </TableRow>
+            </TableBody>
+          )}
         </Table>
       </TableContainer>
     </>

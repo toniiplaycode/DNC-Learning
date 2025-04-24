@@ -86,8 +86,7 @@ export class AssignmentSubmissionsController {
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
-  remove(@Param('id', ParseIntPipe) id: number, @GetUser() user) {
-    const isAdmin = user.role === UserRole.ADMIN;
-    return this.submissionsService.remove(id, user.id, isAdmin);
+  remove(@Param('id', ParseIntPipe) id: number) {
+    return this.submissionsService.remove(id);
   }
 }
