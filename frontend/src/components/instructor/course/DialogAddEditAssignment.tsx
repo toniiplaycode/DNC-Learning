@@ -26,6 +26,7 @@ import { selectAlCourseLessonlAssignments } from "../../../features/course-lesso
 import {
   createAssignment,
   fetchAssignmentByCourse,
+  fetchInstructorAcademicClassAssignments,
   updateAssignment,
 } from "../../../features/assignments/assignmentsSlice";
 import { toast } from "react-toastify";
@@ -218,6 +219,9 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
     }
 
     await dispatch(fetchAssignmentByCourse(Number(id)));
+    await dispatch(
+      fetchInstructorAcademicClassAssignments(currentUser.userInstructor.id)
+    );
     toast.success(
       editMode ? "Cập nhật bài tập thành công!" : "Thêm bài tập thành công!"
     );

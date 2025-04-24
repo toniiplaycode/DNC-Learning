@@ -54,6 +54,9 @@ import {
   Person,
   Class,
   FilterAlt,
+  Edit,
+  Delete,
+  ArrowBack,
 } from "@mui/icons-material";
 import DialogAddEditAssignment from "../../components/instructor/course/DialogAddEditAssignment";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
@@ -94,10 +97,15 @@ const InstructorAssignments = () => {
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [tabValue, setTabValue] = useState(0);
   const [weight, setWeight] = useState<number>(1.0);
+  const [selectedTab, setSelectedTab] = useState(0);
 
   // Thêm state và các hàm xử lý để mở dialog tạo bài tập
   const [openAddAssignmentModal, setOpenAddAssignmentModal] = useState(false);
   const [currentSectionId, setCurrentSectionId] = useState<number | null>(null);
+
+  // Add new state for selected assignment
+  const [selectedAssignmentView, setSelectedAssignmentView] =
+    useState<any>(null);
 
   useEffect(() => {
     dispatch(fetchSubmissionsByInstructor(currentUser.userInstructor.id));
@@ -114,6 +122,7 @@ const InstructorAssignments = () => {
     const matchingGrade = instructorGrades.find(
       (grade) => grade.assignmentSubmissionId === submission.id
     );
+
     const file = submission.fileUrl
       ? {
           id: 1,
@@ -123,22 +132,29 @@ const InstructorAssignments = () => {
         }
       : null;
 
+    // Handle both submission structures (from table and from assignment view)
+    const assignmentTitle =
+      submission.assignment?.title || selectedAssignmentView?.title;
+    const courseName =
+      submission.assignment?.academicClass?.className ||
+      selectedAssignmentView?.academicClass?.className;
+
     setSelectedSubmission({
       ...submission,
-      assignmentTitle: submission.assignment.title,
-      courseName:
-        submission.assignment.academicClass?.className ||
-        submission.assignment.lesson?.title,
+      assignmentTitle: assignmentTitle,
+      courseName: courseName,
       studentAvatar: submission.user.avatarUrl,
       studentName:
         submission.user.userStudentAcademic?.fullName ||
         submission.user.userStudent?.fullName,
       studentType: submission.user.role,
       studentCode: submission.user.userStudentAcademic?.studentCode,
-      className: submission.assignment.academicClass?.classCode,
+      className:
+        submission.assignment?.academicClass?.classCode ||
+        selectedAssignmentView?.academicClass?.classCode,
       submittedDate: formatDateTime(submission.submittedAt),
       files: file ? [file] : [],
-      existingGrade: matchingGrade, // Add existing grade info
+      existingGrade: matchingGrade,
     });
 
     // Set initial values from matching grade if exists
@@ -475,16 +491,6 @@ const InstructorAssignments = () => {
                     color="primary"
                     onClick={handleOpenAddAssignmentModal}
                   >
-                    Hiển thị bài tập của các lớp
-                  </Button>
-                )}
-
-                {studentTypeFilter === "student_academic" && (
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={handleOpenAddAssignmentModal}
-                  >
                     Tạo bài tập mới
                   </Button>
                 )}
@@ -526,141 +532,148 @@ const InstructorAssignments = () => {
       </Typography>
 
       {/* Assignments table */}
-      <TableContainer component={Paper} sx={{ mb: 3 }}>
-        <Table size="small">
-          <TableHead>
-            <TableRow>
-              <TableCell>Học viên</TableCell>
-              {studentTypeFilter === "student_academic" && (
-                <>
-                  <TableCell>Mã SV</TableCell>
-                  <TableCell>Lớp</TableCell>
-                </>
-              )}
-              <TableCell>Bài tập</TableCell>
-              <TableCell>Lớp/Khóa học</TableCell>
-              <TableCell>Ngày nộp</TableCell>
-              <TableCell>Trạng thái</TableCell>
-              <TableCell>Thao tác</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {filteredSubmissions.length > 0 ? (
-              filteredSubmissions.map((submission) => (
-                <TableRow key={submission.id}>
-                  <TableCell>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Avatar
-                        src={submission.user.avatarUrl}
-                        sx={{ width: 24, height: 24 }}
-                      />
-                      <Typography variant="body2">
-                        {submission.user.userStudentAcademic?.fullName ||
-                          submission.user.userStudent?.fullName}
-                      </Typography>
-                      <Tooltip
-                        title={
-                          submission.user.role === "student_academic"
-                            ? "Sinh viên trường"
-                            : "Học viên bên ngoài"
-                        }
-                      >
-                        <Chip
-                          icon={
-                            submission.user.role === "student_academic" ? (
-                              <School fontSize="small" />
-                            ) : (
-                              <Person fontSize="small" />
-                            )
-                          }
-                          label={
-                            submission.user.role === "student_academic"
-                              ? "SV"
-                              : "HV"
-                          }
-                          size="small"
-                          color={
-                            submission.user.role === "student_academic"
-                              ? "primary"
-                              : "info"
-                          }
-                          variant="outlined"
-                        />
-                      </Tooltip>
-                    </Stack>
-                  </TableCell>
-
+      {tabValue !== 2 && (
+        <>
+          <TableContainer component={Paper} sx={{ mb: 3 }}>
+            <Table size="small">
+              <TableHead>
+                <TableRow>
+                  <TableCell>Học viên</TableCell>
                   {studentTypeFilter === "student_academic" && (
                     <>
-                      <TableCell>
-                        {submission.user.userStudentAcademic?.studentCode ||
-                          "-"}
-                      </TableCell>
-                      <TableCell>
-                        {submission.assignment.academicClass?.classCode || "-"}
-                      </TableCell>
+                      <TableCell>Mã SV</TableCell>
+                      <TableCell>Lớp</TableCell>
                     </>
                   )}
-
-                  <TableCell>{submission.assignment.title}</TableCell>
-                  <TableCell>
-                    {submission.assignment.academicClass?.className
-                      ? "Lớp: " +
-                        submission.assignment.academicClass?.className +
-                        " - " +
-                        submission.assignment.academicClass?.classCode
-                      : "Khóa học: " +
-                        submission.assignment.lesson?.section?.course?.title}
-                  </TableCell>
-                  <TableCell>
-                    {formatDateTime(submission.submittedAt)}
-                  </TableCell>
-                  <TableCell>{getStatusChip(submission)}</TableCell>
-                  <TableCell>
-                    <Stack direction="row" spacing={1}>
-                      <Tooltip title="Xem files">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleViewFiles(submission)}
-                        >
-                          <Description fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                      <Tooltip title="Chấm điểm">
-                        <IconButton
-                          size="small"
-                          onClick={() => handleGrade(submission)}
-                        >
-                          <RateReview fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </Stack>
-                  </TableCell>
+                  <TableCell>Bài tập</TableCell>
+                  <TableCell>Lớp/Khóa học</TableCell>
+                  <TableCell>Ngày nộp</TableCell>
+                  <TableCell>Trạng thái</TableCell>
+                  <TableCell>Thao tác</TableCell>
                 </TableRow>
-              ))
-            ) : (
-              <TableRow>
-                <TableCell
-                  colSpan={studentTypeFilter === "student_academic" ? 8 : 6}
-                  align="center"
-                >
-                  Không tìm thấy bài nộp nào
-                </TableCell>
-              </TableRow>
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+              </TableHead>
+              <TableBody>
+                {filteredSubmissions.length > 0 ? (
+                  filteredSubmissions.map((submission) => (
+                    <TableRow key={submission.id}>
+                      <TableCell>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Avatar
+                            src={submission.user.avatarUrl}
+                            sx={{ width: 24, height: 24 }}
+                          />
+                          <Typography variant="body2">
+                            {submission.user.userStudentAcademic?.fullName ||
+                              submission.user.userStudent?.fullName}
+                          </Typography>
+                          <Tooltip
+                            title={
+                              submission.user.role === "student_academic"
+                                ? "Sinh viên trường"
+                                : "Học viên bên ngoài"
+                            }
+                          >
+                            <Chip
+                              icon={
+                                submission.user.role === "student_academic" ? (
+                                  <School fontSize="small" />
+                                ) : (
+                                  <Person fontSize="small" />
+                                )
+                              }
+                              label={
+                                submission.user.role === "student_academic"
+                                  ? "SV"
+                                  : "HV"
+                              }
+                              size="small"
+                              color={
+                                submission.user.role === "student_academic"
+                                  ? "primary"
+                                  : "info"
+                              }
+                              variant="outlined"
+                            />
+                          </Tooltip>
+                        </Stack>
+                      </TableCell>
 
-      {filteredSubmissions.length > 0 && (
-        <Box display="flex" justifyContent="center">
-          <Pagination
-            count={Math.ceil(filteredSubmissions.length / 10)}
-            page={page}
-            onChange={(e, value) => setPage(value)}
-            color="primary"
-          />
-        </Box>
+                      {studentTypeFilter === "student_academic" && (
+                        <>
+                          <TableCell>
+                            {submission.user.userStudentAcademic?.studentCode ||
+                              "-"}
+                          </TableCell>
+                          <TableCell>
+                            {submission.assignment.academicClass?.classCode ||
+                              "-"}
+                          </TableCell>
+                        </>
+                      )}
+
+                      <TableCell>{submission.assignment.title}</TableCell>
+                      <TableCell>
+                        {submission.assignment.academicClass?.className
+                          ? "Lớp: " +
+                            submission.assignment.academicClass?.className +
+                            " - " +
+                            submission.assignment.academicClass?.classCode
+                          : "Khóa học: " +
+                            submission.assignment.lesson?.section?.course
+                              ?.title}
+                      </TableCell>
+                      <TableCell>
+                        {formatDateTime(submission.submittedAt)}
+                      </TableCell>
+                      <TableCell>{getStatusChip(submission)}</TableCell>
+                      <TableCell>
+                        <Stack direction="row" spacing={1}>
+                          <Tooltip title="Xem files">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleViewFiles(submission)}
+                            >
+                              <Description fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Chấm điểm">
+                            <IconButton
+                              size="small"
+                              onClick={() => handleGrade(submission)}
+                            >
+                              <RateReview fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </Stack>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={studentTypeFilter === "student_academic" ? 8 : 6}
+                      align="center"
+                    >
+                      Không tìm thấy bài nộp nào
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          {/* Pagination */}
+          {filteredSubmissions.length > 0 && (
+            <Box display="flex" justifyContent="center">
+              <Pagination
+                count={Math.ceil(filteredSubmissions.length / 10)}
+                page={page}
+                onChange={(e, value) => setPage(value)}
+                color="primary"
+              />
+            </Box>
+          )}
+        </>
       )}
 
       {/* Grading Dialog */}
@@ -1032,7 +1045,234 @@ const InstructorAssignments = () => {
           targetType: "academic",
         }}
       />
+
+      {studentTypeFilter === "student_academic" && (
+        <Box sx={{ mt: 3 }}>
+          {selectedAssignmentView ? (
+            <AssignmentSubmissionsView
+              assignment={selectedAssignmentView}
+              onBack={() => setSelectedAssignmentView(null)}
+              onViewFiles={handleViewFiles}
+              onGrade={handleGrade}
+              getStatusChip={getStatusChip}
+            />
+          ) : (
+            <>
+              <Typography variant="h6" gutterBottom>
+                Danh sách bài tập
+              </Typography>
+              <AcademicClassAssignments
+                assignments={instructorAssignments}
+                onViewDetail={(assignment) =>
+                  setSelectedAssignmentView(assignment)
+                }
+              />
+            </>
+          )}
+        </Box>
+      )}
     </Box>
+  );
+};
+
+// Add new component for assignment submissions view
+interface AssignmentSubmissionsViewProps {
+  assignment: any;
+  onBack: () => void;
+  onViewFiles: (submission: any) => void;
+  onGrade: (submission: any) => void;
+  getStatusChip: (submission: any) => React.ReactNode;
+}
+
+// Update the AssignmentSubmissionsView component
+const AssignmentSubmissionsView: React.FC<AssignmentSubmissionsViewProps> = ({
+  assignment,
+  onBack,
+  onViewFiles,
+  onGrade,
+  getStatusChip,
+}) => {
+  return (
+    <>
+      <Stack direction="row" spacing={2} alignItems="center" sx={{ mb: 3 }}>
+        <Button startIcon={<ArrowBack />} onClick={onBack}>
+          Quay lại
+        </Button>
+        <Typography variant="h6">
+          {assignment.title}
+          <Typography variant="body2" color="text.secondary">
+            {assignment.academicClass.classCode} -{" "}
+            {assignment.academicClass.className}
+          </Typography>
+        </Typography>
+      </Stack>
+
+      <TableContainer component={Paper}>
+        <Table size="small">
+          <TableHead>
+            <TableRow>
+              <TableCell>Sinh viên</TableCell>
+              <TableCell>Mã SV</TableCell>
+              <TableCell>Ngày nộp</TableCell>
+              <TableCell>Trạng thái</TableCell>
+              <TableCell>Thao tác</TableCell>
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            {assignment.assignmentSubmissions.map((submission) => (
+              <TableRow key={submission.id}>
+                <TableCell>
+                  <Stack direction="row" spacing={1} alignItems="center">
+                    <Avatar
+                      src={submission.user.avatarUrl}
+                      sx={{ width: 24, height: 24 }}
+                    />
+                    <Typography variant="body2">
+                      {submission.user.userStudentAcademic?.fullName}
+                    </Typography>
+                  </Stack>
+                </TableCell>
+                <TableCell>
+                  {submission.user.userStudentAcademic?.studentCode}
+                </TableCell>
+                <TableCell>{formatDateTime(submission.submittedAt)}</TableCell>
+                <TableCell>{getStatusChip(submission)}</TableCell>
+                <TableCell>
+                  <Stack direction="row" spacing={1}>
+                    <Tooltip title="Xem files">
+                      <IconButton
+                        size="small"
+                        onClick={() => onViewFiles(submission)}
+                      >
+                        <Description fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Chấm điểm">
+                      <IconButton
+                        size="small"
+                        onClick={() => onGrade(submission)}
+                      >
+                        <RateReview fontSize="small" />
+                      </IconButton>
+                    </Tooltip>
+                  </Stack>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </TableContainer>
+    </>
+  );
+};
+
+// Update the AcademicClassAssignments component
+const AcademicClassAssignments = ({ assignments, onViewDetail }) => {
+  return (
+    <TableContainer component={Paper}>
+      <Table size="small">
+        <TableHead>
+          <TableRow>
+            <TableCell>Lớp</TableCell>
+            <TableCell>Tiêu đề</TableCell>
+            <TableCell>Loại bài tập</TableCell>
+            <TableCell>Điểm tối đa</TableCell>
+            <TableCell>Hạn nộp</TableCell>
+            <TableCell>Số bài đã nộp</TableCell>
+            <TableCell>Thao tác</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {assignments.map((assignment) => (
+            <TableRow key={assignment.id}>
+              <TableCell>
+                <Chip
+                  label={`${assignment.academicClass.classCode}`}
+                  size="small"
+                  variant="outlined"
+                />
+                <Typography
+                  variant="caption"
+                  display="block"
+                  color="text.secondary"
+                >
+                  {assignment.academicClass.className}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Typography variant="body2">{assignment.title}</Typography>
+                <Typography variant="caption" color="text.secondary">
+                  {assignment.description}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Chip
+                  label={
+                    {
+                      practice: "Thực hành",
+                      midterm: "Giữa kỳ",
+                      final: "Cuối kỳ",
+                      project: "Dự án",
+                    }[assignment.assignmentType] || assignment.assignmentType
+                  }
+                  size="small"
+                  color={
+                    {
+                      practice: "primary",
+                      midterm: "warning",
+                      final: "error",
+                      project: "info",
+                    }[assignment.assignmentType] as any
+                  }
+                />
+              </TableCell>
+              <TableCell align="center">{assignment.maxScore}</TableCell>
+              <TableCell>
+                {assignment.dueDate ? (
+                  <>
+                    <Typography variant="body2">
+                      {formatDateTime(assignment.dueDate)}
+                    </Typography>
+                    {new Date(assignment.dueDate) < new Date() && (
+                      <Chip label="Đã hết hạn" size="small" color="error" />
+                    )}
+                  </>
+                ) : (
+                  "Không có"
+                )}
+              </TableCell>
+              <TableCell align="center">
+                <Typography variant="body2">
+                  {assignment.assignmentSubmissions.length}
+                </Typography>
+              </TableCell>
+              <TableCell>
+                <Stack direction="row" spacing={1}>
+                  <Tooltip title="Xem chi tiết">
+                    <IconButton
+                      size="small"
+                      onClick={() => onViewDetail(assignment)}
+                    >
+                      <Assignment fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Chỉnh sửa">
+                    <IconButton size="small">
+                      <Edit fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Xóa">
+                    <IconButton size="small" color="error">
+                      <Delete fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+              </TableCell>
+            </TableRow>
+          ))}
+        </TableBody>
+      </Table>
+    </TableContainer>
   );
 };
 

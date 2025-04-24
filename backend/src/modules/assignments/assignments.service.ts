@@ -250,6 +250,9 @@ export class AssignmentsService {
           'assignmentSubmissions.user.userStudentAcademic',
           'assignmentSubmissions.user.userStudent',
         ],
+        order: {
+          createdAt: 'DESC',
+        },
       });
 
       return assignments;
