@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Box,
   Card,
@@ -39,6 +39,7 @@ import {
   Tooltip,
   ListItemIcon,
   Badge,
+  Collapse,
 } from "@mui/material";
 import {
   Search,
@@ -60,6 +61,8 @@ import {
   School,
   MenuBook,
   FilterAlt,
+  KeyboardArrowDown,
+  KeyboardArrowUp,
 } from "@mui/icons-material";
 import { useNavigate, useParams } from "react-router-dom";
 import DialogAddEditQuiz from "../../components/instructor/course/DialogAddEditQuiz";
@@ -358,8 +361,7 @@ const InstructorQuizs = () => {
   const [filterCourse, setFilterCourse] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [studentTypeFilter, setStudentTypeFilter] = useState("all");
-  const [classFilter, setClassFilter] = useState("Tất cả");
-  const [facultyFilter, setFacultyFilter] = useState("Tất cả");
+  const [classFilter, setClassFilter] = useState("all");
   const [tabValue, setTabValue] = useState(0);
   const [openAttemptDetails, setOpenAttemptDetails] = useState(false);
   const [selectedAttempt, setSelectedAttempt] = useState<QuizAttempt | null>(
@@ -374,6 +376,10 @@ const InstructorQuizs = () => {
       { id: 3, title: "Section 3", contents: [] },
     ],
   });
+  // Add at the top of your component with other states
+  const [expandedUser, setExpandedUser] = useState<string | null>(null);
+  // Add new state for answer filter
+  const [answerFilter, setAnswerFilter] = useState("all"); // 'all' | 'correct' | 'incorrect'
 
   useEffect(() => {
     // Fetch both quizzes and attempts
@@ -382,7 +388,47 @@ const InstructorQuizs = () => {
   }, [dispatch, currentUser]);
 
   // Danh sách khóa học từ mock data
-  const courses = [...new Set(mockQuizzes.map((quiz) => quiz.course))];
+  const courses = useMemo(() => {
+    if (!instructorQuizzes) return [];
+
+    // Get all courses from quizzes
+    const allCourses = instructorQuizzes.reduce((acc: any[], quiz: Quiz) => {
+      if (quiz.lesson?.section.course) {
+        acc.push({
+          id: quiz.lesson.section.course.id,
+          title: quiz.lesson.section.course.title,
+        });
+      }
+      return acc;
+    }, []);
+
+    // Remove duplicates using Set and map
+    return Array.from(
+      new Set(allCourses.map((course) => JSON.stringify(course)))
+    ).map((str) => JSON.parse(str));
+  }, [instructorQuizzes]);
+
+  // Add this near other useMemo hooks
+  const academicClasses = useMemo(() => {
+    if (!instructorQuizzes) return [];
+
+    // Get all classes from quizzes
+    const allClasses = instructorQuizzes.reduce((acc: any[], quiz: Quiz) => {
+      if (quiz.academicClass) {
+        acc.push({
+          id: quiz.academicClass.id,
+          classCode: quiz.academicClass.classCode,
+          className: quiz.academicClass.className,
+        });
+      }
+      return acc;
+    }, []);
+
+    // Remove duplicates using Set
+    return Array.from(
+      new Set(allClasses.map((cls) => JSON.stringify(cls)))
+    ).map((str) => JSON.parse(str));
+  }, [instructorQuizzes]);
 
   // Xử lý click vào quiz
   const handleQuizClick = (quiz: Quiz) => {
@@ -391,7 +437,16 @@ const InstructorQuizs = () => {
     setSelectedQuiz(quiz);
   };
 
-  console.log(quizAttempts);
+  // Add filter logic function
+  const getFilteredResponses = (responses: any[]) => {
+    if (answerFilter === "all") return responses;
+
+    return responses.filter((response) =>
+      answerFilter === "correct"
+        ? Number(response.score) > 0
+        : Number(response.score) === 0
+    );
+  };
 
   // Xử lý quay lại danh sách quiz
   const handleBackToList = () => {
@@ -408,7 +463,26 @@ const InstructorQuizs = () => {
   const getFilteredAttempts = () => {
     if (!quizAttempts) return [];
 
-    return quizAttempts.filter((attempt) => {
+    // Group attempts by user
+    const attemptsByUser = quizAttempts.reduce((acc, attempt) => {
+      const userId = attempt.user.id;
+      if (!acc[userId]) {
+        acc[userId] = [];
+      }
+      acc[userId].push(attempt);
+      return acc;
+    }, {} as { [key: string]: typeof quizAttempts });
+
+    // Get latest attempt for each user
+    const latestAttempts = Object.values(attemptsByUser).map((userAttempts) => {
+      // Sort by endTime descending to get the most recent attempt
+      return userAttempts.sort(
+        (a, b) => new Date(b.endTime).getTime() - new Date(a.endTime).getTime()
+      )[0];
+    });
+
+    // Apply filters
+    return latestAttempts.filter((attempt) => {
       const matchesSearch = (
         attempt.user?.userStudent?.fullName ||
         attempt.user?.userStudentAcademic?.fullName ||
@@ -547,17 +621,8 @@ const InstructorQuizs = () => {
     // Lọc theo lớp (chỉ áp dụng cho sinh viên trường)
     if (
       submission.studentType === "student_academic" &&
-      classFilter !== "Tất cả" &&
+      classFilter !== "all" &&
       submission.className !== classFilter
-    ) {
-      return false;
-    }
-
-    // Lọc theo khoa (chỉ áp dụng cho sinh viên trường)
-    if (
-      submission.studentType === "student_academic" &&
-      facultyFilter !== "Tất cả" &&
-      submission.faculty !== facultyFilter
     ) {
       return false;
     }
@@ -615,21 +680,55 @@ const InstructorQuizs = () => {
                 }}
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
-              <FormControl size="small" sx={{ minWidth: 200 }}>
-                <InputLabel>Khóa học</InputLabel>
-                <Select
-                  value={filterCourse}
-                  label="Khóa học"
-                  onChange={(e) => setFilterCourse(e.target.value)}
-                >
-                  <MenuItem value="all">Tất cả khóa học</MenuItem>
-                  {courses.map((course) => (
-                    <MenuItem key={course} value={course}>
-                      {course}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
+              {studentTypeFilter == "student" ? (
+                <FormControl size="small" sx={{ minWidth: 200 }}>
+                  <InputLabel>Khóa học</InputLabel>
+                  <Select
+                    value={filterCourse}
+                    label="Khóa học"
+                    onChange={(e) => setFilterCourse(e.target.value)}
+                  >
+                    <MenuItem value="all">Tất cả khóa học</MenuItem>
+                    {courses.map((course) => (
+                      <MenuItem key={course.id} value={course.id}>
+                        {course.title}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              ) : studentTypeFilter == "student_academic" ? (
+                <>
+                  <FormControl size="small" sx={{ minWidth: 200 }}>
+                    <InputLabel>Lớp</InputLabel>
+                    <Select
+                      value={classFilter}
+                      label="Lớp"
+                      onChange={(e) => setClassFilter(e.target.value)}
+                    >
+                      <MenuItem value="all">Tất cả các lớp</MenuItem>
+                      {academicClasses.map((cls) => (
+                        <MenuItem key={cls.id} value={cls.id}>
+                          {cls.className} - {cls.classCode}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={() => setOpenAddQuizModal(true)}
+                    startIcon={<Add />}
+                    sx={{
+                      minWidth: "300px",
+                    }}
+                  >
+                    Tạo Bài trắc nghiệm mới
+                  </Button>
+                </>
+              ) : (
+                <></>
+              )}
             </Stack>
             <Box sx={{ mb: 3, display: "flex", justifyContent: "flex-start" }}>
               <Tabs
@@ -661,55 +760,6 @@ const InstructorQuizs = () => {
               </Tabs>
             </Box>
 
-            {/* Move class and faculty filters to student_academic tab panel */}
-            <StudentTypeTabPanel
-              value={studentTypeFilter}
-              type="student_academic"
-            >
-              <Stack
-                direction="row"
-                sx={{ display: "flex", gap: 2, marginBottom: 2 }}
-              >
-                <FormControl size="small" sx={{ minWidth: 150 }}>
-                  <InputLabel>Lớp</InputLabel>
-                  <Select
-                    value={classFilter}
-                    label="Lớp"
-                    onChange={(e) => setClassFilter(e.target.value as string)}
-                  >
-                    {mockClasses.map((cls) => (
-                      <MenuItem key={cls} value={cls}>
-                        {cls}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControl size="small" sx={{ minWidth: 200 }}>
-                  <InputLabel>Khoa</InputLabel>
-                  <Select
-                    value={facultyFilter}
-                    label="Khoa"
-                    onChange={(e) => setFacultyFilter(e.target.value as string)}
-                  >
-                    {mockFaculties.map((faculty) => (
-                      <MenuItem key={faculty} value={faculty}>
-                        {faculty}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-
-                <Button
-                  variant="contained"
-                  color="primary"
-                  onClick={() => setOpenAddQuizModal(true)}
-                  startIcon={<Add />}
-                >
-                  Tạo Bài trắc nghiệm mới
-                </Button>
-              </Stack>
-            </StudentTypeTabPanel>
-
             {/* Update QuizList usage */}
             <QuizList
               quizzes={getFilteredQuizzes()}
@@ -717,6 +767,32 @@ const InstructorQuizs = () => {
             />
           </CardContent>
         </Card>
+
+        {/* Modal Thêm quiz */}
+        <DialogAddEditQuiz
+          open={openAddQuizModal}
+          onClose={() => {
+            setOpenAddQuizModal(false);
+          }}
+          editMode={false}
+          additionalInfo={{
+            targetType: "academic",
+            className: classFilter !== "all" ? classFilter : "Tất cả các lớp",
+          }}
+        />
+        {/* Modal sửa quiz */}
+        {/* <DialogAddEditQuiz
+        open={openEditQuizModal}
+        onClose={() => setOpenAddQuizModal(false);}
+        onSubmit={handleUpdateQuiz}
+        quizToEdit={quizToEdit || undefined}
+        sections={mockCourseData.sections}
+        editMode={true}
+        additionalInfo={{
+          targetType: "academic",
+          className: classFilter !== "all" ? classFilter : "Tất cả các lớp",
+          }}
+      /> */}
       </Box>
     );
   }
@@ -746,7 +822,6 @@ const InstructorQuizs = () => {
           {selectedQuiz.title}
         </Typography>
       </Stack>
-
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Grid container spacing={2} sx={{ mb: 3 }}>
@@ -872,22 +947,101 @@ const InstructorQuizs = () => {
                               >
                                 {attempt.user.username[0]}
                               </Avatar>
-                              <Typography variant="body2">
-                                {attempt.user.userStudentAcademic?.fullName ||
-                                  attempt.user.userStudent?.fullName ||
-                                  attempt.user.username}
-                                {attempt.user.userStudentAcademic && (
-                                  <Chip
-                                    size="small"
-                                    icon={<School fontSize="small" />}
-                                    label="SV"
-                                    color="primary"
-                                    variant="outlined"
-                                    sx={{ ml: 1 }}
-                                  />
-                                )}
-                              </Typography>
+                              <Box>
+                                <Typography variant="body2">
+                                  {attempt.user.userStudentAcademic?.fullName ||
+                                    attempt.user.userStudent?.fullName ||
+                                    attempt.user.username}
+                                  {attempt.user.userStudentAcademic && (
+                                    <Chip
+                                      size="small"
+                                      icon={<School fontSize="small" />}
+                                      label="SV"
+                                      color="primary"
+                                      variant="outlined"
+                                      sx={{ ml: 1 }}
+                                    />
+                                  )}
+                                </Typography>
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 0.5,
+                                    cursor: "pointer",
+                                  }}
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setExpandedUser(
+                                      expandedUser === attempt.user.id
+                                        ? null
+                                        : attempt.user.id
+                                    );
+                                  }}
+                                >
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                  >
+                                    {
+                                      quizAttempts.filter(
+                                        (a) => a.user.id === attempt.user.id
+                                      ).length
+                                    }{" "}
+                                    lần thử
+                                  </Typography>
+                                  <IconButton size="small">
+                                    {expandedUser === attempt.user.id ? (
+                                      <KeyboardArrowUp fontSize="small" />
+                                    ) : (
+                                      <KeyboardArrowDown fontSize="small" />
+                                    )}
+                                  </IconButton>
+                                </Box>
+                              </Box>
                             </Stack>
+                            <Collapse in={expandedUser === attempt.user.id}>
+                              <Box sx={{ pl: 5, pt: 1 }}>
+                                {quizAttempts
+                                  .filter((a) => a.user.id === attempt.user.id)
+                                  .sort(
+                                    (a, b) =>
+                                      new Date(a.endTime).getTime() -
+                                      new Date(b.endTime).getTime()
+                                  )
+                                  .map((attempt, index) => (
+                                    <Box
+                                      key={attempt.id}
+                                      sx={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        alignItems: "center",
+                                        py: 0.5,
+                                      }}
+                                    >
+                                      <Typography variant="caption">
+                                        Lần {index + 1}:{" "}
+                                        {formatDuration(
+                                          attempt.startTime,
+                                          attempt.endTime
+                                        )}
+                                      </Typography>
+                                      <Typography
+                                        variant="caption"
+                                        color={
+                                          Number(attempt.score) >=
+                                          selectedQuiz.passingScore
+                                            ? "success.main"
+                                            : "error.main"
+                                        }
+                                        fontWeight="medium"
+                                      >
+                                        {attempt.score}/100
+                                      </Typography>
+                                    </Box>
+                                  ))}
+                              </Box>
+                            </Collapse>
                           </TableCell>
                           {studentTypeFilter === "student_academic" && (
                             <>
@@ -914,20 +1068,46 @@ const InstructorQuizs = () => {
                           <TableCell>
                             {new Date(attempt.endTime).toLocaleString("vi-VN")}
                           </TableCell>
-                          <TableCell>
-                            <Typography
-                              variant="body2"
-                              color={
-                                Number(attempt.score) >=
-                                selectedQuiz.passingScore
-                                  ? "success.main"
-                                  : "error.main"
-                              }
-                              fontWeight="bold"
-                            >
-                              {attempt.score}/100
-                            </Typography>
-                          </TableCell>
+                          <Tooltip
+                            title={
+                              <Box>
+                                <Typography variant="subtitle2">
+                                  Lịch sử làm bài:
+                                </Typography>
+                                {quizAttempts
+                                  .filter((a) => a.user.id === attempt.user.id)
+                                  .sort(
+                                    (a, b) =>
+                                      new Date(b.endTime).getTime() -
+                                      new Date(a.endTime).getTime()
+                                  )
+                                  .map((a, i) => (
+                                    <Typography key={i} variant="body2">
+                                      Lần {i + 1}: {a.score}/100 (
+                                      {new Date(a.endTime).toLocaleString(
+                                        "vi-VN"
+                                      )}
+                                      )
+                                    </Typography>
+                                  ))}
+                              </Box>
+                            }
+                          >
+                            <TableCell>
+                              <Typography
+                                variant="body2"
+                                color={
+                                  Number(attempt.score) >=
+                                  selectedQuiz.passingScore
+                                    ? "success.main"
+                                    : "error.main"
+                                }
+                                fontWeight="bold"
+                              >
+                                {attempt.score}/100
+                              </Typography>
+                            </TableCell>
+                          </Tooltip>
                           <TableCell align="right">
                             <IconButton
                               color="primary"
@@ -1078,7 +1258,6 @@ const InstructorQuizs = () => {
           )}
         </CardContent>
       </Card>
-
       {/* Chi tiết bài làm dialog */}
       <Dialog
         open={openAttemptDetails}
@@ -1169,109 +1348,139 @@ const InstructorQuizs = () => {
 
                 <Divider sx={{ my: 3 }} />
 
-                <Typography variant="h6" gutterBottom>
-                  Chi tiết câu trả lời
-                </Typography>
+                <Stack
+                  direction="row"
+                  justifyContent="space-between"
+                  alignItems="center"
+                  sx={{ mb: 2 }}
+                >
+                  <Typography variant="h6">Chi tiết câu trả lời</Typography>
+
+                  <FormControl size="small" sx={{ width: 200 }}>
+                    <InputLabel>Hiển thị</InputLabel>
+                    <Select
+                      value={answerFilter}
+                      label="Hiển thị"
+                      onChange={(e) => setAnswerFilter(e.target.value)}
+                    >
+                      <MenuItem value="all">Tất cả câu hỏi</MenuItem>
+                      <MenuItem value="correct">Câu trả lời đúng</MenuItem>
+                      <MenuItem value="incorrect">Câu trả lời sai</MenuItem>
+                    </Select>
+                  </FormControl>
+                </Stack>
 
                 <List>
-                  {selectedAttempt.responses.map((response) => (
-                    <React.Fragment key={response.id}>
-                      <ListItem alignItems="flex-start" sx={{ py: 2 }}>
-                        <ListItemText
-                          primary={
-                            <Box
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 1,
-                              }}
-                            >
-                              {Number(response.score) > 0 ? (
-                                <CheckCircle color="success" />
-                              ) : (
-                                <Cancel color="error" />
-                              )}
-                              <Typography variant="subtitle1">
-                                Câu {response.question.orderNumber}:{" "}
-                                {response.question.questionText}
-                              </Typography>
-                            </Box>
-                          }
-                          secondary={
-                            <Box sx={{ mt: 1 }}>
-                              {response.question.options.map((option) => (
-                                <Box
-                                  key={option.id}
-                                  sx={{
-                                    p: 1,
-                                    my: 0.5,
-                                    borderRadius: 1,
-                                    bgcolor:
-                                      option.id === response.selectedOption?.id
-                                        ? option.isCorrect
+                  {getFilteredResponses(selectedAttempt.responses).map(
+                    (response) => (
+                      <React.Fragment key={response.id}>
+                        <ListItem alignItems="flex-start" sx={{ py: 2 }}>
+                          <ListItemText
+                            primary={
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 1,
+                                }}
+                              >
+                                {Number(response.score) > 0 ? (
+                                  <CheckCircle color="success" />
+                                ) : (
+                                  <Cancel color="error" />
+                                )}
+                                <Typography variant="subtitle1">
+                                  Câu {response.question.orderNumber}:{" "}
+                                  {response.question.questionText}
+                                </Typography>
+                              </Box>
+                            }
+                            secondary={
+                              <Box sx={{ mt: 1 }}>
+                                {response.question.options.map((option) => (
+                                  <Box
+                                    key={option.id}
+                                    sx={{
+                                      p: 1,
+                                      my: 0.5,
+                                      borderRadius: 1,
+                                      bgcolor:
+                                        option.id ===
+                                        response.selectedOption?.id
+                                          ? option.isCorrect
+                                            ? "success.light"
+                                            : "error.light"
+                                          : option.isCorrect
                                           ? "success.light"
-                                          : "error.light"
-                                        : option.isCorrect
-                                        ? "success.light"
-                                        : "background.default",
-                                  }}
-                                >
-                                  <Stack
-                                    direction="row"
-                                    justifyContent="space-between"
-                                    alignItems="center"
+                                          : "background.default",
+                                    }}
+                                  >
+                                    <Stack
+                                      direction="row"
+                                      justifyContent="space-between"
+                                      alignItems="center"
+                                    >
+                                      <Typography variant="body2">
+                                        {option.optionText}
+                                      </Typography>
+                                      <Stack direction="row" spacing={1}>
+                                        {option.id ===
+                                          response.selectedOption?.id && (
+                                          <Chip
+                                            size="small"
+                                            label="Đã chọn"
+                                            color={
+                                              option.isCorrect
+                                                ? "success"
+                                                : "error"
+                                            }
+                                          />
+                                        )}
+                                        {option.isCorrect && (
+                                          <Chip
+                                            size="small"
+                                            label="Đáp án đúng"
+                                            color="success"
+                                          />
+                                        )}
+                                      </Stack>
+                                    </Stack>
+                                  </Box>
+                                ))}
+
+                                {response.question.correctExplanation && (
+                                  <Box
+                                    sx={{
+                                      mt: 1,
+                                      p: 1.5,
+                                      bgcolor: "info.lighter",
+                                      borderRadius: 1,
+                                    }}
                                   >
                                     <Typography variant="body2">
-                                      {option.optionText}
+                                      <strong>Giải thích:</strong>{" "}
+                                      {response.question.correctExplanation}
                                     </Typography>
-                                    <Stack direction="row" spacing={1}>
-                                      {option.id ===
-                                        response.selectedOption?.id && (
-                                        <Chip
-                                          size="small"
-                                          label="Đã chọn"
-                                          color={
-                                            option.isCorrect
-                                              ? "success"
-                                              : "error"
-                                          }
-                                        />
-                                      )}
-                                      {option.isCorrect && (
-                                        <Chip
-                                          size="small"
-                                          label="Đáp án đúng"
-                                          color="success"
-                                        />
-                                      )}
-                                    </Stack>
-                                  </Stack>
-                                </Box>
-                              ))}
-
-                              {response.question.correctExplanation && (
-                                <Box
-                                  sx={{
-                                    mt: 1,
-                                    p: 1.5,
-                                    bgcolor: "info.lighter",
-                                    borderRadius: 1,
-                                  }}
-                                >
-                                  <Typography variant="body2">
-                                    <strong>Giải thích:</strong>{" "}
-                                    {response.question.correctExplanation}
-                                  </Typography>
-                                </Box>
-                              )}
-                            </Box>
-                          }
-                        />
-                      </ListItem>
-                      <Divider />
-                    </React.Fragment>
-                  ))}
+                                  </Box>
+                                )}
+                              </Box>
+                            }
+                          />
+                        </ListItem>
+                        <Divider />
+                      </React.Fragment>
+                    )
+                  )}
                 </List>
+
+                {/* Add summary of filtered results */}
+                <Box sx={{ mt: 2, textAlign: "right" }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Hiển thị{" "}
+                    {getFilteredResponses(selectedAttempt.responses).length}{" "}
+                    trong số {selectedAttempt.responses.length} câu hỏi
+                  </Typography>
+                </Box>
               </Box>
             </DialogContent>
 
@@ -1281,39 +1490,6 @@ const InstructorQuizs = () => {
           </>
         )}
       </Dialog>
-
-      {/* Modal Thêm quiz */}
-      <DialogAddEditQuiz
-        open={openAddQuizModal}
-        onClose={() => {
-          console.log("Closing quiz modal");
-          setOpenAddQuizModal(false);
-        }}
-        // onSubmit={handleAddQuiz}
-        initialSectionId={currentSectionId || undefined}
-        sections={mockCourseData.sections}
-        editMode={false}
-        additionalInfo={{
-          targetType: "academic",
-          className: classFilter !== "all" ? classFilter : "Tất cả các lớp",
-          faculty: facultyFilter !== "all" ? facultyFilter : "Tất cả các khoa",
-        }}
-      />
-
-      {/* Modal sửa quiz */}
-      {/* <DialogAddEditQuiz
-        open={openEditQuizModal}
-        onClose={() => setOpenEditQuizModal(false)}
-        onSubmit={handleUpdateQuiz}
-        quizToEdit={quizToEdit || undefined}
-        sections={mockCourseData.sections}
-        editMode={true}
-        additionalInfo={{
-          targetType: "academic",
-          className: classFilter !== "all" ? classFilter : "Tất cả các lớp",
-          faculty: facultyFilter !== "all" ? facultyFilter : "Tất cả các khoa",
-        }}
-      /> */}
     </Box>
   );
 };

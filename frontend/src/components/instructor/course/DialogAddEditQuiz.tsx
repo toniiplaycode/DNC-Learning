@@ -52,10 +52,15 @@ import { selectAlCourseLessonlQuizzes } from "../../../features/course-lessons/c
 import { selectAllQuizzes } from "../../../features/quizzes/quizzesSelectors";
 import {
   createQuiz,
+  fetchInstructorAttempts,
   fetchQuizzesByCourse,
+  fetchQuizzesByInstructor,
   updateQuiz,
 } from "../../../features/quizzes/quizzesSlice";
 import { fetchCourseById } from "../../../features/courses/coursesApiSlice";
+import { selectCurrentUser } from "../../../features/auth/authSelectors";
+import { fetchClassInstructorById } from "../../../features/academic-class-instructors/academicClassInstructorsSlice";
+import { selectCurrentClassInstructor } from "../../../features/academic-class-instructors/academicClassInstructorsSelectors";
 
 // Định nghĩa kiểu QuizOption
 interface QuizOption {
@@ -82,7 +87,7 @@ interface QuizQuestion {
 interface Quiz {
   id?: number;
   lessonId?: number | null; // Changed to allow null
-  academicClassId?: number;
+  academicClassId?: number | null;
   title: string;
   description?: string;
   timeLimit?: number;
@@ -117,7 +122,6 @@ interface DialogAddEditQuizProps {
   additionalInfo?: {
     targetType: string;
     className: string;
-    faculty: string;
   };
 }
 
@@ -131,14 +135,21 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
 }) => {
   const { id } = useParams();
   const dispatch = useAppDispatch();
+  const currentUser = useAppSelector(selectCurrentUser);
   const lessonData = useAppSelector(selectAlCourseLessonlQuizzes);
   const quizzesData = useAppSelector(selectAllQuizzes);
+  const currentClassInstructor = useAppSelector(selectCurrentClassInstructor);
+
+  useEffect(() => {
+    dispatch(fetchClassInstructorById(Number(currentUser?.userInstructor?.id)));
+  }, [dispatch, currentUser]);
 
   // State cho form quiz
   const [quizForm, setQuizForm] = useState<Quiz>({
     title: "",
     description: "",
     lessonId: null,
+    academicClassId: null,
     timeLimit: 30,
     passingScore: 50,
     attemptsAllowed: 1,
@@ -196,6 +207,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
           title: "",
           description: "",
           lessonId: null,
+          academicClassId: null,
           timeLimit: 30,
           passingScore: 50,
           attemptsAllowed: 1,
@@ -368,6 +380,8 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
       })),
     };
 
+    console.log(quizData);
+
     if (!editMode) {
       await dispatch(createQuiz(quizData));
       toast.success("Thêm Bài trắc nghiệm thành công!");
@@ -386,6 +400,12 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
     await dispatch(fetchCourseQuizzes(Number(id)));
     await dispatch(fetchCourseById(Number(id)));
     await dispatch(fetchQuizzesByCourse(Number(id)));
+    await dispatch(
+      fetchQuizzesByInstructor(Number(currentUser.userInstructor.id))
+    );
+    await dispatch(
+      fetchInstructorAttempts(Number(currentUser.userInstructor.id))
+    );
 
     onClose();
   };
@@ -470,27 +490,50 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
       <DialogContent dividers>
         {/* Hiển thị thông tin bổ sung khi tạo bài tập cho sinh viên trường */}
         {additionalInfo && additionalInfo.targetType === "academic" && (
-          <Box sx={{ bgcolor: "grey.100", p: 2, borderRadius: 1 }}>
+          <Box sx={{ bgcolor: "grey.100", p: 2, borderRadius: 1, mb: 2 }}>
             <Typography variant="subtitle1" gutterBottom>
               Bài trắc nghiệm dành cho sinh viên trường
             </Typography>
-            <Stack direction="row" spacing={2}>
-              <Typography variant="body2">
-                <strong>Lớp:</strong> {additionalInfo.className}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Khoa:</strong> {additionalInfo.faculty}
-              </Typography>
-            </Stack>
             <Typography
               variant="caption"
               color="text.secondary"
               sx={{ mt: 1, display: "block" }}
             >
-              Bài trắc nghiệm này sẽ được gán cho tất cả sinh viên thuộc lớp và
-              khoa đã chọn.
+              Bài trắc nghiệm này sẽ được gán cho tất cả sinh viên thuộc lớp đã
+              chọn.
             </Typography>
           </Box>
+        )}
+
+        {/* Chọn lớp học thuật */}
+        {additionalInfo && additionalInfo.targetType === "academic" && (
+          <FormControl fullWidth>
+            <InputLabel>Chọn lớp học thuật</InputLabel>
+            <Select
+              value={quizForm.academicClassId || 0}
+              label="Chọn lớp học thuật"
+              onChange={(e) =>
+                setQuizForm({
+                  ...quizForm,
+                  academicClassId: Number(e.target.value),
+                })
+              }
+            >
+              <MenuItem value={0}>Chọn lớp học</MenuItem>
+              {currentClassInstructor?.map((classInstructor) => (
+                <MenuItem
+                  key={classInstructor.academicClass.id}
+                  value={classInstructor.academicClass.id}
+                >
+                  {classInstructor.academicClass.classCode} -{" "}
+                  {classInstructor.academicClass.className}
+                </MenuItem>
+              ))}
+            </Select>
+            <FormHelperText sx={{ mb: 2 }}>
+              Chọn lớp học để gán bài trắc nghiệm cho sinh viên
+            </FormHelperText>
+          </FormControl>
         )}
 
         <Stack spacing={3}>
@@ -504,7 +547,6 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
             }
             required
           />
-
           <TextField
             label="Mô tả"
             fullWidth
@@ -515,7 +557,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
               setQuizForm({ ...quizForm, description: e.target.value })
             }
           />
-          {lessonData.length > 0 && (
+          {lessonData.length > 0 && !additionalInfo && (
             <FormControl fullWidth>
               <InputLabel>Nội dung</InputLabel>
               <Select
@@ -565,7 +607,6 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
               </FormHelperText>
             </FormControl>
           )}
-
           {/* Cài đặt quiz */}
           <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
             <FormControl sx={{ minWidth: 200 }}>
@@ -642,9 +683,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
               label="Hiện giải thích sau khi nộp bài"
             />
           </Box>
-
           <Divider sx={{ my: 2 }} />
-
           {/* Hiển thị danh sách câu hỏi đã thêm */}
           <Box>
             <Box
@@ -858,7 +897,6 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
               </Box>
             )}
           </Box>
-
           <Divider ref={editSectionRef}>
             <Typography variant="caption" color="text.secondary">
               {editingQuestionIndex !== null
@@ -866,7 +904,6 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                 : "Thêm câu hỏi mới"}
             </Typography>
           </Divider>
-
           {/* Form thêm/sửa câu hỏi */}
           <Box
             sx={{

@@ -806,6 +806,7 @@ export class QuizzesService {
         title: createQuizDto.title,
         description: createQuizDto.description,
         lessonId: createQuizDto.lessonId,
+        academicClassId: createQuizDto.academicClassId,
         timeLimit: createQuizDto.timeLimit,
         passingScore: createQuizDto.passingScore,
         attemptsAllowed: createQuizDto.attemptsAllowed,
