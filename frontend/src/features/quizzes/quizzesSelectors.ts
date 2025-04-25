@@ -19,6 +19,13 @@ export const selectQuizzesUpdateStatus = (state: RootState) =>
   state.quizzes.statusUpdateQuiz;
 export const selectQuizzesError = (state: RootState) => state.quizzes.error;
 
+export const selectInstructorQuizzes = (state: RootState) =>
+  state.quizzes.instructorQuizzes;
+export const selectInstructorAttempts = (state: RootState) =>
+  state.quizzes.instructorAttempts;
+export const selectQuizAttempts = (state: RootState) =>
+  state.quizzes.quizAttempts;
+
 // Derived selectors
 export const selectQuizById = (quizId: number) =>
   createSelector([selectAllQuizzes], (quizzes) =>

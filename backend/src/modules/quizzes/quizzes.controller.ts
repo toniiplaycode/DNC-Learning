@@ -9,6 +9,7 @@ import {
   UseGuards,
   Query,
   ParseIntPipe,
+  BadRequestException,
 } from '@nestjs/common';
 import { QuizzesService } from './quizzes.service';
 import { QuizAttemptsService } from './quiz-attempts.service';
@@ -25,6 +26,7 @@ import { UserRole } from '../../entities/User';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { QuizType } from '../../entities/Quiz';
 import { Quiz } from '../../entities/Quiz';
+import { QuizAttempt } from 'src/entities/QuizAttempt';
 
 @Controller('quizzes')
 export class QuizzesController {
@@ -113,6 +115,11 @@ export class QuizzesController {
     return this.quizzesService.update(id, updateQuizDto);
   }
 
+  @Get('instructor/:instructorId')
+  async findAllByInstructor(@Param('instructorId') instructorId: number) {
+    return this.quizzesService.findAllQuizzesByInstructor(instructorId);
+  }
+
   @Delete(':id')
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.ADMIN, UserRole.INSTRUCTOR)
@@ -167,6 +174,26 @@ export class QuizzesController {
   @UseGuards(JwtAuthGuard)
   findAttempt(@Param('id', ParseIntPipe) id: number, @GetUser() user) {
     return this.quizzesService.findAttempt(id, user.id);
+  }
+
+  @Get('attempts/instructor/:instructorId')
+  async findAllAttemptsByInstructor(
+    @Param('instructorId') instructorId: number,
+  ) {
+    return this.quizzesService.findAllAttemptsByInstructor(instructorId);
+  }
+
+  @Get('attempts/quiz/:quizId')
+  async findAttemptsByQuizId(
+    @Param('quizId', ParseIntPipe) quizId: number,
+  ): Promise<QuizAttempt[]> {
+    try {
+      const attempts =
+        await this.quizzesService.findAllAttemptsByQuizId(quizId);
+      return attempts;
+    } catch (error) {
+      throw new BadRequestException('Không thể lấy danh sách bài làm');
+    }
   }
 
   @Post('submit')

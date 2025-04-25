@@ -53,6 +53,7 @@ import { selectCurrentUser } from "../../features/auth/authSelectors";
 import { selectUserEnrollments } from "../../features/enrollments/enrollmentsSelectors";
 import { useAppSelector as useReduxAppSelector } from "../../redux/hooks";
 import { selectUserEnrollments as selectReduxUserEnrollments } from "../../redux/features/user/userSelectors";
+import { isUppercase } from "../../../../backend/src/modules/courses/dto/create-courses.dto";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -367,19 +368,19 @@ const CourseDetail: React.FC = () => {
                                       mt: 0.5,
                                     }}
                                   >
-                                    <AccessTime
-                                      sx={{
-                                        fontSize: 16,
-                                        color: "text.secondary",
-                                      }}
-                                    />
                                     <Typography
                                       variant="caption"
                                       color="text.secondary"
                                     >
-                                      {lesson.duration
-                                        ? `${lesson.duration} phút`
-                                        : "không có thời gian"}
+                                      {lesson.contentType == "quiz"
+                                        ? "bài trắc nghiệm"
+                                        : lesson.contentType == "assignment"
+                                        ? "bài tập"
+                                        : lesson.contentType == "xlsx"
+                                        ? "excel"
+                                        : lesson.contentType == "docx"
+                                        ? "word"
+                                        : lesson.contentType}
                                     </Typography>
                                   </Box>
                                 }

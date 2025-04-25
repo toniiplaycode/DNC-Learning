@@ -61,7 +61,6 @@ const menuItems = [
   },
   { text: "Bài tập", icon: <Assignment />, path: "/instructor/assignments" },
   { text: "Trắc nghiệm", icon: <Quiz />, path: "/instructor/quiz" },
-  { text: "Thống kê", icon: <Assessment />, path: "/instructor/analytics" },
   { text: "Tin nhắn", icon: <Message />, path: "/instructor/chats" },
   {
     text: "Lịch trình",
@@ -83,6 +82,7 @@ const menuItems = [
     icon: <Comment />,
     path: "/instructor/reviews",
   },
+  { text: "Thống kê", icon: <Assessment />, path: "/instructor/analytics" },
   {
     text: "Thông báo",
     icon: <Notifications />,

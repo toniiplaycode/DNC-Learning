@@ -255,7 +255,77 @@ export const fetchQuizResults = createAsyncThunk(
   }
 );
 
-// Initial state
+// Add new thunk after other thunks
+export const fetchQuizzesByInstructor = createAsyncThunk(
+  "quizzes/fetchByInstructor",
+  async (instructorId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/quizzes/instructor/${instructorId}`);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          "Không thể tải danh sách bài trắc nghiệm"
+      );
+    }
+  }
+);
+
+export const fetchInstructorAttempts = createAsyncThunk(
+  "quizzes/fetchInstructorAttempts",
+  async (instructorId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get(
+        `/quizzes/attempts/instructor/${instructorId}`
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          "Không thể tải danh sách bài làm của học viên"
+      );
+    }
+  }
+);
+
+// Add new thunk for fetching attempts by quiz ID
+export const fetchAttemptsByQuizId = createAsyncThunk(
+  "quizzes/fetchAttemptsByQuizId",
+  async (quizId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/quizzes/attempts/quiz/${quizId}`);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          "Không thể tải danh sách bài làm của bài trắc nghiệm"
+      );
+    }
+  }
+);
+
+// Add to interface QuizzesState
+interface QuizzesState {
+  quizzes: any[];
+  lessonQuizzes: any[];
+  currentQuiz: any;
+  userAttempts: any[];
+  currentAttempt: any;
+  quizResult: any;
+  status: "idle" | "loading" | "succeeded" | "failed";
+  statusUpdateQuiz: "idle" | "loading" | "succeeded" | "failed";
+  error: string | null;
+  instructorQuizzes: any[];
+  instructorQuizzesStatus: "idle" | "loading" | "succeeded" | "failed";
+  instructorAttempts: any[];
+  instructorAttemptsStatus: "idle" | "loading" | "succeeded" | "failed";
+  instructorAttemptsError: string | null;
+  quizAttempts: any[];
+  quizAttemptsStatus: "idle" | "loading" | "succeeded" | "failed";
+  quizAttemptsError: string | null;
+}
+
+// Update initial state
 const initialState: QuizzesState = {
   quizzes: [],
   lessonQuizzes: [],
@@ -266,9 +336,17 @@ const initialState: QuizzesState = {
   status: "idle",
   statusUpdateQuiz: "idle",
   error: null,
+  instructorQuizzes: [],
+  instructorQuizzesStatus: "idle",
+  instructorAttempts: [],
+  instructorAttemptsStatus: "idle",
+  instructorAttemptsError: null,
+  quizAttempts: [],
+  quizAttemptsStatus: "idle",
+  quizAttemptsError: null,
 };
 
-// Slice
+// Add to reducers
 const quizzesSlice = createSlice({
   name: "quizzes",
   initialState,
@@ -284,6 +362,16 @@ const quizzesSlice = createSlice({
     },
     clearQuizResult: (state) => {
       state.quizResult = null;
+    },
+    resetInstructorAttempts: (state) => {
+      state.instructorAttempts = [];
+      state.instructorAttemptsStatus = "idle";
+      state.instructorAttemptsError = null;
+    },
+    resetQuizAttempts: (state) => {
+      state.quizAttempts = [];
+      state.quizAttemptsStatus = "idle";
+      state.quizAttemptsError = null;
     },
   },
   extraReducers: (builder) => {
@@ -553,6 +641,47 @@ const quizzesSlice = createSlice({
       .addCase(fetchQuizzesByCourse.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
+      })
+
+      // Fetch quizzes by instructor
+      .addCase(fetchQuizzesByInstructor.pending, (state) => {
+        state.instructorQuizzesStatus = "loading";
+      })
+      .addCase(fetchQuizzesByInstructor.fulfilled, (state, action) => {
+        state.instructorQuizzesStatus = "succeeded";
+        state.instructorQuizzes = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchQuizzesByInstructor.rejected, (state, action) => {
+        state.instructorQuizzesStatus = "failed";
+        state.error = action.payload as string;
+      })
+
+      // Fetch instructor attempts
+      .addCase(fetchInstructorAttempts.pending, (state) => {
+        state.instructorAttemptsStatus = "loading";
+      })
+      .addCase(fetchInstructorAttempts.fulfilled, (state, action) => {
+        state.instructorAttemptsStatus = "succeeded";
+        state.instructorAttempts = action.payload;
+      })
+      .addCase(fetchInstructorAttempts.rejected, (state, action) => {
+        state.instructorAttemptsStatus = "failed";
+        state.instructorAttemptsError = action.payload as string;
+      })
+
+      // Fetch attempts by quiz ID
+      .addCase(fetchAttemptsByQuizId.pending, (state) => {
+        state.quizAttemptsStatus = "loading";
+      })
+      .addCase(fetchAttemptsByQuizId.fulfilled, (state, action) => {
+        state.quizAttemptsStatus = "succeeded";
+        state.quizAttempts = action.payload;
+        state.quizAttemptsError = null;
+      })
+      .addCase(fetchAttemptsByQuizId.rejected, (state, action) => {
+        state.quizAttemptsStatus = "failed";
+        state.quizAttemptsError = action.payload as string;
       });
   },
 });
@@ -562,6 +691,8 @@ export const {
   clearQuizError,
   clearCurrentQuiz,
   clearQuizResult,
+  resetInstructorAttempts,
+  resetQuizAttempts,
 } = quizzesSlice.actions;
 
 export default quizzesSlice.reducer;

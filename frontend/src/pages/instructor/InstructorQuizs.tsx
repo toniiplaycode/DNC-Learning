@@ -59,9 +59,23 @@ import {
   HourglassEmpty,
   School,
   MenuBook,
+  FilterAlt,
 } from "@mui/icons-material";
 import { useNavigate, useParams } from "react-router-dom";
 import DialogAddEditQuiz from "../../components/instructor/course/DialogAddEditQuiz";
+import {
+  fetchAttemptsByQuizId,
+  fetchInstructorAttempts,
+  fetchQuizzesByInstructor,
+} from "../../features/quizzes/quizzesSlice";
+import {
+  selectInstructorAttempts,
+  selectInstructorQuizzes,
+  selectQuizAttempts,
+} from "../../features/quizzes/quizzesSelectors";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import { selectCurrentUser } from "../../features/auth/authSelectors";
+import { formatDateTime } from "../../utils/formatters";
 
 // Mock data
 const mockQuizzes = [
@@ -220,134 +234,6 @@ const mockQuizzes = [
   },
 ];
 
-const mockStudentAttempts = [
-  {
-    id: 1,
-    studentId: 1,
-    studentName: "Nguyễn Văn A",
-    avatar: "/src/assets/avatar.png",
-    score: 85,
-    timeTaken: 18, // in minutes
-    submittedDate: "2024-03-18 14:25",
-    status: "passed",
-    studentType: "student",
-    answers: [
-      { question: 1, answer: 2, correct: true },
-      { question: 2, answer: 1, correct: true },
-      { question: 3, answer: 0, correct: false },
-      // ...more answers
-    ],
-  },
-  {
-    id: 2,
-    studentId: 2,
-    studentName: "Trần Thị B",
-    studentCode: "SV001",
-    className: "CNTT-K44A",
-    faculty: "Công nghệ thông tin",
-    avatar: "/src/assets/avatar.png",
-    score: 72,
-    timeTaken: 25,
-    submittedDate: "2024-03-18 15:10",
-    status: "passed",
-    studentType: "student_academic",
-    answers: [
-      { question: 1, answer: 2, correct: true },
-      { question: 2, answer: 1, correct: true },
-      { question: 3, answer: 2, correct: true },
-      // ...more answers
-    ],
-  },
-  {
-    id: 3,
-    studentId: 3,
-    studentName: "Lê Văn C",
-    avatar: "/src/assets/avatar.png",
-    score: 65,
-    timeTaken: 25,
-    submittedDate: "2024-03-18 16:10",
-    status: "failed",
-    studentType: "student",
-    answers: [
-      { question: 1, answer: 1, correct: false },
-      { question: 2, answer: 1, correct: true },
-      { question: 3, answer: 1, correct: false },
-      // ...more answers
-    ],
-  },
-  {
-    id: 4,
-    studentId: 4,
-    studentName: "Phạm Thị D",
-    avatar: "/src/assets/avatar.png",
-    score: 78,
-    timeTaken: 22,
-    submittedDate: "2024-03-19 09:45",
-    status: "passed",
-    studentType: "student",
-    answers: [
-      { question: 1, answer: 2, correct: true },
-      { question: 2, answer: 0, correct: false },
-      { question: 3, answer: 2, correct: true },
-      // ...more answers
-    ],
-  },
-  {
-    id: 5,
-    studentId: 5,
-    studentName: "Hoàng Văn E",
-    avatar: "/src/assets/avatar.png",
-    score: 88,
-    timeTaken: 17,
-    submittedDate: "2024-03-19 10:30",
-    status: "passed",
-    studentType: "student",
-    answers: [
-      { question: 1, answer: 2, correct: true },
-      { question: 2, answer: 1, correct: true },
-      { question: 3, answer: 2, correct: true },
-      // ...more answers
-    ],
-  },
-];
-
-// Mock questions for the specific quiz
-const mockQuestions = [
-  {
-    id: 1,
-    question: "useState hook được sử dụng để làm gì?",
-    options: [
-      "Quản lý side effects",
-      "Quản lý state trong functional component",
-      "Tối ưu performance",
-      "Xử lý routing",
-    ],
-    correctAnswer: 1,
-  },
-  {
-    id: 2,
-    question: "useEffect hook được gọi khi nào?",
-    options: [
-      "Chỉ khi component mount",
-      "Sau mỗi lần render",
-      "Khi dependencies thay đổi",
-      "Tất cả các trường hợp trên",
-    ],
-    correctAnswer: 3,
-  },
-  {
-    id: 3,
-    question: "useMemo hook dùng để làm gì?",
-    options: [
-      "Tối ưu performance bằng cách cache giá trị",
-      "Quản lý state",
-      "Xử lý side effects",
-      "Tạo ref",
-    ],
-    correctAnswer: 0,
-  },
-];
-
 // Danh sách lớp học
 const mockClasses = [
   "Tất cả",
@@ -393,19 +279,80 @@ interface QuizAttempt {
 
 // Định nghĩa interface cho Quiz
 interface Quiz {
-  id: number;
+  id: string;
+  lessonId: string | null;
+  academicClassId: string | null;
   title: string;
-  course: string;
-  courseId: number;
-  totalQuestions: number;
+  description: string;
+  timeLimit: number;
   passingScore: number;
-  dateCreated: string;
-  // Thêm các thuộc tính khác của quiz
-  submissions: any[];
+  attemptsAllowed: number;
+  quizType: string;
+  showExplanation: number;
+  startTime: string | null;
+  endTime: string | null;
+  createdAt: string;
+  updatedAt: string;
+  lesson?: {
+    title: string;
+    section: {
+      course: {
+        id: string;
+        title: string;
+      };
+    };
+  };
+  academicClass?: {
+    id: string;
+    classCode: string;
+    className: string;
+    instructors: Array<{
+      id: string;
+      instructorId: string;
+    }>;
+  };
+  questions: Array<{
+    id: string;
+    questionText: string;
+    questionType: string;
+    correctExplanation: string;
+    points: number;
+    orderNumber: number;
+    options: Array<{
+      id: string;
+      optionText: string;
+      isCorrect: boolean;
+      orderNumber: number;
+    }>;
+  }>;
 }
+
+// Add this interface at the top with other interfaces
+interface TabPanelProps {
+  children?: React.ReactNode;
+  value: string;
+  type: string;
+}
+
+// Add TabPanel component
+const StudentTypeTabPanel: React.FC<TabPanelProps> = ({
+  children,
+  value,
+  type,
+}) => {
+  return (
+    <div role="tabpanel" hidden={value !== type}>
+      {value === type && children}
+    </div>
+  );
+};
 
 const InstructorQuizs = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const currentUser = useAppSelector(selectCurrentUser);
+  const instructorQuizzes = useAppSelector(selectInstructorQuizzes);
+  const quizAttempts = useAppSelector(selectQuizAttempts);
   const [selectedQuiz, setSelectedQuiz] = useState<Quiz | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCourse, setFilterCourse] = useState("all");
@@ -418,7 +365,6 @@ const InstructorQuizs = () => {
   const [selectedAttempt, setSelectedAttempt] = useState<QuizAttempt | null>(
     null
   );
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [openAddQuizModal, setOpenAddQuizModal] = useState(false);
   const [currentSectionId, setCurrentSectionId] = useState<number | null>(null);
   const [mockCourseData, setMockCourseData] = useState({
@@ -429,13 +375,23 @@ const InstructorQuizs = () => {
     ],
   });
 
+  useEffect(() => {
+    // Fetch both quizzes and attempts
+    dispatch(fetchQuizzesByInstructor(currentUser.userInstructor.id));
+    dispatch(fetchInstructorAttempts(currentUser.userInstructor.id));
+  }, [dispatch, currentUser]);
+
   // Danh sách khóa học từ mock data
   const courses = [...new Set(mockQuizzes.map((quiz) => quiz.course))];
 
   // Xử lý click vào quiz
   const handleQuizClick = (quiz: Quiz) => {
+    console.log("Quiz clicked:", quiz);
+    dispatch(fetchAttemptsByQuizId(quiz.id));
     setSelectedQuiz(quiz);
   };
+
+  console.log(quizAttempts);
 
   // Xử lý quay lại danh sách quiz
   const handleBackToList = () => {
@@ -450,66 +406,59 @@ const InstructorQuizs = () => {
 
   // Lọc danh sách học viên theo tìm kiếm và bộ lọc
   const getFilteredAttempts = () => {
-    return mockStudentAttempts.filter((attempt) => {
-      const matchesSearch = attempt.studentName
+    if (!quizAttempts) return [];
+
+    return quizAttempts.filter((attempt) => {
+      const matchesSearch = (
+        attempt.user?.userStudent?.fullName ||
+        attempt.user?.userStudentAcademic?.fullName ||
+        attempt.user?.username ||
+        ""
+      )
         .toLowerCase()
         .includes(searchQuery.toLowerCase());
+
       const matchesStatus =
-        filterStatus === "all" || attempt.status === filterStatus;
+        filterStatus === "all" ||
+        (filterStatus === "passed" &&
+          attempt.score >= selectedQuiz.passingScore) ||
+        (filterStatus === "failed" &&
+          attempt.score < selectedQuiz.passingScore);
+
       return matchesSearch && matchesStatus;
     });
   };
 
-  // Thêm hàm xử lý thêm quiz
-  const handleAddQuiz = (quizData: any) => {
-    console.log("Thêm Bài trắc nghiệm mới:", quizData);
+  // Update the component to use filtered quiz attempts
+  const filteredAttempts = getFilteredAttempts();
 
-    // Xử lý thêm Bài trắc nghiệm
-    // Đối với sinh viên trường, có thể lấy thông tin từ additionalInfo
-    if (quizData.additionalInfo) {
-      console.log(
-        "Bài trắc nghiệm dành cho sinh viên thuộc lớp:",
-        quizData.additionalInfo.className
-      );
-      console.log("Thuộc khoa:", quizData.additionalInfo.faculty);
-    }
-
-    // Giả lập thêm thành công
-    alert(`Đã tạo Bài trắc nghiệm "${quizData.title}" thành công!`);
-    setOpenAddQuizModal(false);
-  };
-
-  // Thêm hàm xử lý mở dialog rõ ràng hơn
-  const handleOpenAddQuizModal = () => {
-    console.log("Opening quiz modal");
-    setOpenAddQuizModal(true);
-  };
-
-  // Thêm code debug để theo dõi trạng thái của dialog
-  useEffect(() => {
-    console.log("Quiz modal state:", openAddQuizModal);
-  }, [openAddQuizModal]);
-
-  // Component hiển thị các thống kê
+  // Update QuizStatistics component to use real data
   const QuizStatistics = ({ quiz }: { quiz: Quiz }) => {
-    const passedStudents = mockStudentAttempts.filter(
-      (attempt) => attempt.status === "passed"
+    const attempts = quizAttempts || [];
+    const passedStudents = attempts.filter(
+      (attempt) => Number(attempt.score) >= quiz.passingScore
     ).length;
-    const failedStudents = mockStudentAttempts.filter(
-      (attempt) => attempt.status === "failed"
-    ).length;
-    const passRate = (passedStudents / mockStudentAttempts.length) * 100;
+    const failedStudents = attempts.length - passedStudents;
+    const passRate =
+      attempts.length > 0 ? (passedStudents / attempts.length) * 100 : 0;
+
+    // Calculate average score
+    const averageScore =
+      attempts.length > 0
+        ? attempts.reduce((sum, attempt) => sum + Number(attempt.score), 0) /
+          attempts.length
+        : 0;
 
     return (
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} md={3}>
+        <Grid item xs={12} md={4}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
                 Điểm trung bình
               </Typography>
               <Typography variant="h4" color="primary">
-                {quiz.averageScore.toFixed(1)}
+                {averageScore.toFixed(1)}
               </Typography>
               <Typography variant="body2" color="text.secondary">
                 Trên thang điểm 100
@@ -517,7 +466,7 @@ const InstructorQuizs = () => {
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={3}>
+        <Grid item xs={12} md={4}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
@@ -527,40 +476,20 @@ const InstructorQuizs = () => {
                 {passRate.toFixed(1)}%
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {passedStudents}/{mockStudentAttempts.length} học viên
+                {passedStudents}/{attempts.length} học viên
               </Typography>
             </CardContent>
           </Card>
         </Grid>
-        <Grid item xs={12} md={3}>
+        <Grid item xs={12} md={4}>
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
-                Số lượt làm bài
+                Số bài làm
               </Typography>
-              <Typography variant="h4">{quiz.attempts}</Typography>
+              <Typography variant="h4">{attempts.length}</Typography>
               <Typography variant="body2" color="text.secondary">
-                Tổng số lượt làm
-              </Typography>
-            </CardContent>
-          </Card>
-        </Grid>
-        <Grid item xs={12} md={3}>
-          <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                Thời gian trung bình
-              </Typography>
-              <Typography variant="h4">
-                {(
-                  mockStudentAttempts.reduce(
-                    (acc, cur) => acc + cur.timeTaken,
-                    0
-                  ) / mockStudentAttempts.length
-                ).toFixed(1)}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Phút
+                Tổng số bài làm
               </Typography>
             </CardContent>
           </Card>
@@ -636,21 +565,43 @@ const InstructorQuizs = () => {
     return true;
   });
 
+  // Add getFilteredQuizzes function inside component
+  const getFilteredQuizzes = () => {
+    if (!instructorQuizzes) return [];
+
+    return instructorQuizzes.filter((quiz) => {
+      // Filter by search query
+      const matchesSearch =
+        !searchQuery ||
+        quiz.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        quiz.description?.toLowerCase().includes(searchQuery.toLowerCase());
+
+      // Filter by student type
+      const matchesType =
+        studentTypeFilter === "all" ||
+        (studentTypeFilter === "student" && quiz.lessonId) ||
+        (studentTypeFilter === "student_academic" && quiz.academicClassId);
+
+      // Filter by course/class if selected
+      const matchesCourse =
+        filterCourse === "all" ||
+        quiz.lesson?.section.course.id === filterCourse ||
+        quiz.academicClass?.id === filterCourse;
+
+      return matchesSearch && matchesType && matchesCourse;
+    });
+  };
+
   // Render danh sách quiz
   if (!selectedQuiz) {
     return (
       <Box sx={{ p: 3 }}>
         <Typography variant="h5" gutterBottom fontWeight="bold">
-          Bài trắc nghiệm
+          Quản lý bài trắc nghiệm
         </Typography>
-
         <Card sx={{ mb: 3 }}>
           <CardContent>
-            <Stack
-              direction={{ xs: "column", sm: "row" }}
-              spacing={2}
-              sx={{ mb: 2 }}
-            >
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
               <TextField
                 placeholder="Tìm kiếm Bài trắc nghiệm..."
                 size="small"
@@ -679,24 +630,42 @@ const InstructorQuizs = () => {
                   ))}
                 </Select>
               </FormControl>
-              <FormControl size="small" sx={{ minWidth: 200 }}>
-                <InputLabel>Loại học viên</InputLabel>
-                <Select
-                  value={studentTypeFilter}
-                  label="Loại học viên"
-                  onChange={(e) =>
-                    setStudentTypeFilter(e.target.value as string)
-                  }
-                >
-                  <MenuItem value="all">Tất cả</MenuItem>
-                  <MenuItem value="student">Học viên bên ngoài</MenuItem>
-                  <MenuItem value="student_academic">Sinh viên trường</MenuItem>
-                </Select>
-              </FormControl>
             </Stack>
+            <Box sx={{ mb: 3, display: "flex", justifyContent: "flex-start" }}>
+              <Tabs
+                value={studentTypeFilter}
+                onChange={(e, newValue) => setStudentTypeFilter(newValue)}
+                variant="fullWidth"
+              >
+                <Tab
+                  icon={<FilterAlt fontSize="small" />}
+                  iconPosition="start"
+                  label="Tất cả học viên"
+                  value="all"
+                  sx={{ width: "210px" }}
+                />
+                <Tab
+                  icon={<Person fontSize="small" />}
+                  iconPosition="start"
+                  label="Học viên bên ngoài"
+                  value="student"
+                  sx={{ width: "210px" }}
+                />
+                <Tab
+                  icon={<School fontSize="small" />}
+                  iconPosition="start"
+                  label="Sinh viên trường"
+                  value="student_academic"
+                  sx={{ width: "210px" }}
+                />
+              </Tabs>
+            </Box>
 
-            {/* Bộ lọc thêm cho sinh viên trường */}
-            {studentTypeFilter === "student_academic" && (
+            {/* Move class and faculty filters to student_academic tab panel */}
+            <StudentTypeTabPanel
+              value={studentTypeFilter}
+              type="student_academic"
+            >
               <Stack
                 direction="row"
                 sx={{ display: "flex", gap: 2, marginBottom: 2 }}
@@ -733,76 +702,38 @@ const InstructorQuizs = () => {
                 <Button
                   variant="contained"
                   color="primary"
-                  onClick={handleOpenAddQuizModal}
+                  onClick={() => setOpenAddQuizModal(true)}
                   startIcon={<Add />}
                 >
                   Tạo Bài trắc nghiệm mới
                 </Button>
               </Stack>
-            )}
+            </StudentTypeTabPanel>
 
-            <TableContainer component={Paper} variant="outlined">
-              <Table>
-                <TableHead>
-                  <TableRow>
-                    <TableCell>Tên bài trắc nghiệm</TableCell>
-                    <TableCell>Khóa học</TableCell>
-                    <TableCell align="center">Số câu hỏi</TableCell>
-                    <TableCell align="center">Điểm đạt</TableCell>
-                    <TableCell align="center">Lượt làm</TableCell>
-                    <TableCell align="center">Điểm TB</TableCell>
-                    <TableCell align="center">Ngày tạo</TableCell>
-                    <TableCell align="center">Thao tác</TableCell>
-                  </TableRow>
-                </TableHead>
-                <TableBody>
-                  {mockQuizzes
-                    .filter(
-                      (quiz) =>
-                        (filterCourse === "all" ||
-                          quiz.course === filterCourse) &&
-                        quiz.title
-                          .toLowerCase()
-                          .includes(searchQuery.toLowerCase())
-                    )
-                    .map((quiz) => (
-                      <TableRow key={quiz.id}>
-                        <TableCell>{quiz.title}</TableCell>
-                        <TableCell>{quiz.course}</TableCell>
-                        <TableCell align="center">
-                          {quiz.totalQuestions}
-                        </TableCell>
-                        <TableCell align="center">
-                          {quiz.passingScore}%
-                        </TableCell>
-                        <TableCell align="center">{quiz.attempts}</TableCell>
-                        <TableCell align="center">
-                          {quiz.averageScore.toFixed(1)}
-                        </TableCell>
-                        <TableCell align="center">
-                          {new Date(quiz.dateCreated).toLocaleDateString(
-                            "vi-VN"
-                          )}
-                        </TableCell>
-                        <TableCell align="center">
-                          <Button
-                            variant="contained"
-                            size="small"
-                            onClick={() => handleQuizClick(quiz)}
-                          >
-                            Xem chi tiết
-                          </Button>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                </TableBody>
-              </Table>
-            </TableContainer>
+            {/* Update QuizList usage */}
+            <QuizList
+              quizzes={getFilteredQuizzes()}
+              onQuizClick={handleQuizClick}
+            />
           </CardContent>
         </Card>
       </Box>
     );
   }
+
+  // Helper function to format duration
+  const formatDuration = (startTime: string, endTime: string) => {
+    const duration = new Date(
+      new Date(endTime).getTime() - new Date(startTime).getTime()
+    );
+    const hours = Math.floor(duration.getTime() / (1000 * 60 * 60));
+    const minutes = duration.getUTCMinutes();
+    const seconds = duration.getUTCSeconds();
+
+    return `${hours.toString().padStart(2, "0")}:${minutes
+      .toString()
+      .padStart(2, "0")}:${seconds.toString().padStart(2, "0")}`;
+  };
 
   // Render chi tiết Bài trắc nghiệm và danh sách học viên làm bài
   return (
@@ -821,10 +752,17 @@ const InstructorQuizs = () => {
           <Grid container spacing={2} sx={{ mb: 3 }}>
             <Grid item xs={12} md={6}>
               <Typography variant="subtitle1">
-                Khóa học: {selectedQuiz.course}
+                {selectedQuiz.lessonId ? (
+                  <>Khóa học: {selectedQuiz.lesson?.section.course.title}</>
+                ) : (
+                  <>
+                    Lớp học: {selectedQuiz.academicClass?.className} -{" "}
+                    {selectedQuiz.academicClass?.classCode}
+                  </>
+                )}
               </Typography>
               <Typography variant="body2">
-                Số câu hỏi: {selectedQuiz.totalQuestions}
+                Số câu hỏi: {selectedQuiz.questions.length}
               </Typography>
               <Typography variant="body2">
                 Điểm đạt: {selectedQuiz.passingScore}%
@@ -832,8 +770,7 @@ const InstructorQuizs = () => {
             </Grid>
             <Grid item xs={12} md={6}>
               <Typography variant="body2" align="right">
-                Ngày tạo:{" "}
-                {new Date(selectedQuiz.dateCreated).toLocaleDateString("vi-VN")}
+                Ngày tạo: {formatDateTime(selectedQuiz.createdAt)}
               </Typography>
             </Grid>
           </Grid>
@@ -920,9 +857,9 @@ const InstructorQuizs = () => {
                     </TableRow>
                   </TableHead>
                   <TableBody>
-                    {filteredSubmissions.length > 0 ? (
-                      filteredSubmissions.map((submission) => (
-                        <TableRow key={submission.id}>
+                    {filteredAttempts.length > 0 ? (
+                      filteredAttempts.map((attempt) => (
+                        <TableRow key={attempt.id}>
                           <TableCell>
                             <Stack
                               direction="row"
@@ -930,13 +867,16 @@ const InstructorQuizs = () => {
                               alignItems="center"
                             >
                               <Avatar
-                                src={submission.avatar}
+                                src={attempt.user.avatarUrl}
                                 sx={{ width: 30, height: 30 }}
-                              />
+                              >
+                                {attempt.user.username[0]}
+                              </Avatar>
                               <Typography variant="body2">
-                                {submission.studentName}
-                                {submission.studentType ===
-                                  "student_academic" && (
+                                {attempt.user.userStudentAcademic?.fullName ||
+                                  attempt.user.userStudent?.fullName ||
+                                  attempt.user.username}
+                                {attempt.user.userStudentAcademic && (
                                   <Chip
                                     size="small"
                                     icon={<School fontSize="small" />}
@@ -952,34 +892,46 @@ const InstructorQuizs = () => {
                           {studentTypeFilter === "student_academic" && (
                             <>
                               <TableCell>
-                                {submission.studentCode || "-"}
+                                {attempt.user.userStudentAcademic
+                                  ?.studentCode || "-"}
                               </TableCell>
                               <TableCell>
-                                {submission.className || "-"}
+                                {attempt.user.userStudentAcademic?.academicClass
+                                  ?.className || "-"}
                               </TableCell>
                             </>
                           )}
-                          <TableCell>{submission.quizTitle}</TableCell>
-                          <TableCell>{submission.courseName}</TableCell>
-                          <TableCell>{submission.timeSpent} phút</TableCell>
-                          <TableCell>{submission.submittedDate}</TableCell>
+                          <TableCell>{selectedQuiz.title}</TableCell>
+                          <TableCell>
+                            {selectedQuiz.lesson?.section.course.title ||
+                              selectedQuiz.academicClass?.className +
+                                " - " +
+                                selectedQuiz.academicClass?.classCode}
+                          </TableCell>
+                          <TableCell>
+                            {formatDuration(attempt.startTime, attempt.endTime)}
+                          </TableCell>
+                          <TableCell>
+                            {new Date(attempt.endTime).toLocaleString("vi-VN")}
+                          </TableCell>
                           <TableCell>
                             <Typography
                               variant="body2"
                               color={
-                                submission.status === "passed"
+                                Number(attempt.score) >=
+                                selectedQuiz.passingScore
                                   ? "success.main"
                                   : "error.main"
                               }
                               fontWeight="bold"
                             >
-                              {submission.score}/100
+                              {attempt.score}/100
                             </Typography>
                           </TableCell>
                           <TableCell align="right">
                             <IconButton
                               color="primary"
-                              onClick={() => handleViewAttempt(submission)}
+                              onClick={() => handleViewAttempt(attempt)}
                             >
                               <Visibility />
                             </IconButton>
@@ -992,9 +944,41 @@ const InstructorQuizs = () => {
                           colSpan={
                             studentTypeFilter === "student_academic" ? 9 : 7
                           }
-                          align="center"
+                          sx={{ py: 8 }} // Add more vertical padding
                         >
-                          Không tìm thấy dữ liệu
+                          <Box
+                            sx={{
+                              display: "flex",
+                              flexDirection: "column",
+                              alignItems: "center",
+                              gap: 2,
+                            }}
+                          >
+                            {/* Add an icon */}
+                            <Assignment
+                              sx={{
+                                fontSize: 64,
+                                color: "text.disabled",
+                                opacity: 0.5,
+                              }}
+                            />
+
+                            {/* Main message */}
+                            <Typography variant="h6" color="text.secondary">
+                              Không tìm thấy dữ liệu
+                            </Typography>
+
+                            {/* Optional helper text */}
+                            <Typography
+                              variant="body2"
+                              color="text.disabled"
+                              align="center"
+                              sx={{ maxWidth: 300 }}
+                            >
+                              Hiện chưa có học viên nào làm bài trắc nghiệm này
+                              hoặc không tìm thấy kết quả phù hợp với bộ lọc
+                            </Typography>
+                          </Box>
                         </TableCell>
                       </TableRow>
                     )}
@@ -1007,34 +991,37 @@ const InstructorQuizs = () => {
           {/* Tab 2: Câu hỏi */}
           {tabValue === 1 && (
             <List>
-              {mockQuestions.map((question, index) => (
+              {selectedQuiz.questions.map((question, index) => (
                 <React.Fragment key={question.id}>
                   {index > 0 && <Divider />}
                   <ListItem alignItems="flex-start" sx={{ py: 2 }}>
                     <ListItemText
                       primary={
-                        <Typography variant="subtitle1">
-                          Câu {index + 1}: {question.question}
-                        </Typography>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <Typography variant="subtitle1">
+                            Câu {index + 1}: {question.questionText}
+                          </Typography>
+                        </Box>
                       }
                       secondary={
                         <Box sx={{ mt: 1 }}>
-                          {question.options.map((option, i) => (
+                          {question.options.map((option) => (
                             <Box
-                              key={i}
+                              key={option.id}
                               sx={{
                                 display: "flex",
                                 alignItems: "center",
                                 mb: 0.5,
                                 p: 1,
                                 borderRadius: 1,
-                                bgcolor:
-                                  i === question.correctAnswer
-                                    ? "success.light"
-                                    : "background.paper",
+                                bgcolor: option.isCorrect
+                                  ? "success.light"
+                                  : "background.paper",
                               }}
                             >
-                              {i === question.correctAnswer ? (
+                              {option.isCorrect ? (
                                 <CheckCircle
                                   color="success"
                                   fontSize="small"
@@ -1043,18 +1030,44 @@ const InstructorQuizs = () => {
                               ) : (
                                 <div style={{ width: 26, marginRight: 8 }} />
                               )}
-                              <Typography
-                                variant="body2"
-                                fontWeight={
-                                  i === question.correctAnswer
-                                    ? "bold"
-                                    : "normal"
-                                }
-                              >
-                                {option}
-                              </Typography>
+                              <Box sx={{ flex: 1 }}>
+                                <Typography
+                                  variant="body2"
+                                  fontWeight={
+                                    option.isCorrect ? "bold" : "normal"
+                                  }
+                                >
+                                  {option.optionText}
+                                </Typography>
+                              </Box>
+                              {option.isCorrect && (
+                                <Chip
+                                  size="small"
+                                  color="success"
+                                  label="Đáp án đúng"
+                                  sx={{ ml: 1 }}
+                                />
+                              )}
                             </Box>
                           ))}
+                          {question.correctExplanation && (
+                            <Box
+                              sx={{
+                                mt: 1,
+                                p: 1.5,
+                                bgcolor: "info.lighter",
+                                borderRadius: 1,
+                              }}
+                            >
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                <strong>Giải thích:</strong>{" "}
+                                {question.correctExplanation}
+                              </Typography>
+                            </Box>
+                          )}
                         </Box>
                       }
                     />
@@ -1076,21 +1089,22 @@ const InstructorQuizs = () => {
         {selectedAttempt && (
           <>
             <DialogTitle>
-              <Box sx={{ display: "flex", alignItems: "center" }}>
-                <Avatar
-                  src={selectedAttempt.avatar}
-                  sx={{ mr: 2, width: 40, height: 40 }}
-                />
+              <Stack direction="row" spacing={2} alignItems="center">
+                <Avatar>{selectedAttempt.user.username[0]}</Avatar>
                 <Box>
                   <Typography variant="h6">
-                    {selectedAttempt.studentName}
+                    {selectedAttempt.user.userStudentAcademic?.fullName ||
+                      selectedAttempt.user.userStudent?.fullName ||
+                      selectedAttempt.user.username}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
-                    Nộp lúc: {selectedAttempt.submittedDate}
+                    Nộp lúc:{" "}
+                    {new Date(selectedAttempt.endTime).toLocaleString("vi-VN")}
                   </Typography>
                 </Box>
-              </Box>
+              </Stack>
             </DialogTitle>
+
             <DialogContent dividers>
               <Box sx={{ p: 2 }}>
                 <Grid container spacing={3} sx={{ mb: 3 }}>
@@ -1102,16 +1116,17 @@ const InstructorQuizs = () => {
                       <Typography
                         variant="h3"
                         color={
-                          selectedAttempt.score >= selectedQuiz.passingScore
+                          Number(selectedAttempt.score) >=
+                          selectedQuiz.passingScore
                             ? "success.main"
                             : "error.main"
                         }
                         fontWeight="bold"
                       >
-                        {selectedAttempt.score}
+                        {selectedAttempt.score}%
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        /100
+                        Điểm đạt: {selectedQuiz.passingScore}%
                       </Typography>
                     </Box>
                   </Grid>
@@ -1122,12 +1137,14 @@ const InstructorQuizs = () => {
                       </Typography>
                       <Chip
                         label={
-                          selectedAttempt.status === "passed"
+                          Number(selectedAttempt.score) >=
+                          selectedQuiz.passingScore
                             ? "Đạt"
                             : "Không đạt"
                         }
                         color={
-                          selectedAttempt.status === "passed"
+                          Number(selectedAttempt.score) >=
+                          selectedQuiz.passingScore
                             ? "success"
                             : "error"
                         }
@@ -1141,10 +1158,10 @@ const InstructorQuizs = () => {
                         Thời gian làm bài
                       </Typography>
                       <Typography variant="h5">
-                        {selectedAttempt.timeTaken}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        phút
+                        {formatDuration(
+                          selectedAttempt.startTime,
+                          selectedAttempt.endTime
+                        )}
                       </Typography>
                     </Box>
                   </Grid>
@@ -1157,89 +1174,109 @@ const InstructorQuizs = () => {
                 </Typography>
 
                 <List>
-                  {mockQuestions.map((question, index) => {
-                    const answer = selectedAttempt?.answers?.find(
-                      (a) => a.question === question.id
-                    );
-                    const isCorrect = answer?.correct || false;
-
-                    return (
-                      <React.Fragment key={question.id}>
-                        {index > 0 && <Divider />}
-                        <ListItem alignItems="flex-start" sx={{ py: 2 }}>
-                          <ListItemText
-                            primary={
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 1,
-                                }}
-                              >
-                                {isCorrect ? (
-                                  <CheckCircle color="success" />
-                                ) : (
-                                  <Cancel color="error" />
-                                )}
-                                <Typography variant="subtitle1">
-                                  Câu {index + 1}: {question.question}
-                                </Typography>
-                              </Box>
-                            }
-                            secondary={
-                              <Box sx={{ mt: 1 }}>
-                                {question.options.map((option, i) => (
-                                  <Box
-                                    key={i}
-                                    sx={{
-                                      display: "flex",
-                                      alignItems: "center",
-                                      mb: 0.5,
-                                      p: 1,
-                                      borderRadius: 1,
-                                      bgcolor:
-                                        i === answer?.answer
-                                          ? isCorrect
-                                            ? "success.light"
-                                            : "error.light"
-                                          : i === question.correctAnswer
+                  {selectedAttempt.responses.map((response) => (
+                    <React.Fragment key={response.id}>
+                      <ListItem alignItems="flex-start" sx={{ py: 2 }}>
+                        <ListItemText
+                          primary={
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                              }}
+                            >
+                              {Number(response.score) > 0 ? (
+                                <CheckCircle color="success" />
+                              ) : (
+                                <Cancel color="error" />
+                              )}
+                              <Typography variant="subtitle1">
+                                Câu {response.question.orderNumber}:{" "}
+                                {response.question.questionText}
+                              </Typography>
+                            </Box>
+                          }
+                          secondary={
+                            <Box sx={{ mt: 1 }}>
+                              {response.question.options.map((option) => (
+                                <Box
+                                  key={option.id}
+                                  sx={{
+                                    p: 1,
+                                    my: 0.5,
+                                    borderRadius: 1,
+                                    bgcolor:
+                                      option.id === response.selectedOption?.id
+                                        ? option.isCorrect
                                           ? "success.light"
-                                          : "background.paper",
-                                    }}
+                                          : "error.light"
+                                        : option.isCorrect
+                                        ? "success.light"
+                                        : "background.default",
+                                  }}
+                                >
+                                  <Stack
+                                    direction="row"
+                                    justifyContent="space-between"
+                                    alignItems="center"
                                   >
-                                    <Typography
-                                      variant="body2"
-                                      fontWeight={
-                                        i === answer?.answer ||
-                                        i === question.correctAnswer
-                                          ? "bold"
-                                          : "normal"
-                                      }
-                                    >
-                                      {option}
-                                      {i === question.correctAnswer &&
-                                        " (Đáp án đúng)"}
-                                      {i === answer?.answer &&
-                                        i !== question.correctAnswer &&
-                                        " (Đã chọn)"}
+                                    <Typography variant="body2">
+                                      {option.optionText}
                                     </Typography>
-                                  </Box>
-                                ))}
-                              </Box>
-                            }
-                          />
-                        </ListItem>
-                      </React.Fragment>
-                    );
-                  })}
+                                    <Stack direction="row" spacing={1}>
+                                      {option.id ===
+                                        response.selectedOption?.id && (
+                                        <Chip
+                                          size="small"
+                                          label="Đã chọn"
+                                          color={
+                                            option.isCorrect
+                                              ? "success"
+                                              : "error"
+                                          }
+                                        />
+                                      )}
+                                      {option.isCorrect && (
+                                        <Chip
+                                          size="small"
+                                          label="Đáp án đúng"
+                                          color="success"
+                                        />
+                                      )}
+                                    </Stack>
+                                  </Stack>
+                                </Box>
+                              ))}
+
+                              {response.question.correctExplanation && (
+                                <Box
+                                  sx={{
+                                    mt: 1,
+                                    p: 1.5,
+                                    bgcolor: "info.lighter",
+                                    borderRadius: 1,
+                                  }}
+                                >
+                                  <Typography variant="body2">
+                                    <strong>Giải thích:</strong>{" "}
+                                    {response.question.correctExplanation}
+                                  </Typography>
+                                </Box>
+                              )}
+                            </Box>
+                          }
+                        />
+                      </ListItem>
+                      <Divider />
+                    </React.Fragment>
+                  ))}
                 </List>
               </Box>
             </DialogContent>
+
             <DialogActions>
               <Button onClick={() => setOpenAttemptDetails(false)}>Đóng</Button>
-              <Button variant="contained" startIcon={<Email />}>
-                Liên hệ học viên
-              </Button>
             </DialogActions>
           </>
         )}
@@ -1252,7 +1289,7 @@ const InstructorQuizs = () => {
           console.log("Closing quiz modal");
           setOpenAddQuizModal(false);
         }}
-        onSubmit={handleAddQuiz}
+        // onSubmit={handleAddQuiz}
         initialSectionId={currentSectionId || undefined}
         sections={mockCourseData.sections}
         editMode={false}
@@ -1278,6 +1315,130 @@ const InstructorQuizs = () => {
         }}
       /> */}
     </Box>
+  );
+};
+
+interface QuizListProps {
+  quizzes: Quiz[];
+  onQuizClick: (quiz: Quiz) => void;
+}
+
+const QuizList = ({ quizzes, onQuizClick }: QuizListProps) => {
+  const dispatch = useAppDispatch();
+  const instructorAttempts = useAppSelector(selectInstructorAttempts);
+  const currentUser = useAppSelector(selectCurrentUser);
+
+  // Fetch attempts when component mounts
+  useEffect(() => {
+    dispatch(fetchInstructorAttempts(currentUser.userInstructor.id));
+  }, [dispatch, currentUser]);
+
+  // Function to count attempts for a specific quiz
+  const getQuizAttemptCount = (quizId: string) => {
+    if (!instructorAttempts) return 0;
+
+    return instructorAttempts.filter(
+      (attempt) =>
+        String(attempt.quizId) === String(quizId) &&
+        attempt.status === "completed"
+    ).length;
+  };
+
+  return (
+    <TableContainer component={Paper} variant="outlined">
+      <Table>
+        <TableHead>
+          <TableRow>
+            <TableCell>Tên bài trắc nghiệm</TableCell>
+            <TableCell>Loại</TableCell>
+            <TableCell>Khóa học/Lớp học</TableCell>
+            <TableCell align="center">Số bài làm</TableCell>
+            <TableCell align="center">Số câu hỏi</TableCell>
+            <TableCell align="center">Điểm đạt</TableCell>
+            <TableCell align="center">Thời gian (phút)</TableCell>
+            <TableCell align="center">Ngày tạo</TableCell>
+            <TableCell align="center">Thao tác</TableCell>
+          </TableRow>
+        </TableHead>
+        <TableBody>
+          {quizzes.map((quiz) => (
+            <TableRow key={quiz.id}>
+              <TableCell>{quiz.title}</TableCell>
+              <TableCell>
+                {quiz.lessonId ? (
+                  <Chip
+                    icon={<MenuBook />}
+                    label="Khóa học"
+                    color="primary"
+                    size="small"
+                  />
+                ) : (
+                  <Chip
+                    icon={<School />}
+                    label="Lớp học"
+                    color="info"
+                    size="small"
+                  />
+                )}
+              </TableCell>
+              <TableCell>
+                {quiz.lessonId
+                  ? quiz.lesson?.section.course.title
+                  : quiz.academicClass?.className +
+                    " - " +
+                    quiz.academicClass?.classCode}
+              </TableCell>
+              {/* Add attempt count cell */}
+              <TableCell align="center">
+                <Chip
+                  label={getQuizAttemptCount(quiz.id)}
+                  color={
+                    getQuizAttemptCount(quiz.id) > 0 ? "primary" : "default"
+                  }
+                  size="small"
+                  sx={{
+                    minWidth: 60,
+                    fontWeight: "medium",
+                  }}
+                />
+              </TableCell>
+              <TableCell align="center">{quiz.questions.length}</TableCell>
+              <TableCell align="center">{quiz.passingScore}%</TableCell>
+              <TableCell align="center">{quiz.timeLimit}</TableCell>
+              <TableCell align="center">
+                {formatDateTime(quiz.createdAt)}
+              </TableCell>
+              <TableCell align="center">
+                <Stack direction="row" spacing={1} justifyContent="center">
+                  <Tooltip title="Xem chi tiết">
+                    <IconButton size="small" onClick={() => onQuizClick(quiz)}>
+                      <Visibility fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Chỉnh sửa">
+                    <IconButton size="small">
+                      <Edit fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                  <Tooltip title="Xóa">
+                    <IconButton size="small" color="error">
+                      <Delete fontSize="small" />
+                    </IconButton>
+                  </Tooltip>
+                </Stack>
+              </TableCell>
+            </TableRow>
+          ))}
+          {quizzes.length === 0 && (
+            <TableRow>
+              <TableCell colSpan={8} align="center">
+                Không có bài trắc nghiệm nào
+              </TableCell>
+            </TableRow>
+          )}
+        </TableBody>
+      </Table>
+    </TableContainer>
   );
 };
 

@@ -5,7 +5,7 @@ import {
   ForbiddenException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, LessThan, MoreThan, IsNull, In } from 'typeorm';
+import { Repository, LessThan, MoreThan, IsNull, In, Brackets } from 'typeorm';
 import { Quiz, QuizType } from '../../entities/Quiz';
 import { QuizQuestion, QuestionType } from '../../entities/QuizQuestion';
 import { QuizOption } from '../../entities/QuizOption';
@@ -205,6 +205,57 @@ export class QuizzesService {
     }
 
     return quizzes;
+  }
+
+  async findAllQuizzesByInstructor(instructorId: number): Promise<Quiz[]> {
+    try {
+      // Using query builder to handle complex joins
+      const quizzes = await this.quizzesRepository
+        .createQueryBuilder('quiz')
+        // Join for lesson-based quizzes
+        .leftJoinAndSelect('quiz.lesson', 'lesson')
+        .leftJoinAndSelect('lesson.section', 'section')
+        .leftJoinAndSelect('section.course', 'course')
+        // Join for academic class quizzes
+        .leftJoinAndSelect('quiz.academicClass', 'academicClass')
+        .leftJoinAndSelect(
+          'academicClass.instructors',
+          'academicClassInstructor',
+        )
+        // Load related entities
+        .leftJoinAndSelect('quiz.questions', 'questions')
+        .leftJoinAndSelect('questions.options', 'options')
+        // Where conditions for both types of quizzes
+        .where(
+          new Brackets((qb) => {
+            qb.where('course.instructorId = :instructorId', {
+              instructorId,
+            }).orWhere('academicClassInstructor.instructorId = :instructorId', {
+              instructorId,
+            });
+          }),
+        )
+        // Order by creation date
+        .orderBy('quiz.createdAt', 'DESC')
+        .getMany();
+
+      // Sort questions and options
+      quizzes.forEach((quiz) => {
+        if (quiz.questions) {
+          quiz.questions.sort((a, b) => a.orderNumber - b.orderNumber);
+          quiz.questions.forEach((question) => {
+            if (question.options) {
+              question.options.sort((a, b) => a.orderNumber - b.orderNumber);
+            }
+          });
+        }
+      });
+
+      return quizzes;
+    } catch (error) {
+      console.error('Error finding quizzes:', error);
+      throw new BadRequestException('Không thể lấy danh sách bài trắc nghiệm');
+    }
   }
 
   async update(id: number, updateQuizDto: UpdateQuizDto): Promise<Quiz> {
@@ -482,6 +533,170 @@ export class QuizzesService {
     }
 
     return attempt;
+  }
+
+  async findAllAttemptsByQuizId(quizId: number): Promise<QuizAttempt[]> {
+    try {
+      const attempts = await this.attemptsRepository
+        .createQueryBuilder('attempt')
+        // Basic attempt info
+        .select([
+          'attempt.id',
+          'attempt.userId',
+          'attempt.quizId',
+          'attempt.startTime',
+          'attempt.endTime',
+          'attempt.score',
+          'attempt.status',
+          'attempt.createdAt',
+          'attempt.updatedAt',
+        ])
+
+        // Quiz basic info without questions
+        .leftJoinAndSelect('attempt.quiz', 'quiz')
+        .leftJoinAndSelect('quiz.lesson', 'lesson')
+        .leftJoinAndSelect('lesson.section', 'section')
+        .leftJoinAndSelect('section.course', 'course')
+        .leftJoinAndSelect('quiz.academicClass', 'academicClass')
+
+        // Student info
+        .leftJoinAndSelect('attempt.user', 'user')
+        .leftJoinAndSelect('user.userStudent', 'userStudent')
+        .leftJoinAndSelect('user.userStudentAcademic', 'userStudentAcademic')
+
+        // Responses and questions data with all options
+        .leftJoinAndSelect('attempt.responses', 'responses')
+        .leftJoinAndSelect('responses.question', 'question')
+        .leftJoinAndSelect('question.options', 'allOptions')
+        .leftJoinAndSelect('responses.selectedOption', 'selectedOption')
+
+        // Filter by quiz ID
+        .where('attempt.quizId = :quizId', { quizId })
+
+        // Only completed attempts
+        .andWhere('attempt.status = :status', {
+          status: AttemptStatus.COMPLETED,
+        })
+
+        // Sort by newest first
+        .orderBy('attempt.endTime', 'DESC')
+        .getMany();
+
+      // Sort responses and options
+      attempts.forEach((attempt) => {
+        if (attempt.responses) {
+          // Sort responses by question order
+          attempt.responses.sort((a, b) => {
+            return (
+              (a.question?.orderNumber ?? 0) - (b.question?.orderNumber ?? 0)
+            );
+          });
+
+          // Sort options for each question
+          attempt.responses.forEach((response) => {
+            if (response.question?.options) {
+              response.question.options.sort(
+                (a, b) => a.orderNumber - b.orderNumber,
+              );
+            }
+          });
+        }
+      });
+
+      return attempts;
+    } catch (error) {
+      console.error('Error getting attempts:', error);
+      throw new BadRequestException('Không thể lấy danh sách bài làm');
+    }
+  }
+
+  async findAllAttemptsByInstructor(
+    instructorId: number,
+  ): Promise<QuizAttempt[]> {
+    try {
+      const attempts = await this.attemptsRepository
+        .createQueryBuilder('attempt')
+        // Basic attempt info
+        .select([
+          'attempt.id',
+          'attempt.userId',
+          'attempt.quizId',
+          'attempt.startTime',
+          'attempt.endTime',
+          'attempt.score',
+          'attempt.status',
+          'attempt.createdAt',
+          'attempt.updatedAt',
+        ])
+
+        // Quiz basic info without questions
+        .leftJoinAndSelect('attempt.quiz', 'quiz')
+        .leftJoinAndSelect('quiz.lesson', 'lesson')
+        .leftJoinAndSelect('lesson.section', 'section')
+        .leftJoinAndSelect('section.course', 'course')
+        .leftJoinAndSelect('quiz.academicClass', 'academicClass')
+        .leftJoinAndSelect(
+          'academicClass.instructors',
+          'academicClassInstructor',
+        )
+
+        // Student info
+        .leftJoinAndSelect('attempt.user', 'user')
+        .leftJoinAndSelect('user.userStudent', 'userStudent')
+        .leftJoinAndSelect('user.userStudentAcademic', 'userStudentAcademic')
+
+        // Responses and questions data with all options
+        .leftJoinAndSelect('attempt.responses', 'responses')
+        .leftJoinAndSelect('responses.question', 'question')
+        .leftJoinAndSelect('question.options', 'allOptions') // Add all options for questions
+        .leftJoinAndSelect('responses.selectedOption', 'selectedOption')
+
+        // Filter by instructor
+        .where(
+          new Brackets((qb) => {
+            qb.where('course.instructorId = :instructorId', {
+              instructorId,
+            }).orWhere('academicClassInstructor.instructorId = :instructorId', {
+              instructorId,
+            });
+          }),
+        )
+
+        // Only completed attempts
+        .andWhere('attempt.status = :status', {
+          status: AttemptStatus.COMPLETED,
+        })
+
+        // Sort by newest first
+        .orderBy('attempt.endTime', 'DESC')
+        .getMany();
+
+      // Sort responses and options
+      attempts.forEach((attempt) => {
+        if (attempt.responses) {
+          // Sort responses by question order
+          attempt.responses.sort((a, b) => {
+            return (
+              (a.question?.orderNumber ?? 0) - (b.question?.orderNumber ?? 0)
+            );
+          });
+
+          // Sort options for each question
+          attempt.responses.forEach((response) => {
+            if (response.question?.options) {
+              response.question.options.sort(
+                (a, b) => a.orderNumber - b.orderNumber,
+              );
+            }
+          });
+        }
+      });
+
+      return attempts;
+    } catch (error) {
+      console.error('Error getting attempts:', error);
+      throw new BadRequestException('Không thể lấy danh sách bài làm');
+    }
   }
 
   async submitQuizResponsesAndUpdateAttempt(

@@ -89,7 +89,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
     answers: [],
   }));
 
-  console.log(quizSubmitted, currentAnswers.answers);
+  console.log("userAttempts", userAttempts);
 
   useEffect(() => {
     // Fetch quizzes when the component mounts

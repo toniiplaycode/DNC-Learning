@@ -42,24 +42,18 @@ import {
   Search,
   Assignment,
   Download,
-  FilterList,
   Description,
   PictureAsPdf,
-  Code,
   InsertDriveFile,
   Close,
   OpenInNew,
   RateReview,
   School,
   Person,
-  Class,
   FilterAlt,
   Edit,
   Delete,
   ArrowBack,
-  CloseFullscreen,
-  CloseSharp,
-  CloseOutlined,
 } from "@mui/icons-material";
 import DialogAddEditAssignment from "../../components/instructor/course/DialogAddEditAssignment";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
@@ -495,7 +489,7 @@ const InstructorAssignments = () => {
         Quản lý bài tập
       </Typography>
       {/* Filters */}
-      <Card sx={{ mb: 3 }}>
+      <Card>
         <CardContent>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} md={4}>
