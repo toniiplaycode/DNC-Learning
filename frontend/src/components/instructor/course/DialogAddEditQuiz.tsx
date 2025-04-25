@@ -397,9 +397,12 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
       });
     }
 
-    await dispatch(fetchCourseQuizzes(Number(id)));
-    await dispatch(fetchCourseById(Number(id)));
-    await dispatch(fetchQuizzesByCourse(Number(id)));
+    if (id) {
+      await dispatch(fetchCourseQuizzes(Number(id)));
+      await dispatch(fetchCourseById(Number(id)));
+      await dispatch(fetchQuizzesByCourse(Number(id)));
+    }
+
     await dispatch(
       fetchQuizzesByInstructor(Number(currentUser.userInstructor.id))
     );
