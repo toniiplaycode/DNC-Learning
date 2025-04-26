@@ -102,11 +102,11 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
       await dispatch(deleteQuiz(deleteDialog.id)).then((result) => {
         if (result?.payload?.error == "Rejected") {
           toast.error(
-            "Không thể xóa Bài trắc nghiệm vì đã có học sinh/sinh viên làm !"
+            "Không thể xóa bài trắc nghiệm vì đã có học sinh/sinh viên làm !"
           );
           return;
         }
-        toast.success("Xóa bài Bài trắc nghiệm thành công!");
+        toast.success("Xóa bài trắc nghiệm thành công!");
       });
 
       await dispatch(fetchCourseQuizzes(Number(id)));

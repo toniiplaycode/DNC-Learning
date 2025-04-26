@@ -367,6 +367,25 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
       return;
     }
 
+    if (!quizForm.title.trim() || questions.length === 0) {
+      toast.error("Vui lòng điền đầy đủ thông tin bắt buộc");
+      return;
+    }
+
+    // Additional validation for academicClass and lesson
+    if (
+      additionalInfo?.targetType === "academic" &&
+      !quizForm.academicClassId
+    ) {
+      toast.error("Vui lòng chọn lớp học");
+      return;
+    }
+
+    if (!additionalInfo && !quizForm.lessonId) {
+      toast.error("Vui lòng chọn nội dung");
+      return;
+    }
+
     // Chuẩn bị dữ liệu để submit
     const quizData: Quiz = {
       ...quizForm,
@@ -510,11 +529,16 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
 
         {/* Chọn lớp học thuật */}
         {additionalInfo && additionalInfo.targetType === "academic" && (
-          <FormControl fullWidth>
+          <FormControl
+            sx={{ mb: 3 }}
+            fullWidth
+            required
+            error={!quizForm.academicClassId}
+          >
             <InputLabel>Chọn lớp học thuật</InputLabel>
             <Select
-              value={quizForm.academicClassId || 0}
-              label="Chọn lớp học thuật"
+              value={quizForm.academicClassId || ""}
+              label="Chọn lớp học thuật *"
               onChange={(e) =>
                 setQuizForm({
                   ...quizForm,
@@ -522,7 +546,9 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                 })
               }
             >
-              <MenuItem value={0}>Chọn lớp học</MenuItem>
+              <MenuItem value="">
+                <em>Chọn lớp học</em>
+              </MenuItem>
               {currentClassInstructor?.map((classInstructor) => (
                 <MenuItem
                   key={classInstructor.academicClass.id}
@@ -533,9 +559,9 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                 </MenuItem>
               ))}
             </Select>
-            <FormHelperText sx={{ mb: 2 }}>
-              Chọn lớp học để gán bài trắc nghiệm cho sinh viên
-            </FormHelperText>
+            {!quizForm.academicClassId && (
+              <FormHelperText error>Vui lòng chọn lớp học</FormHelperText>
+            )}
           </FormControl>
         )}
 
@@ -561,11 +587,11 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
             }
           />
           {lessonData.length > 0 && !additionalInfo && (
-            <FormControl fullWidth>
+            <FormControl fullWidth required error={!quizForm.lessonId}>
               <InputLabel>Nội dung</InputLabel>
               <Select
-                value={quizForm.lessonId || 0}
-                label="Nội dung"
+                value={quizForm.lessonId || ""}
+                label="Nội dung *"
                 onChange={(e) =>
                   setQuizForm({
                     ...quizForm,
@@ -573,7 +599,9 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                   })
                 }
               >
-                <MenuItem value={0}>Không thuộc nội dung nào</MenuItem>
+                <MenuItem value="">
+                  <em>Chọn nội dung</em>
+                </MenuItem>
                 {lessonData.map((lesson) => {
                   const hasQuiz = quizzesData.some(
                     (quiz) => quiz.lessonId === lesson.id
@@ -585,7 +613,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                       disabled={hasQuiz}
                       sx={{
                         ...(hasQuiz && {
-                          color: "promary.main",
+                          color: "primary.main",
                           "& .quiz-indicator": {
                             ml: 1,
                             color: "warning.main",
@@ -604,10 +632,9 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                   );
                 })}
               </Select>
-              <FormHelperText>
-                Chọn nội dung cho Bài trắc nghiệm hoặc 'Không thuộc nội dung
-                nào'
-              </FormHelperText>
+              {!quizForm.lessonId && (
+                <FormHelperText error>Vui lòng chọn nội dung</FormHelperText>
+              )}
             </FormControl>
           )}
           {/* Cài đặt quiz */}

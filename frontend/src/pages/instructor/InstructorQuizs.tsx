@@ -23,6 +23,7 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
+  DialogContentText,
   DialogActions,
   TextField,
   InputAdornment,
@@ -70,6 +71,7 @@ import {
   fetchAttemptsByQuizId,
   fetchInstructorAttempts,
   fetchQuizzesByInstructor,
+  deleteQuiz,
 } from "../../features/quizzes/quizzesSlice";
 import {
   selectInstructorAttempts,
@@ -79,6 +81,7 @@ import {
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { selectCurrentUser } from "../../features/auth/authSelectors";
 import { formatDateTime } from "../../utils/formatters";
+import { toast } from "react-toastify";
 
 // Mock data
 const mockQuizzes = [
@@ -380,6 +383,7 @@ const InstructorQuizs = () => {
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   // Add new state for answer filter
   const [answerFilter, setAnswerFilter] = useState("all"); // 'all' | 'correct' | 'incorrect'
+  const [quizToEdit, setQuizToEdit] = useState<Quiz | null>(null);
 
   useEffect(() => {
     // Fetch both quizzes and attempts
@@ -592,6 +596,11 @@ const InstructorQuizs = () => {
     return allSubmissions;
   };
 
+  const handleEditQuiz = (quiz: Quiz) => {
+    setQuizToEdit(quiz);
+    setOpenAddQuizModal(true);
+  };
+
   // Lọc các bài nộp theo bộ lọc
   const filteredSubmissions = getAllSubmissions().filter((submission) => {
     // Lọc theo từ khóa tìm kiếm
@@ -764,6 +773,7 @@ const InstructorQuizs = () => {
             <QuizList
               quizzes={getFilteredQuizzes()}
               onQuizClick={handleQuizClick}
+              onEditClick={handleEditQuiz}
             />
           </CardContent>
         </Card>
@@ -773,26 +783,15 @@ const InstructorQuizs = () => {
           open={openAddQuizModal}
           onClose={() => {
             setOpenAddQuizModal(false);
+            setQuizToEdit(null);
           }}
-          editMode={false}
+          quizToEdit={quizToEdit}
+          editMode={!!quizToEdit}
           additionalInfo={{
             targetType: "academic",
             className: classFilter !== "all" ? classFilter : "Tất cả các lớp",
           }}
         />
-        {/* Modal sửa quiz */}
-        {/* <DialogAddEditQuiz
-        open={openEditQuizModal}
-        onClose={() => setOpenAddQuizModal(false);}
-        onSubmit={handleUpdateQuiz}
-        quizToEdit={quizToEdit || undefined}
-        sections={mockCourseData.sections}
-        editMode={true}
-        additionalInfo={{
-          targetType: "academic",
-          className: classFilter !== "all" ? classFilter : "Tất cả các lớp",
-          }}
-      /> */}
       </Box>
     );
   }
@@ -1497,9 +1496,10 @@ const InstructorQuizs = () => {
 interface QuizListProps {
   quizzes: Quiz[];
   onQuizClick: (quiz: Quiz) => void;
+  onEditClick: (quiz: Quiz) => void;
 }
 
-const QuizList = ({ quizzes, onQuizClick }: QuizListProps) => {
+const QuizList = ({ quizzes, onQuizClick, onEditClick }: QuizListProps) => {
   const dispatch = useAppDispatch();
   const instructorAttempts = useAppSelector(selectInstructorAttempts);
   const currentUser = useAppSelector(selectCurrentUser);
@@ -1518,6 +1518,48 @@ const QuizList = ({ quizzes, onQuizClick }: QuizListProps) => {
         String(attempt.quizId) === String(quizId) &&
         attempt.status === "completed"
     ).length;
+  };
+
+  // Add this state
+  const [deleteDialog, setDeleteDialog] = useState<DeleteDialogState>({
+    open: false,
+    type: "",
+    id: "",
+  });
+
+  // Add these handlers
+  const handleDeleteClick = (quiz: Quiz) => {
+    setDeleteDialog({
+      open: true,
+      type: "quiz",
+      id: quiz.id,
+    });
+  };
+
+  const handleConfirmDelete = async () => {
+    try {
+      const result = await dispatch(deleteQuiz(deleteDialog.id)).unwrap();
+
+      if (result?.error === "Rejected") {
+        toast.error(
+          "Không thể xóa bài trắc nghiệm vì đã có học sinh/sinh viên làm!"
+        );
+        return;
+      }
+
+      toast.success("Xóa bài bài trắc nghiệm thành công!");
+      // Refresh quiz list
+      dispatch(fetchQuizzesByInstructor(currentUser.userInstructor.id));
+    } catch (error) {
+      toast.error("Có lỗi xảy ra khi xóa bài trắc nghiệm!");
+    } finally {
+      setDeleteDialog({ open: false, type: "", id: "" });
+    }
+  };
+
+  // Update the edit button click handler in QuizList component
+  const handleEditClick = (quiz: Quiz) => {
+    onEditClick(quiz);
   };
 
   return (
@@ -1592,12 +1634,25 @@ const QuizList = ({ quizzes, onQuizClick }: QuizListProps) => {
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="Chỉnh sửa">
-                    <IconButton size="small">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleEditClick(quiz);
+                      }}
+                    >
                       <Edit fontSize="small" />
                     </IconButton>
                   </Tooltip>
                   <Tooltip title="Xóa">
-                    <IconButton size="small" color="error">
+                    <IconButton
+                      size="small"
+                      color="error"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteClick(quiz);
+                      }}
+                    >
                       <Delete fontSize="small" />
                     </IconButton>
                   </Tooltip>
@@ -1614,6 +1669,34 @@ const QuizList = ({ quizzes, onQuizClick }: QuizListProps) => {
           )}
         </TableBody>
       </Table>
+      {/* Add confirmation dialog */}
+      <Dialog
+        open={deleteDialog.open}
+        onClose={() => setDeleteDialog({ open: false, type: "", id: "" })}
+      >
+        <DialogTitle>Xác nhận xóa</DialogTitle>
+        <DialogContent>
+          <DialogContentText>
+            Bạn có chắc chắn muốn xóa bài trắc nghiệm này?
+            {"\n"}
+            Hành động này không thể hoàn tác.
+          </DialogContentText>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => setDeleteDialog({ open: false, type: "", id: "" })}
+          >
+            Hủy
+          </Button>
+          <Button
+            onClick={handleConfirmDelete}
+            color="error"
+            variant="contained"
+          >
+            Xóa
+          </Button>
+        </DialogActions>
+      </Dialog>
     </TableContainer>
   );
 };
