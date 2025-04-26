@@ -56,4 +56,11 @@ export class UsersController {
   ): Promise<User[]> {
     return this.usersService.findStudentsByInstructorId(instructorId);
   }
+
+  @Get('students/:id/academic-courses')
+  async getStudentAcademicCourses(@Param('id') id: string) {
+    return await this.usersService.findAcademicClassCoursesByStudentAcademicId(
+      +id,
+    );
+  }
 }

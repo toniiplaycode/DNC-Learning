@@ -30,22 +30,32 @@ interface CardCourseProps {
   progress?: number;
   isEnrolled?: boolean;
   category: string;
+  isAcademic?: boolean;
+  startDate?: string;
+  endDate?: string;
 }
 
 const CardCourse: React.FC<CardCourseProps> = ({
-  id,
-  title,
-  instructor,
-  rating,
-  totalRatings,
-  duration,
-  totalLessons,
-  price,
-  image,
-  progress = 0,
-  isEnrolled = false,
-  category,
+  isAcademic,
+  startDate,
+  endDate,
+  ...props
 }) => {
+  const {
+    id,
+    title,
+    instructor,
+    rating,
+    totalRatings,
+    duration,
+    totalLessons,
+    price,
+    image,
+    progress = 0,
+    isEnrolled = false,
+    category,
+  } = props;
+
   const navigate = useNavigate();
 
   const formatPrice = (price: number) => {
@@ -122,30 +132,36 @@ const CardCourse: React.FC<CardCourseProps> = ({
 
         {!isEnrolled ? (
           <>
-            <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-              <Typography
-                variant="body2"
-                color="warning.main"
-                fontWeight="bold"
-                sx={{ mr: 1 }}
-              >
-                {rating}
-              </Typography>
-              <Box
-                component="span"
-                sx={{
-                  display: "flex",
-                  color: "warning.main",
-                  fontSize: "1rem",
-                }}
-              >
-                {"★".repeat(Math.floor(rating))}
-                {"☆".repeat(5 - Math.floor(rating))}
+            {!isAcademic && (
+              <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+                <Typography
+                  variant="body2"
+                  color="warning.main"
+                  fontWeight="bold"
+                  sx={{ mr: 1 }}
+                >
+                  {rating}
+                </Typography>
+                <Box
+                  component="span"
+                  sx={{
+                    display: "flex",
+                    color: "warning.main",
+                    fontSize: "1rem",
+                  }}
+                >
+                  {"★".repeat(Math.floor(rating))}
+                  {"☆".repeat(5 - Math.floor(rating))}
+                </Box>
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ ml: 1 }}
+                >
+                  ({totalRatings})
+                </Typography>
               </Box>
-              <Typography variant="body2" color="text.secondary" sx={{ ml: 1 }}>
-                ({totalRatings})
-              </Typography>
-            </Box>
+            )}
 
             <Stack
               direction="row"
@@ -153,19 +169,25 @@ const CardCourse: React.FC<CardCourseProps> = ({
               alignItems="center"
               sx={{ mb: 1, color: "text.secondary" }}
             >
-              <AccessTime sx={{ fontSize: "1rem" }} />
-              <Typography variant="body2">{duration}</Typography>
+              {!isAcademic && (
+                <>
+                  <AccessTime sx={{ fontSize: "1rem" }} />
+                  <Typography variant="body2">{duration}</Typography>
+                </>
+              )}
               <PlayCircle sx={{ fontSize: "1rem", ml: 1 }} />
               <Typography variant="body2">{totalLessons} bài học</Typography>
             </Stack>
 
-            <Typography
-              variant="h6"
-              color="primary"
-              sx={{ mt: "auto", fontWeight: "bold" }}
-            >
-              {formatPrice(price)}
-            </Typography>
+            {!isAcademic && (
+              <Typography
+                variant="h6"
+                color="primary"
+                sx={{ mt: "auto", fontWeight: "bold" }}
+              >
+                {formatPrice(price)}
+              </Typography>
+            )}
           </>
         ) : (
           <>
@@ -187,20 +209,20 @@ const CardCourse: React.FC<CardCourseProps> = ({
                 bài học
               </Typography>
             </Box>
-
-            <Button
-              variant="contained"
-              fullWidth
-              sx={{ mt: "auto" }}
-              onClick={(e) => {
-                e.stopPropagation();
-                navigate(`/course/${id}/learn`);
-              }}
-            >
-              {progress === 100 ? "Xem lại" : "Tiếp tục học"}
-            </Button>
           </>
         )}
+
+        <Button
+          variant="contained"
+          fullWidth
+          sx={{ mt: "auto" }}
+          onClick={(e) => {
+            e.stopPropagation();
+            navigate(`/course/${id}/learn`);
+          }}
+        >
+          {progress === 100 ? "Xem lại" : "Tiếp tục học"}
+        </Button>
       </CardContent>
     </Card>
   );

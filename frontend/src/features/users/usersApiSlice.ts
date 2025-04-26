@@ -1,6 +1,7 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { api } from "../../services/api";
 import { User } from "../../types/user.types";
+import { AcademicClassCourse } from "../../types/academic-class-course.types";
 
 export interface UsersState {
   users: User[];
@@ -8,6 +9,7 @@ export interface UsersState {
   currentUser: User | null;
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
+  studentAcademicCourses: AcademicClassCourse[];
 }
 
 const initialState: UsersState = {
@@ -16,6 +18,7 @@ const initialState: UsersState = {
   currentUser: null,
   status: "idle",
   error: null,
+  studentAcademicCourses: [],
 };
 
 // Create many students academic for a academic class
@@ -128,6 +131,24 @@ export const updateUser = createAsyncThunk(
   }
 );
 
+// Fetch student academic courses
+export const fetchStudentAcademicCourses = createAsyncThunk(
+  "users/fetchStudentAcademicCourses",
+  async (studentAcademicId: string, { rejectWithValue }) => {
+    try {
+      const response = await api.get(
+        `/users/students/${studentAcademicId}/academic-courses`
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          "Failed to fetch student academic courses"
+      );
+    }
+  }
+);
+
 const usersSlice = createSlice({
   name: "users",
   initialState,
@@ -214,6 +235,20 @@ const usersSlice = createSlice({
         state.error = null;
       })
       .addCase(updateUser.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
+
+      // Fetch student academic courses
+      .addCase(fetchStudentAcademicCourses.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchStudentAcademicCourses.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.studentAcademicCourses = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchStudentAcademicCourses.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
       });

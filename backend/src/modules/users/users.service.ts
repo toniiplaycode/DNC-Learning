@@ -1,10 +1,15 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User, UserRole } from 'src/entities/User';
 import { Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { UserStudentAcademic } from '../../entities/UserStudentAcademic';
 import { AcademicClass } from '../../entities/AcademicClass';
+import { AcademicClassCourse } from '../../entities/AcademicClassCourse';
 
 interface StudentUserData {
   user: {
@@ -279,5 +284,54 @@ export class UsersService {
     });
 
     return existingUsers.map((user) => user.email);
+  }
+
+  async findAcademicClassCoursesByStudentAcademicId(
+    studentAcademicId: number,
+  ): Promise<AcademicClassCourse[]> {
+    try {
+      // First find the student academic to get their class
+      const studentAcademic = await this.userStudentAcademic.findOne({
+        where: { userId: studentAcademicId },
+        relations: ['academicClass'],
+      });
+
+      if (!studentAcademic) {
+        throw new NotFoundException('Student academic not found');
+      }
+
+      // Find all courses for that academic class using query builder
+      const academicClassCourses = await this.userRepository.manager
+        .createQueryBuilder(AcademicClassCourse, 'academicClassCourse')
+        .leftJoinAndSelect('academicClassCourse.course', 'course')
+        .leftJoinAndSelect('course.instructor', 'instructor')
+        .leftJoinAndSelect('course.category', 'category')
+        .leftJoinAndSelect('course.sections', 'sections')
+        .leftJoinAndSelect('sections.lessons', 'lessons')
+        .leftJoinAndSelect('academicClassCourse.academicClass', 'academicClass') // Add this line
+        .leftJoinAndSelect('academicClass.instructors', 'classInstructors') // Add this line if needed
+        .where('academicClassCourse.classId = :classId', {
+          classId: studentAcademic.academicClassId,
+        })
+        .orderBy({
+          'course.createdAt': 'DESC',
+          'sections.orderNumber': 'ASC',
+          'lessons.orderNumber': 'ASC',
+        })
+        .getMany();
+
+      // Add student's academic class info to response
+      return academicClassCourses.map((course) => ({
+        ...course,
+        academicClass: studentAcademic.academicClass, // Ensure consistent class info
+      }));
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new Error(
+        `Failed to get academic class courses for student ${studentAcademicId}: ${error.message}`,
+      );
+    }
   }
 }
