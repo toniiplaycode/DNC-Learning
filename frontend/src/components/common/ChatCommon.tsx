@@ -145,26 +145,6 @@ interface ChatRoom {
   unread: number;
 }
 
-// Add this type for search results
-interface SearchUser {
-  id: string;
-  username: string;
-  email: string;
-  role: string;
-  avatarUrl?: string;
-  userStudent?: {
-    fullName: string;
-  };
-  userStudentAcademic?: {
-    fullName: string;
-    studentCode: string;
-  };
-  userInstructor?: {
-    fullName: string;
-    professionalTitle: string;
-  };
-}
-
 // Add CHATBOT constant at the top
 const CHATBOT = {
   id: "-1",

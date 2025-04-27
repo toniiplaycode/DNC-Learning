@@ -212,17 +212,30 @@ const CardCourse: React.FC<CardCourseProps> = ({
           </>
         )}
 
-        <Button
-          variant="contained"
-          fullWidth
-          sx={{ mt: "auto" }}
-          onClick={(e) => {
-            e.stopPropagation();
-            navigate(`/course/${id}/learn`);
-          }}
-        >
-          {progress === 100 ? "Xem lại" : "Tiếp tục học"}
-        </Button>
+        {!isEnrolled && !isAcademic ? (
+          <Button
+            variant="contained"
+            fullWidth
+            sx={{ mt: 2 }}
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/course/${id}`);
+            }}
+          >
+            Đăng ký ngay
+          </Button>
+        ) : (
+          <Button
+            variant="contained"
+            fullWidth
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/course/${id}/learn`);
+            }}
+          >
+            {progress === 100 ? "Xem lại" : "Tiếp tục học"}
+          </Button>
+        )}
       </CardContent>
     </Card>
   );

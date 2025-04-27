@@ -67,9 +67,15 @@ import {
   Info,
 } from "@mui/icons-material";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
-import { fetchStudentsByInstructor } from "../../features/users/usersApiSlice";
+import {
+  fetchAcademicStudentsByInstructor,
+  fetchStudentsByInstructor,
+} from "../../features/users/usersApiSlice";
 import { selectCurrentUser } from "../../features/auth/authSelectors";
-import { selectInstructorStudents } from "../../features/users/usersSelectors";
+import {
+  selectInstructorAcademicStudents,
+  selectInstructorStudents,
+} from "../../features/users/usersSelectors";
 import React from "react";
 import { fetchCoursesByInstructor } from "../../features/courses/coursesApiSlice";
 import { selectCoursesByInstructor } from "../../features/courses/coursesSelector";
@@ -95,6 +101,9 @@ const InstructorStudents = () => {
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector(selectCurrentUser);
   const instructorStudents = useAppSelector(selectInstructorStudents);
+  const instructorAcademicStudents = useAppSelector(
+    selectInstructorAcademicStudents
+  );
   const instructorCourses = useAppSelector(selectCoursesByInstructor);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
@@ -102,27 +111,24 @@ const InstructorStudents = () => {
   const rowsPerPage = 10;
   const [selectedStudent, setSelectedStudent] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [tabValue, setTabValue] = useState(0);
+  const [tabValue, setTabValue] = useState<"student" | "student_academic">(
+    "student"
+  );
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
-  const [studentType, setStudentType] = useState<
-    "student" | "student_academic"
-  >("student");
   const [sortBy, setSortBy] = useState("name");
   const [filterClassId, setFilterClassId] = useState<string>("Tất cả");
-  const [newStudentData, setNewStudentData] = useState({
-    email: "",
-    fullName: "",
-    phone: "",
-    studentCode: "",
-    academicYear: "",
-    academicClassId: "",
-  });
+
+  // Add new state for dialog tabs
+  const [dialogTabValue, setDialogTabValue] = useState(0);
 
   useEffect(() => {
     dispatch(fetchStudentsByInstructor(currentUser?.userInstructor?.id));
     dispatch(fetchCoursesByInstructor(currentUser?.userInstructor?.id));
+    dispatch(fetchAcademicStudentsByInstructor(currentUser.userInstructor.id));
   }, [dispatch, currentUser]);
+
+  console.log(instructorAcademicStudents);
 
   const handleStatusFilterChange = (event: any) => {
     setStatusFilter(event.target.value);
@@ -163,25 +169,22 @@ const InstructorStudents = () => {
     uniqueClasses.set("Tất cả", "Tất cả");
 
     // Thu thập các lớp học từ dữ liệu sinh viên học thuật
-    instructorStudents.forEach((student) => {
-      if (
-        student.role === "student_academic" &&
-        student.userStudentAcademic?.academicClassId &&
-        student.userStudentAcademic?.academicClass?.className
-      ) {
+    instructorAcademicStudents.forEach((student) => {
+      if (student.userStudentAcademic?.academicClass) {
+        const classInfo = student.userStudentAcademic.academicClass;
         uniqueClasses.set(
-          student.userStudentAcademic.academicClassId,
-          student.userStudentAcademic.academicClass.className
+          classInfo.id.toString(),
+          `${classInfo.className} (${classInfo.classCode})`
         );
       }
     });
 
     // Chuyển đổi Map thành mảng các object để dễ dàng sử dụng trong UI
     return Array.from(uniqueClasses.entries()).map(([id, name]) => ({
-      id: id,
-      name: name,
+      id,
+      name,
     }));
-  }, [instructorStudents]);
+  }, [instructorAcademicStudents]);
 
   // Thu thập các khóa học mà giảng viên đang giảng dạy
   const courseOptions = React.useMemo(() => {
@@ -203,77 +206,84 @@ const InstructorStudents = () => {
     }));
   }, [instructorCourses]);
 
-  const filteredStudents = instructorStudents
-    .filter((student) => {
-      // Lọc theo loại học viên (student hoặc student_academic)
-      if (studentType === "student" && student.role !== "student") return false;
-      if (
-        studentType === "student_academic" &&
-        student.role !== "student_academic"
-      )
-        return false;
+  // Modify the filtered students logic to handle both types
+  const filteredStudents = React.useMemo(() => {
+    // Use different source based on tab
+    const sourceStudents =
+      tabValue === "student_academic"
+        ? instructorAcademicStudents
+        : instructorStudents.filter((student) => student.role === "student");
 
-      // Lọc theo trạng thái
-      if (statusFilter !== "all" && student.status !== statusFilter)
-        return false;
+    return sourceStudents
+      .filter((student) => {
+        // Filter by status
+        if (statusFilter !== "all" && student.status !== statusFilter) {
+          return false;
+        }
 
-      // Lọc theo lớp học dựa trên academicClassId
-      if (filterClassId !== "Tất cả") {
-        if (student.role === "student_academic") {
-          // Lọc sinh viên học thuật theo ID lớp
-          if (student.userStudentAcademic?.academicClassId !== filterClassId) {
-            return false;
-          }
-        } else if (student.role === "student") {
-          // Lọc sinh viên thường theo ID khóa học
-          const isInCourse = student.enrollments?.some(
-            (enrollment) => enrollment.courseId === filterClassId
-          );
-          if (!isInCourse) {
-            return false;
+        // Filter by class/course
+        if (filterClassId !== "Tất cả") {
+          if (tabValue === "student_academic") {
+            if (
+              student.userStudentAcademic?.academicClassId !== filterClassId
+            ) {
+              return false;
+            }
+          } else {
+            const isInCourse = student.enrollments?.some(
+              (enrollment) => enrollment.courseId === filterClassId
+            );
+            if (!isInCourse) {
+              return false;
+            }
           }
         }
-      }
 
-      // Tìm kiếm theo tên, email hoặc mã sinh viên
-      return (
-        student.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        (student.role === "student" &&
-          student.userStudent?.fullName
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase())) ||
-        (student.role === "student_academic" &&
-          student.userStudentAcademic?.fullName
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase())) ||
-        (student.role === "student_academic" &&
-          student.userStudentAcademic?.studentCode
-            .toLowerCase()
-            .includes(searchQuery.toLowerCase()))
-      );
-    })
-    .sort((a, b) => {
-      if (sortBy === "name") {
-        const nameA =
-          a.role === "student"
-            ? a.userStudent?.fullName
-            : a.userStudentAcademic?.fullName;
-        const nameB =
-          b.role === "student"
-            ? b.userStudent?.fullName
-            : b.userStudentAcademic?.fullName;
-        return nameA.localeCompare(nameB);
-      }
-      if (sortBy === "joinDate") {
-        return (
-          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        // Search logic
+        const searchFields =
+          tabValue === "student_academic"
+            ? [
+                student.email,
+                student.userStudentAcademic?.fullName,
+                student.userStudentAcademic?.studentCode,
+              ]
+            : [student.email, student.userStudent?.fullName];
+
+        return searchFields.some((field) =>
+          field?.toLowerCase().includes(searchQuery.toLowerCase())
         );
-      }
-      if (sortBy === "enrolledCourses") {
-        return (b.enrollments?.length || 0) - (a.enrollments?.length || 0);
-      }
-      return 0;
-    });
+      })
+      .sort((a, b) => {
+        if (sortBy === "name") {
+          const nameA =
+            tabValue === "student_academic"
+              ? a.userStudentAcademic?.fullName
+              : a.userStudent?.fullName;
+          const nameB =
+            tabValue === "student_academic"
+              ? b.userStudentAcademic?.fullName
+              : b.userStudent?.fullName;
+          return nameA.localeCompare(nameB);
+        }
+        if (sortBy === "joinDate") {
+          return (
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
+        }
+        if (sortBy === "enrolledCourses") {
+          return (b.enrollments?.length || 0) - (a.enrollments?.length || 0);
+        }
+        return 0;
+      });
+  }, [
+    tabValue,
+    instructorStudents,
+    instructorAcademicStudents,
+    statusFilter,
+    filterClassId,
+    searchQuery,
+    sortBy,
+  ]);
 
   const handleOpenDialog = (student: any) => {
     setSelectedStudent(student);
@@ -283,11 +293,7 @@ const InstructorStudents = () => {
   const handleCloseDialog = () => {
     setDialogOpen(false);
     setSelectedStudent(null);
-    setTabValue(0);
-  };
-
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setTabValue(newValue);
+    setDialogTabValue(0); // Reset to first tab
   };
 
   const handleSuspend = () => {
@@ -313,11 +319,6 @@ const InstructorStudents = () => {
     setAnchorEl(null);
   };
 
-  const handleStudentTypeChange = (event: any) => {
-    setStudentType(event.target.value as "student" | "student_academic");
-    setPage(1);
-  };
-
   const paginatedStudents = filteredStudents.slice(
     (page - 1) * rowsPerPage,
     page * rowsPerPage
@@ -329,10 +330,30 @@ const InstructorStudents = () => {
     setDialogOpen(true);
   };
 
+  // Add handleTabChange function
+  const handleTabChange = (
+    event: React.SyntheticEvent,
+    newValue: "student" | "student_academic"
+  ) => {
+    setTabValue(newValue);
+    // Reset other filters when changing tabs
+    setPage(1);
+    setSearchQuery("");
+    setFilterClassId("Tất cả");
+  };
+
+  // Add new handler for dialog tabs
+  const handleDialogTabChange = (
+    event: React.SyntheticEvent,
+    newValue: number
+  ) => {
+    setDialogTabValue(newValue);
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h5" gutterBottom fontWeight="bold">
-        Quản lý học viên
+        Quản lý học viên/sinh viên
       </Typography>
 
       <Card sx={{ mb: 3 }}>
@@ -371,33 +392,18 @@ const InstructorStudents = () => {
               </Select>
             </FormControl>
 
+            {/* Conditional filter based on tab value */}
             <FormControl size="small" sx={{ minWidth: 200 }}>
-              <InputLabel>Loại học viên</InputLabel>
-              <Select
-                value={studentType}
-                label="Loại học viên"
-                onChange={handleStudentTypeChange}
-              >
-                <MenuItem value="student">Học viên</MenuItem>
-                <MenuItem value="student_academic">Sinh viên trường</MenuItem>
-              </Select>
-            </FormControl>
-
-            {/* Hiển thị bộ lọc lớp học dựa theo loại sinh viên */}
-            <FormControl size="small" sx={{ minWidth: 200 }}>
-              <InputLabel id="class-filter-label">
-                {studentType === "student_academic" ? "Lớp học" : "Khóa học"}
+              <InputLabel>
+                {tabValue === "student_academic" ? "Lớp học" : "Khóa học"}
               </InputLabel>
               <Select
-                labelId="class-filter-label"
                 value={filterClassId}
                 onChange={(e) => setFilterClassId(e.target.value)}
-                label={
-                  studentType === "student_academic" ? "Lớp học" : "Khóa học"
-                }
+                label={tabValue === "student_academic" ? "Lớp học" : "Khóa học"}
               >
                 <MenuItem value="Tất cả">Tất cả</MenuItem>
-                {studentType === "student_academic"
+                {tabValue === "student_academic"
                   ? classOptions
                       .filter((option) => option.id !== "Tất cả")
                       .map((option) => (
@@ -429,6 +435,23 @@ const InstructorStudents = () => {
             </FormControl>
           </Stack>
 
+          <Box sx={{ mb: 3 }}>
+            <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: -1 }}>
+              <Tab
+                value="student"
+                label="Học viên bên ngoài"
+                icon={<Person sx={{ mr: 1 }} />}
+                iconPosition="start"
+              />
+              <Tab
+                value="student_academic"
+                label="Sinh viên trường"
+                icon={<School sx={{ mr: 1 }} />}
+                iconPosition="start"
+              />
+            </Tabs>
+          </Box>
+
           <TableContainer>
             <Table>
               <TableHead>
@@ -437,7 +460,11 @@ const InstructorStudents = () => {
                   <TableCell>Email</TableCell>
                   <TableCell>Trạng thái</TableCell>
                   <TableCell>Ngày tham gia</TableCell>
-                  <TableCell>Khóa học đã đăng ký</TableCell>
+                  <TableCell>
+                    {tabValue === "student"
+                      ? "Khóa học đã đăng ký"
+                      : "Khóa học tham gia"}
+                  </TableCell>
                   <TableCell align="right">Thao tác</TableCell>
                 </TableRow>
               </TableHead>
@@ -452,7 +479,10 @@ const InstructorStudents = () => {
                   const avatar = student.avatarUrl || "/default-avatar.png";
 
                   // Đếm số khóa học đã đăng ký
-                  const totalEnrolled = student.enrollments?.length || 0;
+                  const totalEnrolled =
+                    student.enrollments?.length ||
+                    student.userStudentAcademic.academicClass.classCourses
+                      .length;
 
                   // Thông tin bổ sung cho sinh viên học thuật
                   const academicInfo =
@@ -574,7 +604,7 @@ const InstructorStudents = () => {
             justifyContent="space-between"
             alignItems="center"
           >
-            <Typography variant="h6">Chi tiết học viên</Typography>
+            <Typography variant="h6">Chi tiết học viên/sinh viên</Typography>
             <IconButton onClick={handleCloseDialog}>
               <Close />
             </IconButton>
@@ -607,8 +637,8 @@ const InstructorStudents = () => {
               </Stack>
 
               <Tabs
-                value={tabValue}
-                onChange={handleTabChange}
+                value={dialogTabValue}
+                onChange={handleDialogTabChange}
                 variant="scrollable"
                 scrollButtons="auto"
               >
@@ -617,7 +647,7 @@ const InstructorStudents = () => {
                 <Tab label="Điểm số" />
               </Tabs>
 
-              <TabPanel value={tabValue} index={0}>
+              <TabPanel value={dialogTabValue} index={0}>
                 <List>
                   <ListItem>
                     <ListItemIcon>
@@ -829,8 +859,142 @@ const InstructorStudents = () => {
                 </List>
               </TabPanel>
 
-              <TabPanel value={tabValue} index={1}>
-                {selectedStudent?.enrollments?.length > 0 ? (
+              <TabPanel value={dialogTabValue} index={1}>
+                {selectedStudent?.role === "student_academic" ? (
+                  // Show academic class courses
+                  selectedStudent?.userStudentAcademic?.academicClass
+                    ?.classCourses?.length > 0 ? (
+                    <div>
+                      <Typography
+                        variant="subtitle1"
+                        sx={{ mb: 2, fontWeight: "medium" }}
+                      >
+                        Có{" "}
+                        {
+                          selectedStudent.userStudentAcademic.academicClass
+                            .classCourses.length
+                        }{" "}
+                        khóa học
+                      </Typography>
+
+                      {selectedStudent.userStudentAcademic.academicClass.classCourses.map(
+                        (classCourse: any) => (
+                          <Card key={classCourse.id} sx={{ mb: 2 }}>
+                            <CardContent>
+                              <Stack
+                                direction="row"
+                                spacing={2}
+                                alignItems="flex-start"
+                              >
+                                <Avatar
+                                  src={classCourse.course?.thumbnailUrl}
+                                  variant="rounded"
+                                  sx={{ width: 60, height: 60 }}
+                                >
+                                  {classCourse.course?.title
+                                    ? classCourse.course.title.charAt(0)
+                                    : "C"}
+                                </Avatar>
+
+                                <Stack spacing={1} sx={{ flex: 1 }}>
+                                  <Typography variant="h6">
+                                    {classCourse.course?.title ||
+                                      "Không có tiêu đề"}
+                                  </Typography>
+
+                                  <Stack
+                                    direction="row"
+                                    justifyContent="space-between"
+                                    alignItems="center"
+                                  >
+                                    <Typography
+                                      variant="body2"
+                                      color="text.secondary"
+                                    >
+                                      Ngày bắt đầu:{" "}
+                                      {new Date(
+                                        classCourse.course?.startDate
+                                      ).toLocaleDateString("vi-VN")}
+                                    </Typography>
+
+                                    <Chip
+                                      label={
+                                        classCourse.course?.status ===
+                                        "published"
+                                          ? "Đang học"
+                                          : "Chưa bắt đầu"
+                                      }
+                                      color={
+                                        classCourse.course?.status ===
+                                        "published"
+                                          ? "primary"
+                                          : "default"
+                                      }
+                                      size="small"
+                                    />
+                                  </Stack>
+
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                    sx={{
+                                      display: "-webkit-box",
+                                      overflow: "hidden",
+                                      WebkitBoxOrient: "vertical",
+                                      WebkitLineClamp: 2,
+                                      mt: 1,
+                                    }}
+                                  >
+                                    {classCourse.course?.description ||
+                                      "Không có mô tả"}
+                                  </Typography>
+
+                                  <Box sx={{ mt: 1 }}>
+                                    <Stack direction="row" spacing={1}>
+                                      <Chip
+                                        size="small"
+                                        label={
+                                          classCourse.course?.level ===
+                                          "beginner"
+                                            ? "Cơ bản"
+                                            : classCourse.course?.level ===
+                                              "intermediate"
+                                            ? "Trung cấp"
+                                            : classCourse.course?.level ===
+                                              "advanced"
+                                            ? "Nâng cao"
+                                            : "Không xác định"
+                                        }
+                                        variant="outlined"
+                                      />
+
+                                      <Chip
+                                        size="small"
+                                        label={`Kết thúc: ${new Date(
+                                          classCourse.course?.endDate
+                                        ).toLocaleDateString("vi-VN")}`}
+                                        variant="outlined"
+                                      />
+                                    </Stack>
+                                  </Box>
+                                </Stack>
+                              </Stack>
+                            </CardContent>
+                          </Card>
+                        )
+                      )}
+                    </div>
+                  ) : (
+                    <Typography
+                      color="text.secondary"
+                      align="center"
+                      sx={{ py: 3 }}
+                    >
+                      Chưa có khóa học nào
+                    </Typography>
+                  )
+                ) : // Show regular enrollment courses (existing code)
+                selectedStudent?.enrollments?.length > 0 ? (
                   <div>
                     {/* Tiêu đề phần */}
                     <Typography
@@ -978,7 +1142,7 @@ const InstructorStudents = () => {
                 )}
               </TabPanel>
 
-              <TabPanel value={tabValue} index={2}>
+              <TabPanel value={dialogTabValue} index={2}>
                 {selectedStudent?.enrollments?.some(
                   (enrollment) => enrollment.grades?.length > 0
                 ) ? (

@@ -382,7 +382,9 @@ const InstructorForum = () => {
           spacing={2}
           sx={{ p: 2 }}
         >
-          <Typography variant="h5">Quản lý diễn đàn</Typography>
+          <Typography variant="h5" fontWeight={"bold"}>
+            Quản lý diễn đàn
+          </Typography>
           <Button
             variant="contained"
             startIcon={<Add />}

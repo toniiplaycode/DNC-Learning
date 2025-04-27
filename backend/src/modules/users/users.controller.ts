@@ -57,6 +57,15 @@ export class UsersController {
     return this.usersService.findStudentsByInstructorId(instructorId);
   }
 
+  @Get('instructor/:instructorId/studentsAcademic')
+  @UseGuards(JwtAuthGuard)
+  @Roles(UserRole.INSTRUCTOR)
+  findStudentAcademicByInstructorId(
+    @Param('instructorId') instructorId: number,
+  ): Promise<User[]> {
+    return this.usersService.findStudentAcademicByInstructorId(instructorId);
+  }
+
   @Get('students/:id/academic-courses')
   async getStudentAcademicCourses(@Param('id') id: string) {
     return await this.usersService.findAcademicClassCoursesByStudentAcademicId(

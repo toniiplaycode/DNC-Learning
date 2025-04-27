@@ -10,6 +10,7 @@ import * as bcrypt from 'bcrypt';
 import { UserStudentAcademic } from '../../entities/UserStudentAcademic';
 import { AcademicClass } from '../../entities/AcademicClass';
 import { AcademicClassCourse } from '../../entities/AcademicClassCourse';
+import { AcademicClassInstructor } from 'src/entities/AcademicClassInstructor';
 
 interface StudentUserData {
   user: {
@@ -36,6 +37,10 @@ export class UsersService {
     private userStudentAcademic: Repository<UserStudentAcademic>,
     @InjectRepository(AcademicClass)
     private academicClass: Repository<AcademicClass>,
+    @InjectRepository(AcademicClassCourse)
+    private academicClassCourse: Repository<AcademicClassCourse>,
+    @InjectRepository(AcademicClassInstructor)
+    private academicClassInstructor: Repository<AcademicClassInstructor>,
   ) {}
   findAll(): Promise<User[]> {
     return this.userRepository.find({
@@ -224,6 +229,70 @@ export class UsersService {
       .leftJoinAndSelect('grades.assignmentSubmission', 'gradeAssignment')
       .leftJoinAndSelect('grades.quizAttempt', 'gradeQuiz')
       .distinct(true)
+      .getMany();
+
+    return students;
+  }
+
+  async findStudentAcademicByInstructorId(
+    instructorId: number,
+  ): Promise<User[]> {
+    // 1. Tìm tất cả sinh viên học thuật thông qua lớp học
+    // 2. Lấy thông tin lớp học và điểm số
+
+    const students = await this.userRepository
+      .createQueryBuilder('user')
+      .innerJoin(
+        'user_students_academic',
+        'userStudentAcademic',
+        'user.id = userStudentAcademic.user_id',
+      )
+      .innerJoin(
+        'academic_classes',
+        'academicClass',
+        'userStudentAcademic.academic_class_id = academicClass.id',
+      )
+      .innerJoin(
+        'academic_class_instructors',
+        'classInstructor',
+        'academicClass.id = classInstructor.class_id',
+      )
+      .innerJoin(
+        'user_instructors',
+        'instructor',
+        'classInstructor.instructor_id = instructor.id',
+      )
+      .where('instructor.id = :instructorId', { instructorId })
+      .andWhere('user.role = :role', { role: 'student_academic' })
+
+      // Join và select các thông tin cần thiết
+      .leftJoinAndSelect('user.userStudentAcademic', 'studentAcademic')
+      .leftJoinAndSelect('studentAcademic.academicClass', 'class')
+      .leftJoinAndSelect('class.classCourses', 'classCourses')
+      .leftJoinAndSelect('classCourses.course', 'course')
+
+      // Join với bảng grades để lấy điểm số
+      .leftJoinAndMapMany(
+        'classCourses.grades',
+        'user_grades',
+        'grades',
+        'user.id = grades.user_id AND course.id = grades.course_id',
+      )
+
+      // Lấy thêm thông tin chi tiết về điểm
+      .leftJoinAndSelect('grades.lesson', 'gradeLesson')
+      .leftJoinAndSelect('grades.assignmentSubmission', 'gradeAssignment')
+      .leftJoinAndSelect('grades.quizAttempt', 'gradeQuiz')
+
+      // Đảm bảo không có bản ghi trùng lặp
+      .distinct(true)
+
+      // Sắp xếp kết quả
+      .orderBy({
+        'class.className': 'ASC',
+        'studentAcademic.studentCode': 'ASC',
+      })
+
       .getMany();
 
     return students;

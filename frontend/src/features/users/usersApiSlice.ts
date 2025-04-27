@@ -10,6 +10,7 @@ export interface UsersState {
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
   studentAcademicCourses: AcademicClassCourse[];
+  instructorAcademicStudents: User[];
 }
 
 const initialState: UsersState = {
@@ -19,6 +20,7 @@ const initialState: UsersState = {
   status: "idle",
   error: null,
   studentAcademicCourses: [],
+  instructorAcademicStudents: [],
 };
 
 // Create many students academic for a academic class
@@ -149,6 +151,24 @@ export const fetchStudentAcademicCourses = createAsyncThunk(
   }
 );
 
+// Fetch academic students by instructor ID
+export const fetchAcademicStudentsByInstructor = createAsyncThunk(
+  "users/fetchAcademicStudentsByInstructor",
+  async (instructorId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get(
+        `/users/instructor/${instructorId}/studentsAcademic`
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          "Failed to fetch instructor's academic students"
+      );
+    }
+  }
+);
+
 const usersSlice = createSlice({
   name: "users",
   initialState,
@@ -249,6 +269,20 @@ const usersSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchStudentAcademicCourses.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
+
+      // Fetch academic students by instructor
+      .addCase(fetchAcademicStudentsByInstructor.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchAcademicStudentsByInstructor.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.instructorAcademicStudents = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchAcademicStudentsByInstructor.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
       });

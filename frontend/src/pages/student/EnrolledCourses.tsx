@@ -14,6 +14,7 @@ import {
 import { selectCurrentUser } from "../../features/auth/authSelectors";
 import { fetchStudentAcademicCourses } from "../../features/users/usersApiSlice";
 import { selectStudentAcademicCourses } from "../../features/users/usersSelectors";
+import { useNavigate } from "react-router-dom";
 
 const calculateTotalLessons = (course: any) => {
   if (!course || !course.sections) return 0;
@@ -24,6 +25,7 @@ const calculateTotalLessons = (course: any) => {
 };
 
 const EnrolledCourses: React.FC = () => {
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector(selectCurrentUser);
   const userEnrollments = useAppSelector(selectUserEnrollments);
@@ -34,7 +36,7 @@ const EnrolledCourses: React.FC = () => {
     dispatch(fetchUserEnrollments(Number(currentUser?.id)));
     dispatch(fetchStudentAcademicCourses(currentUser?.id));
     dispatch(fetchUserProgress());
-  }, [dispatch, currentUser]);
+  }, [dispatch, currentUser, navigate]);
 
   // Process academic courses
   const academicCourses = React.useMemo(() => {
@@ -57,21 +59,15 @@ const EnrolledCourses: React.FC = () => {
         endDate: course.endDate,
       };
     });
-  }, [studentAcademicCourses]);
-
-  console.log("Academic Courses: ", academicCourses);
+  }, [studentAcademicCourses, navigate, dispatch, currentUser]);
 
   return (
     <CustomContainer>
       <Box>
-        <Typography variant="h4" fontWeight="bold" py={2}>
-          Khóa học của tôi
-        </Typography>
-
         {/* Academic Courses Section */}
-        {academicCourses.length > 0 && (
+        {academicCourses && academicCourses.length > 0 && (
           <Box mb={4}>
-            <Typography variant="h6" sx={{ mb: 2 }}>
+            <Typography variant="h5" fontWeight="bold" sx={{ mb: 2 }}>
               Khóa học thuật
             </Typography>
             <Grid container spacing={3}>
@@ -94,7 +90,7 @@ const EnrolledCourses: React.FC = () => {
         {/* Enrolled Courses Section */}
         {Array.isArray(userEnrollments) && userEnrollments.length > 0 && (
           <Box>
-            <Typography variant="h6" sx={{ mb: 2 }}>
+            <Typography variant="h5" fontWeight="bold" sx={{ mb: 2 }}>
               Khóa học đã đăng ký
             </Typography>
             <Grid container spacing={3}>
