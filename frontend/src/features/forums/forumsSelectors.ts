@@ -60,3 +60,6 @@ export const selectLikedForums = (state: RootState): Forum[] =>
 // Lấy tất cả user đã like forum
 export const selectUserLikeForum = (state: RootState): UserLikeForum[] =>
   state.forums.userLikeForum;
+
+export const selectUserForums = (state: RootState): Forum[] =>
+  state.forums.userForums;

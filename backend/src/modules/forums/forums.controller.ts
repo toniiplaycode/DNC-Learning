@@ -15,7 +15,7 @@ import { CreateForumDto } from './dto/create-forum.dto';
 import { UpdateForumDto } from './dto/update-forum.dto';
 import { CreateForumReplyDto } from './dto/create-forum-reply.dto';
 import { UpdateForumReplyDto } from './dto/update-forum-reply.dto';
-import { ForumStatus } from '../../entities/Forum';
+import { Forum, ForumStatus } from '../../entities/Forum';
 import { GetUser } from '../auth/decorators/get-user.decorator';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 
@@ -39,6 +39,12 @@ export class ForumsController {
   findOne(@Param('id') id: string, @GetUser() user?) {
     const userId = user?.id;
     return this.forumsService.findOne(+id, userId);
+  }
+
+  @Get('user/:userId')
+  @UseGuards(JwtAuthGuard)
+  async getForumsByUser(@Param('userId') userId: number): Promise<Forum[]> {
+    return this.forumsService.findForumsByUserId(userId);
   }
 
   @Post()

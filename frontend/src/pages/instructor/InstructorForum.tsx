@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
   Box,
   Card,
@@ -7,8 +7,6 @@ import {
   Button,
   TextField,
   InputAdornment,
-  Tabs,
-  Tab,
   Chip,
   IconButton,
   Menu,
@@ -54,109 +52,28 @@ import { format, parseISO } from "date-fns";
 import { vi } from "date-fns/locale";
 import { useNavigate } from "react-router-dom";
 import ForumDiscussionDetail from "../../components/common/ForumDiscussionDetail";
-
-// Mock data cho các bài đăng diễn đàn
-const mockForumPosts = [
-  {
-    id: 1,
-    title: "Thông báo: Cập nhật nội dung khóa học React & TypeScript",
-    content: "Khóa học đã được cập nhật với React 18 và TypeScript 5.0...",
-    courseId: 1,
-    courseName: "React & TypeScript Masterclass",
-    category: "announcement", // announcement, discussion, question, resource
-    status: "published", // draft, published, archived
-    isPinned: true,
-    isPublic: true,
-    createdAt: "2024-03-15T09:30:00",
-    updatedAt: "2024-03-15T09:30:00",
-    views: 245,
-    likes: 32,
-    comments: 15,
-    tags: ["react", "typescript", "update"],
-  },
-  {
-    id: 2,
-    title: "Thảo luận: TypeScript Generic là gì và khi nào nên sử dụng?",
-    content: "TypeScript Generic là một tính năng mạnh mẽ cho phép...",
-    courseId: 1,
-    courseName: "React & TypeScript Masterclass",
-    category: "discussion",
-    status: "published",
-    isPinned: false,
-    isPublic: true,
-    createdAt: "2024-03-10T14:20:00",
-    updatedAt: "2024-03-12T10:15:00",
-    views: 178,
-    likes: 24,
-    comments: 22,
-    tags: ["typescript", "generic", "tips"],
-  },
-  {
-    id: 3,
-    title: "Câu hỏi thường gặp khi sử dụng Node.js với TypeScript",
-    content: "Nhiều học viên thắc mắc về cách cấu hình Node.js...",
-    courseId: 2,
-    courseName: "Node.js Advanced Concepts",
-    category: "resource",
-    status: "published",
-    isPinned: false,
-    isPublic: true,
-    createdAt: "2024-03-08T11:30:00",
-    updatedAt: "2024-03-08T11:30:00",
-    views: 132,
-    likes: 18,
-    comments: 7,
-    tags: ["nodejs", "typescript", "faq"],
-  },
-  {
-    id: 4,
-    title: "[Nháp] Hướng dẫn triển khai Docker cho ứng dụng Node.js",
-    content: "Phần 1: Chuẩn bị môi trường và tạo Dockerfile...",
-    courseId: 3,
-    courseName: "DevOps Fundamentals",
-    category: "resource",
-    status: "draft",
-    isPinned: false,
-    isPublic: false,
-    createdAt: "2024-03-05T16:45:00",
-    updatedAt: "2024-03-06T08:20:00",
-    views: 0,
-    likes: 0,
-    comments: 0,
-    tags: ["docker", "nodejs", "devops"],
-  },
-  {
-    id: 5,
-    title: "Lưu ý quan trọng cho Bài trắc nghiệm cuối kỳ",
-    content: "Bài trắc nghiệm cuối kỳ sẽ diễn ra vào ngày 20/04/2024...",
-    courseId: 2,
-    courseName: "Node.js Advanced Concepts",
-    category: "announcement",
-    status: "published",
-    isPinned: true,
-    isPublic: false,
-    createdAt: "2024-03-01T09:15:00",
-    updatedAt: "2024-03-01T10:30:00",
-    views: 98,
-    likes: 12,
-    comments: 5,
-    tags: ["exam", "important"],
-  },
-];
-
-// Enum cho tab value
-enum TabValue {
-  ALL = 0,
-  PUBLISHED = 1,
-  DRAFT = 2,
-  PINNED = 3,
-}
+import {
+  toggleLikeForum,
+  createForumReply,
+  fetchForumsByUserId,
+  removeForumReply,
+} from "../../features/forums/forumsApiSlice";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import { selectUserForums } from "../../features/forums/forumsSelectors";
+import { selectCurrentUser } from "../../features/auth/authSelectors";
+import {
+  updateForum,
+  deleteForum,
+  createForum,
+} from "../../features/forums/forumsApiSlice";
 
 const InstructorForum = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const currentUser = useAppSelector(selectCurrentUser);
+  const forums = useAppSelector(selectUserForums);
 
   // State cho các tabs, filter, search
-  const [tabValue, setTabValue] = useState<TabValue>(TabValue.ALL);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterCourse, setFilterCourse] = useState("all");
@@ -164,7 +81,6 @@ const InstructorForum = () => {
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
   // State cho posts và dialogs
-  const [posts, setPosts] = useState(mockForumPosts);
   const [selectedPost, setSelectedPost] = useState<number | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [openAddEditDialog, setOpenAddEditDialog] = useState(false);
@@ -172,6 +88,58 @@ const InstructorForum = () => {
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [openViewDialog, setOpenViewDialog] = useState(false);
   const [viewPostId, setViewPostId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (currentUser?.id) {
+      dispatch(fetchForumsByUserId(currentUser.id));
+    }
+  }, [dispatch, currentUser]);
+
+  // Filter forums based on current filters
+  const filteredForums = useMemo(() => {
+    return forums
+      .filter((forum) => {
+        // Filter by search
+        if (
+          searchQuery &&
+          !forum.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
+          !forum.description.toLowerCase().includes(searchQuery.toLowerCase())
+        ) {
+          return false;
+        }
+
+        // Filter by course
+        if (filterCourse !== "all" && forum.course?.id !== filterCourse) {
+          return false;
+        }
+
+        return true;
+      })
+      .sort((a, b) => {
+        const multiplier = sortDirection === "desc" ? -1 : 1;
+
+        switch (sortBy) {
+          case "updatedAt":
+            return (
+              multiplier *
+              (new Date(b.updatedAt).getTime() -
+                new Date(a.updatedAt).getTime())
+            );
+
+          case "replyCount":
+            return multiplier * ((b.replyCount || 0) - (a.replyCount || 0));
+
+          case "likeCount":
+            return multiplier * ((b.likeCount || 0) - (a.likeCount || 0));
+
+          case "title":
+            return multiplier * a.title.localeCompare(b.title);
+
+          default:
+            return 0;
+        }
+      });
+  }, [forums, searchQuery, filterCourse, sortBy, sortDirection]);
 
   // Handlers cho menu
   const handleMenuOpen = (
@@ -187,11 +155,6 @@ const InstructorForum = () => {
     setSelectedPost(null);
   };
 
-  // Handler cho tab change
-  const handleTabChange = (_: React.SyntheticEvent, newValue: TabValue) => {
-    setTabValue(newValue);
-  };
-
   // Handlers cho dialog
   const handleOpenAddEditDialog = (post?: any) => {
     if (post) {
@@ -204,21 +167,30 @@ const InstructorForum = () => {
   };
 
   // Handler cho pin/unpin
-  const handleTogglePin = (postId: number) => {
-    setPosts(
-      posts.map((post) =>
-        post.id === postId ? { ...post, isPinned: !post.isPinned } : post
-      )
+  const handleTogglePin = (forumId: number) => {
+    dispatch(
+      updateForum({
+        id: forumId,
+        changes: {
+          isPinned: !forums.find((f) => f.id === forumId)?.isPinned,
+        },
+      })
     );
     handleMenuClose();
   };
 
   // Handler cho visibility
-  const handleToggleVisibility = (postId: number) => {
-    setPosts(
-      posts.map((post) =>
-        post.id === postId ? { ...post, isPublic: !post.isPublic } : post
-      )
+  const handleToggleVisibility = (forumId: number) => {
+    dispatch(
+      updateForum({
+        id: forumId,
+        changes: {
+          status:
+            forums.find((f) => f.id === forumId)?.status === "active"
+              ? "draft"
+              : "active",
+        },
+      })
     );
     handleMenuClose();
   };
@@ -226,102 +198,49 @@ const InstructorForum = () => {
   // Handler cho delete
   const handleDeleteConfirm = () => {
     if (selectedPost) {
-      setPosts(posts.filter((post) => post.id !== selectedPost));
+      dispatch(deleteForum(selectedPost));
       setOpenDeleteDialog(false);
       handleMenuClose();
     }
   };
 
   // Handler cho submit form
-  const handleSubmitPost = (event: React.FormEvent) => {
+  const handleSubmitPost = async (event: React.FormEvent) => {
     event.preventDefault();
-    // Xử lý tạo hoặc cập nhật bài đăng
-    setOpenAddEditDialog(false);
+    const formData = new FormData(event.target as HTMLFormElement);
 
-    // Nếu là chỉnh sửa, cập nhật post hiện có
-    if (editingPost) {
-      // Trong thực tế, sẽ gọi API để cập nhật
-      const updatedPosts = posts.map((post) =>
-        post.id === editingPost.id
-          ? { ...post, ...editingPost, updatedAt: new Date().toISOString() }
-          : post
-      );
-      setPosts(updatedPosts);
-    } else {
-      // Nếu là tạo mới
-      const newPost = {
-        id: Math.max(...posts.map((p) => p.id)) + 1,
-        title: "Bài đăng mới",
-        content: "Nội dung bài đăng mới",
-        courseId: 1,
-        courseName: "React & TypeScript Masterclass",
-        category: "discussion",
-        status: "draft",
-        isPinned: false,
-        isPublic: true,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        views: 0,
-        likes: 0,
-        comments: 0,
-        tags: [],
-      };
-      setPosts([...posts, newPost]);
+    try {
+      if (editingPost) {
+        // Update existing forum
+        await dispatch(
+          updateForum({
+            id: editingPost.id,
+            changes: {
+              title: formData.get("title") as string,
+              description: formData.get("content") as string,
+              courseId: formData.get("courseId") as string,
+              status: formData.get("status") as string,
+              // ...other fields
+            },
+          })
+        ).unwrap();
+      } else {
+        // Create new forum
+        await dispatch(
+          createForum({
+            title: formData.get("title") as string,
+            description: formData.get("content") as string,
+            courseId: formData.get("courseId") as string,
+            status: formData.get("status") as string,
+            // ...other fields
+          })
+        ).unwrap();
+      }
+      setOpenAddEditDialog(false);
+    } catch (error) {
+      console.error("Failed to save forum:", error);
     }
   };
-
-  // Lọc và sắp xếp bài đăng theo các tiêu chí
-  const filteredPosts = posts
-    .filter((post) => {
-      // Lọc theo tìm kiếm
-      if (
-        searchQuery &&
-        !post.title.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !post.content.toLowerCase().includes(searchQuery.toLowerCase())
-      ) {
-        return false;
-      }
-
-      // Lọc theo loại
-      if (filterCategory !== "all" && post.category !== filterCategory) {
-        return false;
-      }
-
-      // Lọc theo khóa học
-      if (filterCourse !== "all" && post.courseId.toString() !== filterCourse) {
-        return false;
-      }
-
-      // Lọc theo tab
-      if (tabValue === TabValue.PUBLISHED) {
-        return post.status === "published";
-      } else if (tabValue === TabValue.DRAFT) {
-        return post.status === "draft";
-      } else if (tabValue === TabValue.PINNED) {
-        return post.isPinned;
-      }
-
-      return true;
-    })
-    .sort((a, b) => {
-      // Sắp xếp theo trường đã chọn
-      let comparison = 0;
-
-      if (sortBy === "updatedAt") {
-        comparison =
-          new Date(a.updatedAt).getTime() - new Date(b.updatedAt).getTime();
-      } else if (sortBy === "views") {
-        comparison = a.views - b.views;
-      } else if (sortBy === "comments") {
-        comparison = a.comments - b.comments;
-      } else if (sortBy === "likes") {
-        comparison = a.likes - b.likes;
-      } else if (sortBy === "title") {
-        comparison = a.title.localeCompare(b.title);
-      }
-
-      return sortDirection === "asc" ? comparison : -comparison;
-    });
 
   // Helper function cho định dạng ngày giờ
   const formatDateTime = (dateString: string) => {
@@ -329,36 +248,6 @@ const InstructorForum = () => {
       return format(parseISO(dateString), "dd/MM/yyyy HH:mm", { locale: vi });
     } catch {
       return dateString;
-    }
-  };
-
-  // Helper function để hiển thị chip category
-  const getCategoryChip = (category: string) => {
-    switch (category) {
-      case "announcement":
-        return <Chip label="Thông báo" color="error" size="small" />;
-      case "discussion":
-        return <Chip label="Thảo luận" color="primary" size="small" />;
-      case "question":
-        return <Chip label="Câu hỏi" color="warning" size="small" />;
-      case "resource":
-        return <Chip label="Tài nguyên" color="success" size="small" />;
-      default:
-        return null;
-    }
-  };
-
-  // Helper function để hiển thị status
-  const getStatusChip = (status: string) => {
-    switch (status) {
-      case "published":
-        return <Chip label="Đã đăng" color="success" size="small" />;
-      case "draft":
-        return <Chip label="Nháp" color="default" size="small" />;
-      case "archived":
-        return <Chip label="Đã lưu trữ" color="secondary" size="small" />;
-      default:
-        return null;
     }
   };
 
@@ -370,7 +259,46 @@ const InstructorForum = () => {
   };
 
   // Tìm bài đăng đang được xem
-  const viewingPost = posts.find((post) => post.id === viewPostId);
+  const viewingForum = forums.find((forum) => Number(forum.id) === viewPostId);
+
+  // Add useMemo to get unique courses from forums
+  const courseOptions = useMemo(() => {
+    const uniqueCourses = new Map();
+
+    // Add "All courses" option
+    uniqueCourses.set("all", { id: "all", title: "Tất cả khóa học" });
+
+    // Add courses from forums
+    forums.forEach((forum) => {
+      if (forum.course) {
+        uniqueCourses.set(forum.course.id, forum.course);
+      }
+    });
+
+    return Array.from(uniqueCourses.values());
+  }, [forums]);
+
+  const handleReplySubmit = async (
+    forumId: number,
+    content: string,
+    replyId: number | null
+  ) => {
+    await dispatch(createForumReply({ forumId, content, replyId }));
+    // Fetch updated forums
+    dispatch(fetchForumsByUserId(currentUser.id));
+  };
+
+  const handleReplyDelete = async (replyId: number) => {
+    await dispatch(removeForumReply(replyId));
+    // Fetch updated forums
+    dispatch(fetchForumsByUserId(currentUser.id));
+  };
+
+  const handleLikeToggle = async (forumId: number) => {
+    await dispatch(toggleLikeForum(forumId));
+    // Fetch updated forums
+    dispatch(fetchForumsByUserId(currentUser.id));
+  };
 
   return (
     <Box>
@@ -395,19 +323,6 @@ const InstructorForum = () => {
         </Stack>
 
         <Divider />
-
-        <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
-          <Tabs
-            value={tabValue}
-            onChange={handleTabChange}
-            aria-label="forum tabs"
-          >
-            <Tab label="Tất cả" />
-            <Tab label="Đã đăng" />
-            <Tab label="Nháp" />
-            <Tab label="Ghim" />
-          </Tabs>
-        </Box>
 
         <Box sx={{ p: 2 }}>
           <Stack
@@ -452,14 +367,15 @@ const InstructorForum = () => {
                 label="Khóa học"
                 onChange={(e) => setFilterCourse(e.target.value)}
               >
-                <MenuItem value="all">Tất cả khóa học</MenuItem>
-                <MenuItem value="1">React & TypeScript Masterclass</MenuItem>
-                <MenuItem value="2">Node.js Advanced Concepts</MenuItem>
-                <MenuItem value="3">DevOps Fundamentals</MenuItem>
+                {courseOptions.map((course) => (
+                  <MenuItem key={course.id} value={course.id}>
+                    {course.title}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
 
-            <FormControl size="small" sx={{ minWidth: 150 }}>
+            <FormControl size="small" sx={{ minWidth: 240 }}>
               <InputLabel>Sắp xếp</InputLabel>
               <Select
                 value={sortBy}
@@ -468,9 +384,12 @@ const InstructorForum = () => {
                 endAdornment={
                   <IconButton
                     size="small"
-                    onClick={() =>
-                      setSortDirection(sortDirection === "asc" ? "desc" : "asc")
-                    }
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setSortDirection(
+                        sortDirection === "asc" ? "desc" : "asc"
+                      );
+                    }}
                     sx={{ mr: 2 }}
                   >
                     <Sort
@@ -479,6 +398,7 @@ const InstructorForum = () => {
                         transform: `rotate(${
                           sortDirection === "asc" ? 0 : 180
                         }deg)`,
+                        transition: "transform 0.2s ease-in-out",
                       }}
                     />
                   </IconButton>
@@ -486,9 +406,8 @@ const InstructorForum = () => {
                 sx={{ pr: 4 }}
               >
                 <MenuItem value="updatedAt">Ngày cập nhật</MenuItem>
-                <MenuItem value="views">Lượt xem</MenuItem>
-                <MenuItem value="comments">Bình luận</MenuItem>
-                <MenuItem value="likes">Lượt thích</MenuItem>
+                <MenuItem value="replyCount">Bình luận</MenuItem>
+                <MenuItem value="likeCount">Lượt thích</MenuItem>
                 <MenuItem value="title">Tiêu đề</MenuItem>
               </Select>
             </FormControl>
@@ -501,14 +420,13 @@ const InstructorForum = () => {
                   <TableCell>Tiêu đề</TableCell>
                   <TableCell>Khóa học</TableCell>
                   <TableCell>Phân loại</TableCell>
-                  <TableCell>Trạng thái</TableCell>
                   <TableCell align="center">Tương tác</TableCell>
                   <TableCell>Cập nhật</TableCell>
-                  <TableCell align="center">Thao tác</TableCell>
+                  <TableCell>Thao tác</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
-                {filteredPosts.length === 0 ? (
+                {filteredForums.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} align="center">
                       <Typography
@@ -521,74 +439,61 @@ const InstructorForum = () => {
                     </TableCell>
                   </TableRow>
                 ) : (
-                  filteredPosts.map((post) => (
-                    <TableRow key={post.id}>
+                  filteredForums.map((forum) => (
+                    <TableRow key={forum.id}>
                       <TableCell>
                         <Stack direction="row" spacing={1} alignItems="center">
-                          {post.isPinned && (
+                          {forum.isPinned && (
                             <Tooltip title="Đã ghim">
-                              <PushPin
-                                fontSize="small"
-                                color="warning"
-                                sx={{ mr: 1 }}
-                              />
+                              <PushPin fontSize="small" color="warning" />
                             </Tooltip>
                           )}
                           <Box>
                             <Typography variant="body1">
-                              {post.title}
+                              {forum.title}
                             </Typography>
                             <Stack
                               direction="row"
                               spacing={1}
                               alignItems="center"
                             >
-                              {post.isPublic ? (
-                                <Tooltip title="Công khai">
+                              <Tooltip
+                                title={
+                                  forum.status === "active"
+                                    ? "Công khai"
+                                    : "Nháp"
+                                }
+                              >
+                                {forum.status === "active" ? (
                                   <Public fontSize="small" color="action" />
-                                </Tooltip>
-                              ) : (
-                                <Tooltip title="Riêng tư (Chỉ học viên)">
+                                ) : (
                                   <Lock fontSize="small" color="action" />
-                                </Tooltip>
-                              )}
-                              {post.tags.length > 0 && (
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
-                                  {post.tags.join(", ")}
-                                </Typography>
-                              )}
+                                )}
+                              </Tooltip>
                             </Stack>
                           </Box>
                         </Stack>
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2">
-                          {post.courseName}
+                          {forum.course?.title}
                         </Typography>
                       </TableCell>
-                      <TableCell>{getCategoryChip(post.category)}</TableCell>
-                      <TableCell>{getStatusChip(post.status)}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={forum.status === "active" ? "Đã đăng" : "Nháp"}
+                          color={
+                            forum.status === "active" ? "success" : "default"
+                          }
+                          size="small"
+                        />
+                      </TableCell>
                       <TableCell>
                         <Stack
                           direction="row"
                           spacing={2}
                           justifyContent="center"
                         >
-                          <Tooltip title="Lượt xem">
-                            <Stack
-                              direction="row"
-                              spacing={0.5}
-                              alignItems="center"
-                            >
-                              <Visibility fontSize="small" color="action" />
-                              <Typography variant="body2">
-                                {post.views}
-                              </Typography>
-                            </Stack>
-                          </Tooltip>
                           <Tooltip title="Bình luận">
                             <Stack
                               direction="row"
@@ -597,7 +502,7 @@ const InstructorForum = () => {
                             >
                               <Message fontSize="small" color="action" />
                               <Typography variant="body2">
-                                {post.comments}
+                                {forum.replyCount}
                               </Typography>
                             </Stack>
                           </Tooltip>
@@ -609,7 +514,7 @@ const InstructorForum = () => {
                             >
                               <ThumbUp fontSize="small" color="action" />
                               <Typography variant="body2">
-                                {post.likes}
+                                {forum.likeCount}
                               </Typography>
                             </Stack>
                           </Tooltip>
@@ -617,12 +522,12 @@ const InstructorForum = () => {
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2">
-                          {formatDateTime(post.updatedAt)}
+                          {formatDateTime(forum.updatedAt)}
                         </Typography>
                       </TableCell>
-                      <TableCell align="right">
+                      <TableCell>
                         <IconButton
-                          onClick={(e) => handleMenuOpen(e, post.id)}
+                          onClick={(e) => handleMenuOpen(e, Number(forum.id))}
                           size="small"
                         >
                           <MoreVert />
@@ -653,7 +558,7 @@ const InstructorForum = () => {
         <MenuItem
           onClick={() =>
             selectedPost &&
-            handleOpenAddEditDialog(posts.find((p) => p.id === selectedPost))
+            handleOpenAddEditDialog(forums.find((f) => f.id === selectedPost))
           }
         >
           <ListItemIcon>
@@ -674,7 +579,7 @@ const InstructorForum = () => {
             <PushPin fontSize="small" />
           </ListItemIcon>
           <ListItemText>
-            {posts.find((p) => p.id === selectedPost)?.isPinned
+            {forums.find((f) => f.id === selectedPost)?.isPinned
               ? "Bỏ ghim"
               : "Ghim bài đăng"}
           </ListItemText>
@@ -684,14 +589,14 @@ const InstructorForum = () => {
           onClick={() => selectedPost && handleToggleVisibility(selectedPost)}
         >
           <ListItemIcon>
-            {posts.find((p) => p.id === selectedPost)?.isPublic ? (
+            {forums.find((f) => f.id === selectedPost)?.status === "active" ? (
               <Public fontSize="small" />
             ) : (
               <Lock fontSize="small" />
             )}
           </ListItemIcon>
           <ListItemText>
-            {posts.find((p) => p.id === selectedPost)?.isPublic
+            {forums.find((f) => f.id === selectedPost)?.status === "active"
               ? "Chỉ học viên đã đăng ký"
               : "Công khai"}
           </ListItemText>
@@ -728,6 +633,7 @@ const InstructorForum = () => {
                 fullWidth
                 defaultValue={editingPost?.title}
                 required
+                name="title"
               />
 
               <TextField
@@ -737,6 +643,7 @@ const InstructorForum = () => {
                 rows={10}
                 defaultValue={editingPost?.content}
                 required
+                name="content"
               />
 
               <Grid container spacing={2}>
@@ -747,6 +654,7 @@ const InstructorForum = () => {
                       label="Khóa học"
                       defaultValue={editingPost?.courseId || 1}
                       required
+                      name="courseId"
                     >
                       <MenuItem value={1}>
                         React & TypeScript Masterclass
@@ -763,6 +671,7 @@ const InstructorForum = () => {
                       label="Phân loại"
                       defaultValue={editingPost?.category || "discussion"}
                       required
+                      name="category"
                     >
                       <MenuItem value="announcement">Thông báo</MenuItem>
                       <MenuItem value="discussion">Thảo luận</MenuItem>
@@ -781,6 +690,7 @@ const InstructorForum = () => {
                       label="Trạng thái"
                       defaultValue={editingPost?.status || "draft"}
                       required
+                      name="status"
                     >
                       <MenuItem value="draft">Lưu nháp</MenuItem>
                       <MenuItem value="published">Đăng ngay</MenuItem>
@@ -800,6 +710,7 @@ const InstructorForum = () => {
                           : "enrolled"
                       }
                       required
+                      name="visibility"
                     >
                       <MenuItem value="public">Tất cả (Công khai)</MenuItem>
                       <MenuItem value="enrolled">
@@ -815,6 +726,7 @@ const InstructorForum = () => {
                 fullWidth
                 defaultValue={editingPost?.tags.join(", ")}
                 placeholder="react, typescript, learning"
+                name="tags"
               />
 
               <FormControl>
@@ -879,38 +791,36 @@ const InstructorForum = () => {
           </Stack>
         </DialogTitle>
         <DialogContent dividers>
-          {viewingPost && (
+          {viewingForum && (
             <ForumDiscussionDetail
               discussion={{
-                id: viewingPost.id,
-                title: viewingPost.title,
-                content: viewingPost.content,
-                author: {
-                  id: 1, // ID của giảng viên
-                  name: "Instructor", // Tên giảng viên
-                  avatar: "/src/assets/avatar.png",
-                  role: "instructor",
+                id: viewingForum.id,
+                courseId: viewingForum.courseId,
+                userId: viewingForum.userId,
+                title: viewingForum.title,
+                description: viewingForum.description,
+                thumbnailUrl: viewingForum.thumbnailUrl,
+                status: viewingForum.status,
+                createdAt: viewingForum.createdAt,
+                updatedAt: viewingForum.updatedAt,
+                course: viewingForum.course && {
+                  id: viewingForum.course.id,
+                  title: viewingForum.course.title,
                 },
-                createdAt: viewingPost.createdAt,
-                updatedAt: viewingPost.updatedAt,
-                category: viewingPost.category,
-                tags: viewingPost.tags,
-                views: viewingPost.views,
-                likes: viewingPost.likes,
-                isPinned: viewingPost.isPinned,
-                comments: Array(viewingPost.comments).fill({
-                  id: 1,
-                  content: "Mock comment content",
-                  author: {
-                    id: 2,
-                    name: "Student User",
-                    avatar: "/src/assets/avatar.png",
-                  },
-                  createdAt: new Date().toISOString(),
-                  likes: 0,
-                }),
+                user: viewingForum.user && {
+                  id: viewingForum.user.id,
+                  username: viewingForum.user.username,
+                  avatarUrl: viewingForum.user.avatarUrl,
+                  role: viewingForum.user.role,
+                },
+                replies: viewingForum.replies,
+                replyCount: viewingForum.replyCount,
+                likeCount: viewingForum.likeCount,
+                isLiked: viewingForum.isLiked,
               }}
-              isInstructorView={true} // Thêm prop để chỉ ra rằng đang xem với tư cách giảng viên
+              onReplySubmit={handleReplySubmit}
+              onReplyDelete={handleReplyDelete}
+              onLikeToggle={handleLikeToggle}
             />
           )}
         </DialogContent>

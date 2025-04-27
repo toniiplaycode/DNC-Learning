@@ -501,7 +501,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
         >
           <Typography variant="h6">
             {editMode
-              ? "Chỉnh sửa Bài trắc nghiệm"
+              ? "Chỉnh sửa bài trắc nghiệm"
               : "Thêm Bài trắc nghiệm mới"}
           </Typography>
           <IconButton onClick={onClose} size="small">

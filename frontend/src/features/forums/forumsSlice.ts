@@ -13,11 +13,13 @@ import {
   getUserLikeForum,
   UserLikeForum,
   toggleLikeForum,
+  fetchForumsByUserId,
 } from "./forumsApiSlice";
 
 interface ForumsState {
   forums: Forum[];
   currentForum: Forum | null;
+  userForums: Forum[];
   replies: { [forumId: number]: ForumReply[] };
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
@@ -27,6 +29,7 @@ interface ForumsState {
 const initialState: ForumsState = {
   forums: [],
   currentForum: null,
+  userForums: [],
   replies: {},
   status: "idle",
   error: null,
@@ -92,6 +95,19 @@ const forumsSlice = createSlice({
         state.error =
           (action.payload as string) ||
           "Đã xảy ra lỗi khi lấy thông tin diễn đàn";
+      })
+
+      .addCase(fetchForumsByUserId.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchForumsByUserId.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.userForums = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchForumsByUserId.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
       })
 
       // Create forum reducers

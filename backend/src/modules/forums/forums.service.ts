@@ -164,6 +164,57 @@ export class ForumsService {
     return forum;
   }
 
+  async findForumsByUserId(userId: number): Promise<Forum[]> {
+    const forums = await this.forumRepository
+      .createQueryBuilder('forum')
+      .leftJoinAndSelect('forum.user', 'user')
+      .leftJoinAndSelect('forum.course', 'course')
+      .leftJoinAndSelect('forum.replies', 'replies')
+      .leftJoinAndSelect('replies.user', 'replyUser')
+      .where('forum.userId = :userId', { userId })
+      .select([
+        'forum',
+        'user.id',
+        'user.username',
+        'user.avatarUrl',
+        'user.role',
+        'course.id',
+        'course.title',
+        'replies.id',
+        'replies.replyId',
+        'replies.content',
+        'replies.createdAt',
+        'replies.updatedAt',
+        'replies.isSolution',
+        'replyUser.id',
+        'replyUser.username',
+        'replyUser.avatarUrl',
+      ])
+      .orderBy('forum.createdAt', 'DESC')
+      .getMany();
+
+    // Get additional counts for each forum
+    for (const forum of forums) {
+      // Get reply count
+      forum.replyCount = await this.forumReplyRepository.count({
+        where: { forumId: forum.id },
+      });
+
+      // Get like count
+      forum.likeCount = await this.forumLikeRepository.count({
+        where: { forumId: forum.id },
+      });
+
+      // Check if user liked their own forums
+      const userLike = await this.forumLikeRepository.findOne({
+        where: { forumId: forum.id, userId },
+      });
+      forum.isLiked = !!userLike;
+    }
+
+    return forums;
+  }
+
   async create(createForumDto: CreateForumDto, userId: number): Promise<Forum> {
     const newForum = this.forumRepository.create({
       ...createForumDto,

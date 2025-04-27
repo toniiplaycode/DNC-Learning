@@ -95,10 +95,20 @@ interface ForumDiscussion {
 
 interface ForumDiscussionDetailProps {
   discussion?: ForumDiscussion;
+  onReplySubmit?: (
+    forumId: number,
+    content: string,
+    replyId: number | null
+  ) => Promise<void>;
+  onReplyDelete?: (replyId: number) => Promise<void>;
+  onLikeToggle?: (forumId: number) => Promise<void>;
 }
 
 const ForumDiscussionDetail = ({
   discussion: propDiscussion,
+  onReplySubmit,
+  onReplyDelete,
+  onLikeToggle,
 }: ForumDiscussionDetailProps) => {
   const { id } = useParams();
   const dispatch = useAppDispatch();
@@ -127,9 +137,7 @@ const ForumDiscussionDetail = ({
     if (id && !propDiscussion) {
       dispatch(fetchForumById(Number(id)));
     }
-  }, [id, dispatch, propDiscussion]);
-
-  console.log(discussion);
+  }, [id, dispatch, propDiscussion, comment]);
 
   useEffect(() => {
     if (discussion) {
@@ -195,19 +203,29 @@ const ForumDiscussionDetail = ({
     }
   };
 
-  const handleSubmitComment = () => {
-    if (comment.trim()) {
-      dispatch(
-        createForumReply({
-          content: comment,
-          forumId: Number(discussion.id),
-          replyId: replyingTo,
-        })
-      ).then(() => {
-        dispatch(fetchForumById(Number(discussion.id)));
-        setComment("");
-        setReplyingTo(null);
-      });
+  const handleSubmitComment = async () => {
+    if (comment.trim() && discussion) {
+      try {
+        if (onReplySubmit) {
+          await onReplySubmit(Number(discussion.id), comment, replyingTo);
+          setComment("");
+          setReplyingTo(null);
+        } else {
+          // Fallback to original behavior
+          await dispatch(
+            createForumReply({
+              content: comment,
+              forumId: Number(discussion.id),
+              replyId: replyingTo,
+            })
+          );
+          dispatch(fetchForumById(Number(discussion.id)));
+          setComment("");
+          setReplyingTo(null);
+        }
+      } catch (error) {
+        console.error("Error submitting comment:", error);
+      }
     }
   };
 
@@ -222,16 +240,34 @@ const ForumDiscussionDetail = ({
     }).format(date);
   };
 
+  const handleDeleteReply = async () => {
+    if (replyToDelete) {
+      try {
+        if (onReplyDelete) {
+          await onReplyDelete(replyToDelete);
+        } else {
+          await dispatch(removeForumReply(replyToDelete));
+          if (discussion?.id) {
+            dispatch(fetchForumById(Number(discussion.id)));
+          }
+        }
+        handleCloseDeleteDialog();
+      } catch (error) {
+        console.error("Error deleting reply:", error);
+      }
+    }
+  };
+
   const handleLikeClick = async () => {
     try {
-      // Optimistic update
       setIsLiked(!isLiked);
       setLikeCount((prev) => (isLiked ? prev - 1 : prev + 1));
 
-      // Gọi API like/unlike
-      await dispatch(toggleLikeForum(Number(discussion.id)));
-
-      // Nếu có lỗi thì revert lại
+      if (onLikeToggle && discussion) {
+        await onLikeToggle(Number(discussion.id));
+      } else {
+        await dispatch(toggleLikeForum(Number(discussion.id)));
+      }
     } catch (error) {
       setIsLiked(isLiked);
       setLikeCount(likeCount);
@@ -254,19 +290,6 @@ const ForumDiscussionDetail = ({
   const handleCloseDeleteDialog = () => {
     setDeleteDialogOpen(false);
     setReplyToDelete(null);
-  };
-
-  // Xử lý xóa bình luận
-  const handleDeleteReply = () => {
-    if (replyToDelete) {
-      dispatch(removeForumReply(replyToDelete)).then(() => {
-        // Sau khi xóa thành công, reload forum để cập nhật UI
-        if (discussion?.id) {
-          dispatch(fetchForumById(Number(discussion.id)));
-        }
-        handleCloseDeleteDialog();
-      });
-    }
   };
 
   // Render một reply và các phản hồi con của nó

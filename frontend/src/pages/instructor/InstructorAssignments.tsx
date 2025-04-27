@@ -612,7 +612,7 @@ const InstructorAssignments = () => {
           <Tab
             icon={<FilterAlt fontSize="small" />}
             iconPosition="start"
-            label="Tất cả học viên"
+            label="Tất cả "
           />
           <Tab
             icon={<Person fontSize="small" />}

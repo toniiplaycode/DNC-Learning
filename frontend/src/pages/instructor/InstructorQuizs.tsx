@@ -83,181 +83,6 @@ import { selectCurrentUser } from "../../features/auth/authSelectors";
 import { formatDateTime } from "../../utils/formatters";
 import { toast } from "react-toastify";
 
-// Mock data
-const mockQuizzes = [
-  {
-    id: 1,
-    title: "Kiểm tra React cơ bản",
-    course: "React & TypeScript Masterclass",
-    courseId: 1,
-    totalQuestions: 15,
-    totalPoints: 100,
-    passingScore: 70,
-    dateCreated: "2024-03-15",
-    attempts: 45,
-    averageScore: 78.5,
-    submissions: [
-      {
-        id: 101,
-        studentId: 1,
-        studentName: "Nguyễn Văn A",
-        avatar: "/src/assets/avatar.png",
-        status: "passed",
-        score: 85,
-        submittedDate: "2024-03-16T10:30:00",
-        timeSpent: 25,
-        studentType: "student",
-        answers: [
-          { question: 1, answer: 2, correct: true },
-          { question: 2, answer: 3, correct: true },
-          { question: 3, answer: 0, correct: false },
-          // thêm các câu trả lời khác
-        ],
-      },
-      {
-        id: 102,
-        studentId: 5,
-        studentName: "Trần Thị B",
-        studentCode: "SV001",
-        className: "CNTT-K44A",
-        faculty: "Công nghệ thông tin",
-        avatar: "/src/assets/avatar.png",
-        status: "failed",
-        score: 60,
-        submittedDate: "2024-03-16T11:15:00",
-        timeSpent: 28,
-        studentType: "student_academic",
-        answers: [
-          { question: 1, answer: 2, correct: true },
-          { question: 2, answer: 1, correct: true },
-          { question: 3, answer: 2, correct: true },
-          // ...more answers
-        ],
-      },
-    ],
-  },
-  {
-    id: 2,
-    title: "Đánh giá kiến thức TypeScript",
-    course: "React & TypeScript Masterclass",
-    courseId: 1,
-    totalQuestions: 20,
-    totalPoints: 100,
-    passingScore: 75,
-    dateCreated: "2024-03-18",
-    attempts: 38,
-    averageScore: 82.3,
-    submissions: [
-      {
-        id: 201,
-        studentId: 2,
-        studentName: "Lê Thị C",
-        avatar: "/src/assets/avatar.png",
-        status: "passed",
-        score: 90,
-        submittedDate: "2024-03-19T14:20:00",
-        timeSpent: 22,
-        studentType: "student",
-        answers: [
-          { question: 1, answer: 2, correct: true },
-          { question: 2, answer: 1, correct: true },
-          { question: 3, answer: 2, correct: true },
-          // ...more answers
-        ],
-      },
-      {
-        id: 202,
-        studentId: 6,
-        studentName: "Phạm Văn D",
-        studentCode: "SV002",
-        className: "CNTT-K44B",
-        faculty: "Công nghệ thông tin",
-        avatar: "/src/assets/avatar.png",
-        status: "passed",
-        score: 85,
-        submittedDate: "2024-03-19T15:30:00",
-        timeSpent: 26,
-        studentType: "student_academic",
-        answers: [
-          { question: 1, answer: 2, correct: true },
-          { question: 2, answer: 1, correct: true },
-          { question: 3, answer: 2, correct: true },
-          // ...more answers
-        ],
-      },
-    ],
-  },
-  {
-    id: 3,
-    title: "Kiểm tra Node.js cơ bản",
-    course: "Node.js Advanced Concepts",
-    courseId: 2,
-    totalQuestions: 25,
-    totalPoints: 100,
-    passingScore: 70,
-    dateCreated: "2024-03-10",
-    attempts: 22,
-    averageScore: 75.8,
-    submissions: [
-      {
-        id: 301,
-        studentId: 3,
-        studentName: "Nguyễn Thị E",
-        avatar: "/src/assets/avatar.png",
-        status: "failed",
-        score: 65,
-        submittedDate: "2024-03-12T09:15:00",
-        timeSpent: 30,
-        studentType: "student",
-        answers: [
-          { question: 1, answer: 1, correct: false },
-          { question: 2, answer: 1, correct: true },
-          { question: 3, answer: 1, correct: false },
-          // ...more answers
-        ],
-      },
-      {
-        id: 302,
-        studentId: 7,
-        studentName: "Hoàng Văn F",
-        studentCode: "SV003",
-        className: "KHMT-K44A",
-        faculty: "Khoa học máy tính",
-        avatar: "/src/assets/avatar.png",
-        status: "passed",
-        score: 78,
-        submittedDate: "2024-03-12T10:25:00",
-        timeSpent: 28,
-        studentType: "student_academic",
-        answers: [
-          { question: 1, answer: 2, correct: true },
-          { question: 2, answer: 1, correct: true },
-          { question: 3, answer: 2, correct: true },
-          // ...more answers
-        ],
-      },
-    ],
-  },
-];
-
-// Danh sách lớp học
-const mockClasses = [
-  "Tất cả",
-  "CNTT-K44A",
-  "CNTT-K44B",
-  "CNTT-K45A",
-  "KHMT-K44A",
-  "KTPM-K44A",
-];
-
-// Danh sách khoa
-const mockFaculties = [
-  "Tất cả",
-  "Công nghệ thông tin",
-  "Khoa học máy tính",
-  "Kỹ thuật phần mềm",
-];
-
 // Thêm interface để định nghĩa kiểu dữ liệu
 interface QuizAttempt {
   id: number;
@@ -340,19 +165,6 @@ interface TabPanelProps {
   type: string;
 }
 
-// Add TabPanel component
-const StudentTypeTabPanel: React.FC<TabPanelProps> = ({
-  children,
-  value,
-  type,
-}) => {
-  return (
-    <div role="tabpanel" hidden={value !== type}>
-      {value === type && children}
-    </div>
-  );
-};
-
 const InstructorQuizs = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
@@ -371,14 +183,6 @@ const InstructorQuizs = () => {
     null
   );
   const [openAddQuizModal, setOpenAddQuizModal] = useState(false);
-  const [currentSectionId, setCurrentSectionId] = useState<number | null>(null);
-  const [mockCourseData, setMockCourseData] = useState({
-    sections: [
-      { id: 1, title: "Section 1", contents: [] },
-      { id: 2, title: "Section 2", contents: [] },
-      { id: 3, title: "Section 3", contents: [] },
-    ],
-  });
   // Add at the top of your component with other states
   const [expandedUser, setExpandedUser] = useState<string | null>(null);
   // Add new state for answer filter
@@ -391,7 +195,6 @@ const InstructorQuizs = () => {
     dispatch(fetchInstructorAttempts(currentUser.userInstructor.id));
   }, [dispatch, currentUser]);
 
-  // Danh sách khóa học từ mock data
   const courses = useMemo(() => {
     if (!instructorQuizzes) return [];
 
@@ -576,68 +379,10 @@ const InstructorQuizs = () => {
     );
   };
 
-  // Tổng hợp tất cả các bài nộp từ các Bài trắc nghiệm
-  const getAllSubmissions = () => {
-    const allSubmissions: any[] = [];
-
-    mockQuizzes.forEach((quiz) => {
-      if (filterCourse === "all" || filterCourse === quiz.courseId.toString()) {
-        quiz.submissions.forEach((submission) => {
-          allSubmissions.push({
-            ...submission,
-            quizId: quiz.id,
-            quizTitle: quiz.title,
-            courseName: quiz.course,
-          });
-        });
-      }
-    });
-
-    return allSubmissions;
-  };
-
   const handleEditQuiz = (quiz: Quiz) => {
     setQuizToEdit(quiz);
     setOpenAddQuizModal(true);
   };
-
-  // Lọc các bài nộp theo bộ lọc
-  const filteredSubmissions = getAllSubmissions().filter((submission) => {
-    // Lọc theo từ khóa tìm kiếm
-    if (
-      searchQuery &&
-      !submission.studentName
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase()) &&
-      !submission.quizTitle.toLowerCase().includes(searchQuery.toLowerCase())
-    ) {
-      return false;
-    }
-
-    // Lọc theo trạng thái
-    if (filterStatus !== "all" && submission.status !== filterStatus) {
-      return false;
-    }
-
-    // Lọc theo loại học viên
-    if (
-      studentTypeFilter !== "all" &&
-      submission.studentType !== studentTypeFilter
-    ) {
-      return false;
-    }
-
-    // Lọc theo lớp (chỉ áp dụng cho sinh viên trường)
-    if (
-      submission.studentType === "student_academic" &&
-      classFilter !== "all" &&
-      submission.className !== classFilter
-    ) {
-      return false;
-    }
-
-    return true;
-  });
 
   // Add getFilteredQuizzes function inside component
   const getFilteredQuizzes = () => {
@@ -748,7 +493,7 @@ const InstructorQuizs = () => {
                 <Tab
                   icon={<FilterAlt fontSize="small" />}
                   iconPosition="start"
-                  label="Tất cả học viên"
+                  label="Tất cả "
                   value="all"
                   sx={{ width: "210px" }}
                 />
@@ -778,20 +523,33 @@ const InstructorQuizs = () => {
           </CardContent>
         </Card>
 
-        {/* Modal Thêm quiz */}
-        <DialogAddEditQuiz
-          open={openAddQuizModal}
-          onClose={() => {
-            setOpenAddQuizModal(false);
-            setQuizToEdit(null);
-          }}
-          quizToEdit={quizToEdit}
-          editMode={!!quizToEdit}
-          additionalInfo={{
-            targetType: "academic",
-            className: classFilter !== "all" ? classFilter : "Tất cả các lớp",
-          }}
-        />
+        {!quizToEdit?.lessonId && (
+          <DialogAddEditQuiz
+            open={openAddQuizModal}
+            onClose={() => {
+              setOpenAddQuizModal(false);
+              setQuizToEdit(null);
+            }}
+            quizToEdit={quizToEdit}
+            editMode={!!quizToEdit}
+            additionalInfo={{
+              targetType: "academic",
+              className: classFilter !== "all" ? classFilter : "Tất cả các lớp",
+            }}
+          />
+        )}
+
+        {quizToEdit?.lessonId && (
+          <DialogAddEditQuiz
+            open={openAddQuizModal}
+            onClose={() => {
+              setOpenAddQuizModal(false);
+              setQuizToEdit(null);
+            }}
+            quizToEdit={quizToEdit}
+            editMode={!!quizToEdit}
+          />
+        )}
       </Box>
     );
   }

@@ -86,6 +86,20 @@ export const fetchForumById = createAsyncThunk(
   }
 );
 
+export const fetchForumsByUserId = createAsyncThunk(
+  "forums/fetchByUserId",
+  async (userId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/forums/user/${userId}`);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch user's forums"
+      );
+    }
+  }
+);
+
 // Create forum
 export const createForum = createAsyncThunk(
   "forums/createForum",
