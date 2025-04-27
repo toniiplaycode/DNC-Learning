@@ -30,6 +30,7 @@ export interface ReviewState {
   reviews: Review[];
   courseReviews: Review[];
   userReviews: Review[];
+  instructorReviews: Review[]; // Add this line
   currentReview: Review | null;
   stats: ReviewStats | null;
   status: "idle" | "loading" | "succeeded" | "failed";

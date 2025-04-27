@@ -56,6 +56,12 @@ export class ReviewsController {
     return this.reviewsService.findByStudent(id);
   }
 
+  @Get('instructor/:id')
+  @UseGuards(JwtAuthGuard)
+  async findByInstructor(@Param('id', ParseIntPipe) id: number) {
+    return this.reviewsService.findByInstructor(id);
+  }
+
   @Get('course/:id/stats')
   getCourseStats(@Param('id', ParseIntPipe) id: number) {
     return this.reviewsService.getCourseStats(id);

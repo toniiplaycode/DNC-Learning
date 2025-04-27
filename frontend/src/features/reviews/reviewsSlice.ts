@@ -126,6 +126,22 @@ export const deleteReview = createAsyncThunk(
   }
 );
 
+// Add new thunk for instructor reviews
+export const fetchReviewsByInstructor = createAsyncThunk(
+  "reviews/fetchByInstructor",
+  async (instructorId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/reviews/instructor/${instructorId}`);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          "Không thể tải đánh giá của giảng viên này"
+      );
+    }
+  }
+);
+
 // Initial state
 const initialState: ReviewState = {
   reviews: [],
@@ -133,6 +149,7 @@ const initialState: ReviewState = {
   userReviews: [],
   currentReview: null,
   stats: null,
+  instructorReviews: [], // Add this line
   status: "idle",
   error: null,
 };
@@ -315,6 +332,20 @@ const reviewsSlice = createSlice({
         state.error = null;
       })
       .addCase(deleteReview.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
+
+      // Add cases for instructor reviews
+      .addCase(fetchReviewsByInstructor.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchReviewsByInstructor.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.instructorReviews = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchReviewsByInstructor.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
       });

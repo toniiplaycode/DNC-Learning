@@ -15,6 +15,9 @@ export const selectReviewStats = (state: RootState) => state.reviews.stats;
 export const selectReviewsStatus = (state: RootState) => state.reviews.status;
 export const selectReviewsError = (state: RootState) => state.reviews.error;
 
+export const selectInstructorReviews = (state: RootState) =>
+  state.reviews.instructorReviews;
+
 // Derived selectors
 export const selectReviewById = (id: number) =>
   createSelector(

@@ -3,6 +3,7 @@ import {
   NotFoundException,
   ConflictException,
   ForbiddenException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -136,6 +137,32 @@ export class ReviewsService {
       relations: ['course'],
       order: { createdAt: 'DESC' },
     });
+  }
+
+  async findByInstructor(instructorId: number): Promise<Review[]> {
+    try {
+      // Lấy tất cả đánh giá từ các khóa học của giảng viên
+      const reviews = await this.reviewsRepository
+        .createQueryBuilder('review')
+        .leftJoinAndSelect('review.course', 'course')
+        .leftJoinAndSelect('review.student', 'student')
+        .leftJoinAndSelect('student.user', 'user')
+        .where('course.instructorId = :instructorId', { instructorId })
+        .andWhere('review.reviewType = :reviewType', {
+          reviewType: ReviewType.COURSE,
+        })
+        .orderBy('review.createdAt', 'DESC')
+        .getMany();
+
+      if (!reviews) {
+        return [];
+      }
+
+      return reviews;
+    } catch (error) {
+      console.error('Error getting reviews by instructor:', error);
+      throw new BadRequestException('Không thể lấy danh sách đánh giá');
+    }
   }
 
   async getCourseStats(courseId: number): Promise<ReviewStatsDto> {
