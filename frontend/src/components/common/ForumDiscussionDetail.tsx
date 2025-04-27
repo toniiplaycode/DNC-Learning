@@ -43,14 +43,12 @@ import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import {
   createForumReply,
   fetchForumById,
-  getUserLikeForum,
   removeForumReply,
   toggleLikeForum,
 } from "../../features/forums/forumsApiSlice";
 import { useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { selectCurrentUser } from "../../features/auth/authSelectors";
-import { mt } from "date-fns/locale";
 
 interface ForumUser {
   id: number | string;
@@ -390,14 +388,14 @@ const ForumDiscussionDetail = ({
                 sx={{ width: 56, height: 56 }}
               />
               <Box>
-                <Stack direction="row" spacing={1} alignItems="center">
+                <Stack>
                   <Box>
                     <Typography variant="subtitle1">
                       {discussion.user?.username || "Người dùng"}
                     </Typography>
                   </Box>
                   <Typography variant="caption" color="text.secondary">
-                    • {formatDate(discussion.createdAt)}
+                    {formatDate(discussion.createdAt)}
                   </Typography>
                 </Stack>
               </Box>
@@ -420,7 +418,12 @@ const ForumDiscussionDetail = ({
                   : "/src/assets/logo.png"
               }
               alt={discussion.title}
-              style={{ width: "300px", height: "300px" }}
+              style={{
+                width: "70%",
+                height: "70%",
+                borderRadius: "8px",
+                objectFit: "cover",
+              }}
             />
           </Box>
 

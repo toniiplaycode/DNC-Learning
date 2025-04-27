@@ -30,7 +30,8 @@ import {
   Divider,
   ListItemIcon,
   ListItemText,
-  Checkbox,
+  CircularProgress,
+  FormHelperText,
 } from "@mui/material";
 import {
   Search,
@@ -45,8 +46,8 @@ import {
   Lock,
   Message,
   Sort,
-  ContentCopy,
   Close,
+  CloudUpload,
 } from "@mui/icons-material";
 import { format, parseISO } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -66,17 +67,33 @@ import {
   deleteForum,
   createForum,
 } from "../../features/forums/forumsApiSlice";
+import { selectCoursesByInstructor } from "../../features/courses/coursesSelector";
+import { fetchCoursesByInstructor } from "../../features/courses/coursesApiSlice";
+import {
+  uploadImageToCloudinary,
+  createObjectURL,
+} from "../../utils/uploadImage";
+import { toast } from "react-toastify";
+import { Editor } from "@tinymce/tinymce-react";
+
+const ForumStatus = {
+  ACTIVE: "active",
+  ARCHIVED: "archived",
+  CLOSED: "closed",
+} as const;
 
 const InstructorForum = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector(selectCurrentUser);
   const forums = useAppSelector(selectUserForums);
+  const courses = useAppSelector(selectCoursesByInstructor);
 
   // State cho các tabs, filter, search
   const [searchQuery, setSearchQuery] = useState("");
   const [filterCategory, setFilterCategory] = useState("all");
   const [filterCourse, setFilterCourse] = useState("all");
+  const [filterStatus, setFilterStatus] = useState("all");
   const [sortBy, setSortBy] = useState("updatedAt");
   const [sortDirection, setSortDirection] = useState<"asc" | "desc">("desc");
 
@@ -89,9 +106,36 @@ const InstructorForum = () => {
   const [openViewDialog, setOpenViewDialog] = useState(false);
   const [viewPostId, setViewPostId] = useState<number | null>(null);
 
+  // Add state for image preview
+  const [imagePreview, setImagePreview] = useState<string>("");
+  const [isUploading, setIsUploading] = useState(false);
+
+  // Add loading state
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Add state for form values
+  const [formValues, setFormValues] = useState({
+    title: editingPost?.title || "",
+    description: editingPost?.description || "",
+    courseId: editingPost?.courseId || "",
+    status: editingPost?.status || ForumStatus.ACTIVE,
+    thumbnailUrl: editingPost?.thumbnailUrl || "",
+  });
+
+  // Add validation state
+  const [errors, setErrors] = useState({
+    title: false,
+    description: false,
+    courseId: false,
+  });
+
+  // Add state for manual URL input
+  const [manualUrl, setManualUrl] = useState("");
+
   useEffect(() => {
     if (currentUser?.id) {
       dispatch(fetchForumsByUserId(currentUser.id));
+      dispatch(fetchCoursesByInstructor(currentUser?.userInstructor?.id));
     }
   }, [dispatch, currentUser]);
 
@@ -109,7 +153,12 @@ const InstructorForum = () => {
         }
 
         // Filter by course
-        if (filterCourse !== "all" && forum.course?.id !== filterCourse) {
+        if (filterCourse !== "all" && forum.courseId !== filterCourse) {
+          return false;
+        }
+
+        // Filter by status
+        if (filterStatus !== "all" && forum.status !== filterStatus) {
           return false;
         }
 
@@ -139,7 +188,7 @@ const InstructorForum = () => {
             return 0;
         }
       });
-  }, [forums, searchQuery, filterCourse, sortBy, sortDirection]);
+  }, [forums, searchQuery, filterCourse, filterStatus, sortBy, sortDirection]);
 
   // Handlers cho menu
   const handleMenuOpen = (
@@ -155,90 +204,155 @@ const InstructorForum = () => {
     setSelectedPost(null);
   };
 
-  // Handlers cho dialog
   const handleOpenAddEditDialog = (post?: any) => {
     if (post) {
+      // Set editing post and form values for editing
       setEditingPost(post);
+      setFormValues({
+        title: post.title || "",
+        description: post.description || "",
+        courseId: post.courseId || "",
+        status: post.status || ForumStatus.ACTIVE,
+        thumbnailUrl: post.thumbnailUrl || "",
+      });
+      // Set image preview if post has thumbnail
+      if (post.thumbnailUrl) {
+        setImagePreview(post.thumbnailUrl);
+      }
     } else {
+      // Reset everything for new post
       setEditingPost(null);
+      setFormValues({
+        title: "",
+        description: "",
+        courseId: "",
+        status: ForumStatus.ACTIVE,
+        thumbnailUrl: "",
+      });
+      setImagePreview("");
     }
+    setErrors({
+      title: false,
+      description: false,
+      courseId: false,
+    });
     setOpenAddEditDialog(true);
     handleMenuClose();
   };
 
-  // Handler cho pin/unpin
-  const handleTogglePin = (forumId: number) => {
-    dispatch(
-      updateForum({
-        id: forumId,
-        changes: {
-          isPinned: !forums.find((f) => f.id === forumId)?.isPinned,
-        },
-      })
-    );
-    handleMenuClose();
-  };
-
-  // Handler cho visibility
-  const handleToggleVisibility = (forumId: number) => {
-    dispatch(
-      updateForum({
-        id: forumId,
-        changes: {
-          status:
-            forums.find((f) => f.id === forumId)?.status === "active"
-              ? "draft"
-              : "active",
-        },
-      })
-    );
-    handleMenuClose();
-  };
-
   // Handler cho delete
-  const handleDeleteConfirm = () => {
-    if (selectedPost) {
-      dispatch(deleteForum(selectedPost));
+  const handleDeleteConfirm = async () => {
+    if (!selectedPost) return;
+
+    try {
+      await dispatch(deleteForum(Number(selectedPost?.id))).unwrap();
+      toast.success("Xóa bài đăng thành công");
+
+      // Refresh forums list
+      dispatch(fetchForumsByUserId(currentUser?.id));
+    } catch (error: any) {
+      console.error("Failed to delete forum:", error);
+      toast.error(error.message || "Có lỗi xảy ra khi xóa bài đăng");
+    } finally {
       setOpenDeleteDialog(false);
-      handleMenuClose();
     }
   };
 
-  // Handler cho submit form
-  const handleSubmitPost = async (event: React.FormEvent) => {
-    event.preventDefault();
-    const formData = new FormData(event.target as HTMLFormElement);
+  // Add image upload handler
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
 
     try {
+      setIsUploading(true);
+
+      // Show preview immediately
+      setImagePreview(createObjectURL(file));
+
+      // Upload to Cloudinary
+      const imageUrl = await uploadImageToCloudinary(file);
+
+      // Update formValues with new thumbnail URL
+      setFormValues((prev) => ({
+        ...prev,
+        thumbnailUrl: imageUrl,
+      }));
+
+      // Show success message
+      toast.success("Tải ảnh lên thành công");
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      // Clear preview on error
+      setImagePreview("");
+      // Show error message
+      toast.error("Lỗi khi tải ảnh lên, vui lòng thử lại");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Add submit handler
+  const handleSubmit = async () => {
+    // Validate
+    const newErrors = {
+      title: !formValues.title,
+      description: !formValues.description,
+      courseId: !formValues.courseId,
+    };
+
+    setErrors(newErrors);
+
+    if (Object.values(newErrors).some((error) => error)) {
+      return;
+    }
+
+    try {
+      setIsSubmitting(true);
+
+      // Convert courseId to number before submitting
+      const forumData = {
+        ...formValues,
+        courseId: Number(formValues.courseId), // Convert to number
+        userId: currentUser?.id,
+      };
+
+      console.log("forumData", forumData);
+
       if (editingPost) {
-        // Update existing forum
         await dispatch(
           updateForum({
-            id: editingPost.id,
-            changes: {
-              title: formData.get("title") as string,
-              description: formData.get("content") as string,
-              courseId: formData.get("courseId") as string,
-              status: formData.get("status") as string,
-              // ...other fields
-            },
+            id: Number(editingPost.id),
+            forumData,
           })
         ).unwrap();
+        toast.success("Cập nhật bài đăng thành công");
       } else {
-        // Create new forum
-        await dispatch(
-          createForum({
-            title: formData.get("title") as string,
-            description: formData.get("content") as string,
-            courseId: formData.get("courseId") as string,
-            status: formData.get("status") as string,
-            // ...other fields
-          })
-        ).unwrap();
+        await dispatch(createForum(forumData)).unwrap();
+        toast.success("Tạo bài đăng mới thành công");
       }
+
       setOpenAddEditDialog(false);
-    } catch (error) {
+      setImagePreview("");
+      setManualUrl("");
+      setEditingPost(null);
+      setFormValues({
+        title: "",
+        description: "",
+        courseId: "", // Reset to empty string
+        status: ForumStatus.ACTIVE,
+        thumbnailUrl: "",
+      });
+
+      dispatch(fetchForumsByUserId(currentUser?.id));
+    } catch (error: any) {
       console.error("Failed to save forum:", error);
+      toast.error(
+        error.response?.data?.message?.[0] || "Có lỗi xảy ra, vui lòng thử lại"
+      );
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -300,6 +414,114 @@ const InstructorForum = () => {
     dispatch(fetchForumsByUserId(currentUser.id));
   };
 
+  const editorConfig = {
+    height: 300,
+    menubar: false,
+    plugins: [
+      "advlist",
+      "autolink",
+      "lists",
+      "link",
+      "image",
+      "charmap",
+      "preview",
+      "searchreplace",
+      "visualblocks",
+      "fullscreen",
+      "insertdatetime",
+      "table",
+      "code",
+      "help",
+      "wordcount",
+    ],
+    toolbar:
+      "undo redo | blocks | " +
+      "bold italic underline | alignleft aligncenter " +
+      "alignright alignjustify | bullist numlist outdent indent | " +
+      "removeformat | help",
+    content_style:
+      "body { font-family:Helvetica,Arial,sans-serif; font-size:14px }",
+  };
+
+  // Add handleUrlInput function after handleImageUpload
+  const handleUrlInput = async (url: string) => {
+    setManualUrl(url);
+    if (url) {
+      try {
+        setIsUploading(true);
+        // Validate if URL is an image
+        const response = await fetch(url);
+        const contentType = response.headers.get("content-type");
+
+        if (response.ok && contentType?.startsWith("image/")) {
+          setImagePreview(url);
+          setFormValues((prev) => ({
+            ...prev,
+            thumbnailUrl: url,
+          }));
+          toast.success("URL ảnh hợp lệ");
+        } else {
+          toast.error("URL không phải là ảnh hợp lệ");
+          setImagePreview("");
+          setFormValues((prev) => ({
+            ...prev,
+            thumbnailUrl: "",
+          }));
+        }
+      } catch (error) {
+        console.error("Error validating image URL:", error);
+        toast.error("URL không hợp lệ");
+        setImagePreview("");
+        setFormValues((prev) => ({
+          ...prev,
+          thumbnailUrl: "",
+        }));
+      } finally {
+        setIsUploading(false);
+      }
+    } else {
+      setImagePreview("");
+      setFormValues((prev) => ({
+        ...prev,
+        thumbnailUrl: "",
+      }));
+    }
+  };
+
+  // Helper function to get status display info
+  const getStatusInfo = (status: string) => {
+    switch (status) {
+      case ForumStatus.ACTIVE:
+        return {
+          label: "Hoạt động",
+          color: "success" as const,
+          icon: <Public fontSize="small" color="action" />,
+          tooltip: "Công khai",
+        };
+      case ForumStatus.ARCHIVED:
+        return {
+          label: "Lưu trữ",
+          color: "warning" as const,
+          icon: <Lock fontSize="small" color="action" />,
+          tooltip: "Đã lưu trữ",
+        };
+      case ForumStatus.CLOSED:
+        return {
+          label: "Đã đóng",
+          color: "error" as const,
+          icon: <Lock fontSize="small" color="action" />,
+          tooltip: "Đã đóng",
+        };
+      default:
+        return {
+          label: "Không xác định",
+          color: "default" as const,
+          icon: <Lock fontSize="small" color="action" />,
+          tooltip: "Trạng thái không xác định",
+        };
+    }
+  };
+
   return (
     <Box>
       <Card sx={{ mb: 3 }}>
@@ -346,17 +568,16 @@ const InstructorForum = () => {
             />
 
             <FormControl size="small" sx={{ minWidth: 150 }}>
-              <InputLabel>Phân loại</InputLabel>
+              <InputLabel>Trạng thái</InputLabel>
               <Select
-                value={filterCategory}
-                label="Phân loại"
-                onChange={(e) => setFilterCategory(e.target.value)}
+                value={filterStatus}
+                label="Trạng thái"
+                onChange={(e) => setFilterStatus(e.target.value)}
               >
                 <MenuItem value="all">Tất cả</MenuItem>
-                <MenuItem value="announcement">Thông báo</MenuItem>
-                <MenuItem value="discussion">Thảo luận</MenuItem>
-                <MenuItem value="question">Câu hỏi</MenuItem>
-                <MenuItem value="resource">Tài nguyên</MenuItem>
+                <MenuItem value={ForumStatus.ACTIVE}>Hoạt động</MenuItem>
+                <MenuItem value={ForumStatus.ARCHIVED}>Lưu trữ</MenuItem>
+                <MenuItem value={ForumStatus.CLOSED}>Đã đóng</MenuItem>
               </Select>
             </FormControl>
 
@@ -419,7 +640,7 @@ const InstructorForum = () => {
                 <TableRow>
                   <TableCell>Tiêu đề</TableCell>
                   <TableCell>Khóa học</TableCell>
-                  <TableCell>Phân loại</TableCell>
+                  <TableCell>Trạng thái</TableCell>
                   <TableCell align="center">Tương tác</TableCell>
                   <TableCell>Cập nhật</TableCell>
                   <TableCell>Thao tác</TableCell>
@@ -458,17 +679,9 @@ const InstructorForum = () => {
                               alignItems="center"
                             >
                               <Tooltip
-                                title={
-                                  forum.status === "active"
-                                    ? "Công khai"
-                                    : "Nháp"
-                                }
+                                title={getStatusInfo(forum.status).tooltip}
                               >
-                                {forum.status === "active" ? (
-                                  <Public fontSize="small" color="action" />
-                                ) : (
-                                  <Lock fontSize="small" color="action" />
-                                )}
+                                {getStatusInfo(forum.status).icon}
                               </Tooltip>
                             </Stack>
                           </Box>
@@ -481,10 +694,8 @@ const InstructorForum = () => {
                       </TableCell>
                       <TableCell>
                         <Chip
-                          label={forum.status === "active" ? "Đã đăng" : "Nháp"}
-                          color={
-                            forum.status === "active" ? "success" : "default"
-                          }
+                          label={getStatusInfo(forum.status).label}
+                          color={getStatusInfo(forum.status).color}
                           size="small"
                         />
                       </TableCell>
@@ -558,7 +769,9 @@ const InstructorForum = () => {
         <MenuItem
           onClick={() =>
             selectedPost &&
-            handleOpenAddEditDialog(forums.find((f) => f.id === selectedPost))
+            handleOpenAddEditDialog(
+              forums.find((f) => Number(f.id) === selectedPost)
+            )
           }
         >
           <ListItemIcon>
@@ -567,45 +780,16 @@ const InstructorForum = () => {
           <ListItemText>Chỉnh sửa</ListItemText>
         </MenuItem>
 
-        <MenuItem onClick={() => selectedPost && handleDuplicate(selectedPost)}>
-          <ListItemIcon>
-            <ContentCopy fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Tạo bản sao</ListItemText>
-        </MenuItem>
-
-        <MenuItem onClick={() => selectedPost && handleTogglePin(selectedPost)}>
-          <ListItemIcon>
-            <PushPin fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>
-            {forums.find((f) => f.id === selectedPost)?.isPinned
-              ? "Bỏ ghim"
-              : "Ghim bài đăng"}
-          </ListItemText>
-        </MenuItem>
-
-        <MenuItem
-          onClick={() => selectedPost && handleToggleVisibility(selectedPost)}
-        >
-          <ListItemIcon>
-            {forums.find((f) => f.id === selectedPost)?.status === "active" ? (
-              <Public fontSize="small" />
-            ) : (
-              <Lock fontSize="small" />
-            )}
-          </ListItemIcon>
-          <ListItemText>
-            {forums.find((f) => f.id === selectedPost)?.status === "active"
-              ? "Chỉ học viên đã đăng ký"
-              : "Công khai"}
-          </ListItemText>
-        </MenuItem>
-
         <Divider />
 
         <MenuItem
-          onClick={() => selectedPost && handleDeleteConfirm()}
+          onClick={() => {
+            setOpenDeleteDialog(true);
+            handleMenuClose();
+            setSelectedPost(
+              forums.find((f) => Number(f.id) === selectedPost) || null
+            );
+          }}
           sx={{ color: "error.main" }}
         >
           <ListItemIcon>
@@ -622,151 +806,320 @@ const InstructorForum = () => {
         maxWidth="md"
         fullWidth
       >
-        <form onSubmit={handleSubmitPost}>
-          <DialogTitle>
-            {editingPost ? "Chỉnh sửa bài đăng" : "Thêm bài đăng mới"}
-          </DialogTitle>
-          <DialogContent dividers>
-            <Stack spacing={2} sx={{ pt: 1 }}>
-              <TextField
-                label="Tiêu đề"
-                fullWidth
-                defaultValue={editingPost?.title}
-                required
-                name="title"
+        <DialogContent dividers>
+          <Stack spacing={2} sx={{ pt: 1 }}>
+            <TextField
+              label="Tiêu đề"
+              fullWidth
+              value={formValues.title}
+              required
+              error={errors.title}
+              helperText={errors.title && "Tiêu đề không được để trống"}
+              onChange={(e) => {
+                setFormValues({ ...formValues, title: e.target.value });
+                setErrors({ ...errors, title: !e.target.value });
+              }}
+            />
+
+            <Box sx={{ mb: 3 }}>
+              <Typography variant="body2" sx={{ mb: 1 }}>
+                Nội dung <span style={{ color: "error.main" }}>*</span>
+              </Typography>
+              <Editor
+                apiKey="5t3jqy6e31vy5tirxu45hnjv24i9kppbruiph5sb0rdk8zt6" // Get free API key from TinyMCE
+                value={formValues.description}
+                init={editorConfig}
+                onEditorChange={(content) => {
+                  setFormValues({ ...formValues, description: content });
+                  setErrors({
+                    ...errors,
+                    description: !content || content === "<p></p>",
+                  });
+                }}
               />
+              {errors.description && (
+                <Typography
+                  color="error"
+                  variant="caption"
+                  sx={{ mt: 1, display: "block" }}
+                >
+                  Nội dung không được để trống
+                </Typography>
+              )}
+            </Box>
 
-              <TextField
-                label="Nội dung"
-                fullWidth
-                multiline
-                rows={10}
-                defaultValue={editingPost?.content}
-                required
-                name="content"
-              />
+            <Box sx={{ mb: 3 }}>
+              <Stack spacing={2}>
+                {/* URL Input */}
+                <TextField
+                  fullWidth
+                  label="URL ảnh"
+                  value={manualUrl}
+                  onChange={(e) => handleUrlInput(e.target.value)}
+                  placeholder="Nhập URL ảnh..."
+                  helperText="Nhập URL ảnh trực tiếp hoặc tải ảnh lên"
+                />
 
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Khóa học</InputLabel>
-                    <Select
-                      label="Khóa học"
-                      defaultValue={editingPost?.courseId || 1}
-                      required
-                      name="courseId"
-                    >
-                      <MenuItem value={1}>
-                        React & TypeScript Masterclass
-                      </MenuItem>
-                      <MenuItem value={2}>Node.js Advanced Concepts</MenuItem>
-                      <MenuItem value={3}>DevOps Fundamentals</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Phân loại</InputLabel>
-                    <Select
-                      label="Phân loại"
-                      defaultValue={editingPost?.category || "discussion"}
-                      required
-                      name="category"
-                    >
-                      <MenuItem value="announcement">Thông báo</MenuItem>
-                      <MenuItem value="discussion">Thảo luận</MenuItem>
-                      <MenuItem value="question">Câu hỏi</MenuItem>
-                      <MenuItem value="resource">Tài nguyên</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-              </Grid>
-
-              <Grid container spacing={2}>
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Trạng thái</InputLabel>
-                    <Select
-                      label="Trạng thái"
-                      defaultValue={editingPost?.status || "draft"}
-                      required
-                      name="status"
-                    >
-                      <MenuItem value="draft">Lưu nháp</MenuItem>
-                      <MenuItem value="published">Đăng ngay</MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth>
-                    <InputLabel>Hiển thị cho</InputLabel>
-                    <Select
-                      label="Hiển thị cho"
-                      defaultValue={
-                        editingPost
-                          ? editingPost.isPublic
-                            ? "public"
-                            : "enrolled"
-                          : "enrolled"
-                      }
-                      required
-                      name="visibility"
-                    >
-                      <MenuItem value="public">Tất cả (Công khai)</MenuItem>
-                      <MenuItem value="enrolled">
-                        Chỉ học viên đã đăng ký
-                      </MenuItem>
-                    </Select>
-                  </FormControl>
-                </Grid>
-              </Grid>
-
-              <TextField
-                label="Tags (phân cách bằng dấu phẩy)"
-                fullWidth
-                defaultValue={editingPost?.tags.join(", ")}
-                placeholder="react, typescript, learning"
-                name="tags"
-              />
-
-              <FormControl>
-                <Stack direction="row" spacing={2} alignItems="center">
-                  <Checkbox
-                    defaultChecked={editingPost?.isPinned || false}
-                    id="pinned"
+                {/* Upload Button */}
+                <Box sx={{ display: "flex", justifyContent: "center" }}>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    id="forum-image-upload"
+                    style={{ display: "none" }}
+                    onChange={handleImageUpload}
                   />
-                  <label htmlFor="pinned">
-                    Ghim bài đăng này lên đầu diễn đàn
+                  <label htmlFor="forum-image-upload">
+                    <Button
+                      component="span"
+                      variant="outlined"
+                      startIcon={<CloudUpload />}
+                      disabled={isUploading}
+                    >
+                      {isUploading ? "Đang tải lên..." : "Tải ảnh lên"}
+                    </Button>
                   </label>
+                </Box>
+
+                {/* Image Preview */}
+                {imagePreview && (
+                  <Box
+                    sx={{
+                      position: "relative",
+                      display: "flex",
+                      justifyContent: "center",
+                      mt: 2,
+                    }}
+                  >
+                    <img
+                      src={imagePreview}
+                      alt="Preview"
+                      style={{
+                        maxWidth: "100%",
+                        maxHeight: "200px",
+                        objectFit: "contain",
+                      }}
+                    />
+                    <IconButton
+                      size="small"
+                      sx={{
+                        position: "absolute",
+                        top: 8,
+                        right: 8,
+                        bgcolor: "background.paper",
+                      }}
+                      onClick={() => {
+                        setImagePreview("");
+                        setManualUrl("");
+                        setFormValues((prev) => ({
+                          ...prev,
+                          thumbnailUrl: "",
+                        }));
+                      }}
+                    >
+                      <Close />
+                    </IconButton>
+                  </Box>
+                )}
+              </Stack>
+            </Box>
+
+            <Box
+              sx={{ border: 1, borderColor: "divider", borderRadius: 1, p: 2 }}
+            >
+              <Typography
+                variant="subtitle2"
+                color="textSecondary"
+                gutterBottom
+              >
+                URL Ảnh thu nhỏ hiện tại
+              </Typography>
+
+              {formValues.thumbnailUrl ? (
+                <Stack spacing={2}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      p: 1,
+                      bgcolor: "action.hover",
+                      borderRadius: 1,
+                    }}
+                  >
+                    <Box
+                      component="img"
+                      src={formValues.thumbnailUrl}
+                      alt="Thumbnail"
+                      sx={{
+                        width: 60,
+                        height: 60,
+                        borderRadius: 1,
+                        objectFit: "cover",
+                      }}
+                    />
+                    <Box sx={{ flex: 1, overflow: "hidden" }}>
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          whiteSpace: "nowrap",
+                        }}
+                      >
+                        {formValues.thumbnailUrl}
+                      </Typography>
+                    </Box>
+                    <IconButton
+                      size="small"
+                      onClick={() => {
+                        setImagePreview("");
+                        setFormValues((prev) => ({
+                          ...prev,
+                          thumbnailUrl: "",
+                        }));
+                      }}
+                    >
+                      <Close fontSize="small" />
+                    </IconButton>
+                  </Box>
                 </Stack>
-              </FormControl>
-            </Stack>
-          </DialogContent>
-          <DialogActions>
-            <Button onClick={() => setOpenAddEditDialog(false)}>Hủy</Button>
-            <Button type="submit" variant="contained">
-              {editingPost ? "Cập nhật" : "Đăng bài"}
-            </Button>
-          </DialogActions>
-        </form>
+              ) : (
+                <Typography
+                  variant="body2"
+                  color="text.secondary"
+                  sx={{ fontStyle: "italic" }}
+                >
+                  Chưa có ảnh thu nhỏ
+                </Typography>
+              )}
+            </Box>
+
+            <Grid container>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth error={errors.courseId}>
+                  <InputLabel>Khóa học</InputLabel>
+                  <Select
+                    label="Khóa học"
+                    value={formValues.courseId}
+                    required
+                    onChange={(e) => {
+                      setFormValues({
+                        ...formValues,
+                        courseId: e.target.value as number, // Ensure it's treated as number
+                      });
+                      setErrors({ ...errors, courseId: !e.target.value });
+                    }}
+                  >
+                    {courses.map((course) => (
+                      <MenuItem key={course.id} value={Number(course.id)}>
+                        {" "}
+                        {/* Ensure value is number */}
+                        {course.title}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                  {errors.courseId && (
+                    <FormHelperText>Vui lòng chọn khóa học</FormHelperText>
+                  )}
+                </FormControl>
+              </Grid>
+              <Grid item xs={12} sm={6}>
+                <FormControl fullWidth>
+                  <InputLabel>Trạng thái</InputLabel>
+                  <Select
+                    label="Trạng thái"
+                    value={formValues.status}
+                    onChange={(e) =>
+                      setFormValues({ ...formValues, status: e.target.value })
+                    }
+                  >
+                    <MenuItem value={ForumStatus.ACTIVE}>Hoạt động</MenuItem>
+                    <MenuItem value={ForumStatus.ARCHIVED}>Lưu trữ</MenuItem>
+                    <MenuItem value={ForumStatus.CLOSED}>Đã đóng</MenuItem>
+                  </Select>
+                </FormControl>
+              </Grid>
+            </Grid>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setOpenAddEditDialog(false);
+              setEditingPost(null);
+              setImagePreview("");
+              setFormValues({
+                title: "",
+                description: "",
+                courseId: "",
+                status: ForumStatus.ACTIVE,
+                thumbnailUrl: "",
+              });
+              setErrors({
+                title: false,
+                description: false,
+                courseId: false,
+              });
+            }}
+            disabled={isSubmitting}
+          >
+            Hủy
+          </Button>
+          <Button
+            onClick={handleSubmit}
+            variant="contained"
+            disabled={isSubmitting}
+            startIcon={
+              isSubmitting && <CircularProgress size={20} color="inherit" />
+            }
+          >
+            {isSubmitting
+              ? editingPost
+                ? "Đang cập nhật..."
+                : "Đang đăng..."
+              : editingPost
+              ? "Cập nhật"
+              : "Đăng bài"}
+          </Button>
+        </DialogActions>
       </Dialog>
 
       {/* Dialog xác nhận xóa */}
       <Dialog
         open={openDeleteDialog}
         onClose={() => setOpenDeleteDialog(false)}
+        maxWidth="xs"
+        fullWidth
       >
-        <DialogTitle>Xác nhận xóa bài đăng?</DialogTitle>
+        <DialogTitle>
+          <Typography variant="h6" component="div">
+            Xác nhận xóa bài đăng
+          </Typography>
+        </DialogTitle>
         <DialogContent>
-          <Typography>
+          <Typography variant="body1">
             Bạn có chắc chắn muốn xóa bài đăng này? Hành động này không thể hoàn
             tác.
           </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setOpenDeleteDialog(false)}>Hủy</Button>
-          <Button onClick={handleDeleteConfirm} color="error">
-            Xác nhận xóa
+          <Button
+            onClick={() => setOpenDeleteDialog(false)}
+            disabled={isSubmitting}
+          >
+            Hủy
+          </Button>
+          <Button
+            onClick={handleDeleteConfirm}
+            color="error"
+            variant="contained"
+            disabled={isSubmitting}
+            startIcon={
+              isSubmitting && <CircularProgress size={20} color="inherit" />
+            }
+          >
+            {isSubmitting ? "Đang xóa..." : "Xác nhận xóa"}
           </Button>
         </DialogActions>
       </Dialog>

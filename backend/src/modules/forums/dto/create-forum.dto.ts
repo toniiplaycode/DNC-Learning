@@ -19,8 +19,4 @@ export class CreateForumDto {
   @IsOptional()
   @IsString()
   description?: string;
-
-  @IsOptional()
-  @IsEnum(ForumStatus)
-  status?: ForumStatus = ForumStatus.ACTIVE;
 }

@@ -103,9 +103,10 @@ export const fetchForumsByUserId = createAsyncThunk(
 // Create forum
 export const createForum = createAsyncThunk(
   "forums/createForum",
-  async (forumData: Partial<Forum>, { rejectWithValue }) => {
+  async (forumData: any, { rejectWithValue }) => {
     try {
       const response = await api.post("/forums", forumData);
+      console.log("response", response.data);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(error.response?.data || "Không thể tạo diễn đàn");
@@ -117,7 +118,7 @@ export const createForum = createAsyncThunk(
 export const updateForum = createAsyncThunk(
   "forums/updateForum",
   async (
-    { id, forumData }: { id: number; forumData: Partial<Forum> },
+    { id, forumData }: { id: number; forumData: any },
     { rejectWithValue }
   ) => {
     try {

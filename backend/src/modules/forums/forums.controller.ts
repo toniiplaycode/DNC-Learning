@@ -50,23 +50,19 @@ export class ForumsController {
   @Post()
   @UseGuards(JwtAuthGuard)
   create(@Body() createForumDto: CreateForumDto, @GetUser() user) {
-    return this.forumsService.create(createForumDto, user.id);
+    return this.forumsService.create(createForumDto, +user.id);
   }
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
-  update(
-    @Param('id') id: string,
-    @Body() updateForumDto: UpdateForumDto,
-    @GetUser() user,
-  ) {
-    return this.forumsService.update(+id, updateForumDto, user);
+  update(@Param('id') id: string, @Body() updateForumDto: UpdateForumDto) {
+    return this.forumsService.update(+id, updateForumDto);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
-  remove(@Param('id') id: string, @GetUser() user) {
-    return this.forumsService.remove(+id, user);
+  remove(@Param('id') id: string) {
+    return this.forumsService.remove(+id);
   }
 
   // Forum Reply Endpoints

@@ -69,6 +69,7 @@ const ForumDiscussions = () => {
 
   // Filter forums based on search query and active tab
   const filteredForums = forums.filter((forum) => {
+    if (forum.status !== "active") return false;
     const matchesSearch =
       forum.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       forum.description?.toLowerCase().includes(searchQuery.toLowerCase());

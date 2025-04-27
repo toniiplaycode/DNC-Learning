@@ -44,7 +44,10 @@ export class ForumsService {
         'user.avatarUrl',
         'course.id',
         'course.title',
-      ]);
+      ])
+      .orderBy({
+        'forum.createdAt': 'DESC',
+      });
 
     if (courseId) {
       query.andWhere('forum.courseId = :courseId', { courseId });
@@ -135,6 +138,9 @@ export class ForumsService {
         'replyUser.avatarUrl',
         'replyUser.role',
       ])
+      .orderBy({
+        'forum.createdAt': 'DESC',
+      })
       .getOne();
 
     if (!forum) {
@@ -224,40 +230,30 @@ export class ForumsService {
     return this.forumRepository.save(newForum);
   }
 
-  async update(
-    id: number,
-    updateForumDto: UpdateForumDto,
-    user: User,
-  ): Promise<Forum> {
-    const forum = await this.findOne(id);
-
-    // Check permissions (owner or admin/instructor)
-    if (
-      user.id !== forum.userId &&
-      user.role !== UserRole.ADMIN &&
-      user.role !== UserRole.INSTRUCTOR
-    ) {
-      throw new ForbiddenException('Bạn không có quyền cập nhật diễn đàn này');
-    }
-
+  async update(id: number, updateForumDto: UpdateForumDto): Promise<Forum> {
     // Update forum
     await this.forumRepository.update(id, updateForumDto);
     return this.findOne(id);
   }
 
-  async remove(id: number, user: User): Promise<void> {
-    const forum = await this.findOne(id);
+  async remove(id: number): Promise<void> {
+    // Start a transaction
+    await this.forumRepository.manager.transaction(
+      async (transactionalEntityManager) => {
+        // First delete related likes
+        await transactionalEntityManager
+          .getRepository(ForumLike)
+          .delete({ forumId: id });
 
-    // Check permissions (owner or admin/instructor)
-    if (
-      user.id !== forum.userId &&
-      user.role !== UserRole.ADMIN &&
-      user.role !== UserRole.INSTRUCTOR
-    ) {
-      throw new ForbiddenException('Bạn không có quyền xóa diễn đàn này');
-    }
+        // Then delete related replies
+        await transactionalEntityManager
+          .getRepository(ForumReply)
+          .delete({ forumId: id });
 
-    await this.forumRepository.delete(id);
+        // Finally delete the forum
+        await transactionalEntityManager.getRepository(Forum).delete(id);
+      },
+    );
   }
 
   // ===== FORUM REPLY METHODS =====
