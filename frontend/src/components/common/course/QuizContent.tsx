@@ -31,6 +31,7 @@ import {
 } from "../../../features/quizzes/quizzesSelectors";
 import { selectCurrentUser } from "../../../features/auth/authSelectors";
 import { useLocation, useParams } from "react-router-dom";
+import { toast } from "react-toastify";
 
 // Add this interface for better type safety
 interface QuizAnswer {
@@ -88,8 +89,6 @@ const QuizContent: React.FC<QuizContentProps> = ({
     quizId: 0,
     answers: [],
   }));
-
-  console.log("userAttempts", userAttempts);
 
   useEffect(() => {
     // Fetch quizzes when the component mounts
@@ -417,6 +416,29 @@ const QuizContent: React.FC<QuizContentProps> = ({
               )}
             </Box>
 
+            {/* Thêm nút làm lại nếu cần */}
+            {activeQuiz &&
+              activeQuiz.attemptsAllowed >
+                (userAttempts?.filter((a) => a.quizId === activeQuiz.id)
+                  ?.length || 0) && (
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    width: "100%",
+                    mt: 2,
+                  }}
+                >
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    onClick={handleRetakeQuiz}
+                  >
+                    Làm lại bài
+                  </Button>
+                </Box>
+              )}
+
             {activeShowExplanations && (
               <>
                 <Typography variant="h6" gutterBottom>
@@ -520,29 +542,6 @@ const QuizContent: React.FC<QuizContentProps> = ({
                 })}
               </>
             )}
-
-            {/* Thêm nút làm lại nếu cần */}
-            {activeQuiz &&
-              activeQuiz.attemptsAllowed >
-                (userAttempts?.filter((a) => a.quizId === activeQuiz.id)
-                  ?.length || 0) && (
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "center",
-                    width: "100%",
-                    mt: 2,
-                  }}
-                >
-                  <Button
-                    variant="contained"
-                    color="primary"
-                    onClick={handleRetakeQuiz}
-                  >
-                    Làm lại bài
-                  </Button>
-                </Box>
-              )}
           </CardContent>
         </Card>
       </Box>

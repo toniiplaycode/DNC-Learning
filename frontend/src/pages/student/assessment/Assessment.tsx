@@ -23,6 +23,7 @@ import {
   DocumentScanner,
   School,
   QuestionAnswer,
+  DoNotTouch,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import CustomContainer from "../../../components/common/CustomContainer";
@@ -68,6 +69,8 @@ const Assessment = () => {
       dispatch(fetchUserSubmissions());
     }
   }, [currentAuthUser, dispatch]);
+
+  console.log(userAttempts);
 
   // Filter assessments when dependencies change
   useEffect(() => {
@@ -117,16 +120,25 @@ const Assessment = () => {
     setTabValue(newValue);
   };
 
+  // Add this helper function to sort attempts by date
+  const getQuizAttempts = (attempts: any[], quizId: string | number) => {
+    return attempts
+      .filter((attempt) => attempt.quizId === quizId)
+      .sort(
+        (a, b) => new Date(a.endTime).getTime() - new Date(b.endTime).getTime()
+      );
+  };
+
   return (
     <CustomContainer maxWidth="lg">
       <Typography variant="h4" component="h1" gutterBottom fontWeight="bold">
-        Kiểm tra & bài tập
+        Trắc nghiệm & bài tập
       </Typography>
 
       <Box sx={{ mb: 4 }}>
         <TextField
           fullWidth
-          placeholder="Tìm kiếm Bài trắc nghiệm hoặc bài tập..."
+          placeholder="Tìm kiếm bài trắc nghiệm hoặc bài tập..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
           InputProps={{
@@ -141,7 +153,7 @@ const Assessment = () => {
 
         <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: 3 }}>
           <Tab label="Tất cả" icon={<DocumentScanner />} iconPosition="start" />
-          <Tab label="Kiểm tra" icon={<Quiz />} iconPosition="start" />
+          <Tab label="Trắc nghiệm" icon={<Quiz />} iconPosition="start" />
           <Tab label="Bài tập" icon={<Assignment />} iconPosition="start" />
           <Tab label="Đã hoàn thành" icon={<School />} iconPosition="start" />
         </Tabs>
@@ -214,23 +226,56 @@ const Assessment = () => {
                     </Stack>
                   )}
 
-                  {userAttempts?.some(
-                    (attempt) => attempt.quizId === assessment.id
-                  ) && (
-                    <Typography
-                      variant="body2"
-                      color="primary"
-                      fontWeight="bold"
-                    >
-                      Điểm:{" "}
-                      {
-                        userAttempts.find(
-                          (quiz_attempt) =>
-                            quiz_attempt.quizId === assessment.id
-                        )?.score
-                      }
-                      /100
-                    </Typography>
+                  {assessment.quizType && (
+                    <>
+                      {userAttempts?.some(
+                        (attempt) => attempt.quizId === assessment.id
+                      ) && (
+                        <Box sx={{ mb: 2 }}>
+                          <Typography
+                            variant="subtitle2"
+                            color="primary"
+                            gutterBottom
+                          >
+                            Các lần làm bài:
+                          </Typography>
+                          <Stack spacing={1}>
+                            {getQuizAttempts(userAttempts, assessment.id).map(
+                              (attempt, index) => (
+                                <Box
+                                  key={attempt.id}
+                                  sx={{
+                                    pt: 1,
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    bgcolor: "background.default",
+                                    borderRadius: 1,
+                                  }}
+                                >
+                                  <Typography variant="body2">
+                                    Lần {index + 1}
+                                  </Typography>
+                                  <Typography
+                                    variant="body2"
+                                    color="primary"
+                                    fontWeight="bold"
+                                  >
+                                    Điểm: {attempt.score}/100
+                                  </Typography>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                  >
+                                    {formatDateTime(attempt.endTime)}
+                                  </Typography>
+                                </Box>
+                              )
+                            )}
+                          </Stack>
+                        </Box>
+                      )}
+                    </>
                   )}
                 </Stack>
 

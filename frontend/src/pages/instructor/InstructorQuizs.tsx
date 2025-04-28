@@ -677,7 +677,6 @@ const InstructorQuizs = () => {
                       {studentTypeFilter === "student_academic" && (
                         <>
                           <TableCell>Mã SV</TableCell>
-                          <TableCell>Lớp</TableCell>
                         </>
                       )}
                       <TableCell>Bài trắc nghiệm</TableCell>
@@ -805,10 +804,6 @@ const InstructorQuizs = () => {
                               <TableCell>
                                 {attempt.user.userStudentAcademic
                                   ?.studentCode || "-"}
-                              </TableCell>
-                              <TableCell>
-                                {attempt.user.userStudentAcademic?.academicClass
-                                  ?.className || "-"}
                               </TableCell>
                             </>
                           )}

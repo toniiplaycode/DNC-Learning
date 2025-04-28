@@ -21,6 +21,7 @@ import { CreateAttemptDto } from './dto/create-attempt.dto';
 import { SubmitQuizDto } from './dto/submit-quiz.dto';
 import { GradeType } from '../../entities/UserGrade';
 import { Course } from 'src/entities/Course';
+import { UserGrade } from '../../entities/UserGrade';
 
 @Injectable()
 export class QuizzesService {
@@ -703,94 +704,179 @@ export class QuizzesService {
     submitQuizDto: SubmitQuizDto,
     userId: number,
   ): Promise<any> {
-    console.log(submitQuizDto);
+    const queryRunner =
+      this.attemptsRepository.manager.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
 
-    // Kiểm tra lần thử tồn tại và thuộc về người dùng
-    const attempt = await this.attemptsRepository.findOne({
-      where: { id: submitQuizDto.attemptId },
-      relations: ['quiz', 'quiz.questions', 'quiz.questions.options'],
-    });
+    try {
+      // Get attempt with all necessary relations
+      const attempt = await queryRunner.manager.findOne(QuizAttempt, {
+        where: { id: submitQuizDto.attemptId },
+        relations: [
+          'quiz',
+          'quiz.questions',
+          'quiz.questions.options',
+          'quiz.lesson',
+          'quiz.lesson.section',
+          'quiz.lesson.section.course',
+          'quiz.academicClass',
+          'quiz.academicClass.instructors',
+        ],
+      });
 
-    if (!attempt) {
-      throw new NotFoundException(
-        `Không tìm thấy lần thử với ID ${submitQuizDto.attemptId}`,
-      );
-    }
-
-    if (attempt.userId !== userId) {
-      throw new ForbiddenException('Bạn không có quyền nộp bài kiểm tra này');
-    }
-
-    // Lưu các câu trả lời
-    const responses: QuizResponse[] = [];
-
-    // Xử lý dữ liệu từ định dạng mới
-    const {
-      questionIds,
-      responses: selectedOptionIds,
-      attemptId,
-    } = submitQuizDto;
-
-    // Kiểm tra độ dài mảng
-    if (questionIds.length !== selectedOptionIds.length) {
-      throw new BadRequestException(
-        'Số lượng câu hỏi và câu trả lời không khớp',
-      );
-    }
-
-    // Tạo các response entries
-    for (let i = 0; i < questionIds.length; i++) {
-      const questionId = questionIds[i];
-      const selectedOptionId = selectedOptionIds[i];
-
-      const question = attempt.quiz.questions.find(
-        (q) => Number(q.id) === Number(questionId),
-      );
-
-      if (!question) {
-        throw new BadRequestException(
-          `Câu hỏi với ID ${questionId} không tồn tại trong bài kiểm tra này`,
+      if (!attempt) {
+        throw new NotFoundException(
+          `Không tìm thấy lần thử với ID ${submitQuizDto.attemptId}`,
         );
       }
 
-      // Tạo response (không cần tính score vì đã có trigger)
-      const response = this.responsesRepository.create({
-        attemptId: attempt.id,
-        questionId: questionId,
-        selectedOptionId: selectedOptionId || null,
+      if (attempt.userId !== userId) {
+        throw new ForbiddenException('Bạn không có quyền nộp bài kiểm tra này');
+      }
+
+      // Create and save responses
+      const responses: QuizResponse[] = [];
+      const { questionIds, responses: selectedOptionIds } = submitQuizDto;
+
+      if (questionIds.length !== selectedOptionIds.length) {
+        throw new BadRequestException(
+          'Số lượng câu hỏi và câu trả lời không khớp',
+        );
+      }
+
+      // Create responses
+      for (let i = 0; i < questionIds.length; i++) {
+        const questionId = questionIds[i];
+        const selectedOptionId = selectedOptionIds[i];
+
+        const question = attempt.quiz.questions.find(
+          (q) => Number(q.id) === Number(questionId),
+        );
+
+        if (!question) {
+          throw new BadRequestException(
+            `Câu hỏi với ID ${questionId} không tồn tại trong bài kiểm tra này`,
+          );
+        }
+
+        const response = queryRunner.manager.create(QuizResponse, {
+          attemptId: attempt.id,
+          questionId: questionId,
+          selectedOptionId: selectedOptionId || null,
+        });
+
+        responses.push(response);
+      }
+
+      await queryRunner.manager.save(QuizResponse, responses);
+
+      // Calculate score
+      const quizResponses = await queryRunner.manager.find(QuizResponse, {
+        where: { attemptId: attempt.id },
       });
 
-      responses.push(response);
+      const totalPoints = quizResponses.reduce(
+        (sum, response) => sum + (Number(response.score) || 0),
+        0,
+      );
+
+      const totalQuestions = quizResponses.length;
+      const scorePercentage =
+        totalQuestions > 0
+          ? Math.round((totalPoints / totalQuestions) * 100)
+          : 0;
+
+      // Update attempt
+      attempt.endTime = new Date();
+      attempt.score = scorePercentage;
+      attempt.status = AttemptStatus.COMPLETED;
+      await queryRunner.manager.save(QuizAttempt, attempt);
+
+      // Determine instructor ID
+      let instructorId: number | null = null;
+
+      if (attempt.quiz.lessonId) {
+        // Get instructor from course
+        instructorId =
+          attempt.quiz.lesson?.section?.course?.instructorId || null;
+      } else if (attempt.quiz.academicClassId) {
+        // Get first instructor from academic class
+        instructorId =
+          attempt.quiz.academicClass?.instructors[0]?.instructorId || null;
+      }
+
+      if (!instructorId) {
+        throw new BadRequestException(
+          'Không tìm thấy giảng viên cho bài kiểm tra này',
+        );
+      }
+
+      // Check for existing attempts for this quiz by this user
+      const existingAttempts = await queryRunner.manager.find(QuizAttempt, {
+        where: {
+          userId,
+          quizId: attempt.quizId,
+          status: AttemptStatus.COMPLETED,
+        },
+      });
+
+      console.log('Existing attempts:', existingAttempts);
+
+      // Check for existing grade based on first attempt
+      const existingGrade = await queryRunner.manager.findOne(UserGrade, {
+        where: {
+          userId,
+          gradeType: GradeType.QUIZ,
+          quizAttemptId: existingAttempts[0]?.id, // Get first attempt's grade
+        },
+      });
+
+      console.log('Existing grade:', existingGrade);
+
+      if (existingAttempts.length > 1) {
+        // Not first attempt - update existing grade with new score
+        if (existingGrade) {
+          existingGrade.score = scorePercentage;
+          existingGrade.gradedAt = new Date();
+          existingGrade.quizAttemptId = attempt.id; // Update to latest attempt
+          await queryRunner.manager.save(UserGrade, existingGrade);
+        }
+      } else {
+        // First attempt - create new grade
+        const newGrade = new UserGrade();
+
+        // Required fields
+        newGrade.userId = userId;
+        newGrade.gradedBy = instructorId;
+        newGrade.gradeType = GradeType.QUIZ;
+        newGrade.score = scorePercentage;
+        newGrade.maxScore = 100;
+        newGrade.weight = 0.2;
+        newGrade.gradedAt = new Date();
+
+        // Optional fields with proper null handling
+        newGrade.quizAttemptId = attempt.id;
+        newGrade.courseId = attempt.quiz.lesson?.section?.course?.id ?? null;
+        newGrade.lessonId = attempt.quiz.lessonId ?? null;
+        newGrade.assignmentSubmissionId = null;
+        newGrade.feedback = null;
+
+        console.log('newGrade:', newGrade);
+
+        await queryRunner.manager.save(UserGrade, newGrade);
+      }
+
+      await queryRunner.commitTransaction();
+      return attempt;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new BadRequestException(
+        'Lỗi khi nộp bài kiểm tra: ' + error.message,
+      );
+    } finally {
+      await queryRunner.release();
     }
-
-    // Lưu tất cả responses
-    await this.responsesRepository.save(responses);
-
-    // Tính tổng điểm và điểm tối đa (lấy từ responses sau khi đã tính bởi trigger)
-    const quizResponses = await this.responsesRepository.find({
-      where: { attemptId: attempt.id },
-    });
-
-    const totalPoints = quizResponses.reduce(
-      (sum, response) => sum + (Number(response.score) || 0),
-      0,
-    );
-
-    // Tính tổng điểm tối đa từ tất cả các câu hỏi
-    // Giả sử mỗi câu trả lời đúng có giá trị là 1 điểm
-    const totalQuestions = quizResponses.length;
-
-    // Tính điểm theo thang điểm 100
-    const scorePercentage =
-      totalQuestions > 0 ? Math.round((totalPoints / totalQuestions) * 100) : 0;
-
-    // Cập nhật attempt
-    attempt.endTime = new Date();
-    attempt.score = scorePercentage;
-    attempt.status = AttemptStatus.COMPLETED;
-
-    // Lưu attempt
-    await this.attemptsRepository.save(attempt);
   }
 
   async createQuizWithQuestionsAndOptions(createQuizDto: any): Promise<Quiz> {
