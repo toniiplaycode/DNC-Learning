@@ -237,9 +237,6 @@ export class UsersService {
   async findStudentAcademicByInstructorId(
     instructorId: number,
   ): Promise<User[]> {
-    // 1. Tìm tất cả sinh viên học thuật thông qua lớp học
-    // 2. Lấy thông tin lớp học và điểm số
-
     const students = await this.userRepository
       .createQueryBuilder('user')
       .innerJoin(
@@ -271,28 +268,32 @@ export class UsersService {
       .leftJoinAndSelect('class.classCourses', 'classCourses')
       .leftJoinAndSelect('classCourses.course', 'course')
 
-      // Join với bảng grades để lấy điểm số
-      .leftJoinAndMapMany(
-        'classCourses.grades',
-        'user_grades',
-        'grades',
-        'user.id = grades.user_id AND course.id = grades.course_id',
+      // Join với bảng user_grades và lấy thông tin điểm số
+      .leftJoinAndSelect('user.userGrades', 'userGrades')
+      .leftJoinAndSelect('userGrades.lesson', 'lesson')
+      .leftJoinAndSelect('userGrades.course', 'gradeCourse')
+
+      // Join với bảng assignment submissions
+      .leftJoinAndSelect(
+        'userGrades.assignmentSubmission',
+        'assignmentSubmission',
+        'userGrades.assignment_submission_id = assignmentSubmission.id',
       )
+      .leftJoinAndSelect('assignmentSubmission.assignment', 'assignment')
 
-      // Lấy thêm thông tin chi tiết về điểm
-      .leftJoinAndSelect('grades.lesson', 'gradeLesson')
-      .leftJoinAndSelect('grades.assignmentSubmission', 'gradeAssignment')
-      .leftJoinAndSelect('grades.quizAttempt', 'gradeQuiz')
+      // Join với bảng quiz attempts
+      .leftJoinAndSelect(
+        'userGrades.quizAttempt',
+        'quizAttempt',
+        'userGrades.quiz_attempt_id = quizAttempt.id',
+      )
+      .leftJoinAndSelect('quizAttempt.quiz', 'quiz')
 
-      // Đảm bảo không có bản ghi trùng lặp
       .distinct(true)
-
-      // Sắp xếp kết quả
       .orderBy({
         'class.className': 'ASC',
         'studentAcademic.studentCode': 'ASC',
       })
-
       .getMany();
 
     return students;

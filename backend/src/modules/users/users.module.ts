@@ -9,6 +9,12 @@ import { UserStudentAcademic } from '../../entities/UserStudentAcademic';
 import { AcademicClass } from 'src/entities/AcademicClass';
 import { AcademicClassCourse } from 'src/entities/AcademicClassCourse';
 import { AcademicClassInstructor } from 'src/entities/AcademicClassInstructor';
+import { AssignmentSubmission } from 'src/entities/AssignmentSubmission';
+import { UserGrade } from 'src/entities/UserGrade';
+import { CourseLesson } from 'src/entities/CourseLesson';
+import { Assignment } from 'src/entities/Assignment';
+import { QuizAttempt } from 'src/entities/QuizAttempt';
+import { Quiz } from 'src/entities/Quiz';
 
 @Module({
   controllers: [UsersController],
@@ -22,6 +28,12 @@ import { AcademicClassInstructor } from 'src/entities/AcademicClassInstructor';
       AcademicClass,
       AcademicClassCourse,
       AcademicClassInstructor,
+      UserGrade,
+      CourseLesson,
+      AssignmentSubmission,
+      Assignment,
+      QuizAttempt,
+      Quiz,
     ]),
   ],
   exports: [UsersService],

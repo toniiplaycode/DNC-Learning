@@ -35,34 +35,23 @@ import {
   Tabs,
   LinearProgress,
   Menu,
-  Tooltip,
-  Grid,
 } from "@mui/material";
 import {
   Search,
-  Mail,
-  Block,
   MoreVert,
-  FilterList,
   Person,
   Email,
   Phone,
   School,
-  Payment,
   CalendarToday,
   LocationOn,
-  Grade,
-  Assignment,
-  SortByAlpha,
   AccessTime,
-  MenuBook,
   Close,
   LocationCity,
   Work,
   BubbleChart,
   CheckCircle,
   Badge,
-  AccountBalance,
   Class,
   Info,
 } from "@mui/icons-material";
@@ -1143,9 +1132,129 @@ const InstructorStudents = () => {
               </TabPanel>
 
               <TabPanel value={dialogTabValue} index={2}>
-                {selectedStudent?.enrollments?.some(
-                  (enrollment) => enrollment.grades?.length > 0
-                ) ? (
+                {selectedStudent?.role === "student_academic" ? (
+                  selectedStudent?.userGrades?.length > 0 ? (
+                    <Card sx={{ p: 3 }}>
+                      <Typography variant="h6" fontWeight="bold" gutterBottom>
+                        Bảng điểm sinh viên
+                      </Typography>
+
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                        gutterBottom
+                      >
+                        Cập nhật: {new Date().toLocaleDateString("vi-VN")}
+                      </Typography>
+
+                      <Divider sx={{ my: 2 }} />
+
+                      {/* Sắp xếp điểm theo trọng số */}
+                      {[...selectedStudent.userGrades] // Create new array before sorting
+                        .sort(
+                          (a, b) => parseFloat(b.weight) - parseFloat(a.weight)
+                        )
+                        .map((grade) => (
+                          <Box
+                            key={grade.id}
+                            sx={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              py: 0.5,
+                            }}
+                          >
+                            <Typography>
+                              {grade.gradeType === "assignment" &&
+                                grade.assignmentSubmission?.assignment.title}
+                              {grade.gradeType === "quiz" &&
+                                grade.quizAttempt?.quiz.title}
+                              {grade.gradeType === "midterm" && "Điểm giữa kỳ"}
+                              {grade.gradeType === "final" && "Điểm cuối kỳ"}
+                            </Typography>
+                            <Box>
+                              <Typography component="span">
+                                {grade.score}/{grade.maxScore}
+                              </Typography>
+                              <Typography
+                                component="span"
+                                color="text.secondary"
+                                sx={{ ml: 1 }}
+                              >
+                                (x{parseFloat(grade.weight).toFixed(2)})
+                              </Typography>
+                            </Box>
+                          </Box>
+                        ))}
+
+                      {/* Tính và hiển thị điểm tổng kết */}
+                      {(() => {
+                        let totalWeightedScore = 0;
+                        let totalWeight = 0;
+
+                        selectedStudent.userGrades.forEach((grade) => {
+                          const score = parseFloat(grade.score);
+                          const maxScore = parseFloat(grade.maxScore);
+                          const weight = parseFloat(grade.weight);
+
+                          const weightedScore =
+                            (score / maxScore) * 100 * weight;
+                          totalWeightedScore += weightedScore;
+                          totalWeight += weight;
+                        });
+
+                        const finalGrade =
+                          totalWeight > 0
+                            ? parseFloat(
+                                (totalWeightedScore / totalWeight).toFixed(2)
+                              )
+                            : 0;
+
+                        return (
+                          <>
+                            <Divider sx={{ my: 2 }} />
+                            <Typography variant="subtitle1" fontWeight="bold">
+                              Điểm tổng kết:{" "}
+                              <Box component="span" fontWeight="bold">
+                                {finalGrade}/100
+                              </Box>
+                            </Typography>
+                            <Box sx={{ mt: 2 }}>
+                              <LinearProgress
+                                variant="determinate"
+                                value={(finalGrade / 100) * 100}
+                                sx={{
+                                  height: 8,
+                                  borderRadius: 1,
+                                  bgcolor: "grey.200",
+                                  "& .MuiLinearProgress-bar": {
+                                    bgcolor:
+                                      finalGrade >= 80
+                                        ? "success.main"
+                                        : finalGrade >= 60
+                                        ? "warning.main"
+                                        : "error.main",
+                                  },
+                                }}
+                              />
+                            </Box>
+                          </>
+                        );
+                      })()}
+                    </Card>
+                  ) : (
+                    <Typography
+                      color="text.secondary"
+                      align="center"
+                      sx={{ py: 3 }}
+                    >
+                      Chưa có thông tin điểm
+                    </Typography>
+                  )
+                ) : // Existing code for regular students
+                selectedStudent?.enrollments?.some(
+                    (enrollment) => enrollment.grades?.length > 0
+                  ) ? (
                   selectedStudent.enrollments
                     .filter((enrollment) => enrollment.grades?.length > 0)
                     .map((enrollment) => {
@@ -1210,13 +1319,9 @@ const InstructorStudents = () => {
                           </Typography>
 
                           {sortedGrades.map((grade) => {
-                            const scorePart =
-                              grade.gradeType === "participation"
-                                ? `${parseFloat(grade.score)}/${parseFloat(
-                                    grade.maxScore
-                                  )}`
-                                : `${parseFloat(grade.score)}/100`;
-
+                            const scorePart = `${parseFloat(
+                              grade.score
+                            )}/${parseFloat(grade.maxScore)}`;
                             const weightPart = `(x${parseFloat(
                               grade.weight
                             ).toFixed(2)})`;

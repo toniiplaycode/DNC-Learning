@@ -250,7 +250,9 @@ export class UserGradesService {
         'instructor.user',
         'lesson',
         'quizAttempt',
+        'quizAttempt.quiz',
         'assignmentSubmission',
+        'assignmentSubmission.assignment',
       ],
       select: {
         user: {
@@ -274,6 +276,32 @@ export class UserGradesService {
             username: true,
             email: true,
             avatarUrl: true,
+          },
+        },
+        assignmentSubmission: {
+          id: true,
+          submissionText: true,
+          fileUrl: true,
+          submittedAt: true,
+          status: true,
+          assignment: {
+            id: true,
+            title: true,
+            description: true,
+            dueDate: true,
+          },
+        },
+        quizAttempt: {
+          id: true,
+          startTime: true,
+          endTime: true,
+          score: true,
+          status: true,
+          quiz: {
+            id: true,
+            title: true,
+            description: true,
+            timeLimit: true,
           },
         },
       },
