@@ -303,4 +303,69 @@ export class AssignmentsService {
       );
     }
   }
+
+  async findInstructorByAssignment(assignmentId: number): Promise<any> {
+    try {
+      const assignment = await this.assignmentsRepository
+        .createQueryBuilder('assignment')
+        // For lesson-based assignments
+        .leftJoinAndSelect('assignment.lesson', 'lesson')
+        .leftJoinAndSelect('lesson.section', 'section')
+        .leftJoinAndSelect('section.course', 'course')
+        .leftJoinAndSelect('course.instructor', 'courseInstructor')
+        .leftJoinAndSelect('courseInstructor.user', 'courseInstructorUser')
+        // For academic class assignments
+        .leftJoinAndSelect('assignment.academicClass', 'academicClass')
+        .leftJoinAndSelect(
+          'academicClass.instructors',
+          'academicClassInstructor',
+        )
+        .leftJoinAndSelect(
+          'academicClassInstructor.instructor',
+          'classInstructor',
+        )
+        .leftJoinAndSelect('classInstructor.user', 'classInstructorUser')
+        .where('assignment.id = :assignmentId', { assignmentId })
+        .getOne();
+
+      if (!assignment) {
+        throw new NotFoundException(
+          `Không tìm thấy bài tập với ID ${assignmentId}`,
+        );
+      }
+
+      // Get instructor based on assignment type
+      let instructor: { id: number; username: string } | null = null;
+
+      if (assignment.lessonId) {
+        // For lesson-based assignments
+        instructor = {
+          id: assignment.lesson?.section?.course?.instructor?.user?.id,
+          username:
+            assignment.lesson?.section?.course?.instructor?.user?.username,
+        };
+      } else if (assignment.academicClassId) {
+        // For academic class assignments
+        const classInstructor = assignment.academicClass?.instructors?.[0];
+        instructor = {
+          id: classInstructor?.instructor?.user?.id,
+          username: classInstructor?.instructor?.user?.username,
+        };
+      }
+
+      if (!instructor?.id) {
+        throw new NotFoundException(
+          `Không tìm thấy giảng viên cho bài tập có ID ${assignmentId}`,
+        );
+      }
+
+      return instructor;
+    } catch (error) {
+      console.error('Error finding instructor for assignment:', error);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException('Không thể lấy thông tin giảng viên');
+    }
+  }
 }

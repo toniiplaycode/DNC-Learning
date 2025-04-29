@@ -1,6 +1,9 @@
 import { useState, useEffect, useRef, useMemo } from "react";
 import { io, Socket } from "socket.io-client";
-import { addMessage } from "../../../features/messages/messagesSlice";
+import {
+  addMessage,
+  fetchMessagesByUser,
+} from "../../../features/messages/messagesSlice";
 import { useAppDispatch } from "../../../app/hooks";
 import {
   Box,
@@ -117,6 +120,7 @@ const InstructorLayout = () => {
       navigate("/instructor/login");
     }
     dispatch(fetchUserNotifications(currentUser.id));
+    dispatch(fetchMessagesByUser(currentUser.id));
   }, [currentUser, navigate]);
 
   useEffect(() => {

@@ -52,10 +52,13 @@ import { selectAssignmentSubmissions } from "../../../features/assignment-submis
 import { formatDateTime } from "../../../utils/formatters";
 import { selectCurrentUser } from "../../../features/auth/authSelectors";
 import { fetchAssignmentByCourse } from "../../../features/assignments/assignmentsSlice";
+import { fetchAssignmentInstructor } from "../../../features/assignments/assignmentsSlice";
 import { useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { selectSubmissionGrade } from "../../../features/user-grades/userGradesSelectors";
 import { fetchGradeBySubmission } from "../../../features/user-grades/userGradesSlice";
+import { selectCurrentAssignmentInstructor } from "../../../features/assignments/assignmentsSelectors";
+import { createNotification } from "../../../features/notifications/notificationsSlice";
 
 interface AssignmentFile {
   id: string;
@@ -103,6 +106,7 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
   const dispatch = useAppDispatch();
   const assignmentSubmissions = useAppSelector(selectAssignmentSubmissions);
   const submissionGrade = useAppSelector(selectSubmissionGrade);
+  const instructor = useAppSelector(selectCurrentAssignmentInstructor);
   const currentUser = useAppSelector(selectCurrentUser);
   const [files, setFiles] = useState<AssignmentFile[]>([]);
   const [note, setNote] = useState("");
@@ -112,6 +116,10 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
   // Add state for Google Drive link
   const [driveLink, setDriveLink] = useState("");
   const [submitType, setSubmitType] = useState<"file" | "drive">("drive");
+
+  useEffect(() => {
+    dispatch(fetchAssignmentInstructor(assignmentData.assignmentId));
+  }, [dispatch, assignmentData]);
 
   // Add form state
   const [formSubmission, setFormSubmission] =
@@ -159,8 +167,6 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
     fetchGrade();
   }, [dispatch, assignmentSubmissions]);
 
-  console.log(submissionGrade);
-
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFiles = Array.from(event.target.files || []);
     const validFiles = selectedFiles.filter(
@@ -202,6 +208,22 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
       dispatch(
         fetchSubmissionsByAssignment(Number(assignmentData.assignmentId))
       );
+
+      if (instructor) {
+        try {
+          const notificationData = {
+            userIds: [instructor.id],
+            title: "Bài tập mới được nộp",
+            content: `${currentUser?.username} đã nộp bài tập "${assignmentData.title}"`,
+            type: "assignment",
+          };
+
+          await dispatch(createNotification(notificationData));
+        } catch (error) {
+          console.error("Error sending notification:", error);
+          // Don't show error to user as this is not critical
+        }
+      }
 
       toast.success("Nộp bài thành công!");
 

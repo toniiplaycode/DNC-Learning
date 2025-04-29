@@ -27,6 +27,10 @@ export const selectAssignmentsStatus = (state: RootState) =>
 export const selectAssignmentsError = (state: RootState) =>
   state.assignments.error;
 
+// Add to existing selectors
+export const selectCurrentAssignmentInstructor = (state: RootState) =>
+  state.assignments.currentAssignmentInstructor;
+
 // Selector để lọc assignment theo trạng thái (đang diễn ra, sắp diễn ra, đã kết thúc)
 export const selectOngoingAssignments = createSelector(
   [selectAllAssignments],

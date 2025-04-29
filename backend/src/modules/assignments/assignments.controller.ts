@@ -96,4 +96,9 @@ export class AssignmentsController {
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.assignmentsService.remove(id);
   }
+
+  @Get(':id/instructor')
+  async getInstructorForAssignment(@Param('id') id: number) {
+    return this.assignmentsService.findInstructorByAssignment(id);
+  }
 }

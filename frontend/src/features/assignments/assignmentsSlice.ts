@@ -3,6 +3,7 @@ import {
   AssignmentsState,
   CreateAssignmentData,
   UpdateAssignmentData,
+  AssignmentInstructor,
 } from "../../types/assignment.types";
 import { api } from "../../services/api";
 
@@ -17,6 +18,7 @@ const initialState: AssignmentsState = {
   assignmentsCourse: [],
   userSubmissions: [],
   currentSubmission: null,
+  currentAssignmentInstructor: null,
   status: "idle",
   error: null,
 };
@@ -169,6 +171,20 @@ export const deleteAssignment = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Không thể xóa bài tập"
+      );
+    }
+  }
+);
+
+export const fetchAssignmentInstructor = createAsyncThunk(
+  "assignments/fetchInstructor",
+  async (assignmentId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/assignments/${assignmentId}/instructor`);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Không thể tải thông tin giảng viên"
       );
     }
   }
@@ -362,6 +378,20 @@ const assignmentsSlice = createSlice({
         state.error = null;
       })
       .addCase(deleteAssignment.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
+
+      // Fetch assignment instructor
+      .addCase(fetchAssignmentInstructor.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchAssignmentInstructor.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.currentAssignmentInstructor = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchAssignmentInstructor.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
       });

@@ -35,8 +35,6 @@ import {
   Chat as ChatIcon,
   Close,
   Send,
-  Circle,
-  ArrowBack,
   Person,
   Search,
   SmartToy,
@@ -44,7 +42,6 @@ import {
 import { useNavigate } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 import {
-  setMessages,
   addMessage,
   setSelectedReceiver,
   markMessageAsRead,

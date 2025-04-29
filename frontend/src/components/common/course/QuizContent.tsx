@@ -267,8 +267,8 @@ const QuizContent: React.FC<QuizContentProps> = ({
         if (instructorId) {
           const notificationData = {
             userIds: [instructorId],
-            title: "Bài kiểm tra mới được nộp",
-            content: `${currentUser?.username} đã nộp bài kiểm tra "${activeQuiz.title}" với kết quả ${submitResult.score}%`,
+            title: "Bài trắc nghiệm mới được nộp",
+            content: `${currentUser?.username} đã nộp bài trắc nghiệm "${activeQuiz.title}" với kết quả ${submitResult.score}%`,
             type: "quiz",
           };
 
