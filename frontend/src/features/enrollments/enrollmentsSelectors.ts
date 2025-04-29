@@ -16,6 +16,8 @@ export const selectEnrollmentsStatus = (state: RootState) =>
   state.enrollments.status;
 export const selectEnrollmentsError = (state: RootState) =>
   state.enrollments.error;
+export const selectCourseUsers = (state: RootState) =>
+  state.enrollments.courseUsers;
 
 // Derived selectors
 export const selectActiveUserEnrollments = createSelector(

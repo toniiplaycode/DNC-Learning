@@ -568,7 +568,6 @@ const InstructorCourseView = () => {
         </Grid>
       </Grid>
 
-      {/* Thêm các Modal */}
       {/* Modal Thêm lesson mới */}
       <DialogAddEditLesson
         open={openAddContentModal}
@@ -576,6 +575,7 @@ const InstructorCourseView = () => {
         initialSectionId={currentSectionId || undefined}
         sections={courseData?.sections || []}
         editMode={false}
+        courseData={courseData}
       />
 
       {/* Modal Sửa lesson */}

@@ -8,8 +8,8 @@ import { User } from '../../entities/User';
 import { CourseProgress } from '../../entities/CourseProgress';
 import { CourseLesson } from '../../entities/CourseLesson';
 import { CourseSection } from '../../entities/CourseSection';
-import { CoursesModule } from '../courses/courses.module';
-import { UsersModule } from '../users/users.module';
+import { AcademicClassCourse } from 'src/entities/AcademicClassCourse';
+import { UserStudentAcademic } from 'src/entities/UserStudentAcademic';
 
 @Module({
   imports: [
@@ -20,9 +20,9 @@ import { UsersModule } from '../users/users.module';
       CourseProgress,
       CourseLesson,
       CourseSection,
+      AcademicClassCourse,
+      UserStudentAcademic,
     ]),
-    CoursesModule,
-    UsersModule,
   ],
   controllers: [EnrollmentsController],
   providers: [EnrollmentsService],

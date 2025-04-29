@@ -22,11 +22,14 @@ import {
   createCourseLesson,
   updateCourseLesson,
 } from "../../../features/course-lessons/courseLessonsApiSlice";
-import { useAppDispatch } from "../../../app/hooks";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { toast } from "react-toastify";
 import { useParams } from "react-router-dom";
 import { fetchCourseById } from "../../../features/courses/coursesApiSlice";
 import { fetchQuizzesByCourse } from "../../../features/quizzes/quizzesSlice";
+import { fetchCourseUsersEnrollments } from "../../../features/enrollments/enrollmentsApiSlice";
+import { selectCourseUsers } from "../../../features/enrollments/enrollmentsSelectors";
+import { createNotification } from "../../../features/notifications/notificationsSlice";
 
 // Định nghĩa kiểu ContentItem cho rõ ràng
 interface ContentItem {
@@ -49,6 +52,7 @@ interface DialogAddEditLessonProps {
   contentToEdit?: ContentItem;
   sections: any[];
   editMode: boolean;
+  courseData: any;
 }
 
 // Định nghĩa kiểu cho các content type
@@ -69,11 +73,11 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
   contentToEdit,
   sections,
   editMode,
+  courseData,
 }) => {
   const { id } = useParams();
   const dispatch = useAppDispatch();
-
-  console.log(contentToEdit);
+  const allUsersEnrollments = useAppSelector(selectCourseUsers);
 
   // Single form state
   const [contentForm, setContentForm] = useState<ContentItem>({
@@ -92,6 +96,10 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [fileUploadError, setFileUploadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    dispatch(fetchCourseUsersEnrollments(id));
+  }, [dispatch, id]);
 
   // Cập nhật form khi có dữ liệu ban đầu
   useEffect(() => {
@@ -196,11 +204,31 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
     };
 
     if (!editMode) {
-      dispatch(createCourseLesson(submitData)).then(() => {
-        dispatch(fetchCourseById(Number(id)));
-        dispatch(fetchQuizzesByCourse(Number(id)));
-        toast.success("Tạo nội dung thành công!");
-      });
+      dispatch(createCourseLesson(submitData))
+        .unwrap()
+        .then(async (createdLesson) => {
+          try {
+            const courseTitle = createdLesson.section?.course?.title || "";
+
+            const notificationData = {
+              userIds: allUsersEnrollments.map((user) => user.id),
+              title: `Nội dung mới: ${createdLesson.title}`,
+              content: `Một nội dung mới "${createdLesson.title}" đã được thêm vào khóa học ${courseData?.title}`,
+              type: "course",
+            };
+
+            await dispatch(createNotification(notificationData));
+
+            // Refresh course data and quizzes
+            dispatch(fetchCourseById(Number(id)));
+            dispatch(fetchQuizzesByCourse(Number(id)));
+            toast.success("Tạo nội dung thành công!");
+          } catch (error) {
+            console.error("Error creating notification:", error);
+            // Still show success for lesson creation
+            toast.success("Tạo nội dung thành công!");
+          }
+        });
     } else {
       dispatch(updateCourseLesson(submitData)).then(() => {
         dispatch(fetchCourseById(Number(id)));

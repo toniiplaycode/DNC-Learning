@@ -46,14 +46,10 @@ import { fetchCourseById } from "../../features/courses/coursesApiSlice";
 import { formatDate } from "date-fns";
 import { fetchInstructorById } from "../../features/user_instructors/instructorsApiSlice";
 import { selectCurrentInstructor } from "../../features/user_instructors/instructorsSelectors";
-import { useSelector } from "react-redux";
 import CourseRating from "../../components/common/course/CourseRating";
 import { fetchUserEnrollments } from "../../features/enrollments/enrollmentsApiSlice";
 import { selectCurrentUser } from "../../features/auth/authSelectors";
 import { selectUserEnrollments } from "../../features/enrollments/enrollmentsSelectors";
-import { useAppSelector as useReduxAppSelector } from "../../redux/hooks";
-import { selectUserEnrollments as selectReduxUserEnrollments } from "../../redux/features/user/userSelectors";
-import { isUppercase } from "../../../../backend/src/modules/courses/dto/create-courses.dto";
 
 interface TabPanelProps {
   children?: React.ReactNode;

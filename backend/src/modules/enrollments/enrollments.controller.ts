@@ -65,6 +65,11 @@ export class EnrollmentsController {
     return this.enrollmentsService.findByCourse(courseId);
   }
 
+  @Get('course/:courseId/users')
+  async getCourseUsers(@Param('courseId') courseId: number) {
+    return this.enrollmentsService.getAllUsersByCourse(courseId);
+  }
+
   @Get('progress')
   @UseGuards(JwtAuthGuard)
   async getUserProgress(@GetUser() user) {

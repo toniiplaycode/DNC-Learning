@@ -21,7 +21,7 @@ import courseLessonsReducer from "../features/course-lessons/courseLessonsSlice"
 import messagesReducer from "../features/messages/messagesSlice";
 import academicClassCoursesReducer from "../features/academic-class-courses/academicClassCoursesSlice";
 import academicClassesReducer from "../features/academic-classes/academicClassesSlice";
-
+import notificationsReducer from "../features/notifications/notificationsSlice";
 // Import các reducer khác nếu có
 
 export const store = configureStore({
@@ -48,6 +48,7 @@ export const store = configureStore({
     messages: messagesReducer,
     academicClassCourses: academicClassCoursesReducer,
     academicClasses: academicClassesReducer,
+    notifications: notificationsReducer,
     // Thêm các reducer khác nếu có
   },
   middleware: (getDefaultMiddleware) =>

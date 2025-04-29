@@ -13,6 +13,7 @@ import {
   useTheme,
   useMediaQuery,
 } from "@mui/material";
+import { Quiz as QuizIcon } from "@mui/icons-material";
 import { Timer, CheckCircle, Cancel, PlayArrow } from "@mui/icons-material";
 import {
   createAttempt,
@@ -329,11 +330,41 @@ const QuizContent: React.FC<QuizContentProps> = ({
     }
   }, [latestAttempt, activeQuiz, isAssessmentQuiz]);
 
-  // Kiểm tra loading
+  // Replace the existing empty state
   if (!activeQuiz) {
     return (
-      <Box sx={{ p: 3 }}>
-        <Typography>Đang tải bài quiz...</Typography>
+      <Box
+        sx={{
+          p: 4,
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: "300px",
+          bgcolor: "background.paper",
+          borderRadius: 2,
+        }}
+      >
+        <QuizIcon
+          sx={{
+            fontSize: 64,
+            color: "text.disabled",
+            mb: 2,
+            opacity: 0.5,
+          }}
+        />
+        <Typography variant="h6" color="text.secondary" gutterBottom>
+          Chưa có bài trắc nghiệm
+        </Typography>
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          align="center"
+          sx={{ maxWidth: 400 }}
+        >
+          Hiện tại chưa có bài trắc nghiệm nào được tạo cho phần này. Vui lòng
+          quay lại sau.
+        </Typography>
       </Box>
     );
   }

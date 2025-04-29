@@ -14,6 +14,8 @@ import { UpdateEnrollmentDto } from './dto/update-enrollment.dto';
 import { CourseProgress } from '../../entities/CourseProgress';
 import { CourseLesson } from '../../entities/CourseLesson';
 import { CourseSection } from '../../entities/CourseSection';
+import { AcademicClassCourse } from '../../entities/AcademicClassCourse';
+import { UserStudentAcademic } from '../../entities/UserStudentAcademic';
 
 // Move interface to class level
 export interface ProgressResult {
@@ -45,6 +47,10 @@ export class EnrollmentsService {
     private lessonRepository: Repository<CourseLesson>,
     @InjectRepository(CourseSection)
     private sectionRepository: Repository<CourseSection>,
+    @InjectRepository(AcademicClassCourse)
+    private academicClassCourseRepository: Repository<AcademicClassCourse>,
+    @InjectRepository(UserStudentAcademic)
+    private userStudentAcademicRepository: Repository<UserStudentAcademic>,
   ) {}
 
   async create(createEnrollmentDto: CreateEnrollmentDto): Promise<Enrollment> {
@@ -126,6 +132,66 @@ export class EnrollmentsService {
       where: { courseId },
       relations: ['user'],
     });
+  }
+
+  async getAllUsersByCourse(courseId: number) {
+    try {
+      // Get users from enrollments
+      const enrolledUsers = await this.enrollmentsRepository
+        .createQueryBuilder('enrollment')
+        .leftJoinAndSelect('enrollment.user', 'enrolledUser')
+        .leftJoinAndSelect('enrolledUser.userStudent', 'userStudent')
+        .where('enrollment.courseId = :courseId', { courseId })
+        .getMany();
+
+      // Get users from academic classes
+      const academicUsers = await this.academicClassCourseRepository
+        .createQueryBuilder('acc')
+        .leftJoinAndSelect('acc.academicClass', 'academicClass')
+        .leftJoinAndSelect('academicClass.studentsAcademic', 'studentAcademic')
+        .leftJoinAndSelect('studentAcademic.user', 'academicUser')
+        .leftJoinAndSelect(
+          'academicUser.userStudentAcademic',
+          'userStudentAcademic',
+        )
+        .where('acc.courseId = :courseId', { courseId })
+        .getMany();
+
+      // Combine and deduplicate users
+      const users = new Map();
+
+      // Add enrolled users
+      enrolledUsers.forEach((enrollment) => {
+        if (enrollment.user) {
+          users.set(enrollment.user.id, {
+            ...enrollment.user,
+            enrollmentType: 'regular',
+            enrollmentId: enrollment.id,
+            enrollmentDate: enrollment.enrollmentDate,
+          });
+        }
+      });
+
+      // Add academic users
+      academicUsers.forEach((acc) => {
+        acc.academicClass?.studentsAcademic?.forEach((studentAcademic) => {
+          if (studentAcademic.user) {
+            users.set(studentAcademic.user.id, {
+              ...studentAcademic.user,
+              enrollmentType: 'academic',
+              academicClassId: acc.academicClass.id,
+              classCode: acc.academicClass.classCode,
+              className: acc.academicClass.className,
+            });
+          }
+        });
+      });
+
+      return Array.from(users.values());
+    } catch (error) {
+      console.error('Error getting users for course:', error);
+      throw new Error('Không thể lấy danh sách người dùng cho khóa học này');
+    }
   }
 
   async update(

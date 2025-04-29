@@ -314,20 +314,46 @@ const InstructorQuizs = () => {
   const filteredAttempts = getFilteredAttempts();
 
   // Update QuizStatistics component to use real data
+  const getLatestAttempts = (attempts: any[]) => {
+    // Group attempts by userId
+    const attemptsByUser = attempts.reduce((acc, attempt) => {
+      if (!acc[attempt.user.id]) {
+        acc[attempt.user.id] = [];
+      }
+      acc[attempt.user.id].push(attempt);
+      return acc;
+    }, {});
+
+    // Get latest attempt for each user
+    return Object.values(attemptsByUser).map((userAttempts: any[]) => {
+      return userAttempts.sort(
+        (a, b) => new Date(b.endTime).getTime() - new Date(a.endTime).getTime()
+      )[0];
+    });
+  };
+
   const QuizStatistics = ({ quiz }: { quiz: Quiz }) => {
     const attempts = quizAttempts || [];
-    const passedStudents = attempts.filter(
+
+    // Get latest attempt for each student
+    const latestAttempts = getLatestAttempts(attempts);
+
+    // Calculate statistics based on latest attempts
+    const passedStudents = latestAttempts.filter(
       (attempt) => Number(attempt.score) >= quiz.passingScore
     ).length;
-    const failedStudents = attempts.length - passedStudents;
-    const passRate =
-      attempts.length > 0 ? (passedStudents / attempts.length) * 100 : 0;
 
-    // Calculate average score
+    const totalStudents = latestAttempts.length;
+    const passRate =
+      totalStudents > 0 ? (passedStudents / totalStudents) * 100 : 0;
+
+    // Calculate average score from latest attempts
     const averageScore =
-      attempts.length > 0
-        ? attempts.reduce((sum, attempt) => sum + Number(attempt.score), 0) /
-          attempts.length
+      totalStudents > 0
+        ? latestAttempts.reduce(
+            (sum, attempt) => sum + Number(attempt.score),
+            0
+          ) / totalStudents
         : 0;
 
     return (
@@ -357,7 +383,7 @@ const InstructorQuizs = () => {
                 {passRate.toFixed(1)}%
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                {passedStudents}/{attempts.length} học viên
+                {passedStudents}/{totalStudents} học viên
               </Typography>
             </CardContent>
           </Card>
@@ -366,11 +392,11 @@ const InstructorQuizs = () => {
           <Card>
             <CardContent>
               <Typography variant="h6" gutterBottom>
-                Số bài làm
+                Số học viên làm bài
               </Typography>
-              <Typography variant="h4">{attempts.length}</Typography>
+              <Typography variant="h4">{totalStudents}</Typography>
               <Typography variant="body2" color="text.secondary">
-                Tổng số bài làm
+                Tổng số học viên đã làm
               </Typography>
             </CardContent>
           </Card>
@@ -581,30 +607,50 @@ const InstructorQuizs = () => {
       </Stack>
       <Card sx={{ mb: 3 }}>
         <CardContent>
-          <Grid container spacing={2} sx={{ mb: 3 }}>
-            <Grid item xs={12} md={6}>
-              <Typography variant="subtitle1">
-                {selectedQuiz.lessonId ? (
-                  <>Khóa học: {selectedQuiz.lesson?.section.course.title}</>
-                ) : (
-                  <>
-                    Lớp học: {selectedQuiz.academicClass?.className} -{" "}
-                    {selectedQuiz.academicClass?.classCode}
-                  </>
-                )}
-              </Typography>
-              <Typography variant="body2">
-                Số câu hỏi: {selectedQuiz.questions.length}
-              </Typography>
-              <Typography variant="body2">
-                Điểm đạt: {selectedQuiz.passingScore}%
-              </Typography>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Typography variant="body2" align="right">
-                Ngày tạo: {formatDateTime(selectedQuiz.createdAt)}
-              </Typography>
-            </Grid>
+          <Grid item xs={12} md={6}>
+            <Stack spacing={4} direction="row">
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary">
+                  {selectedQuiz.lessonId ? "Khóa học" : "Lớp học"}
+                </Typography>
+                <Typography variant="subtitle1" fontWeight="medium">
+                  {selectedQuiz.lessonId
+                    ? selectedQuiz.lesson?.section.course.title
+                    : `${selectedQuiz.academicClass?.className} - ${selectedQuiz.academicClass?.classCode}`}
+                </Typography>
+              </Box>
+
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Số câu hỏi
+                </Typography>
+                <Typography variant="h6">
+                  {selectedQuiz.questions.length}
+                </Typography>
+              </Box>
+
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Điểm đạt
+                </Typography>
+                <Typography variant="h6" color="success.main">
+                  {selectedQuiz.passingScore}%
+                </Typography>
+              </Box>
+
+              <Box>
+                <Typography
+                  variant="subtitle2"
+                  color="text.secondary"
+                  gutterBottom
+                >
+                  Ngày tạo
+                </Typography>
+                <Typography variant="body2">
+                  {formatDateTime(selectedQuiz.createdAt)}
+                </Typography>
+              </Box>
+            </Stack>
           </Grid>
 
           {/* Thống kê */}

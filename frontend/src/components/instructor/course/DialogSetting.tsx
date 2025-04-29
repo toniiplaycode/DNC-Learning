@@ -20,17 +20,9 @@ import {
   FormControl,
   InputLabel,
   FormHelperText,
-  Chip,
 } from "@mui/material";
 import {
   Close,
-  Visibility,
-  VisibilityOff,
-  Lock,
-  Public,
-  Money,
-  Timer,
-  PersonAdd,
   Notifications,
   VerifiedUser,
   Settings,
@@ -73,16 +65,8 @@ const DialogSetting: React.FC<DialogSettingProps> = ({
   const [settings, setSettings] = useState({
     // Cài đặt chung
     isPublished: true,
-    visibility: "public", // public, private, password
-    password: "",
     allowPreview: true,
     requireCompletion: false,
-
-    // Cài đặt Bài trắc nghiệm
-    allowReAttempt: true,
-    showAnswersAfterCompletion: true,
-    shuffleQuestions: false,
-    passingScore: 70,
 
     // Cài đặt quyền truy cập
     enrollmentDuration: 365, // số ngày
@@ -92,7 +76,11 @@ const DialogSetting: React.FC<DialogSettingProps> = ({
     // Cài đặt thông báo
     notifyOnEnrollment: true,
     notifyOnCompletion: true,
-    reminderFrequency: "weekly", // never, daily, weekly, monthly
+    notifyOnNewContent: true, // Add these new notification settings
+    notifyOnNewQuiz: true,
+    notifyOnNewAssignment: true,
+    notifyOnNewDocument: true,
+    reminderFrequency: "weekly",
 
     // Cài đặt chứng chỉ
     enableCertificate: true,
@@ -141,6 +129,9 @@ const DialogSetting: React.FC<DialogSettingProps> = ({
           variant="scrollable"
           scrollButtons="auto"
           aria-label="course settings tabs"
+          sx={{
+            px: 5,
+          }}
         >
           <Tab
             icon={<Settings />}
@@ -148,20 +139,6 @@ const DialogSetting: React.FC<DialogSettingProps> = ({
             label="Chung"
             id="settings-tab-0"
             aria-controls="settings-tabpanel-0"
-          />
-          <Tab
-            icon={<VerifiedUser />}
-            iconPosition="start"
-            label="Bài trắc nghiệm"
-            id="settings-tab-1"
-            aria-controls="settings-tabpanel-1"
-          />
-          <Tab
-            icon={<PersonAdd />}
-            iconPosition="start"
-            label="Quyền truy cập"
-            id="settings-tab-2"
-            aria-controls="settings-tabpanel-2"
           />
           <Tab
             icon={<Notifications />}
@@ -196,39 +173,6 @@ const DialogSetting: React.FC<DialogSettingProps> = ({
             />
 
             <Divider />
-
-            <FormControl fullWidth>
-              <InputLabel>Hiển thị khóa học</InputLabel>
-              <Select
-                value={settings.visibility}
-                onChange={(e) =>
-                  handleSettingChange("visibility", e.target.value)
-                }
-                label="Hiển thị khóa học"
-              >
-                <MenuItem value="public">
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <Public sx={{ mr: 1 }} />
-                    <Typography>Công khai</Typography>
-                  </Box>
-                </MenuItem>
-                <MenuItem value="private">
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <VisibilityOff sx={{ mr: 1 }} />
-                    <Typography>Riêng tư</Typography>
-                  </Box>
-                </MenuItem>
-                <MenuItem value="password">
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <Lock sx={{ mr: 1 }} />
-                    <Typography>Yêu cầu mật khẩu</Typography>
-                  </Box>
-                </MenuItem>
-              </Select>
-              <FormHelperText>
-                Kiểm soát ai có thể nhìn thấy khóa học của bạn
-              </FormHelperText>
-            </FormControl>
 
             {settings.visibility === "password" && (
               <TextField
@@ -268,112 +212,13 @@ const DialogSetting: React.FC<DialogSettingProps> = ({
           </Stack>
         </TabPanel>
 
-        {/* Cài đặt Bài trắc nghiệm */}
+        {/* Cài đặt thông báo */}
         <TabPanel value={tabValue} index={1}>
           <Stack spacing={3}>
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={settings.allowReAttempt}
-                  onChange={(e) =>
-                    handleSettingChange("allowReAttempt", e.target.checked)
-                  }
-                />
-              }
-              label="Cho phép làm lại Bài trắc nghiệm"
-            />
+            <Typography variant="subtitle2" color="text.secondary">
+              Thông báo cho giảng viên
+            </Typography>
 
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={settings.showAnswersAfterCompletion}
-                  onChange={(e) =>
-                    handleSettingChange(
-                      "showAnswersAfterCompletion",
-                      e.target.checked
-                    )
-                  }
-                />
-              }
-              label="Hiển thị đáp án sau khi hoàn thành"
-            />
-
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={settings.shuffleQuestions}
-                  onChange={(e) =>
-                    handleSettingChange("shuffleQuestions", e.target.checked)
-                  }
-                />
-              }
-              label="Xáo trộn thứ tự câu hỏi"
-            />
-
-            <TextField
-              label="Điểm tối thiểu để đạt (0-100)"
-              type="number"
-              fullWidth
-              value={settings.passingScore}
-              onChange={(e) =>
-                handleSettingChange("passingScore", Number(e.target.value))
-              }
-              InputProps={{ inputProps: { min: 0, max: 100 } }}
-            />
-          </Stack>
-        </TabPanel>
-
-        {/* Cài đặt quyền truy cập */}
-        <TabPanel value={tabValue} index={2}>
-          <Stack spacing={3}>
-            <TextField
-              label="Thời hạn truy cập (ngày)"
-              type="number"
-              fullWidth
-              value={settings.enrollmentDuration}
-              onChange={(e) =>
-                handleSettingChange(
-                  "enrollmentDuration",
-                  Number(e.target.value)
-                )
-              }
-              InputProps={{ inputProps: { min: 1 } }}
-              helperText="Đặt 0 cho truy cập vĩnh viễn"
-            />
-
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={settings.allowGuestAccess}
-                  onChange={(e) =>
-                    handleSettingChange("allowGuestAccess", e.target.checked)
-                  }
-                />
-              }
-              label="Cho phép khách xem một số nội dung"
-            />
-
-            <FormControl fullWidth>
-              <InputLabel>Hành động khi hết hạn</InputLabel>
-              <Select
-                value={settings.expiryAction}
-                onChange={(e) =>
-                  handleSettingChange("expiryAction", e.target.value)
-                }
-                label="Hành động khi hết hạn"
-              >
-                <MenuItem value="restrict">Hạn chế quyền truy cập</MenuItem>
-                <MenuItem value="archive">
-                  Lưu trữ (chỉ xem, không tương tác)
-                </MenuItem>
-              </Select>
-            </FormControl>
-          </Stack>
-        </TabPanel>
-
-        {/* Cài đặt thông báo */}
-        <TabPanel value={tabValue} index={3}>
-          <Stack spacing={3}>
             <FormControlLabel
               control={
                 <Switch
@@ -398,6 +243,69 @@ const DialogSetting: React.FC<DialogSettingProps> = ({
               label="Thông báo khi học viên hoàn thành khóa học"
             />
 
+            <Divider />
+
+            <Typography variant="subtitle2" color="text.secondary">
+              Thông báo cho học viên
+            </Typography>
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={settings.notifyOnNewContent}
+                  onChange={(e) =>
+                    handleSettingChange("notifyOnNewContent", e.target.checked)
+                  }
+                />
+              }
+              label="Thông báo khi có bài giảng mới"
+            />
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={settings.notifyOnNewQuiz}
+                  onChange={(e) =>
+                    handleSettingChange("notifyOnNewQuiz", e.target.checked)
+                  }
+                />
+              }
+              label="Thông báo khi có trắc nghiệm mới"
+            />
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={settings.notifyOnNewAssignment}
+                  onChange={(e) =>
+                    handleSettingChange(
+                      "notifyOnNewAssignment",
+                      e.target.checked
+                    )
+                  }
+                />
+              }
+              label="Thông báo khi có bài tập mới"
+            />
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={settings.notifyOnNewDocument}
+                  onChange={(e) =>
+                    handleSettingChange("notifyOnNewDocument", e.target.checked)
+                  }
+                />
+              }
+              label="Thông báo khi có tài liệu mới"
+            />
+
+            <Divider />
+
+            <Typography variant="subtitle2" color="text.secondary">
+              Nhắc nhở học viên
+            </Typography>
+
             <FormControl fullWidth>
               <InputLabel>Tần suất nhắc nhở học viên</InputLabel>
               <Select
@@ -420,7 +328,7 @@ const DialogSetting: React.FC<DialogSettingProps> = ({
         </TabPanel>
 
         {/* Cài đặt chứng chỉ */}
-        <TabPanel value={tabValue} index={4}>
+        <TabPanel value={tabValue} index={2}>
           <Stack spacing={3}>
             <FormControlLabel
               control={

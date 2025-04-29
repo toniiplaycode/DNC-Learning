@@ -32,6 +32,20 @@ export const fetchUserEnrollments = createAsyncThunk(
   }
 );
 
+export const fetchCourseUsersEnrollments = createAsyncThunk(
+  "enrollments/fetchCourseUsersEnrollments",
+  async (courseId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/enrollments/course/${courseId}/users`);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Không thể tải danh sách người dùng"
+      );
+    }
+  }
+);
+
 export const fetchCourseEnrollments = createAsyncThunk(
   "enrollments/fetchCourseEnrollments",
   async (courseId: number) => {
@@ -154,6 +168,7 @@ interface EnrollmentsState {
   error: string | null;
   userProgress: any | null;
   courseProgress: any | null;
+  courseUsers: any[];
 }
 
 const initialState: EnrollmentsState = {
@@ -165,6 +180,7 @@ const initialState: EnrollmentsState = {
   error: null,
   userProgress: null,
   courseProgress: null,
+  courseUsers: [],
 };
 
 const enrollmentsSlice = createSlice({
@@ -210,6 +226,19 @@ const enrollmentsSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchUserEnrollments.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
+
+      .addCase(fetchCourseUsersEnrollments.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchCourseUsersEnrollments.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.courseUsers = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchCourseUsersEnrollments.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
       })
