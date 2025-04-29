@@ -126,7 +126,7 @@ export const AddClassCoursesDialog = ({
               addedCourses.length > 1 ? "các" : ""
             } khóa học "${coursesTitles}" vào lớp ${
               classData.academicClass.classCode
-            }. Vui lòng truy cập để xem chi tiết.`,
+            }.`,
             type: "course",
           };
 

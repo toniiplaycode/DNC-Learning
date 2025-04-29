@@ -61,6 +61,9 @@ import { fetchCourseById } from "../../../features/courses/coursesApiSlice";
 import { selectCurrentUser } from "../../../features/auth/authSelectors";
 import { fetchClassInstructorById } from "../../../features/academic-class-instructors/academicClassInstructorsSlice";
 import { selectCurrentClassInstructor } from "../../../features/academic-class-instructors/academicClassInstructorsSelectors";
+import { selectAcademicClassStudents } from "../../../features/users/usersSelectors";
+import { fetchStudentsByAcademicClass } from "../../../features/users/usersApiSlice";
+import { createNotification } from "../../../features/notifications/notificationsSlice";
 
 // Định nghĩa kiểu QuizOption
 interface QuizOption {
@@ -139,6 +142,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
   const lessonData = useAppSelector(selectAlCourseLessonlQuizzes);
   const quizzesData = useAppSelector(selectAllQuizzes);
   const currentClassInstructor = useAppSelector(selectCurrentClassInstructor);
+  const academicClassStudents = useAppSelector(selectAcademicClassStudents);
 
   useEffect(() => {
     dispatch(fetchClassInstructorById(Number(currentUser?.userInstructor?.id)));
@@ -156,6 +160,11 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
     quizType: QuizType.PRACTICE,
     showExplanation: true,
   });
+
+  useEffect(() => {
+    if (quizForm.academicClassId)
+      dispatch(fetchStudentsByAcademicClass(quizForm.academicClassId));
+  }, [quizForm.academicClassId]);
 
   // State cho câu hỏi quiz
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
@@ -399,11 +408,19 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
       })),
     };
 
-    console.log(quizData);
-
     if (!editMode) {
       await dispatch(createQuiz(quizData));
       toast.success("Thêm Bài trắc nghiệm thành công!");
+
+      if (academicClassStudents.length > 0) {
+        const notificationData = {
+          userIds: academicClassStudents.map((user) => user.userId),
+          title: `Giảng viên "${currentUser.userInstructor.fullName}" vừa thêm trắc nghiệm mới`,
+          content: `Giảng viên vừa thêm trắc nghiệm "${quizForm.title}".`,
+          type: "quiz",
+        };
+        await dispatch(createNotification(notificationData));
+      }
     } else if (editMode) {
       await dispatch(updateQuiz(quizData)).then((result) => {
         if (result?.error?.message == "Rejected") {

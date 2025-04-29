@@ -34,6 +34,9 @@ import { selectAssignmentsCourse } from "../../../features/assignments/assignmen
 import { fetchClassInstructorById } from "../../../features/academic-class-instructors/academicClassInstructorsSlice";
 import { selectCurrentUser } from "../../../features/auth/authSelectors";
 import { selectCurrentClassInstructor } from "../../../features/academic-class-instructors/academicClassInstructorsSelectors";
+import { fetchStudentsByAcademicClass } from "../../../features/users/usersApiSlice";
+import { selectAcademicClassStudents } from "../../../features/users/usersSelectors";
+import { createNotification } from "../../../features/notifications/notificationsSlice";
 
 // Định nghĩa kiểu AssignmentItem
 interface AssignmentItem {
@@ -73,6 +76,7 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
   const assignmentsData = useAppSelector(selectAssignmentsCourse);
   const currentUser = useAppSelector(selectCurrentUser);
   const currentClassInstructor = useAppSelector(selectCurrentClassInstructor);
+  const academicClassStudents = useAppSelector(selectAcademicClassStudents);
 
   useEffect(() => {
     if (id) {
@@ -97,6 +101,13 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
     fileRequirements: null,
     assignmentType: "practice",
   });
+
+  useEffect(() => {
+    if (assignmentForm.academicClassId)
+      dispatch(fetchStudentsByAcademicClass(assignmentForm.academicClassId));
+  }, [assignmentForm.academicClassId]);
+
+  console.log(academicClassStudents);
 
   // State quản lý upload file (cho tài liệu đính kèm)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -214,6 +225,16 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
   const submitForm = async (fileUrls: string[]) => {
     if (!editMode) {
       await dispatch(createAssignment(assignmentForm));
+
+      if (academicClassStudents.length > 0) {
+        const notificationData = {
+          userIds: academicClassStudents.map((user) => user.userId),
+          title: `Giảng viên "${currentUser.userInstructor.fullName}" vừa thêm bài tập mới`,
+          content: `Giảng viên vừa thêm bài tập "${assignmentForm.title}".`,
+          type: "assignment",
+        };
+        await dispatch(createNotification(notificationData));
+      }
     } else if (editMode) {
       await dispatch(updateAssignment(assignmentForm));
     }

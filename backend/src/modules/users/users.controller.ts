@@ -72,4 +72,9 @@ export class UsersController {
       +id,
     );
   }
+
+  @Get('academic-class/:classId/students')
+  async getStudentsByAcademicClass(@Param('classId') classId: number) {
+    return this.usersService.findStudentsByAcademicClassId(classId);
+  }
 }

@@ -55,6 +55,7 @@ export class UsersService {
       },
     });
   }
+
   async create(userData: Partial<User>): Promise<User> {
     const hashedPassword = await bcrypt.hash(userData.password, 10);
     const newUser = this.userRepository.create(userData);
@@ -401,6 +402,39 @@ export class UsersService {
       }
       throw new Error(
         `Failed to get academic class courses for student ${studentAcademicId}: ${error.message}`,
+      );
+    }
+  }
+
+  async findStudentsByAcademicClassId(
+    academicClassId: number,
+  ): Promise<UserStudentAcademic[]> {
+    try {
+      const students = await this.userStudentAcademic
+        .createQueryBuilder('studentAcademic')
+        .leftJoinAndSelect('studentAcademic.user', 'user')
+        .leftJoinAndSelect('studentAcademic.academicClass', 'academicClass')
+        .where('studentAcademic.academicClassId = :academicClassId', {
+          academicClassId,
+        })
+        .orderBy({
+          'user.username': 'ASC',
+        })
+        .getMany();
+
+      if (!students.length) {
+        throw new NotFoundException(
+          `No students found for academic class ${academicClassId}`,
+        );
+      }
+
+      return students;
+    } catch (error) {
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new Error(
+        `Failed to get students for academic class: ${error.message}`,
       );
     }
   }

@@ -217,9 +217,7 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
                   : createdLesson.contentType === "assignment"
                   ? "bài tập"
                   : "nội dung học tập"
-              } "${createdLesson.title}" vào khóa học "${
-                courseData?.title
-              }". Vui lòng truy cập để xem chi tiết.`,
+              } "${createdLesson.title}" vào khóa học "${courseData?.title}".`,
               type:
                 createdLesson.contentType === "quiz"
                   ? "quiz"

@@ -16,6 +16,9 @@ export const selectStudentAcademicCourses = (state: RootState) =>
 export const selectInstructorAcademicStudents = (state: RootState) =>
   state.users.instructorAcademicStudents;
 
+export const selectAcademicClassStudents = (state: RootState) =>
+  state.users.academicClassStudents;
+
 // Derived selectors
 export const selectUserById = (userId: number) =>
   createSelector(
