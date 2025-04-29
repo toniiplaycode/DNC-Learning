@@ -1,10 +1,9 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   IconButton,
   Badge,
   Menu,
-  MenuItem,
   Typography,
   List,
   ListItem,
@@ -19,78 +18,35 @@ import {
 import {
   Notifications as NotificationsIcon,
   Assignment,
-  Announcement,
+  Quiz,
+  Message,
   Event,
   School,
   Circle,
 } from "@mui/icons-material";
-
-interface Notification {
-  id: number;
-  type: "course" | "assignment" | "announcement" | "event";
-  title: string;
-  description: string;
-  timestamp: string;
-  read: boolean;
-  link?: string;
-  course?: {
-    name: string;
-    image: string;
-  };
-}
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import {
+  fetchUserNotifications,
+  markAllAsRead,
+} from "../../../features/notifications/notificationsSlice";
+import { selectCurrentUser } from "../../../features/auth/authSelectors";
+import { selectUserNotifications } from "../../../features/notifications/notificationsSelector";
+import { markAsRead } from "../../../features/notifications/notificationsSlice";
 
 const NotificationCenter = () => {
+  const dispatch = useAppDispatch();
+  const currentUser = useAppSelector(selectCurrentUser);
+  const userNotifications = useAppSelector(selectUserNotifications);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [activeTab, setActiveTab] = useState(0);
-  const [notifications, setNotifications] = useState<Notification[]>([
-    {
-      id: 1,
-      type: "course",
-      title: "Bài học mới đã được thêm",
-      description:
-        "React Hooks Advanced đã được thêm vào khóa học React & TypeScript",
-      timestamp: "2024-03-20T10:30:00",
-      read: false,
-      link: "/course/1/learn",
-      course: {
-        name: "React & TypeScript",
-        image: "/src/assets/logo.png",
-      },
-    },
-    {
-      id: 2,
-      type: "assignment",
-      title: "Deadline sắp đến",
-      description: "Bài tập Todo App cần nộp trong 2 ngày",
-      timestamp: "2024-03-19T15:45:00",
-      read: false,
-      link: "/course/1/learn",
-      course: {
-        name: "React & TypeScript",
-        image: "/src/assets/logo.png",
-      },
-    },
-    {
-      id: 3,
-      type: "announcement",
-      title: "Thông báo bảo trì hệ thống",
-      description: "Hệ thống sẽ bảo trì từ 23:00 - 24:00 ngày 21/03/2024",
-      timestamp: "2024-03-18T09:00:00",
-      read: true,
-    },
-    {
-      id: 4,
-      type: "event",
-      title: "Workshop: React Performance",
-      description:
-        "Workshop về tối ưu hiệu năng React sẽ diễn ra vào 19:00 ngày 25/03/2024",
-      timestamp: "2024-03-17T14:20:00",
-      read: true,
-      link: "/events/1",
-    },
-  ]);
 
-  const unreadCount = notifications.filter((n) => !n.read).length;
+  useEffect(() => {
+    if (currentUser?.id) {
+      dispatch(fetchUserNotifications(currentUser.id));
+    }
+  }, [dispatch, currentUser]);
+
+  const unreadCount = userNotifications.filter((n) => !n.isRead).length;
 
   const handleOpen = (event: React.MouseEvent<HTMLElement>) => {
     setAnchorEl(event.currentTarget);
@@ -100,16 +56,22 @@ const NotificationCenter = () => {
     setAnchorEl(null);
   };
 
-  const handleNotificationClick = (notification: Notification) => {
-    // Đánh dấu là đã đọc
-    setNotifications((prev) =>
-      prev.map((n) => (n.id === notification.id ? { ...n, read: true } : n))
-    );
+  const handleNotificationClick = (notification: any) => {
+    if (!notification.isRead) {
+      dispatch(markAsRead(notification.id));
+    }
+    handleClose();
+  };
 
-    // Chuyển hướng nếu có link
-    if (notification.link) {
-      handleClose();
-      // navigate(notification.link);
+  const handleMarkAllAsRead = async () => {
+    if (currentUser?.id) {
+      try {
+        await dispatch(markAllAsRead(currentUser.id)).unwrap();
+        dispatch(fetchUserNotifications(currentUser.id));
+        handleClose();
+      } catch (error) {
+        console.error("Error marking all as read:", error);
+      }
     }
   };
 
@@ -119,9 +81,11 @@ const NotificationCenter = () => {
         return <School color="primary" />;
       case "assignment":
         return <Assignment color="error" />;
-      case "announcement":
-        return <Announcement color="warning" />;
-      case "event":
+      case "quiz":
+        return <Quiz color="warning" />;
+      case "message":
+        return <Message color="info" />;
+      case "schedule":
         return <Event color="success" />;
       default:
         return <NotificationsIcon />;
@@ -129,7 +93,9 @@ const NotificationCenter = () => {
   };
 
   const filteredNotifications =
-    activeTab === 0 ? notifications : notifications.filter((n) => !n.read);
+    activeTab === 0
+      ? userNotifications
+      : userNotifications.filter((n) => !n.isRead);
 
   return (
     <>
@@ -164,6 +130,17 @@ const NotificationCenter = () => {
           </Tabs>
         </Box>
 
+        {userNotifications.length > 0 && (
+          <>
+            <Box sx={{ pb: 2, textAlign: "center" }}>
+              <Button size="small" onClick={handleMarkAllAsRead}>
+                Đánh dấu tất cả là đã đọc
+              </Button>
+            </Box>
+            <Divider />
+          </>
+        )}
+
         <List sx={{ p: 0 }}>
           {filteredNotifications.length > 0 ? (
             filteredNotifications.map((notification, index) => (
@@ -172,7 +149,9 @@ const NotificationCenter = () => {
                 <ListItem
                   onClick={() => handleNotificationClick(notification)}
                   sx={{
-                    bgcolor: notification.read ? "transparent" : "action.hover",
+                    bgcolor: notification.isRead
+                      ? "transparent"
+                      : "action.hover",
                     cursor: "pointer",
                     "&:hover": {
                       bgcolor: "action.hover",
@@ -180,11 +159,7 @@ const NotificationCenter = () => {
                   }}
                 >
                   <ListItemAvatar>
-                    {notification.course ? (
-                      <Avatar src={notification.course.image} />
-                    ) : (
-                      <Avatar>{getNotificationIcon(notification.type)}</Avatar>
-                    )}
+                    <Avatar>{getNotificationIcon(notification.type)}</Avatar>
                   </ListItemAvatar>
                   <ListItemText
                     primary={
@@ -194,7 +169,7 @@ const NotificationCenter = () => {
                         <Typography variant="subtitle2">
                           {notification.title}
                         </Typography>
-                        {!notification.read && (
+                        {!notification.isRead && (
                           <Circle sx={{ color: "primary.main", fontSize: 8 }} />
                         )}
                       </Box>
@@ -202,14 +177,14 @@ const NotificationCenter = () => {
                     secondary={
                       <>
                         <Typography variant="body2" color="text.secondary">
-                          {notification.description}
+                          {notification.content}
                         </Typography>
                         <Typography
                           variant="caption"
                           color="text.secondary"
                           sx={{ mt: 0.5, display: "block" }}
                         >
-                          {new Date(notification.timestamp).toLocaleString()}
+                          {new Date(notification.createdAt).toLocaleString()}
                         </Typography>
                       </>
                     }
@@ -225,24 +200,6 @@ const NotificationCenter = () => {
             </Box>
           )}
         </List>
-
-        {notifications.length > 0 && (
-          <>
-            <Divider />
-            <Box sx={{ p: 2, textAlign: "center" }}>
-              <Button
-                size="small"
-                onClick={() => {
-                  setNotifications((prev) =>
-                    prev.map((n) => ({ ...n, read: true }))
-                  );
-                }}
-              >
-                Đánh dấu tất cả là đã đọc
-              </Button>
-            </Box>
-          </>
-        )}
       </Menu>
     </>
   );

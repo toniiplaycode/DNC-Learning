@@ -40,7 +40,7 @@ export class NotificationsService {
     });
   }
 
-  async findOne(id: number): Promise<Notification> {
+  async findOne(id: number): Promise<Notification | null> {
     return await this.notificationsRepository.findOne({ where: { id } });
   }
 
@@ -54,14 +54,21 @@ export class NotificationsService {
   async update(
     id: number,
     updateNotificationDto: UpdateNotificationDto,
-  ): Promise<Notification> {
+  ): Promise<Notification | null> {
     await this.notificationsRepository.update(id, updateNotificationDto);
     return this.findOne(id);
   }
 
-  async markAsRead(id: number): Promise<Notification> {
+  async markAsRead(id: number): Promise<Notification | null> {
     await this.notificationsRepository.update(id, { isRead: true });
     return this.findOne(id);
+  }
+
+  async markAllAsRead(userId: number): Promise<void> {
+    await this.notificationsRepository.update(
+      { userId, isRead: false },
+      { isRead: true },
+    );
   }
 
   async remove(id: number): Promise<void> {

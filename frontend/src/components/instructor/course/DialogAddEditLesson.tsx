@@ -208,13 +208,24 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
         .unwrap()
         .then(async (createdLesson) => {
           try {
-            const courseTitle = createdLesson.section?.course?.title || "";
-
             const notificationData = {
               userIds: allUsersEnrollments.map((user) => user.id),
-              title: `Nội dung mới: ${createdLesson.title}`,
-              content: `Một nội dung mới "${createdLesson.title}" đã được thêm vào khóa học ${courseData?.title}`,
-              type: "course",
+              title: `Nội dung học tập mới`,
+              content: `Giảng viên vừa thêm ${
+                createdLesson.contentType === "quiz"
+                  ? "bài trắc nghiệm"
+                  : createdLesson.contentType === "assignment"
+                  ? "bài tập"
+                  : "nội dung học tập"
+              } "${createdLesson.title}" vào khóa học "${
+                courseData?.title
+              }". Vui lòng truy cập để xem chi tiết.`,
+              type:
+                createdLesson.contentType === "quiz"
+                  ? "quiz"
+                  : createdLesson.contentType === "assignment"
+                  ? "assignment"
+                  : "course",
             };
 
             await dispatch(createNotification(notificationData));

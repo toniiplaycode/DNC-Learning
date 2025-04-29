@@ -63,6 +63,20 @@ export const markAsRead = createAsyncThunk(
   }
 );
 
+export const markAllAsRead = createAsyncThunk(
+  "notifications/markAllAsRead",
+  async (userId: number, { rejectWithValue }) => {
+    try {
+      await api.patch(`/notifications/user/${userId}/read-all`);
+      return userId;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Không thể đánh dấu tất cả là đã đọc"
+      );
+    }
+  }
+);
+
 const initialState: NotificationState = {
   notifications: [],
   userNotifications: [],
@@ -140,6 +154,17 @@ const notificationsSlice = createSlice({
             ? updatedNotification
             : notification
         );
+      })
+
+      // Mark all as read
+      .addCase(markAllAsRead.fulfilled, (state, action) => {
+        state.userNotifications = state.userNotifications.map(
+          (notification) => ({
+            ...notification,
+            isRead: true,
+          })
+        );
+        state.error = null;
       });
   },
 });

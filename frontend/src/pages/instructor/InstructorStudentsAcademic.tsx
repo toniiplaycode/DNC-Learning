@@ -764,6 +764,7 @@ const InstructorStudentsAcademic = () => {
         </DialogActions>
       </Dialog>
       <AddClassCoursesDialog
+        studentAcademic={selectedClass?.academicClass?.studentsAcademic || []}
         open={openAddCourses}
         onClose={() => setOpenAddCourses(false)}
         classData={selectedClass}

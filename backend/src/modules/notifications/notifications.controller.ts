@@ -14,13 +14,11 @@ import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
 
 @Controller('notifications')
-@UseGuards(JwtAuthGuard)
 export class NotificationsController {
   constructor(private readonly notificationsService: NotificationsService) {}
 
   @Post()
   async create(@Body() createNotificationDto: CreateNotificationDto) {
-    console.log(createNotificationDto);
     const notifications = await this.notificationsService.create(
       createNotificationDto,
     );
@@ -56,6 +54,11 @@ export class NotificationsController {
   @Patch(':id/read')
   markAsRead(@Param('id') id: string) {
     return this.notificationsService.markAsRead(+id);
+  }
+
+  @Patch('user/:userId/read-all')
+  markAllAsRead(@Param('userId') userId: string) {
+    return this.notificationsService.markAllAsRead(+userId);
   }
 
   @Delete(':id')

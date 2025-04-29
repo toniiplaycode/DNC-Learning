@@ -25,17 +25,20 @@ import {
 } from "../../../features/academic-class-courses/academicClassCoursesSlice";
 import { selectAllClassCourses } from "../../../features/academic-class-courses/academicClassCoursesSelectors";
 import { toast } from "react-toastify";
+import { createNotification } from "../../../features/notifications/notificationsSlice";
 
 interface AddClassCoursesDialogProps {
   open: boolean;
   onClose: () => void;
   classData: any;
+  studentAcademic: any;
 }
 
 export const AddClassCoursesDialog = ({
   open,
   onClose,
   classData,
+  studentAcademic,
 }: AddClassCoursesDialogProps) => {
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector(selectCurrentUser);
@@ -45,6 +48,8 @@ export const AddClassCoursesDialog = ({
     number[]
   >([]);
   const coursesByInstructor = useAppSelector(selectCoursesByInstructor);
+
+  console.log(studentAcademic);
 
   useEffect(() => {
     if (open) {
@@ -94,16 +99,46 @@ export const AddClassCoursesDialog = ({
 
       // Add new courses
       if (coursesToAdd.length > 0) {
-        await dispatch(
-          createAcademicClassCourses({
-            classId: classData.academicClass.id,
-            courseIds: coursesToAdd,
-          })
-        ).unwrap();
+        try {
+          // First create the academic class courses
+          await dispatch(
+            createAcademicClassCourses({
+              classId: classData.academicClass.id,
+              courseIds: coursesToAdd,
+            })
+          ).unwrap();
+
+          // Get the course titles for the notification
+          const addedCourses = coursesByInstructor.filter((course) =>
+            coursesToAdd.includes(course.id)
+          );
+          const coursesTitles = addedCourses
+            .map((course) => course.title)
+            .join(", ");
+
+          // Create notification with correct user IDs
+          const notificationData = {
+            userIds: studentAcademic.map((student) =>
+              student.user.id.toString()
+            ), // Map to user IDs from student records
+            title: `${classData.academicClass.classCode} - Thêm khóa học mới`,
+            content: `Giảng viên vừa thêm ${
+              addedCourses.length > 1 ? "các" : ""
+            } khóa học "${coursesTitles}" vào lớp ${
+              classData.academicClass.classCode
+            }. Vui lòng truy cập để xem chi tiết.`,
+            type: "course",
+          };
+
+          await dispatch(createNotification(notificationData)).unwrap();
+
+          dispatch(fetchClassCourses());
+          toast.success("Cập nhật khóa học cho lớp thành công!");
+        } catch (error: any) {
+          toast.error(error?.message || "Có lỗi xảy ra khi cập nhật khóa học!");
+        }
       }
 
-      dispatch(fetchClassCourses());
-      toast.success("Cập nhật khóa học cho lớp thành công!");
       onClose();
     } catch (error: any) {
       toast.error(error?.message || "Có lỗi xảy ra khi cập nhật khóa học!");
