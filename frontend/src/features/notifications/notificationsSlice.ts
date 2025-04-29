@@ -1,8 +1,5 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import {
-  NotificationState,
-  CreateNotificationData,
-} from "../../types/notifications.types";
+import { NotificationState } from "../../types/notifications.types";
 import { api } from "../../services/api";
 
 // Async thunks
@@ -72,6 +69,21 @@ export const markAllAsRead = createAsyncThunk(
     } catch (error: any) {
       return rejectWithValue(
         error.response?.data?.message || "Không thể đánh dấu tất cả là đã đọc"
+      );
+    }
+  }
+);
+
+// Add this with other async thunks
+export const deleteNotification = createAsyncThunk(
+  "notifications/delete",
+  async (id: number, { rejectWithValue }) => {
+    try {
+      await api.delete(`/notifications/${id}`);
+      return id;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Không thể xóa thông báo"
       );
     }
   }
@@ -163,6 +175,18 @@ const notificationsSlice = createSlice({
             ...notification,
             isRead: true,
           })
+        );
+        state.error = null;
+      })
+
+      // Add this case in extraReducers
+      .addCase(deleteNotification.fulfilled, (state, action) => {
+        const deletedId = action.payload;
+        state.notifications = state.notifications.filter(
+          (notification) => notification.id !== deletedId
+        );
+        state.userNotifications = state.userNotifications.filter(
+          (notification) => notification.id !== deletedId
         );
         state.error = null;
       });

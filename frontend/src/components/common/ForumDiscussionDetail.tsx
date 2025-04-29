@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useState, useMemo, useRef } from "react";
 import {
   Box,
   Container,
@@ -49,6 +49,7 @@ import {
 import { useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import { selectCurrentUser } from "../../features/auth/authSelectors";
+import { createNotification } from "../../features/notifications/notificationsSlice";
 
 interface ForumUser {
   id: number | string;
@@ -121,6 +122,7 @@ const ForumDiscussionDetail = ({
   const [sortOrder, setSortOrder] = useState<"newest" | "oldest">("newest");
   const commentsPerPage = 5;
   const currentUser = useSelector(selectCurrentUser);
+  const commentFormRef = useRef<HTMLDivElement>(null);
 
   // Thêm state cho dialog xác nhận xóa
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -151,6 +153,17 @@ const ForumDiscussionDetail = ({
   if (!discussion) {
     return <Typography>Không tìm thấy thảo luận</Typography>;
   }
+
+  const handleReplyClick = (replyId: number) => {
+    setReplyingTo(replyId);
+    // Scroll to comment form
+    setTimeout(() => {
+      commentFormRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "center",
+      });
+    }, 100);
+  };
 
   // Tổ chức replies theo cấu trúc phân cấp
   const topLevelReplies =
@@ -204,23 +217,60 @@ const ForumDiscussionDetail = ({
   const handleSubmitComment = async () => {
     if (comment.trim() && discussion) {
       try {
+        let newReply;
         if (onReplySubmit) {
-          await onReplySubmit(Number(discussion.id), comment, replyingTo);
-          setComment("");
-          setReplyingTo(null);
+          newReply = await onReplySubmit(
+            Number(discussion.id),
+            comment,
+            replyingTo
+          );
         } else {
           // Fallback to original behavior
-          await dispatch(
+          newReply = await dispatch(
             createForumReply({
               content: comment,
               forumId: Number(discussion.id),
               replyId: replyingTo,
             })
-          );
-          dispatch(fetchForumById(Number(discussion.id)));
-          setComment("");
-          setReplyingTo(null);
+          ).unwrap();
         }
+
+        // Handle notifications
+        if (newReply) {
+          // Notify discussion owner if the commenter is not the owner
+          if (discussion.user?.id !== currentUser?.id) {
+            const ownerNotification = {
+              userIds: [discussion.user?.id],
+              title: "Bình luận mới trong bài viết của bạn",
+              content: `${currentUser?.username} đã bình luận trong bài viết "${discussion.title}"`,
+              type: "message",
+            };
+            dispatch(createNotification(ownerNotification));
+          }
+
+          // If this is a reply to another comment, notify that user
+          if (replyingTo) {
+            const parentReply = discussion.replies?.find(
+              (reply) => reply.id == replyingTo
+            );
+            if (parentReply && parentReply.user.id != currentUser?.id) {
+              const replyNotification = {
+                userIds: [parentReply.user.id],
+                title: "Phản hồi mới cho bình luận của bạn",
+                content: `${currentUser?.username} đã trả lời bình luận của bạn trong "${discussion.title}"`,
+                type: "message",
+              };
+              dispatch(createNotification(replyNotification));
+            }
+          }
+        }
+
+        // Reset form state
+        setComment("");
+        setReplyingTo(null);
+
+        // Refresh discussion data
+        dispatch(fetchForumById(Number(discussion.id)));
       } catch (error) {
         console.error("Error submitting comment:", error);
       }
@@ -334,7 +384,7 @@ const ForumDiscussionDetail = ({
                 <Stack direction="row" spacing={1}>
                   <IconButton
                     size="small"
-                    onClick={() => setReplyingTo(Number(reply.id))}
+                    onClick={() => handleReplyClick(Number(reply.id))}
                   >
                     <Reply fontSize="small" />
                   </IconButton>
@@ -644,7 +694,7 @@ const ForumDiscussionDetail = ({
         </Stack>
 
         <Collapse in={showComments}>
-          <Card sx={{ mb: 3 }}>
+          <Card sx={{ mb: 3 }} ref={commentFormRef}>
             <CardContent>
               <Typography variant="h6" gutterBottom>
                 {replyingTo ? "Trả lời bình luận" : "Thêm bình luận"}

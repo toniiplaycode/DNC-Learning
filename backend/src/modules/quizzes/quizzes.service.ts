@@ -81,25 +81,52 @@ export class QuizzesService {
   }
 
   async findOne(id: number): Promise<Quiz> {
-    const quiz = await this.quizzesRepository.findOne({
-      where: { id },
-      relations: ['lesson', 'questions', 'questions.options'],
-    });
+    const quiz = await this.quizzesRepository
+      .createQueryBuilder('quiz')
+      .leftJoinAndSelect('quiz.questions', 'questions')
+      .leftJoinAndSelect('questions.options', 'options')
+      // For lesson-based quizzes
+      .leftJoinAndSelect('quiz.lesson', 'lesson')
+      .leftJoinAndSelect('lesson.section', 'section')
+      .leftJoinAndSelect('section.course', 'course')
+      .leftJoinAndSelect('course.instructor', 'courseInstructor')
+      .leftJoinAndSelect('courseInstructor.user', 'courseInstructorUser')
+      // For academic class quizzes
+      .leftJoinAndSelect('quiz.academicClass', 'academicClass')
+      .leftJoinAndSelect('academicClass.instructors', 'academicClassInstructor')
+      .leftJoinAndSelect(
+        'academicClassInstructor.instructor',
+        'classInstructor',
+      )
+      .leftJoinAndSelect('classInstructor.user', 'classInstructorUser')
+      .where('quiz.id = :id', { id })
+      .getOne();
 
     if (!quiz) {
       throw new NotFoundException(`Không tìm thấy bài kiểm tra với ID ${id}`);
     }
 
-    // Sắp xếp câu hỏi theo thứ tự
+    // Sort questions by order number
     if (quiz.questions) {
       quiz.questions.sort((a, b) => a.orderNumber - b.orderNumber);
 
-      // Sắp xếp các tùy chọn cho mỗi câu hỏi
+      // Sort options for each question
       quiz.questions.forEach((question) => {
         if (question.options) {
           question.options.sort((a, b) => a.orderNumber - b.orderNumber);
         }
       });
+    }
+
+    // For easier access in the frontend, add instructorUserId to the quiz object
+    if (quiz.lesson) {
+      // For lesson-based quizzes
+      quiz['instructorUserId'] =
+        quiz.lesson.section?.course?.instructor?.user?.id;
+    } else if (quiz.academicClass?.instructors?.[0]) {
+      // For academic class quizzes
+      quiz['instructorUserId'] =
+        quiz.academicClass.instructors[0].instructor?.user?.id;
     }
 
     return quiz;
@@ -110,35 +137,39 @@ export class QuizzesService {
       throw new BadRequestException('Lesson ID is required');
     }
 
-    // Check if lesson exists
-    const lesson = await this.lessonsRepository.findOne({
-      where: { id: lessonId },
-    });
-
-    if (!lesson) {
-      throw new NotFoundException(`Không tìm thấy bài học với ID ${lessonId}`);
-    }
-
-    // Find the first quiz for this lesson
-    const quiz = await this.quizzesRepository.findOne({
-      where: { lessonId },
-      relations: ['questions', 'questions.options'],
-      order: { createdAt: 'DESC' },
-    });
+    // Use QueryBuilder to get lesson with all necessary relations
+    const quiz = await this.quizzesRepository
+      .createQueryBuilder('quiz')
+      .leftJoinAndSelect('quiz.questions', 'questions')
+      .leftJoinAndSelect('questions.options', 'options')
+      .leftJoinAndSelect('quiz.lesson', 'lesson')
+      .leftJoinAndSelect('lesson.section', 'section')
+      .leftJoinAndSelect('section.course', 'course')
+      .leftJoinAndSelect('course.instructor', 'instructor')
+      .leftJoinAndSelect('instructor.user', 'instructorUser')
+      .where('quiz.lessonId = :lessonId', { lessonId })
+      .orderBy('quiz.createdAt', 'DESC')
+      .getOne();
 
     if (!quiz) {
       return null;
     }
 
-    // Sort questions and options
+    // Sort questions by order number
     if (quiz.questions) {
       quiz.questions.sort((a, b) => a.orderNumber - b.orderNumber);
 
+      // Sort options for each question
       quiz.questions.forEach((question) => {
         if (question.options) {
           question.options.sort((a, b) => a.orderNumber - b.orderNumber);
         }
       });
+    }
+
+    // Add instructorUserId for easier access in frontend
+    if (quiz.lesson?.section?.course?.instructor?.user) {
+      quiz['instructorUserId'] = quiz.lesson.section.course.instructor.user.id;
     }
 
     return quiz;

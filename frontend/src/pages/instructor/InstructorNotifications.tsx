@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Card,
@@ -17,99 +17,154 @@ import {
   MenuItem,
   TextField,
   InputAdornment,
+  Button,
 } from "@mui/material";
 import {
   Notifications,
-  Star,
   Assignment,
   Message,
   Search,
   Delete,
-  CheckCircle,
+  School,
+  Schedule,
+  Settings,
+  DoneAll,
+  Quiz as QuizIcon,
+  CircleRounded,
 } from "@mui/icons-material";
-
-// Mock data
-const mockNotifications = [
-  {
-    id: 1,
-    type: "review",
-    title: "Đánh giá mới",
-    message: "Nguyễn Văn A đã đánh giá khóa học React & TypeScript",
-    course: "React & TypeScript Masterclass",
-    timestamp: "10 phút trước",
-    read: false,
-    rating: 5,
-  },
-  {
-    id: 2,
-    type: "assignment",
-    title: "Nộp bài tập",
-    message: "15 học viên đã nộp Assignment 1: React Hooks",
-    course: "React & TypeScript Masterclass",
-    timestamp: "1 giờ trước",
-    read: true,
-  },
-  {
-    id: 3,
-    type: "message",
-    title: "Tin nhắn mới",
-    message: "Trần Thị B đã gửi tin nhắn trong khóa học Node.js",
-    course: "Node.js Advanced Concepts",
-    timestamp: "2 giờ trước",
-    read: false,
-  },
-];
+import {
+  fetchUserNotifications,
+  markAsRead,
+  markAllAsRead,
+  deleteNotification,
+} from "../../features/notifications/notificationsSlice";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import { selectUserNotifications } from "../../features/notifications/notificationsSelector";
+import { selectCurrentUser } from "../../features/auth/authSelectors";
 
 const notificationTypes = [
   { value: "all", label: "Tất cả" },
-  { value: "review", label: "Đánh giá" },
+  { value: "course", label: "Khóa học" },
   { value: "assignment", label: "Bài tập" },
+  { value: "quiz", label: "Bài kiểm tra" },
   { value: "message", label: "Tin nhắn" },
+  { value: "system", label: "Hệ thống" },
+  { value: "schedule", label: "Lịch học" },
 ];
 
 const InstructorNotifications = () => {
+  const dispatch = useAppDispatch();
+  const currentUser = useAppSelector(selectCurrentUser);
+  const userNotifications = useAppSelector(selectUserNotifications);
   const [typeFilter, setTypeFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [notifications, setNotifications] = useState(mockNotifications);
+
+  useEffect(() => {
+    if (currentUser?.id) {
+      dispatch(fetchUserNotifications(currentUser.id));
+    }
+  }, [dispatch, currentUser]);
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
-      case "review":
-        return <Star sx={{ color: "warning.main" }} />;
+      case "course":
+        return <School sx={{ color: "primary.main" }} />;
       case "assignment":
-        return <Assignment sx={{ color: "info.main" }} />;
+        return <Assignment sx={{ color: "primary.main" }} />;
+      case "quiz":
+        return <QuizIcon sx={{ color: "primary.main" }} />;
       case "message":
         return <Message sx={{ color: "success.main" }} />;
+      case "schedule":
+        return <Schedule sx={{ color: "warning.main" }} />;
+      case "system":
+        return <Settings sx={{ color: "error.main" }} />;
       default:
         return <Notifications sx={{ color: "primary.main" }} />;
     }
   };
 
-  const handleMarkAsRead = (id: number) => {
-    setNotifications(
-      notifications.map((notif) =>
-        notif.id === id ? { ...notif, read: true } : notif
-      )
-    );
+  const handleMarkAsRead = async (id: number) => {
+    try {
+      await dispatch(markAsRead(id)).unwrap();
+    } catch (error) {
+      console.error("Error marking notification as read:", error);
+    }
   };
 
-  const handleDelete = (id: number) => {
-    setNotifications(notifications.filter((notif) => notif.id !== id));
+  const handleMarkAllAsRead = async () => {
+    if (currentUser?.id) {
+      try {
+        await dispatch(markAllAsRead(currentUser.id)).unwrap();
+        dispatch(fetchUserNotifications(currentUser.id));
+      } catch (error) {
+        console.error("Error marking all notifications as read:", error);
+      }
+    }
   };
 
-  const filteredNotifications = notifications.filter((notif) => {
+  const handleDelete = async (
+    event: React.MouseEvent,
+    notificationId: number
+  ) => {
+    event.stopPropagation(); // Prevent triggering the ListItem click
+    try {
+      await dispatch(deleteNotification(notificationId)).unwrap();
+    } catch (error) {
+      console.error("Error deleting notification:", error);
+    }
+  };
+
+  const filteredNotifications = userNotifications.filter((notif) => {
     const matchesType = typeFilter === "all" || notif.type === typeFilter;
     const matchesSearch =
-      notif.message.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      notif.course.toLowerCase().includes(searchQuery.toLowerCase());
+      notif.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      notif.title.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesType && matchesSearch;
   });
 
+  const formatTimestamp = (dateString: string) => {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffInMinutes = Math.floor(
+      (now.getTime() - date.getTime()) / (1000 * 60)
+    );
+
+    if (diffInMinutes < 60) {
+      return `${diffInMinutes} phút trước`;
+    } else if (diffInMinutes < 1440) {
+      const hours = Math.floor(diffInMinutes / 60);
+      return `${hours} giờ trước`;
+    } else {
+      return new Intl.DateTimeFormat("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(date);
+    }
+  };
+
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h5" gutterBottom fontWeight="bold">
-        Thông báo
-      </Typography>
+      <Stack
+        direction="row"
+        justifyContent="space-between"
+        alignItems="center"
+        sx={{ mb: 3 }}
+      >
+        <Typography variant="h5" fontWeight="bold">
+          Thông báo
+        </Typography>
+        <Button
+          startIcon={<DoneAll />}
+          onClick={handleMarkAllAsRead}
+          disabled={!userNotifications.some((n) => !n.isRead)}
+        >
+          Đánh dấu tất cả đã đọc
+        </Button>
+      </Stack>
 
       {/* Filters */}
       <Stack direction="row" spacing={2} sx={{ mb: 3 }}>
@@ -146,16 +201,33 @@ const InstructorNotifications = () => {
       {/* Notifications List */}
       <Card>
         <List>
+          {filteredNotifications.length === 0 && (
+            <Box sx={{ p: 2, textAlign: "center" }}>
+              <Typography variant="body2" color="text.secondary">
+                Không có thông báo nào.
+              </Typography>
+            </Box>
+          )}
+
           {filteredNotifications.map((notification, index) => (
             <ListItem
               key={notification.id}
+              onClick={() =>
+                !notification.isRead && handleMarkAsRead(notification.id)
+              }
               sx={{
-                bgcolor: notification.read ? "transparent" : "action.hover",
+                bgcolor: notification.isRead ? "transparent" : "action.hover",
                 borderBottom:
                   index < filteredNotifications.length - 1
                     ? "1px solid"
                     : "none",
                 borderColor: "divider",
+                cursor: !notification.isRead ? "pointer" : "default",
+                "&:hover": {
+                  bgcolor: !notification.isRead
+                    ? "action.selected"
+                    : "transparent",
+                },
               }}
             >
               <ListItemAvatar>
@@ -173,11 +245,11 @@ const InstructorNotifications = () => {
                   >
                     <Typography
                       variant="subtitle2"
-                      sx={{ fontWeight: notification.read ? 400 : 600 }}
+                      sx={{ fontWeight: notification.isRead ? 400 : 600 }}
                     >
                       {notification.title}
                     </Typography>
-                    {!notification.read && (
+                    {!notification.isRead && (
                       <Chip
                         label="Mới"
                         color="primary"
@@ -185,57 +257,44 @@ const InstructorNotifications = () => {
                         sx={{ height: 20 }}
                       />
                     )}
-                    {notification.rating && (
-                      <Stack direction="row" alignItems="center" spacing={0.5}>
-                        <Star sx={{ color: "warning.main", fontSize: 16 }} />
-                        <Typography variant="body2" color="text.secondary">
-                          {notification.rating}
-                        </Typography>
-                      </Stack>
-                    )}
                   </Stack>
                 }
                 secondary={
                   <Box>
                     <Typography variant="body2" sx={{ mb: 0.5 }}>
-                      {notification.message}
+                      {notification.content}
                     </Typography>
-                    <Stack
-                      direction="row"
-                      alignItems="center"
-                      spacing={1}
-                      sx={{ mt: 1 }}
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{ opacity: 0.8 }}
                     >
-                      <Typography variant="caption" color="text.secondary">
-                        {notification.course}
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        color="text.secondary"
-                        sx={{ opacity: 0.8 }}
-                      >
-                        • {notification.timestamp}
-                      </Typography>
-                    </Stack>
+                      {formatTimestamp(notification.createdAt)}
+                    </Typography>
                   </Box>
                 }
               />
               <Stack direction="row" spacing={1}>
-                {!notification.read && (
+                {!notification.isRead && (
                   <IconButton
-                    size="small"
                     onClick={() => handleMarkAsRead(notification.id)}
                     sx={{ color: "primary.main" }}
                   >
-                    <CheckCircle />
+                    <CircleRounded sx={{ fontSize: "10px" }} />
                   </IconButton>
                 )}
                 <IconButton
                   size="small"
-                  onClick={() => handleDelete(notification.id)}
-                  sx={{ color: "error.main" }}
+                  onClick={(e) => handleDelete(e, notification.id)}
+                  sx={{
+                    color: "error.main",
+                    "&:hover": {
+                      backgroundColor: "error.light",
+                      color: "error.dark",
+                    },
+                  }}
                 >
-                  <Delete />
+                  <Delete fontSize="small" />
                 </IconButton>
               </Stack>
             </ListItem>

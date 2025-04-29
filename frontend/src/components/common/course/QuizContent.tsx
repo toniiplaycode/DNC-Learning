@@ -33,6 +33,9 @@ import {
 import { selectCurrentUser } from "../../../features/auth/authSelectors";
 import { useLocation, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
+import { createNotification } from "../../../features/notifications/notificationsSlice";
+import { AcademicClass } from "../../../types/academic-class.types";
+import { Instructor } from "../../../features/user_instructors/instructorsApiSlice";
 
 // Add this interface for better type safety
 interface QuizAnswer {
@@ -244,15 +247,38 @@ const QuizContent: React.FC<QuizContentProps> = ({
       const questionIds =
         activeQuiz.questions?.map((question) => Number(question.id)) || [];
 
-      await dispatch(
+      const submitResult = await dispatch(
         submitQuizResponsesAndUpdateAttempt({
           questionIds,
           responses: currentAnswers.answers,
           attemptId: Number(currentAttempt?.id),
         })
-      );
+      ).unwrap();
 
       await dispatch(fetchUserAttempts(Number(currentUser?.id)));
+
+      // Send notification to instructor
+      if (submitResult && activeQuiz) {
+        // Get instructor ID based on quiz type
+        const instructorId = activeQuiz.academicClass
+          ? activeQuiz.academicClass.instructors[0]?.instructor?.userId
+          : activeQuiz.lesson?.section?.course?.instructor?.userId;
+
+        if (instructorId) {
+          const notificationData = {
+            userIds: [instructorId],
+            title: "Bài kiểm tra mới được nộp",
+            content: `${currentUser?.username} đã nộp bài kiểm tra "${activeQuiz.title}" với kết quả ${submitResult.score}%`,
+            type: "quiz",
+          };
+
+          try {
+            await dispatch(createNotification(notificationData));
+          } catch (error) {
+            console.error("Error sending notification:", error);
+          }
+        }
+      }
 
       // Clear and explicit set of submission state
       setQuizSubmitted(true);
@@ -261,11 +287,16 @@ const QuizContent: React.FC<QuizContentProps> = ({
       if (!isAssessmentQuiz) {
         setShowDiscussion(true);
       }
+
+      // Show success message
+      toast.success("Nộp bài thành công!");
     } catch (error) {
       console.error("Error submitting quiz:", error);
       toast.error("Có lỗi xảy ra khi nộp bài");
     }
   };
+
+  console.log(activeQuiz);
 
   const handleRetakeQuiz = () => {
     if (activeQuiz?.id) {

@@ -41,6 +41,8 @@ import Logo from "../../../assets/logo.png";
 import { useAppSelector } from "../../../app/hooks";
 import { selectCurrentUser } from "../../../features/auth/authSelectors";
 import { selectAllMessages } from "../../../features/messages/messagesSelector";
+import { fetchUserNotifications } from "../../../features/notifications/notificationsSlice";
+import { selectUserNotifications } from "../../../features/notifications/notificationsSelector";
 
 const DRAWER_WIDTH = 280;
 const COLLAPSED_DRAWER_WIDTH = 70;
@@ -100,6 +102,7 @@ const InstructorLayout = () => {
   const location = useLocation();
   const currentUser = useAppSelector(selectCurrentUser);
   const messages = useAppSelector(selectAllMessages);
+  const userNotifications = useAppSelector(selectUserNotifications);
   const [unreadCount, setUnreadCount] = useState(0);
   const dispatch = useAppDispatch();
   const socketRef = useRef<Socket | null>(null);
@@ -113,6 +116,7 @@ const InstructorLayout = () => {
     if (currentUser?.role !== "instructor") {
       navigate("/instructor/login");
     }
+    dispatch(fetchUserNotifications(currentUser.id));
   }, [currentUser, navigate]);
 
   useEffect(() => {
@@ -142,6 +146,11 @@ const InstructorLayout = () => {
       (msg) => !msg.isRead && msg.receiver.id === currentUser.id
     ).length;
   }, [messages, currentUser]);
+
+  const unreadNotificationsCount = useMemo(() => {
+    return userNotifications.filter((notification) => !notification.isRead)
+      .length;
+  }, [userNotifications]);
 
   useEffect(() => {
     if (!currentUser?.id) return;
@@ -234,9 +243,31 @@ const InstructorLayout = () => {
             ),
           };
         }
+        if (item.text === "Thông báo") {
+          return {
+            ...item,
+            icon: (
+              <Badge
+                badgeContent={unreadNotificationsCount}
+                color="error"
+                max={99}
+                sx={{
+                  "& .MuiBadge-badge": {
+                    right: -3,
+                    top: 3,
+                    border: `2px solid ${theme.palette.primary.main}`,
+                    padding: "0 4px",
+                  },
+                }}
+              >
+                <Notifications />
+              </Badge>
+            ),
+          };
+        }
         return item;
       }),
-    [unreadCount, theme.palette.primary.main]
+    [unreadCount, unreadNotificationsCount, theme.palette.primary.main]
   );
 
   const drawer = (isMobileDrawer = false) => (
