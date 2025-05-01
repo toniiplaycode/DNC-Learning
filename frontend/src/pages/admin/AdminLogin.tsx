@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Card,
@@ -25,17 +25,38 @@ import {
   Security,
 } from "@mui/icons-material";
 import CustomContainer from "../../components/common/CustomContainer";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import { login, logout } from "../../features/auth/authApiSlice";
+import { toast } from "react-toastify";
+import { selectCurrentUser } from "../../features/auth/authSelectors";
 
 const AdminLogin = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const currentUser = useAppSelector(selectCurrentUser);
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
   });
+
+  // Redirect if already logged in
+  useEffect(() => {
+    // Nếu đã đăng nhập và là admin thì chuyển đến dashboard
+    if (currentUser?.role === "admin") {
+      navigate("/admin");
+      return;
+    }
+
+    // Nếu đã đăng nhập nhưng không phải admin thì logout
+    if (currentUser && currentUser.role !== "admin") {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      dispatch(logout());
+    }
+  }, [currentUser, navigate]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -52,26 +73,27 @@ const AdminLogin = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
     setLoginError(null);
 
     try {
-      // Mock API call
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      const result = await dispatch(login(formData)).unwrap();
 
-      // Kiểm tra đăng nhập (mock)
-      if (
-        formData.email === "admin@example.com" &&
-        formData.password === "admin123"
-      ) {
-        navigate("/admin");
-      } else {
-        setLoginError("Email hoặc mật khẩu không chính xác");
+      if (result.error) {
+        toast.error("Sai email hoặc mật khẩu!");
+        return;
       }
+
+      if (result.user.role !== "admin") {
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        toast.error("Tài khoản không có quyền truy cập!");
+        return;
+      }
+
+      // Nếu là admin thì chuyển đến dashboard
+      navigate("/admin");
     } catch (error) {
-      setLoginError("Đã xảy ra lỗi khi đăng nhập. Vui lòng thử lại sau.");
-    } finally {
-      setIsLoading(false);
+      toast.error("Đã có lỗi xảy ra!");
     }
   };
 
@@ -81,13 +103,14 @@ const AdminLogin = () => {
         minHeight: "100vh",
         display: "flex",
         alignItems: "center",
+        background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
         py: 4,
       }}
     >
       <CustomContainer maxWidth="sm">
         <Card
           sx={{
-            boxShadow: "0 8px 40px rgba(0, 0, 0, 0.25)",
+            boxShadow: "0 8px 40px rgba(0, 0, 0, 0.12)",
             borderRadius: 2,
             overflow: "hidden",
           }}
@@ -195,11 +218,10 @@ const AdminLogin = () => {
                   variant="contained"
                   fullWidth
                   size="large"
-                  disabled={isLoading}
                   color="error"
                   sx={{ py: 1.5 }}
                 >
-                  {isLoading ? "Đang đăng nhập..." : "Đăng nhập"}
+                  Đăng nhập
                 </Button>
               </Stack>
             </form>

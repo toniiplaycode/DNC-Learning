@@ -2,6 +2,7 @@ import {
   Injectable,
   NotFoundException,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User, UserRole } from 'src/entities/User';
@@ -14,6 +15,9 @@ import { AcademicClassInstructor } from 'src/entities/AcademicClassInstructor';
 import { UserInstructor } from 'src/entities/UserInstructor';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateInstructorDto } from './dto/update-instructor.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateStudentDto } from './dto/update-student.dto';
+import { UserStudent } from 'src/entities/UserStudent';
 
 interface StudentUserData {
   user: {
@@ -443,6 +447,38 @@ export class UsersService {
     }
   }
 
+  async changePassword(userId: number, changePasswordDto: ChangePasswordDto) {
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+
+    // Verify current password
+    const isPasswordValid = await bcrypt.compare(
+      changePasswordDto.currentPassword,
+      user.password,
+    );
+
+    if (!isPasswordValid) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+
+    // Verify new password and confirm password match
+    if (changePasswordDto.newPassword !== changePasswordDto.confirmPassword) {
+      throw new BadRequestException(
+        'New password and confirm password do not match',
+      );
+    }
+
+    // Hash new password
+    const hashedPassword = await bcrypt.hash(changePasswordDto.newPassword, 10);
+    user.password = hashedPassword;
+
+    await this.userRepository.save(user);
+    return { message: 'Password changed successfully' };
+  }
+
   async updateInstructorProfile(
     userId: number,
     updateData: {
@@ -513,6 +549,84 @@ export class UsersService {
     } catch (error) {
       await queryRunner.rollbackTransaction();
       throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async updateStudentProfile(
+    userId: number,
+    updateData: {
+      user: UpdateUserDto;
+      student: UpdateStudentDto;
+    },
+  ) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+        relations: ['userStudent'],
+      });
+
+      if (!user) {
+        throw new NotFoundException(`User with ID ${userId} not found`);
+      }
+
+      if (!user.userStudent) {
+        throw new NotFoundException(
+          `Student profile not found for user ${userId}`,
+        );
+      }
+
+      // Update user data
+      if (updateData.user) {
+        const allowedUserFields: (keyof UpdateUserDto)[] = [
+          'username',
+          'email',
+          'phone',
+          'avatarUrl',
+          'twoFactorEnabled',
+        ];
+
+        allowedUserFields.forEach((field) => {
+          if (updateData.user[field] !== undefined) {
+            (user as any)[field] = updateData.user[field];
+          }
+        });
+
+        await queryRunner.manager.save(User, user);
+      }
+
+      // Update student data
+      if (updateData.student) {
+        Object.assign(user.userStudent, updateData.student);
+        await queryRunner.manager.save(UserStudent, user.userStudent);
+      }
+
+      await queryRunner.commitTransaction();
+
+      return {
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          phone: user.phone,
+          avatarUrl: user.avatarUrl,
+          role: user.role,
+          status: user.status,
+          twoFactorEnabled: user.twoFactorEnabled,
+        },
+        student: user.userStudent,
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new Error(`Failed to update student profile: ${error.message}`);
     } finally {
       await queryRunner.release();
     }

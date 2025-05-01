@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -32,6 +32,7 @@ import {
   Pagination,
   Tooltip,
   Badge,
+  Avatar,
 } from "@mui/material";
 import {
   Search,
@@ -44,74 +45,100 @@ import {
   Lock,
 } from "@mui/icons-material";
 import DialogDetailCourse from "../../components/admin/course/DialogDetailCourse";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import { selectCurrentUser } from "../../features/auth/authSelectors";
+import { selectAllCourses } from "../../features/courses/coursesSelector";
+import { fetchCategories } from "../../features/categories/categoriesApiSlice";
+import { fetchCourses } from "../../features/courses/coursesApiSlice";
+import { selectActiveCategories } from "../../features/categories/categoriesSelectors";
+import DialogAddEditCourse from "../../components/instructor/course/DialogAddEditCourse";
 
-// Mock data
-const mockCourses = Array(15)
-  .fill(null)
-  .map((_, index) => ({
-    id: index + 1,
-    title: `Khóa học ${index + 1}`,
-    category: [
-      "Web Development",
-      "Mobile Development",
-      "Data Science",
-      "DevOps",
-    ][index % 4],
-    instructor: `Giảng viên ${index + 1}`,
-    students: Math.floor(Math.random() * 200) + 50,
-    price: Math.floor(Math.random() * 500000) + 200000,
-    status: ["published", "draft", "archived"][index % 3],
-    isLocked: index % 5 === 0,
-    createdAt: new Date(
-      Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000
-    ).toISOString(),
-  }));
+interface Instructor {
+  id: string;
+  fullName: string;
+  user: {
+    avatarUrl?: string;
+  };
+}
+
+interface Category {
+  id: string;
+  name: string;
+  description?: string;
+  status?: string;
+  courseCount?: number;
+}
+
+interface Course {
+  id: number;
+  title: string;
+  description?: string;
+  categoryId: string;
+  instructorId: string;
+  price: string;
+  level: string;
+  status: string;
+  thumbnailUrl?: string;
+  startDate?: string;
+  endDate?: string;
+  category: Category;
+  instructor: Instructor;
+  enrollments?: { userId: string }[];
+  sections?: any[];
+  isLocked?: boolean;
+}
 
 const AdminCourses = () => {
+  const dispatch = useAppDispatch();
+  const currentUser = useAppSelector(selectCurrentUser);
+  const courses = useAppSelector(selectAllCourses);
+  const categories = useAppSelector(selectActiveCategories);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const [selectedCourse, setSelectedCourse] = useState<number | null>(null);
+  const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [openDetailDialog, setOpenDetailDialog] = useState(false);
   const [openLockDialog, setOpenLockDialog] = useState(false);
-  const [courses, setCourses] = useState(mockCourses);
-
+  const [openAddDialog, setOpenAddDialog] = useState(false);
   const rowsPerPage = 10;
 
-  // Handle menu open/close
+  useEffect(() => {
+    dispatch(fetchCategories());
+    dispatch(fetchCourses());
+  }, [dispatch, currentUser]);
+
+  console.log(categories);
+
   const handleMenuOpen = (
     event: React.MouseEvent<HTMLElement>,
-    courseId: number
+    course: Course
   ) => {
     setAnchorEl(event.currentTarget);
-    setSelectedCourse(courseId);
+    setSelectedCourse(course);
   };
 
   const handleMenuClose = () => {
     setAnchorEl(null);
   };
 
-  // Handle delete dialog
   const handleDeleteClick = () => {
     handleMenuClose();
     setOpenDeleteDialog(true);
   };
 
   const handleDeleteConfirm = () => {
-    console.log(`Deleting course with ID: ${selectedCourse}`);
+    console.log(`Deleting course with ID: ${selectedCourse?.id}`);
     setOpenDeleteDialog(false);
   };
 
-  // Xử lý mở dialog chi tiết
   const handleViewDetail = () => {
     handleMenuClose();
     setOpenDetailDialog(true);
   };
 
-  // Xử lý khóa/mở khóa khóa học
   const handleToggleLockClick = () => {
     handleMenuClose();
     setOpenLockDialog(true);
@@ -119,50 +146,45 @@ const AdminCourses = () => {
 
   const handleToggleLockConfirm = () => {
     if (selectedCourse) {
-      // Tìm khóa học trong danh sách
       const updatedCourses = courses.map((course) => {
-        if (course.id === selectedCourse) {
-          // Đảo ngược trạng thái khóa
+        if (course.id === selectedCourse.id) {
           return { ...course, isLocked: !course.isLocked };
         }
         return course;
       });
 
-      setCourses(updatedCourses);
       console.log(
-        `Đã ${
-          getSelectedCourse()?.isLocked ? "mở khóa" : "khóa"
-        } khóa học có ID: ${selectedCourse}`
+        `Đã ${selectedCourse.isLocked ? "mở khóa" : "khóa"} khóa học có ID: ${
+          selectedCourse.id
+        }`
       );
       setOpenLockDialog(false);
     }
   };
 
-  // Lấy thông tin khóa học đang được chọn
-  const getSelectedCourse = () => {
-    return courses.find((course) => course.id === selectedCourse);
+  const handleAddClick = () => {
+    setOpenAddDialog(true);
   };
 
-  // Filter courses
-  const filteredCourses = courses.filter((course) => {
-    const matchesSearch = course.title
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
-    const matchesCategory =
-      categoryFilter === "all" || course.category === categoryFilter;
-    const matchesStatus =
-      statusFilter === "all" || course.status === statusFilter;
+  const filteredCourses =
+    courses &&
+    courses.filter((course) => {
+      const matchesSearch = course.title
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+      const matchesCategory =
+        categoryFilter === "all" || course.category.name === categoryFilter;
+      const matchesStatus =
+        statusFilter === "all" || course.status === statusFilter;
 
-    return matchesSearch && matchesCategory && matchesStatus;
-  });
+      return matchesSearch && matchesCategory && matchesStatus;
+    });
 
-  // Pagination
   const paginatedCourses = filteredCourses.slice(
     (page - 1) * rowsPerPage,
     page * rowsPerPage
   );
 
-  // Helper for status chip
   const getStatusChip = (status: string) => {
     switch (status) {
       case "published":
@@ -176,13 +198,22 @@ const AdminCourses = () => {
     }
   };
 
+  const getStudentCount = (enrollments: { userId: string }[]) => {
+    return enrollments?.length || 0;
+  };
+
+  const formatPrice = (price: string) => {
+    return new Intl.NumberFormat("vi-VN").format(parseFloat(price));
+  };
+
+  console.log(selectedCourse);
+
   return (
     <Box>
       <Typography variant="h4" gutterBottom fontWeight="bold">
         Quản lý khóa học
       </Typography>
 
-      {/* Filters */}
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Grid container spacing={2} alignItems="center">
@@ -212,12 +243,22 @@ const AdminCourses = () => {
                   onChange={(e) => setCategoryFilter(e.target.value)}
                 >
                   <MenuItem value="all">Tất cả danh mục</MenuItem>
-                  <MenuItem value="Web Development">Web Development</MenuItem>
-                  <MenuItem value="Mobile Development">
-                    Mobile Development
-                  </MenuItem>
-                  <MenuItem value="Data Science">Data Science</MenuItem>
-                  <MenuItem value="DevOps">DevOps</MenuItem>
+                  {categories.map((category) => (
+                    <MenuItem
+                      key={category.id}
+                      value={category.name}
+                      sx={{ display: "flex", justifyContent: "space-between" }}
+                    >
+                      <Typography variant="body2">{category.name}</Typography>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ ml: 1 }}
+                      >
+                        ({category.courseCount})
+                      </Typography>
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
             </Grid>
@@ -243,7 +284,7 @@ const AdminCourses = () => {
                 variant="contained"
                 startIcon={<Add />}
                 fullWidth
-                onClick={() => console.log("Add new course")}
+                onClick={handleAddClick}
               >
                 Thêm mới
               </Button>
@@ -252,7 +293,6 @@ const AdminCourses = () => {
         </CardContent>
       </Card>
 
-      {/* Table */}
       <TableContainer component={Paper}>
         <Table>
           <TableHead>
@@ -267,34 +307,66 @@ const AdminCourses = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {paginatedCourses.map((course) => (
+            {paginatedCourses.map((course: Course) => (
               <TableRow key={course.id}>
                 <TableCell>
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    {course.isLocked && (
-                      <Tooltip title="Khóa học đã bị khóa">
-                        <Lock fontSize="small" color="error" sx={{ mr: 1 }} />
-                      </Tooltip>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                    {course.thumbnailUrl && (
+                      <Box
+                        component="img"
+                        src={course.thumbnailUrl}
+                        alt={course.title}
+                        sx={{ width: 40, height: 40, borderRadius: 1 }}
+                      />
                     )}
-                    <Typography variant="body2" fontWeight="medium">
-                      {course.title}
-                    </Typography>
+                    <Box>
+                      <Typography variant="body2" fontWeight="medium">
+                        {course.title}
+                      </Typography>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ display: "block" }}
+                      >
+                        {course.level === "beginner"
+                          ? "Cơ bản"
+                          : course.level === "intermediate"
+                          ? "Trung cấp"
+                          : "Nâng cao"}
+                      </Typography>
+                    </Box>
                   </Box>
                 </TableCell>
                 <TableCell>
-                  <Chip label={course.category} size="small" />
+                  <Chip
+                    label={course.category?.name || "N/A"}
+                    size="small"
+                    variant="outlined"
+                  />
                 </TableCell>
-                <TableCell>{course.instructor}</TableCell>
-                <TableCell align="center">{course.students}</TableCell>
+                <TableCell>
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <Avatar
+                      src={course.instructor?.user?.avatarUrl}
+                      sx={{ width: 24, height: 24 }}
+                    >
+                      {course.instructor?.fullName?.charAt(0)}
+                    </Avatar>
+                    {course.instructor?.fullName}
+                  </Box>
+                </TableCell>
+                <TableCell align="center">
+                  {getStudentCount(course.enrollments || [])}
+                </TableCell>
                 <TableCell align="right">
-                  {new Intl.NumberFormat("vi-VN").format(course.price)} đ
+                  {formatPrice(course.price)} đ
                 </TableCell>
                 <TableCell align="center">
                   {getStatusChip(course.status)}
                 </TableCell>
                 <TableCell align="center">
                   <IconButton
-                    onClick={(e) => handleMenuOpen(e, course.id)}
+                    onClick={(e) => handleMenuOpen(e, course)}
                     size="small"
                   >
                     <MoreVert />
@@ -306,7 +378,6 @@ const AdminCourses = () => {
         </Table>
       </TableContainer>
 
-      {/* Pagination */}
       <Box
         sx={{
           display: "flex",
@@ -322,7 +393,6 @@ const AdminCourses = () => {
         />
       </Box>
 
-      {/* Action Menu */}
       <Menu
         anchorEl={anchorEl}
         open={Boolean(anchorEl)}
@@ -334,22 +404,16 @@ const AdminCourses = () => {
           </ListItemIcon>
           <ListItemText>Xem chi tiết</ListItemText>
         </MenuItem>
-        <MenuItem onClick={handleMenuClose}>
-          <ListItemIcon>
-            <Edit fontSize="small" />
-          </ListItemIcon>
-          <ListItemText>Chỉnh sửa</ListItemText>
-        </MenuItem>
         <MenuItem onClick={handleToggleLockClick}>
           <ListItemIcon>
-            {getSelectedCourse()?.isLocked ? (
+            {selectedCourse?.isLocked ? (
               <LockOpen fontSize="small" color="success" />
             ) : (
               <Lock fontSize="small" color="warning" />
             )}
           </ListItemIcon>
           <ListItemText>
-            {getSelectedCourse()?.isLocked ? "Mở khóa" : "Khóa khóa học"}
+            {selectedCourse?.isLocked ? "Mở khóa" : "Khóa khóa học"}
           </ListItemText>
         </MenuItem>
         <MenuItem onClick={handleDeleteClick} sx={{ color: "error.main" }}>
@@ -360,7 +424,6 @@ const AdminCourses = () => {
         </MenuItem>
       </Menu>
 
-      {/* Delete Confirmation Dialog */}
       <Dialog
         open={openDeleteDialog}
         onClose={() => setOpenDeleteDialog(false)}
@@ -380,16 +443,15 @@ const AdminCourses = () => {
         </DialogActions>
       </Dialog>
 
-      {/* Lock Confirmation Dialog */}
       <Dialog open={openLockDialog} onClose={() => setOpenLockDialog(false)}>
         <DialogTitle>
-          {getSelectedCourse()?.isLocked
+          {selectedCourse?.isLocked
             ? "Xác nhận mở khóa"
             : "Xác nhận khóa khóa học"}
         </DialogTitle>
         <DialogContent>
           <DialogContentText>
-            {getSelectedCourse()?.isLocked
+            {selectedCourse?.isLocked
               ? "Khi mở khóa, học viên sẽ có thể tiếp tục học và truy cập vào khóa học này. Bạn có chắc chắn muốn mở khóa khóa học này không?"
               : "Khi khóa khóa học, học viên sẽ không thể tiếp tục học hoặc truy cập vào khóa học này. Bạn có chắc chắn muốn khóa khóa học này không?"}
           </DialogContentText>
@@ -398,19 +460,24 @@ const AdminCourses = () => {
           <Button onClick={() => setOpenLockDialog(false)}>Hủy</Button>
           <Button
             onClick={handleToggleLockConfirm}
-            color={getSelectedCourse()?.isLocked ? "success" : "warning"}
+            color={selectedCourse?.isLocked ? "success" : "warning"}
             autoFocus
           >
-            {getSelectedCourse()?.isLocked ? "Mở khóa" : "Khóa"}
+            {selectedCourse?.isLocked ? "Mở khóa" : "Khóa"}
           </Button>
         </DialogActions>
       </Dialog>
 
-      {/* Course Detail Dialog */}
       <DialogDetailCourse
         open={openDetailDialog}
         onClose={() => setOpenDetailDialog(false)}
-        courseId={selectedCourse}
+        course={selectedCourse}
+      />
+
+      <DialogAddEditCourse
+        open={openAddDialog}
+        onClose={() => setOpenAddDialog(false)}
+        editMode={false}
       />
     </Box>
   );

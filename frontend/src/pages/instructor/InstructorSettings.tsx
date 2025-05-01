@@ -17,6 +17,8 @@ import {
   DialogContent,
   DialogActions,
   DialogContentText,
+  LinearProgress,
+  CircularProgress,
 } from "@mui/material";
 import {
   Edit,
@@ -35,8 +37,10 @@ import { UpdateInstructorProfileData } from "../../types/user-instructor.types";
 import {
   fetchUserById,
   updateInstructorProfile,
+  changePassword,
 } from "../../features/users/usersApiSlice";
 import { selectUserId } from "../../features/users/usersSelectors";
+import { uploadImageToCloudinary } from "../../utils/uploadImage";
 
 // Tạo component TextField tùy chỉnh
 const StyledTextField = (props: TextFieldProps) => (
@@ -62,20 +66,44 @@ const InstructorSettings = () => {
   const currentUser = useAppSelector(selectUserId);
   const [showAlert, setShowAlert] = useState(false);
   const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
-
-  // Get instructor first
-  const instructor = currentUserLocal?.userInstructor;
+  const [isUploading, setIsUploading] = useState(false);
+  const [instructor, setInstructor] = useState<any>(null);
+  const [previewImage, setPreviewImage] = useState<string | null>(null);
+  const [previewDialogOpen, setPreviewDialogOpen] = useState(false);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
+    dispatch(fetchUserById(currentUserLocal.id));
+  }, [dispatch, navigate]);
+
+  useEffect(() => {
+    const instructorData = currentUser?.userInstructor;
+    setInstructor(instructorData);
     localStorage.setItem("user", JSON.stringify(currentUser));
   }, [currentUser]);
+
+  const [editMode, setEditMode] = useState<{
+    account: boolean;
+    basic: boolean;
+    education: boolean;
+    contact: boolean;
+    payment: boolean;
+    password: boolean;
+  }>({
+    account: false,
+    basic: false,
+    education: false,
+    contact: false,
+    payment: false,
+    password: false,
+  });
 
   // Then use it in useState initialization
   const [formData, setFormData] = useState<UpdateInstructorProfileData>({
     user: {
-      username: currentUserLocal?.username || "",
-      email: currentUserLocal?.email || "",
-      phone: currentUserLocal?.phone || "",
+      username: currentUser?.username || "",
+      email: currentUser?.email || "",
+      phone: currentUser?.phone || "",
     },
     instructor: {
       fullName: instructor?.fullName || "",
@@ -91,18 +119,11 @@ const InstructorSettings = () => {
     },
   });
 
-  const [editMode, setEditMode] = useState<{
-    account: boolean;
-    basic: boolean;
-    education: boolean;
-    contact: boolean;
-    payment: boolean;
-  }>({
-    account: false,
-    basic: false,
-    education: false,
-    contact: false,
-    payment: false,
+  // Add new state
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
   });
 
   // Add useEffect to update formData when instructor data changes
@@ -110,6 +131,11 @@ const InstructorSettings = () => {
     if (instructor) {
       setFormData((prev) => ({
         ...prev,
+        user: {
+          username: currentUser?.username || "",
+          email: currentUser?.email || "",
+          phone: currentUser?.phone || "",
+        },
         instructor: {
           fullName: instructor.fullName || "",
           professionalTitle: instructor.professionalTitle || "",
@@ -181,7 +207,7 @@ const InstructorSettings = () => {
 
     setIsSubmitting(true);
     try {
-      if (!currentUserLocal?.id) return;
+      if (!currentUser?.id) return;
       if (!validateSection(section)) return;
 
       const dataToUpdate = {
@@ -222,19 +248,140 @@ const InstructorSettings = () => {
 
       await dispatch(
         updateInstructorProfile({
-          userId: currentUserLocal.id,
+          userId: currentUser.id,
           data: dataToUpdate,
         })
       ).unwrap();
 
       console.log(dataToUpdate);
 
-      dispatch(fetchUserById(currentUserLocal.id));
+      dispatch(fetchUserById(currentUser.id));
       setEditMode({ ...editMode, [section]: false });
       setShowAlert(true);
       setTimeout(() => setShowAlert(false), 3000);
     } catch (error) {
       console.error("Error updating profile:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleImageUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (!file || !currentUser?.id) return;
+
+    // Check file size (e.g., max 5MB)
+    const maxSize = 5 * 1024 * 1024; // 5MB
+    if (file.size > maxSize) {
+      alert("File quá lớn. Vui lòng chọn file nhỏ hơn 5MB.");
+      return;
+    }
+
+    // Check file type
+    const validTypes = ["image/jpeg", "image/png", "image/jpg"];
+    if (!validTypes.includes(file.type)) {
+      alert("Chỉ chấp nhận file ảnh định dạng JPG, JPEG hoặc PNG.");
+      return;
+    }
+
+    // Create preview and store file
+    const reader = new FileReader();
+    reader.onload = () => {
+      setPreviewImage(reader.result as string);
+      setPreviewDialogOpen(true);
+    };
+    reader.readAsDataURL(file);
+    setSelectedFile(file);
+  };
+
+  const handleConfirmUpload = async () => {
+    if (!selectedFile || !currentUser?.id) return;
+
+    setIsUploading(true);
+    try {
+      // Upload to Cloudinary
+      const imageUrl = await uploadImageToCloudinary(selectedFile);
+
+      // Update user profile with new avatar URL
+      const dataToUpdate = {
+        user: {
+          avatarUrl: imageUrl,
+        },
+        instructor: {},
+      } as UpdateInstructorProfileData;
+
+      await dispatch(
+        updateInstructorProfile({
+          userId: currentUser.id,
+          data: dataToUpdate,
+        })
+      ).unwrap();
+
+      // Refresh user data
+      dispatch(fetchUserById(currentUser.id));
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 3000);
+
+      // Close dialog and clean up
+      setPreviewDialogOpen(false);
+      setPreviewImage(null);
+      setSelectedFile(null);
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      alert("Failed to upload image. Please try again.");
+    } finally {
+      setIsUploading(false);
+    }
+  };
+
+  // Add password change handler
+  const handleChangePassword = async () => {
+    if (isSubmitting) return;
+
+    // Validate passwords
+    if (
+      !passwordData.currentPassword ||
+      !passwordData.newPassword ||
+      !passwordData.confirmPassword
+    ) {
+      alert("Vui lòng điền đầy đủ thông tin");
+      return;
+    }
+
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      alert("Mật khẩu mới và xác nhận mật khẩu không khớp");
+      return;
+    }
+
+    if (passwordData.newPassword.length < 6) {
+      alert("Mật khẩu mới phải có ít nhất 6 ký tự");
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await dispatch(
+        changePassword({
+          userId: currentUser.id,
+          data: passwordData,
+        })
+      ).unwrap();
+
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 3000);
+      setEditMode({ ...editMode, password: false });
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: "",
+      });
+    } catch (error) {
+      console.error("Error changing password:", error);
+      alert(
+        "Không thể thay đổi mật khẩu. Vui lòng kiểm tra lại mật khẩu hiện tại."
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -255,7 +402,7 @@ const InstructorSettings = () => {
         }}
       >
         <Box>
-          <Typography variant="h4" gutterBottom fontWeight="bold">
+          <Typography variant="h5" gutterBottom fontWeight="bold">
             Cài đặt tài khoản
           </Typography>
           <Typography variant="body1" color="text.secondary">
@@ -285,7 +432,9 @@ const InstructorSettings = () => {
             boxShadow: 2,
           }}
         >
-          Cập nhật thành công!
+          {isUploading
+            ? "Cập nhật ảnh đại diện thành công!"
+            : "Cập nhật thành công!"}
         </Alert>
       )}
 
@@ -297,11 +446,7 @@ const InstructorSettings = () => {
             <Card sx={{ p: 3 }}>
               <Box sx={{ textAlign: "center", mb: 3 }}>
                 <Avatar
-                  src={
-                    currentUserLocal?.avatarUrl
-                      ? `/avatars/${currentUserLocal.avatarUrl}`
-                      : undefined
-                  }
+                  src={currentUser?.avatarUrl}
                   sx={{
                     width: 120,
                     height: 120,
@@ -322,10 +467,22 @@ const InstructorSettings = () => {
                 variant="outlined"
                 component="label"
                 startIcon={<PhotoCamera />}
+                disabled={isUploading}
               >
-                Thay đổi ảnh
-                <input type="file" hidden accept="image/*" />
+                {isUploading ? "Đang tải lên..." : "Thay đổi ảnh"}
+                <input
+                  type="file"
+                  hidden
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  disabled={isUploading}
+                />
               </Button>
+              {isUploading && (
+                <Box sx={{ width: "100%", mt: 2 }}>
+                  <LinearProgress />
+                </Box>
+              )}
             </Card>
 
             {/* Account Status Card */}
@@ -342,14 +499,12 @@ const InstructorSettings = () => {
                     </Typography>
                     <Chip
                       label={
-                        currentUserLocal?.status === "active"
+                        currentUser?.status === "active"
                           ? "Đang hoạt động"
                           : "Đã khóa"
                       }
                       color={
-                        currentUserLocal?.status === "active"
-                          ? "success"
-                          : "error"
+                        currentUser?.status === "active" ? "success" : "error"
                       }
                       sx={{ width: "100%" }}
                     />
@@ -360,14 +515,10 @@ const InstructorSettings = () => {
                     </Typography>
                     <Chip
                       label={
-                        currentUserLocal?.twoFactorEnabled
-                          ? "Đã bật"
-                          : "Chưa bật"
+                        currentUser?.twoFactorEnabled ? "Đã bật" : "Chưa bật"
                       }
                       color={
-                        currentUserLocal?.twoFactorEnabled
-                          ? "success"
-                          : "warning"
+                        currentUser?.twoFactorEnabled ? "success" : "warning"
                       }
                       sx={{ width: "100%" }}
                     />
@@ -682,6 +833,96 @@ const InstructorSettings = () => {
                 )}
               </Stack>
             </Card>
+
+            {/* Password Change */}
+            <Card sx={{ p: 3 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  mb: 3,
+                }}
+              >
+                <Security color="primary" />
+                <Typography variant="h6">Đổi mật khẩu</Typography>
+                <Box flexGrow={1} />
+                <IconButton
+                  onClick={() =>
+                    setEditMode({ ...editMode, password: !editMode.password })
+                  }
+                  color={editMode.password ? "primary" : "default"}
+                >
+                  <Edit />
+                </IconButton>
+              </Box>
+              <Stack spacing={3}>
+                <StyledTextField
+                  fullWidth
+                  type="password"
+                  label="Mật khẩu hiện tại"
+                  value={passwordData.currentPassword}
+                  onChange={(e) =>
+                    setPasswordData((prev) => ({
+                      ...prev,
+                      currentPassword: e.target.value,
+                    }))
+                  }
+                  disabled={!editMode.password}
+                />
+                <StyledTextField
+                  fullWidth
+                  type="password"
+                  label="Mật khẩu mới"
+                  value={passwordData.newPassword}
+                  onChange={(e) =>
+                    setPasswordData((prev) => ({
+                      ...prev,
+                      newPassword: e.target.value,
+                    }))
+                  }
+                  disabled={!editMode.password}
+                />
+                <StyledTextField
+                  fullWidth
+                  type="password"
+                  label="Xác nhận mật khẩu mới"
+                  value={passwordData.confirmPassword}
+                  onChange={(e) =>
+                    setPasswordData((prev) => ({
+                      ...prev,
+                      confirmPassword: e.target.value,
+                    }))
+                  }
+                  disabled={!editMode.password}
+                />
+                {editMode.password && (
+                  <Box
+                    sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}
+                  >
+                    <Button
+                      onClick={() => {
+                        setEditMode({ ...editMode, password: false });
+                        setPasswordData({
+                          currentPassword: "",
+                          newPassword: "",
+                          confirmPassword: "",
+                        });
+                      }}
+                    >
+                      Hủy
+                    </Button>
+                    <Button
+                      variant="contained"
+                      onClick={handleChangePassword}
+                      disabled={isSubmitting}
+                    >
+                      {isSubmitting ? "Đang xử lý..." : "Đổi mật khẩu"}
+                    </Button>
+                  </Box>
+                )}
+              </Stack>
+            </Card>
           </Stack>
         </Grid>
       </Grid>
@@ -701,6 +942,68 @@ const InstructorSettings = () => {
           <Button onClick={() => setLogoutDialogOpen(false)}>Hủy</Button>
           <Button onClick={handleLogout} color="error" variant="contained">
             Đăng xuất
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Avatar Preview Dialog */}
+      <Dialog
+        open={previewDialogOpen}
+        onClose={() => {
+          setPreviewDialogOpen(false);
+          setPreviewImage(null);
+          setSelectedFile(null);
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <PhotoCamera color="primary" />
+            <Typography variant="h6">Xem trước ảnh đại diện</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: "column",
+              alignItems: "center",
+              gap: 2,
+              my: 2,
+            }}
+          >
+            <Avatar
+              src={previewImage || ""}
+              sx={{
+                width: 200,
+                height: 200,
+                boxShadow: 2,
+              }}
+            />
+            <Typography variant="body2" color="text.secondary">
+              Xác nhận thay đổi ảnh đại diện?
+            </Typography>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setPreviewDialogOpen(false);
+              setPreviewImage(null);
+              setSelectedFile(null);
+            }}
+          >
+            Hủy
+          </Button>
+          <Button
+            onClick={handleConfirmUpload}
+            variant="contained"
+            color="primary"
+            disabled={isUploading}
+            startIcon={isUploading ? <CircularProgress size={20} /> : undefined}
+          >
+            {isUploading ? "Đang tải lên..." : "Xác nhận"}
           </Button>
         </DialogActions>
       </Dialog>

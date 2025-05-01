@@ -28,7 +28,7 @@ import {
 } from "@mui/icons-material";
 import CustomContainer from "../../components/common/CustomContainer";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
-import { login } from "../../features/auth/authApiSlice";
+import { login, logout } from "../../features/auth/authApiSlice";
 import { toast, ToastContainer } from "react-toastify";
 import { selectCurrentUser } from "../../features/auth/authSelectors";
 
@@ -46,9 +46,15 @@ const InstructorLogin = () => {
 
   useEffect(() => {
     if (currentUser) {
-      navigate("/instructor");
+      if (currentUser.role === "instructor") {
+        navigate("/instructor");
+      } else {
+        dispatch(logout());
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+      }
     }
-  }, [currentUser]);
+  }, [currentUser, navigate, dispatch]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -66,15 +72,25 @@ const InstructorLogin = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError(null);
-    dispatch(login(formData)).then((res) => {
-      if (res.payload.error) {
-        toast.error("Sai email hoặc mật khẩu !");
+
+    try {
+      const result = await dispatch(login(formData)).unwrap();
+
+      if (result.error) {
+        toast.error("Sai email hoặc mật khẩu!");
+        return;
       }
 
-      if (res.payload.user.role == "instructor") {
-        navigate("/instructor");
+      if (result.user.role !== "instructor") {
+        dispatch(logout());
+        localStorage.removeItem("token");
+        localStorage.removeItem("user");
+        toast.error("Tài khoản không có quyền truy cập!");
+        return;
       }
-    });
+    } catch (error) {
+      toast.error("Đã có lỗi xảy ra!");
+    }
   };
 
   return (

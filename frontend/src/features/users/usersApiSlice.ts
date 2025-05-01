@@ -3,6 +3,10 @@ import { api } from "../../services/api";
 import { User } from "../../types/user.types";
 import { AcademicClassCourse } from "../../types/academic-class-course.types";
 import { UpdateInstructorProfileData } from "../../types/user-instructor.types";
+import {
+  UpdateStudentData,
+  UpdateUserData,
+} from "../../types/user-student.types";
 
 export interface UsersState {
   users: User[];
@@ -213,6 +217,67 @@ export const updateInstructorProfile = createAsyncThunk(
   }
 );
 
+// Change password
+export const changePassword = createAsyncThunk(
+  "users/changePassword",
+  async (
+    {
+      userId,
+      data,
+    }: {
+      userId: number;
+      data: {
+        currentPassword: string;
+        newPassword: string;
+        confirmPassword: string;
+      };
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await api.patch(
+        `/users/${userId}/change-password`,
+        data
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to change password"
+      );
+    }
+  }
+);
+
+// Add to existing thunks
+export const updateStudentProfile = createAsyncThunk(
+  "users/updateStudentProfile",
+  async (
+    {
+      userId,
+      data,
+    }: {
+      userId: number;
+      data: {
+        user: UpdateUserData;
+        student: UpdateStudentData;
+      };
+    },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await api.patch(
+        `/users/${userId}/student-profile`,
+        data
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update profile"
+      );
+    }
+  }
+);
+
 const usersSlice = createSlice({
   name: "users",
   initialState,
@@ -364,6 +429,29 @@ const usersSlice = createSlice({
         state.error = null;
       })
       .addCase(updateInstructorProfile.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
+
+      // Update student profile
+      .addCase(updateStudentProfile.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(updateStudentProfile.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        if (state.currentUser) {
+          state.currentUser = {
+            ...state.currentUser,
+            ...action.payload.user,
+            userStudent: {
+              ...state.currentUser.userStudent,
+              ...action.payload.student,
+            },
+          };
+        }
+        state.error = null;
+      })
+      .addCase(updateStudentProfile.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
       });

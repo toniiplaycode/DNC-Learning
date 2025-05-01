@@ -36,8 +36,14 @@ export class CoursesService {
           },
           documents: true,
         },
-        reviews: true,
-        enrollments: true,
+        reviews: {
+          student: {
+            user: true,
+          },
+        },
+        enrollments: {
+          user: true,
+        },
       },
       select: {
         instructor: {
@@ -58,7 +64,31 @@ export class CoursesService {
           description: true,
         },
         enrollments: {
+          id: true,
           userId: true,
+          enrollmentDate: true,
+          status: true,
+          user: {
+            id: true,
+            username: true,
+            email: true,
+            avatarUrl: true,
+          },
+        },
+        reviews: {
+          id: true,
+          rating: true,
+          reviewText: true,
+          createdAt: true,
+          student: {
+            id: true,
+            fullName: true,
+            user: {
+              id: true,
+              username: true,
+              avatarUrl: true,
+            },
+          },
         },
       },
     });

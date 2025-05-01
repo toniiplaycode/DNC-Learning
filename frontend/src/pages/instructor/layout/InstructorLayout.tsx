@@ -116,14 +116,23 @@ const InstructorLayout = () => {
     useState("");
 
   useEffect(() => {
-    if (currentUser?.role !== "instructor") {
-      navigate("/instructor/login");
+    // Skip auth check for login page
+    if (location.pathname === "/instructor/login") {
+      return;
     }
-    if (currentUser?.id) {
+
+    // If not logged in or not instructor, redirect to login
+    if (!currentUser || currentUser.role !== "instructor") {
+      navigate("/instructor/login");
+      return;
+    }
+
+    // Only fetch data if user is instructor
+    if (currentUser.id) {
       dispatch(fetchUserNotifications(currentUser.id));
       dispatch(fetchMessagesByUser(currentUser.id));
     }
-  }, [currentUser, navigate]);
+  }, [currentUser, navigate, location.pathname, dispatch]);
 
   useEffect(() => {
     // Kiểm tra xem có phải admin đang impersonate không
@@ -388,6 +397,16 @@ const InstructorLayout = () => {
       </List>
     </Box>
   );
+
+  // Add early return if on login page
+  if (location.pathname === "/instructor/login") {
+    return <Outlet />;
+  }
+
+  // Add early return if not authenticated
+  if (!currentUser || currentUser.role !== "instructor") {
+    return null;
+  }
 
   return (
     <Box sx={{ display: "flex" }}>

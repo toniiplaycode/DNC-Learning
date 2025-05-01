@@ -15,6 +15,8 @@ import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateInstructorDto } from './dto/update-instructor.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateStudentDto } from './dto/update-student.dto';
 
 @Controller('users')
 export class UsersController {
@@ -81,6 +83,15 @@ export class UsersController {
     return this.usersService.findStudentsByAcademicClassId(classId);
   }
 
+  @Patch(':userId/change-password')
+  @UseGuards(JwtAuthGuard)
+  async changePassword(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Body() changePasswordDto: ChangePasswordDto,
+  ) {
+    return this.usersService.changePassword(userId, changePasswordDto);
+  }
+
   @Patch(':userId/instructor-profile')
   @Roles(UserRole.INSTRUCTOR)
   async updateInstructorProfile(
@@ -93,5 +104,19 @@ export class UsersController {
   ) {
     console.log('updateData', updateData);
     return this.usersService.updateInstructorProfile(userId, updateData);
+  }
+
+  @Patch(':userId/student-profile')
+  @UseGuards(JwtAuthGuard)
+  @Roles(UserRole.STUDENT)
+  async updateStudentProfile(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Body()
+    updateData: {
+      user: UpdateUserDto;
+      student: UpdateStudentDto;
+    },
+  ) {
+    return this.usersService.updateStudentProfile(userId, updateData);
   }
 }

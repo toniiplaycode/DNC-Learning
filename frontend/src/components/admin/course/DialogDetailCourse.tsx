@@ -43,186 +43,45 @@ import {
   Star,
   Download,
   Visibility,
+  Slideshow,
+  Code,
 } from "@mui/icons-material";
+import { Course } from "../../../types/course.types";
 
 interface DialogDetailCourseProps {
   open: boolean;
   onClose: () => void;
-  courseId: number | null;
+  course: Course | null;
 }
 
-// Mock data cho một khóa học cụ thể
-const mockCourseDetail = {
-  id: 1,
-  title: "React & TypeScript Masterclass",
-  description:
-    "Khóa học toàn diện về React và TypeScript, từ cơ bản đến nâng cao. Học cách xây dựng ứng dụng web hiện đại với các công nghệ tiên tiến.",
-  category: "Web Development",
-  instructor: {
-    id: 101,
-    name: "Nguyễn Văn A",
-    avatar: "/src/assets/avatar.png",
-    email: "nguyenvana@example.com",
-  },
-  price: 499000,
-  duration: "30 giờ",
-  level: "Trung cấp",
-  status: "published",
-  students: 234,
-  rating: 4.8,
-  totalRatings: 150,
-  thumbnail: "/src/assets/logo.png",
-  createdAt: "2024-03-15T00:00:00Z",
-  lastUpdated: "2024-04-10T00:00:00Z",
-  sections: [
-    {
-      id: 1,
-      title: "Giới thiệu về React",
-      description: "Làm quen với thư viện React và các khái niệm cơ bản",
-      lessons: [
-        {
-          id: 101,
-          title: "React là gì?",
-          type: "video",
-          duration: "10:30",
-        },
-        {
-          id: 102,
-          title: "Cài đặt môi trường phát triển",
-          type: "video",
-          duration: "15:45",
-        },
-      ],
-      documents: [
-        {
-          id: 201,
-          title: "Tổng quan về React",
-          fileType: "pdf",
-        },
-      ],
-    },
-    {
-      id: 2,
-      title: "TypeScript cơ bản",
-      description: "Nền tảng TypeScript cho lập trình viên React",
-      lessons: [
-        {
-          id: 103,
-          title: "Giới thiệu TypeScript",
-          type: "video",
-          duration: "12:20",
-        },
-        {
-          id: 104,
-          title: "Kiểu dữ liệu trong TypeScript",
-          type: "video",
-          duration: "18:10",
-        },
-      ],
-      documents: [
-        {
-          id: 202,
-          title: "TypeScript Cheat Sheet",
-          fileType: "pdf",
-        },
-      ],
-      quizzes: [
-        {
-          id: 301,
-          title: "Kiểm tra kiến thức TypeScript",
-          questions: 10,
-          duration: "20 phút",
-        },
-      ],
-    },
-    {
-      id: 3,
-      title: "React Hooks",
-      description: "Tìm hiểu về các hooks phổ biến trong React",
-      lessons: [
-        {
-          id: 105,
-          title: "useState và useEffect",
-          type: "video",
-          duration: "22:15",
-        },
-        {
-          id: 106,
-          title: "useContext và useReducer",
-          type: "video",
-          duration: "25:30",
-        },
-      ],
-      assignments: [
-        {
-          id: 401,
-          title: "Xây dựng ứng dụng Todo với Hooks",
-          deadline: "2024-05-01",
-          submissions: 120,
-        },
-      ],
-    },
-  ],
-  students: [
-    {
-      id: 1001,
-      name: "Trần Văn B",
-      avatar: "/src/assets/avatar.png",
-      enrollDate: "2024-03-20",
-      progress: 65,
-    },
-    {
-      id: 1002,
-      name: "Lê Thị C",
-      avatar: "/src/assets/avatar.png",
-      enrollDate: "2024-03-22",
-      progress: 48,
-    },
-    {
-      id: 1003,
-      name: "Phạm Văn D",
-      avatar: "/src/assets/avatar.png",
-      enrollDate: "2024-03-25",
-      progress: 72,
-    },
-  ],
-  reviews: [
-    {
-      id: 2001,
-      student: "Trần Văn B",
-      avatar: "/src/assets/avatar.png",
-      rating: 5,
-      comment:
-        "Khóa học rất chi tiết và dễ hiểu. Giảng viên giải thích rõ ràng.",
-      date: "2024-04-05",
-    },
-    {
-      id: 2002,
-      student: "Lê Thị C",
-      avatar: "/src/assets/avatar.png",
-      rating: 4,
-      comment: "Nội dung tốt, có thể bổ sung thêm bài tập thực hành.",
-      date: "2024-04-08",
-    },
-  ],
-};
-
+// Update the component to display the data correctly
 const DialogDetailCourse: React.FC<DialogDetailCourseProps> = ({
   open,
   onClose,
-  courseId,
+  course,
 }) => {
   const [activeTab, setActiveTab] = useState(0);
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
-    setActiveTab(newValue);
+  if (!course) return null;
+
+  const formatLevel = (level: string) => {
+    switch (level) {
+      case "beginner":
+        return "Cơ bản";
+      case "intermediate":
+        return "Trung cấp";
+      case "advanced":
+        return "Nâng cao";
+      default:
+        return level;
+    }
   };
 
-  // Nếu không có courseId, không hiển thị nội dung
-  if (!courseId) return null;
-
-  // Trong thực tế, sẽ fetch data dựa trên courseId
-  const course = mockCourseDetail;
+  const calculateAverageRating = () => {
+    if (!course.reviews || course.reviews.length === 0) return 0;
+    const sum = course.reviews.reduce((acc, review) => acc + review.rating, 0);
+    return (sum / course.reviews.length).toFixed(1);
+  };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="lg" fullWidth>
@@ -240,7 +99,6 @@ const DialogDetailCourse: React.FC<DialogDetailCourseProps> = ({
       </DialogTitle>
 
       <DialogContent dividers>
-        {/* Header section with course basic info */}
         <Box sx={{ mb: 3 }}>
           <Grid container spacing={2}>
             <Grid item xs={12} md={8}>
@@ -249,43 +107,37 @@ const DialogDetailCourse: React.FC<DialogDetailCourseProps> = ({
               </Typography>
               <Stack direction="row" spacing={1} sx={{ mb: 1 }}>
                 <Chip
-                  label={course.category}
+                  label={course.category.name}
                   color="primary"
                   variant="outlined"
                   size="small"
                 />
                 <Chip
-                  label={course.level}
+                  label={formatLevel(course.level)}
                   color="default"
                   variant="outlined"
                   size="small"
                 />
                 <Chip
                   label={
-                    course.status === "published"
-                      ? "Đã xuất bản"
-                      : course.status === "draft"
-                      ? "Bản nháp"
-                      : "Đã lưu trữ"
+                    course.status === "published" ? "Đã xuất bản" : "Bản nháp"
                   }
-                  color={
-                    course.status === "published"
-                      ? "success"
-                      : course.status === "draft"
-                      ? "warning"
-                      : "error"
-                  }
+                  color={course.status === "published" ? "success" : "warning"}
                   size="small"
                 />
               </Stack>
               <Typography variant="body2" color="text.secondary">
                 Cập nhật:{" "}
-                {new Date(course.lastUpdated).toLocaleDateString("vi-VN")}
+                {new Date(course.updatedAt).toLocaleDateString("vi-VN")}
               </Typography>
             </Grid>
+
             <Grid item xs={12} md={4} sx={{ textAlign: { md: "right" } }}>
               <Typography variant="h6" color="primary" gutterBottom>
-                {new Intl.NumberFormat("vi-VN").format(course.price)} đ
+                {new Intl.NumberFormat("vi-VN").format(
+                  parseFloat(course.price)
+                )}{" "}
+                đ
               </Typography>
               <Stack
                 direction="row"
@@ -295,18 +147,21 @@ const DialogDetailCourse: React.FC<DialogDetailCourseProps> = ({
                 <Stack direction="row" alignItems="center" spacing={0.5}>
                   <Person fontSize="small" />
                   <Typography variant="body2">
-                    {course.students.length} học viên
+                    {course.enrollments.length} học viên
                   </Typography>
                 </Stack>
-                <Stack direction="row" alignItems="center" spacing={0.5}>
-                  <Star fontSize="small" />
-                  <Typography variant="body2">
-                    {course.rating} ({course.totalRatings})
-                  </Typography>
-                </Stack>
+                {course.reviews.length > 0 && (
+                  <Stack direction="row" alignItems="center" spacing={0.5}>
+                    <Star fontSize="small" />
+                    <Typography variant="body2">
+                      {calculateAverageRating()} ({course.reviews.length})
+                    </Typography>
+                  </Stack>
+                )}
               </Stack>
             </Grid>
           </Grid>
+
           <Divider sx={{ my: 2 }} />
           <Typography variant="body1">{course.description}</Typography>
 
@@ -314,13 +169,16 @@ const DialogDetailCourse: React.FC<DialogDetailCourseProps> = ({
             <CardContent>
               <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
                 <Box sx={{ display: "flex", alignItems: "center" }}>
-                  <Avatar src={course.instructor.avatar} sx={{ mr: 1 }} />
+                  <Avatar
+                    src={course.instructor.user.avatarUrl}
+                    sx={{ mr: 1 }}
+                  />
                   <Box>
                     <Typography variant="subtitle1">
-                      {course.instructor.name}
+                      {course.instructor.fullName}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
-                      {course.instructor.email}
+                      {course.instructor.user.email}
                     </Typography>
                   </Box>
                 </Box>
@@ -336,13 +194,14 @@ const DialogDetailCourse: React.FC<DialogDetailCourseProps> = ({
                   <Grid container spacing={1}>
                     <Grid item xs={6}>
                       <Typography variant="body2" color="text.secondary">
-                        Thời lượng: {course.duration}
+                        Ngày bắt đầu:{" "}
+                        {new Date(course.startDate).toLocaleDateString("vi-VN")}
                       </Typography>
                     </Grid>
                     <Grid item xs={6}>
                       <Typography variant="body2" color="text.secondary">
-                        Ngày tạo:{" "}
-                        {new Date(course.createdAt).toLocaleDateString("vi-VN")}
+                        Ngày kết thúc:{" "}
+                        {new Date(course.endDate).toLocaleDateString("vi-VN")}
                       </Typography>
                     </Grid>
                   </Grid>
@@ -352,12 +211,11 @@ const DialogDetailCourse: React.FC<DialogDetailCourseProps> = ({
           </Card>
         </Box>
 
-        {/* Tabs for different sections */}
         <Box sx={{ width: "100%" }}>
           <Box sx={{ borderBottom: 1, borderColor: "divider" }}>
             <Tabs
               value={activeTab}
-              onChange={handleTabChange}
+              onChange={(event, newValue) => setActiveTab(newValue)}
               variant="scrollable"
               scrollButtons="auto"
             >
@@ -367,7 +225,6 @@ const DialogDetailCourse: React.FC<DialogDetailCourseProps> = ({
             </Tabs>
           </Box>
 
-          {/* Content Tab */}
           <TabPanel value={activeTab} index={0}>
             <Stack spacing={3}>
               {course.sections.map((section) => (
@@ -385,7 +242,6 @@ const DialogDetailCourse: React.FC<DialogDetailCourseProps> = ({
                     </Typography>
                     <Divider sx={{ my: 2 }} />
 
-                    {/* Lessons */}
                     {section.lessons && section.lessons.length > 0 && (
                       <>
                         <Typography variant="subtitle1" gutterBottom>
@@ -395,11 +251,62 @@ const DialogDetailCourse: React.FC<DialogDetailCourseProps> = ({
                           {section.lessons.map((lesson) => (
                             <ListItem key={lesson.id}>
                               <ListItemIcon>
-                                <VideoLibrary fontSize="small" />
+                                {lesson.contentType === "video" && (
+                                  <VideoLibrary fontSize="small" />
+                                )}
+                                {lesson.contentType === "slide" && (
+                                  <Slideshow fontSize="small" />
+                                )}
+                                {lesson.contentType === "assignment" && (
+                                  <Assignment fontSize="small" />
+                                )}
+                                {lesson.contentType === "quiz" && (
+                                  <QuestionAnswer fontSize="small" />
+                                )}
+                                {lesson.contentType === "txt" && (
+                                  <Description fontSize="small" />
+                                )}
+                                {lesson.contentType === "code" && (
+                                  <Code fontSize="small" />
+                                )}
                               </ListItemIcon>
                               <ListItemText
-                                primary={lesson.title}
-                                secondary={`${lesson.type} • ${lesson.duration}`}
+                                primary={
+                                  <Stack
+                                    direction="row"
+                                    spacing={1}
+                                    alignItems="center"
+                                  >
+                                    <Typography variant="body2">
+                                      {lesson.title}
+                                    </Typography>
+                                    {lesson.isFree && (
+                                      <Chip
+                                        label="Miễn phí"
+                                        size="small"
+                                        color="success"
+                                      />
+                                    )}
+                                  </Stack>
+                                }
+                                secondary={
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                  >
+                                    {lesson.contentType === "video" &&
+                                      `Video • ${lesson.duration} phút`}
+                                    {lesson.contentType === "slide" &&
+                                      "Slide bài giảng"}
+                                    {lesson.contentType === "assignment" &&
+                                      "Bài tập"}
+                                    {lesson.contentType === "quiz" &&
+                                      `Trắc nghiệm • ${lesson.duration} phút`}
+                                    {lesson.contentType === "txt" && "Tài liệu"}
+                                    {lesson.contentType === "code" &&
+                                      "Code mẫu"}
+                                  </Typography>
+                                }
                               />
                             </ListItem>
                           ))}
@@ -407,7 +314,6 @@ const DialogDetailCourse: React.FC<DialogDetailCourseProps> = ({
                       </>
                     )}
 
-                    {/* Documents */}
                     {section.documents && section.documents.length > 0 && (
                       <>
                         <Typography
@@ -423,70 +329,12 @@ const DialogDetailCourse: React.FC<DialogDetailCourseProps> = ({
                               <ListItemIcon>
                                 <Description fontSize="small" />
                               </ListItemIcon>
+                              <ListItemText
+                                primary={doc.title}
+                                secondary={doc.description}
+                              />
                               <IconButton size="small">
                                 <Download fontSize="small" />
-                              </IconButton>
-                            </ListItem>
-                          ))}
-                        </List>
-                      </>
-                    )}
-
-                    {/* Quizzes */}
-                    {section.quizzes && section.quizzes.length > 0 && (
-                      <>
-                        <Typography
-                          variant="subtitle1"
-                          gutterBottom
-                          sx={{ mt: 2 }}
-                        >
-                          Bài kiểm tra
-                        </Typography>
-                        <List dense>
-                          {section.quizzes.map((quiz) => (
-                            <ListItem key={quiz.id}>
-                              <ListItemIcon>
-                                <QuestionAnswer fontSize="small" />
-                              </ListItemIcon>
-                              <ListItemText
-                                primary={quiz.title}
-                                secondary={`${quiz.questions} câu hỏi • ${quiz.duration}`}
-                              />
-                              <IconButton size="small">
-                                <Visibility fontSize="small" />
-                              </IconButton>
-                            </ListItem>
-                          ))}
-                        </List>
-                      </>
-                    )}
-
-                    {/* Assignments */}
-                    {section.assignments && section.assignments.length > 0 && (
-                      <>
-                        <Typography
-                          variant="subtitle1"
-                          gutterBottom
-                          sx={{ mt: 2 }}
-                        >
-                          Bài tập
-                        </Typography>
-                        <List dense>
-                          {section.assignments.map((assignment) => (
-                            <ListItem key={assignment.id}>
-                              <ListItemIcon>
-                                <Assignment fontSize="small" />
-                              </ListItemIcon>
-                              <ListItemText
-                                primary={assignment.title}
-                                secondary={`Hạn nộp: ${new Date(
-                                  assignment.deadline
-                                ).toLocaleDateString("vi-VN")} • ${
-                                  assignment.submissions
-                                } bài nộp`}
-                              />
-                              <IconButton size="small">
-                                <Visibility fontSize="small" />
                               </IconButton>
                             </ListItem>
                           ))}
@@ -499,60 +347,51 @@ const DialogDetailCourse: React.FC<DialogDetailCourseProps> = ({
             </Stack>
           </TabPanel>
 
-          {/* Students Tab */}
           <TabPanel value={activeTab} index={1}>
             <TableContainer component={Paper}>
               <Table>
                 <TableHead>
                   <TableRow>
                     <TableCell>Học viên</TableCell>
+                    <TableCell>Email</TableCell>
+                    <TableCell align="center">Trạng thái</TableCell>
                     <TableCell>Ngày đăng ký</TableCell>
-                    <TableCell>Tiến độ</TableCell>
-                    <TableCell align="right">Hành động</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
-                  {course.students.map((student) => (
-                    <TableRow key={student.id}>
-                      <TableCell>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          <Avatar
-                            src={student.avatar}
-                            sx={{ width: 32, height: 32 }}
-                          />
-                          <Typography variant="body2">
-                            {student.name}
-                          </Typography>
-                        </Stack>
-                      </TableCell>
-                      <TableCell>
-                        {new Date(student.enrollDate).toLocaleDateString(
-                          "vi-VN"
-                        )}
-                      </TableCell>
+                  {course.enrollments.map((enrollment) => (
+                    <TableRow key={enrollment.id}>
                       <TableCell>
                         <Box
-                          sx={{
-                            width: "100%",
-                            display: "flex",
-                            alignItems: "center",
-                          }}
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
                         >
-                          <Box sx={{ width: "70%", mr: 1 }}>
-                            <LinearProgress
-                              variant="determinate"
-                              value={student.progress}
-                            />
-                          </Box>
-                          <Typography variant="body2" color="text.secondary">
-                            {student.progress}%
-                          </Typography>
+                          <Avatar
+                            src={enrollment.user.avatarUrl}
+                            sx={{ width: 24, height: 24 }}
+                          >
+                            {enrollment.user.username.charAt(0)}
+                          </Avatar>
+                          {enrollment.user.username}
                         </Box>
                       </TableCell>
-                      <TableCell align="right">
-                        <IconButton size="small">
-                          <Visibility fontSize="small" />
-                        </IconButton>
+                      <TableCell>{enrollment.user.email}</TableCell>
+                      <TableCell align="center">
+                        <Chip
+                          label={
+                            enrollment.status === "active"
+                              ? "Đang học"
+                              : "Đã hủy"
+                          }
+                          color={
+                            enrollment.status === "active" ? "success" : "error"
+                          }
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {new Date(enrollment.enrollmentDate).toLocaleDateString(
+                          "vi-VN"
+                        )}
                       </TableCell>
                     </TableRow>
                   ))}
@@ -561,7 +400,6 @@ const DialogDetailCourse: React.FC<DialogDetailCourseProps> = ({
             </TableContainer>
           </TabPanel>
 
-          {/* Reviews Tab */}
           <TabPanel value={activeTab} index={2}>
             <Card>
               <CardContent>
@@ -574,14 +412,14 @@ const DialogDetailCourse: React.FC<DialogDetailCourseProps> = ({
                   <Typography variant="h6">Đánh giá từ học viên</Typography>
                   <Box>
                     <Typography variant="h4" component="span" color="primary">
-                      {course.rating}
+                      {calculateAverageRating()}
                     </Typography>
                     <Typography
                       variant="body2"
                       component="span"
                       color="text.secondary"
                     >
-                      /5 ({course.totalRatings} đánh giá)
+                      /5 ({course.reviews.length} đánh giá)
                     </Typography>
                   </Box>
                 </Stack>
@@ -593,7 +431,9 @@ const DialogDetailCourse: React.FC<DialogDetailCourseProps> = ({
                     <React.Fragment key={review.id}>
                       <ListItem alignItems="flex-start">
                         <ListItemAvatar>
-                          <Avatar src={review.avatar} />
+                          <Avatar src={review.student.user.avatarUrl}>
+                            {review.student.fullName.charAt(0)}
+                          </Avatar>
                         </ListItemAvatar>
                         <ListItemText
                           primary={
@@ -604,7 +444,7 @@ const DialogDetailCourse: React.FC<DialogDetailCourseProps> = ({
                               }}
                             >
                               <Typography variant="subtitle2">
-                                {review.student}
+                                {review.student.fullName}
                               </Typography>
                               <Box>
                                 {[...Array(5)].map((_, i) => (
@@ -630,13 +470,13 @@ const DialogDetailCourse: React.FC<DialogDetailCourseProps> = ({
                                 color="text.primary"
                                 gutterBottom
                               >
-                                {review.comment}
+                                {review.reviewText}
                               </Typography>
                               <Typography
                                 variant="caption"
                                 color="text.secondary"
                               >
-                                {new Date(review.date).toLocaleDateString(
+                                {new Date(review.createdAt).toLocaleDateString(
                                   "vi-VN"
                                 )}
                               </Typography>
