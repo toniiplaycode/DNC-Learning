@@ -41,6 +41,7 @@ import {
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { selectUserNotifications } from "../../features/notifications/notificationsSelector";
 import { selectCurrentUser } from "../../features/auth/authSelectors";
+import Pagination from "@mui/material/Pagination";
 
 const notificationTypes = [
   { value: "all", label: "Tất cả" },
@@ -52,12 +53,21 @@ const notificationTypes = [
   { value: "schedule", label: "Lịch học" },
 ];
 
+const readStatusOptions = [
+  { value: "all", label: "Tất cả" },
+  { value: "unread", label: "Chưa đọc" },
+  { value: "read", label: "Đã đọc" },
+];
+
 const InstructorNotifications = () => {
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector(selectCurrentUser);
   const userNotifications = useAppSelector(selectUserNotifications);
   const [typeFilter, setTypeFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
+  const [readFilter, setReadFilter] = useState("all"); // "all" | "read" | "unread"
+  const [page, setPage] = useState(1);
+  const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
     if (currentUser?.id) {
@@ -120,7 +130,11 @@ const InstructorNotifications = () => {
     const matchesSearch =
       notif.content.toLowerCase().includes(searchQuery.toLowerCase()) ||
       notif.title.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesType && matchesSearch;
+    const matchesReadStatus =
+      readFilter === "all" ||
+      (readFilter === "read" && notif.isRead) ||
+      (readFilter === "unread" && !notif.isRead);
+    return matchesType && matchesSearch && matchesReadStatus;
   });
 
   const formatTimestamp = (dateString: string) => {
@@ -144,6 +158,25 @@ const InstructorNotifications = () => {
         minute: "2-digit",
       }).format(date);
     }
+  };
+
+  // Pagination calculation
+  const totalPages = Math.ceil(filteredNotifications.length / ITEMS_PER_PAGE);
+  const paginatedNotifications = filteredNotifications.slice(
+    (page - 1) * ITEMS_PER_PAGE,
+    page * ITEMS_PER_PAGE
+  );
+
+  const handlePageChange = (
+    event: React.ChangeEvent<unknown>,
+    value: number
+  ) => {
+    setPage(value);
+  };
+
+  const handleReadFilterChange = (event: any) => {
+    setReadFilter(event.target.value);
+    setPage(1); // Reset to first page when changing filters
   };
 
   return (
@@ -196,6 +229,20 @@ const InstructorNotifications = () => {
             ))}
           </Select>
         </FormControl>
+        <FormControl size="small" sx={{ width: 200 }}>
+          <InputLabel>Trạng thái</InputLabel>
+          <Select
+            value={readFilter}
+            label="Trạng thái"
+            onChange={handleReadFilterChange}
+          >
+            {readStatusOptions.map((option) => (
+              <MenuItem key={option.value} value={option.value}>
+                {option.label}
+              </MenuItem>
+            ))}
+          </Select>
+        </FormControl>
       </Stack>
 
       {/* Notifications List */}
@@ -209,7 +256,7 @@ const InstructorNotifications = () => {
             </Box>
           )}
 
-          {filteredNotifications.map((notification, index) => (
+          {paginatedNotifications.map((notification, index) => (
             <ListItem
               key={notification.id}
               onClick={() =>
@@ -218,7 +265,7 @@ const InstructorNotifications = () => {
               sx={{
                 bgcolor: notification.isRead ? "transparent" : "action.hover",
                 borderBottom:
-                  index < filteredNotifications.length - 1
+                  index < paginatedNotifications.length - 1
                     ? "1px solid"
                     : "none",
                 borderColor: "divider",
@@ -300,6 +347,18 @@ const InstructorNotifications = () => {
             </ListItem>
           ))}
         </List>
+
+        {totalPages > 1 && (
+          <Box sx={{ display: "flex", justifyContent: "center", p: 2 }}>
+            <Pagination
+              count={totalPages}
+              page={page}
+              onChange={handlePageChange}
+              color="primary"
+              shape="rounded"
+            />
+          </Box>
+        )}
       </Card>
     </Box>
   );

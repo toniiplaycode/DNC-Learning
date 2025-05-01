@@ -5,12 +5,15 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User, UserRole } from 'src/entities/User';
-import { Repository } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { UserStudentAcademic } from '../../entities/UserStudentAcademic';
 import { AcademicClass } from '../../entities/AcademicClass';
 import { AcademicClassCourse } from '../../entities/AcademicClassCourse';
 import { AcademicClassInstructor } from 'src/entities/AcademicClassInstructor';
+import { UserInstructor } from 'src/entities/UserInstructor';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateInstructorDto } from './dto/update-instructor.dto';
 
 interface StudentUserData {
   user: {
@@ -41,6 +44,7 @@ export class UsersService {
     private academicClassCourse: Repository<AcademicClassCourse>,
     @InjectRepository(AcademicClassInstructor)
     private academicClassInstructor: Repository<AcademicClassInstructor>,
+    private dataSource: DataSource,
   ) {}
   findAll(): Promise<User[]> {
     return this.userRepository.find({
@@ -436,6 +440,81 @@ export class UsersService {
       throw new Error(
         `Failed to get students for academic class: ${error.message}`,
       );
+    }
+  }
+
+  async updateInstructorProfile(
+    userId: number,
+    updateData: {
+      user: UpdateUserDto;
+      instructor: UpdateInstructorDto;
+    },
+  ) {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+        relations: ['userInstructor'],
+      });
+
+      if (!user) {
+        throw new NotFoundException(`User with ID ${userId} not found`);
+      }
+
+      if (!user.userInstructor) {
+        throw new NotFoundException(
+          `Instructor profile not found for user ${userId}`,
+        );
+      }
+
+      // Update user data
+      if (updateData.user) {
+        const allowedUserFields: (keyof UpdateUserDto)[] = [
+          'username',
+          'email',
+          'phone',
+          'avatarUrl',
+          'twoFactorEnabled',
+        ];
+
+        allowedUserFields.forEach((field) => {
+          if (updateData.user[field] !== undefined) {
+            (user as any)[field] = updateData.user[field];
+          }
+        });
+
+        await queryRunner.manager.save(User, user);
+      }
+
+      // Update instructor data
+      if (updateData.instructor) {
+        Object.assign(user.userInstructor, updateData.instructor);
+        await queryRunner.manager.save(UserInstructor, user.userInstructor);
+      }
+
+      await queryRunner.commitTransaction();
+
+      return {
+        user: {
+          id: user.id,
+          username: user.username,
+          email: user.email,
+          phone: user.phone,
+          avatarUrl: user.avatarUrl,
+          role: user.role,
+          status: user.status,
+          twoFactorEnabled: user.twoFactorEnabled,
+        },
+        instructor: user.userInstructor,
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw error;
+    } finally {
+      await queryRunner.release();
     }
   }
 }

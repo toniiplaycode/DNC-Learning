@@ -14,6 +14,7 @@ import {
   Button,
   Tabs,
   Tab,
+  MenuItem,
 } from "@mui/material";
 import {
   Notifications as NotificationsIcon,
@@ -32,6 +33,10 @@ import {
 import { selectCurrentUser } from "../../../features/auth/authSelectors";
 import { selectUserNotifications } from "../../../features/notifications/notificationsSelector";
 import { markAsRead } from "../../../features/notifications/notificationsSlice";
+import { deleteNotification } from "../../../features/notifications/notificationsSlice";
+import { Menu as MenuUI } from "@mui/material";
+import MoreVertIcon from "@mui/icons-material/MoreVert";
+import DeleteIcon from "@mui/icons-material/Delete";
 
 const NotificationCenter = () => {
   const dispatch = useAppDispatch();
@@ -39,6 +44,10 @@ const NotificationCenter = () => {
   const userNotifications = useAppSelector(selectUserNotifications);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [activeTab, setActiveTab] = useState(0);
+  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedNotificationId, setSelectedNotificationId] = useState<
+    number | null
+  >(null);
 
   useEffect(() => {
     if (currentUser?.id) {
@@ -97,6 +106,32 @@ const NotificationCenter = () => {
       ? userNotifications
       : userNotifications.filter((n) => !n.isRead);
 
+  const handleActionMenuOpen = (
+    event: React.MouseEvent<HTMLElement>,
+    notificationId: number
+  ) => {
+    event.stopPropagation(); // Prevent triggering the notification click
+    setSelectedNotificationId(notificationId);
+    setMenuAnchorEl(event.currentTarget);
+  };
+
+  const handleActionMenuClose = () => {
+    setMenuAnchorEl(null);
+    setSelectedNotificationId(null);
+  };
+
+  const handleDeleteNotification = async () => {
+    if (selectedNotificationId && currentUser?.id) {
+      try {
+        await dispatch(deleteNotification(selectedNotificationId)).unwrap();
+        handleActionMenuClose();
+        dispatch(fetchUserNotifications(currentUser.id));
+      } catch (error) {
+        console.error("Error deleting notification:", error);
+      }
+    }
+  };
+
   return (
     <>
       <IconButton color="inherit" onClick={handleOpen}>
@@ -153,10 +188,17 @@ const NotificationCenter = () => {
                       ? "transparent"
                       : "action.hover",
                     cursor: "pointer",
-                    "&:hover": {
-                      bgcolor: "action.hover",
-                    },
+                    "&:hover": { bgcolor: "action.hover" },
                   }}
+                  secondaryAction={
+                    <IconButton
+                      edge="end"
+                      size="small"
+                      onClick={(e) => handleActionMenuOpen(e, notification.id)}
+                    >
+                      <MoreVertIcon />
+                    </IconButton>
+                  }
                 >
                   <ListItemAvatar>
                     <Avatar>{getNotificationIcon(notification.type)}</Avatar>
@@ -201,6 +243,17 @@ const NotificationCenter = () => {
           )}
         </List>
       </Menu>
+
+      <MenuUI
+        anchorEl={menuAnchorEl}
+        open={Boolean(menuAnchorEl)}
+        onClose={handleActionMenuClose}
+      >
+        <MenuItem onClick={handleDeleteNotification}>
+          <DeleteIcon color="error" fontSize="small" sx={{ mr: 1 }} />
+          Xóa thông báo
+        </MenuItem>
+      </MenuUI>
     </>
   );
 };

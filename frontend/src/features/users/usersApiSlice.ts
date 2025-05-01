@@ -2,6 +2,7 @@ import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { api } from "../../services/api";
 import { User } from "../../types/user.types";
 import { AcademicClassCourse } from "../../types/academic-class-course.types";
+import { UpdateInstructorProfileData } from "../../types/user-instructor.types";
 
 export interface UsersState {
   users: User[];
@@ -189,6 +190,29 @@ export const fetchStudentsByAcademicClass = createAsyncThunk(
   }
 );
 
+// Add to existing thunks
+export const updateInstructorProfile = createAsyncThunk(
+  "users/updateInstructorProfile",
+  async (
+    { userId, data }: { userId: number; data: UpdateInstructorProfileData },
+    { rejectWithValue }
+  ) => {
+    try {
+      // Send single request to combined endpoint
+      const response = await api.patch(
+        `/users/${userId}/instructor-profile`,
+        data
+      );
+
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to update profile"
+      );
+    }
+  }
+);
+
 const usersSlice = createSlice({
   name: "users",
   initialState,
@@ -317,6 +341,29 @@ const usersSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchStudentsByAcademicClass.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
+
+      // Update instructor profile
+      .addCase(updateInstructorProfile.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(updateInstructorProfile.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        if (state.currentUser) {
+          state.currentUser = {
+            ...state.currentUser,
+            ...action.payload.user,
+            userInstructor: {
+              ...state.currentUser.userInstructor,
+              ...action.payload.instructor,
+            },
+          };
+        }
+        state.error = null;
+      })
+      .addCase(updateInstructorProfile.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
       });

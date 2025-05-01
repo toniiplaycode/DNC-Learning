@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Box,
   Card,
@@ -8,73 +8,35 @@ import {
   Button,
   Avatar,
   Grid,
-  Switch,
-  FormControlLabel,
-  Divider,
   IconButton,
   Alert,
+  Chip,
+  TextFieldProps,
   Dialog,
   DialogTitle,
   DialogContent,
-  List,
-  ListItem,
-  ListItemAvatar,
-  ListItemText,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Tooltip,
-  Chip,
-  TextFieldProps,
+  DialogActions,
+  DialogContentText,
 } from "@mui/material";
 import {
   Edit,
   PhotoCamera,
-  Notifications,
+  Logout,
+  AccountBox,
+  School,
+  ContactMail,
   Security,
-  Language,
-  Email,
-  Star,
-  FilterList,
-  Close,
-  Add,
 } from "@mui/icons-material";
-
-// Thêm interface cho dữ liệu instructor
-interface InstructorProfile {
-  id: number;
-  userId: number;
-  fullName: string;
-  professionalTitle: string;
-  specialization: string;
-  educationBackground: string;
-  teachingExperience: string;
-  bio: string;
-  expertiseAreas: string[];
-  certificates: string[];
-  linkedinProfile: string;
-  website: string;
-  paymentInfo: any;
-  ratingAverage: number;
-  totalStudents: number;
-  totalCourses: number;
-  totalReviews: number;
-  verificationStatus: "pending" | "verified" | "rejected";
-  verificationDocuments: string[];
-  bankAccountInfo: any;
-}
-
-// Thêm style cho input disabled
-const disabledInputStyle = {
-  "& .MuiInputBase-input.Mui-disabled": {
-    WebkitTextFillColor: "rgba(0, 0, 0, 0.87)", // Giữ màu text như bình thường
-    color: "rgba(0, 0, 0, 0.87)",
-  },
-  "& .MuiInputLabel-root.Mui-disabled": {
-    color: "rgba(0, 0, 0, 0.6)", // Giữ màu label như bình thường
-  },
-};
+import { useNavigate } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import { logout } from "../../features/auth/authApiSlice";
+import { selectCurrentUser } from "../../features/auth/authSelectors";
+import { UpdateInstructorProfileData } from "../../types/user-instructor.types";
+import {
+  fetchUserById,
+  updateInstructorProfile,
+} from "../../features/users/usersApiSlice";
+import { selectUserId } from "../../features/users/usersSelectors";
 
 // Tạo component TextField tùy chỉnh
 const StyledTextField = (props: TextFieldProps) => (
@@ -94,144 +56,433 @@ const StyledTextField = (props: TextFieldProps) => (
 );
 
 const InstructorSettings = () => {
+  const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const currentUserLocal = useAppSelector(selectCurrentUser);
+  const currentUser = useAppSelector(selectUserId);
   const [showAlert, setShowAlert] = useState(false);
-  const [settings, setSettings] = useState({
-    emailNotifications: true,
-    pushNotifications: true,
-    language: "vi",
-    twoFactorAuth: false,
-  });
-  const [openRatings, setOpenRatings] = useState(false);
-  const [selectedCourse, setSelectedCourse] = useState<string>("all");
+  const [logoutDialogOpen, setLogoutDialogOpen] = useState(false);
 
-  // Thêm state để quản lý trạng thái chỉnh sửa
+  // Get instructor first
+  const instructor = currentUserLocal?.userInstructor;
+
+  useEffect(() => {
+    localStorage.setItem("user", JSON.stringify(currentUser));
+  }, [currentUser]);
+
+  // Then use it in useState initialization
+  const [formData, setFormData] = useState<UpdateInstructorProfileData>({
+    user: {
+      username: currentUserLocal?.username || "",
+      email: currentUserLocal?.email || "",
+      phone: currentUserLocal?.phone || "",
+    },
+    instructor: {
+      fullName: instructor?.fullName || "",
+      professionalTitle: instructor?.professionalTitle || "",
+      specialization: instructor?.specialization || "",
+      bio: instructor?.bio || "",
+      educationBackground: instructor?.educationBackground || "",
+      teachingExperience: instructor?.teachingExperience || "",
+      expertiseAreas: instructor?.expertiseAreas || "",
+      certificates: instructor?.certificates || "",
+      linkedinProfile: instructor?.linkedinProfile || "",
+      website: instructor?.website || "",
+    },
+  });
+
   const [editMode, setEditMode] = useState<{
+    account: boolean;
     basic: boolean;
     education: boolean;
     contact: boolean;
     payment: boolean;
   }>({
+    account: false,
     basic: false,
     education: false,
     contact: false,
     payment: false,
   });
 
-  // Mock data cho instructor profile
-  const instructorProfile: InstructorProfile = {
-    id: 1,
-    userId: 1,
-    fullName: "John Doe",
-    professionalTitle: "Senior Software Engineer",
-    specialization: "Web Development, React, TypeScript",
-    educationBackground: "Master in Computer Science, Stanford University",
-    teachingExperience: "5+ years teaching experience in web development",
-    bio: "Passionate about teaching and helping others learn programming. Experienced in both industry and education.",
-    expertiseAreas: ["Frontend Development", "React", "TypeScript", "Node.js"],
-    certificates: [
-      "AWS Certified Developer",
-      "Google Certified Educator",
-      "Microsoft Certified Trainer",
-    ],
-    linkedinProfile: "linkedin.com/in/johndoe",
-    website: "johndoe.dev",
-    paymentInfo: {
-      preferredPaymentMethod: "bank_transfer",
-      paypalEmail: "john@example.com",
-    },
-    ratingAverage: 4.8,
-    totalStudents: 1234,
-    totalCourses: 15,
-    totalReviews: 245,
-    verificationStatus: "verified",
-    verificationDocuments: ["id_card.pdf", "degree.pdf"],
-    bankAccountInfo: {
-      bankName: "VietcomBank",
-      accountNumber: "1234567890",
-      accountHolder: "NGUYEN VAN A",
-    },
+  // Add useEffect to update formData when instructor data changes
+  useEffect(() => {
+    if (instructor) {
+      setFormData((prev) => ({
+        ...prev,
+        instructor: {
+          fullName: instructor.fullName || "",
+          professionalTitle: instructor.professionalTitle || "",
+          specialization: instructor.specialization || "",
+          bio: instructor.bio || "",
+          educationBackground: instructor.educationBackground || "",
+          teachingExperience: instructor.teachingExperience || "",
+          expertiseAreas: instructor.expertiseAreas || "",
+          certificates: instructor.certificates || "",
+          linkedinProfile: instructor.linkedinProfile || "",
+          website: instructor.website || "",
+        },
+      }));
+    }
+  }, [instructor]);
+
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate("/login");
   };
 
-  // Mock data cho ratings
-  const ratingStats = {
-    totalRatings: 245,
-    averageRating: 4.8,
-    ratingDistribution: {
-      5: 180,
-      4: 45,
-      3: 12,
-      2: 5,
-      1: 3,
-    },
+  // Add change handlers
+  const handleUserDataChange =
+    (field: keyof UpdateUserData) =>
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData((prev) => ({
+        ...prev,
+        user: {
+          ...prev.user,
+          [field]: event.target.value,
+        },
+      }));
+    };
+
+  const handleInstructorDataChange =
+    (field: keyof UpdateInstructorData) =>
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      setFormData((prev) => ({
+        ...prev,
+        instructor: {
+          ...prev.instructor,
+          [field]: event.target.value,
+        },
+      }));
+    };
+
+  const validateSection = (section: keyof typeof editMode): boolean => {
+    switch (section) {
+      case "account":
+        if (!formData.user.email?.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+          alert("Email không hợp lệ");
+          return false;
+        }
+        if (formData.user.phone && !formData.user.phone.match(/^\d{10,11}$/)) {
+          alert("Số điện thoại không hợp lệ");
+          return false;
+        }
+        break;
+      // ...existing validation cases...
+    }
+    return true;
   };
-
-  // Mock data cho chi tiết đánh giá
-  const detailedRatings = [
-    {
-      id: 1,
-      studentName: "Nguyễn Văn A",
-      avatar: "/src/assets/avatar.png",
-      rating: 5,
-      comment: "Giảng viên nhiệt tình, bài giảng dễ hiểu",
-      courseName: "React & TypeScript Masterclass",
-      date: "2024-03-20",
-    },
-    {
-      id: 2,
-      studentName: "Trần Thị B",
-      avatar: "/src/assets/avatar.png",
-      rating: 4,
-      comment: "Khóa học rất hay và thực tế",
-      courseName: "Node.js Advanced Concepts",
-      date: "2024-03-19",
-    },
-    // ... thêm mock data
-  ];
-
-  // Mock data cho danh sách khóa học
-  const courses = [
-    { id: "all", name: "Tất cả khóa học" },
-    { id: "1", name: "React & TypeScript Masterclass" },
-    { id: "2", name: "Node.js Advanced Concepts" },
-    { id: "3", name: "Python for Data Science" },
-  ];
-
-  // Lọc đánh giá theo khóa học
-  const filteredRatings = detailedRatings.filter(
-    (rating) =>
-      selectedCourse === "all" ||
-      rating.courseName === courses.find((c) => c.id === selectedCourse)?.name
-  );
 
   // Thêm hàm xử lý lưu cho từng phần
-  const handleSaveSection = (section: keyof typeof editMode) => {
-    setEditMode({ ...editMode, [section]: false });
-    setShowAlert(true);
-    setTimeout(() => setShowAlert(false), 3000);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSaveSection = async (section: keyof typeof editMode) => {
+    if (isSubmitting) return;
+
+    setIsSubmitting(true);
+    try {
+      if (!currentUserLocal?.id) return;
+      if (!validateSection(section)) return;
+
+      const dataToUpdate = {
+        user: {},
+        instructor: {},
+      } as UpdateInstructorProfileData;
+
+      // Only include changed fields based on section
+      if (section === "account") {
+        dataToUpdate.user = {
+          username: formData.user.username,
+          email: formData.user.email,
+          phone: formData.user.phone,
+        };
+      } else if (section === "basic") {
+        dataToUpdate.instructor = {
+          fullName: formData.instructor.fullName,
+          professionalTitle: formData.instructor.professionalTitle,
+          specialization: formData.instructor.specialization,
+          bio: formData.instructor.bio,
+        };
+      } else if (section === "education") {
+        dataToUpdate.instructor = {
+          educationBackground: formData.instructor.educationBackground,
+          teachingExperience: formData.instructor.teachingExperience,
+          expertiseAreas: formData.instructor.expertiseAreas,
+          certificates: formData.instructor.certificates,
+        };
+      } else if (section === "contact") {
+        dataToUpdate.instructor = {
+          linkedinProfile: formData.instructor.linkedinProfile,
+          website: formData.instructor.website,
+        };
+        dataToUpdate.user = {
+          phone: formData.user.phone,
+        };
+      }
+
+      await dispatch(
+        updateInstructorProfile({
+          userId: currentUserLocal.id,
+          data: dataToUpdate,
+        })
+      ).unwrap();
+
+      console.log(dataToUpdate);
+
+      dispatch(fetchUserById(currentUserLocal.id));
+      setEditMode({ ...editMode, [section]: false });
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 3000);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
     <Box sx={{ p: 3 }}>
-      <Typography variant="h5" gutterBottom fontWeight="bold">
-        Cài đặt tài khoản
-      </Typography>
+      {/* Header with title and logout */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          mb: 4,
+          pb: 2,
+          borderBottom: "1px solid",
+          borderColor: "divider",
+        }}
+      >
+        <Box>
+          <Typography variant="h4" gutterBottom fontWeight="bold">
+            Cài đặt tài khoản
+          </Typography>
+          <Typography variant="body1" color="text.secondary">
+            Quản lý thông tin cá nhân và tài khoản của bạn
+          </Typography>
+        </Box>
+        <Button
+          variant="contained"
+          color="error"
+          startIcon={<Logout />}
+          onClick={() => setLogoutDialogOpen(true)}
+        >
+          Đăng xuất
+        </Button>
+      </Box>
 
+      {/* Success Alert */}
       {showAlert && (
-        <Alert severity="success" sx={{ mb: 3 }}>
+        <Alert
+          severity="success"
+          sx={{
+            mb: 3,
+            position: "fixed",
+            top: 24,
+            right: 24,
+            zIndex: 9999,
+            boxShadow: 2,
+          }}
+        >
           Cập nhật thành công!
         </Alert>
       )}
 
-      <Grid container spacing={3}>
-        {/* Thông tin cá nhân */}
+      <Grid container spacing={4}>
+        {/* Left Column */}
+        <Grid item xs={12} md={4}>
+          <Stack spacing={3}>
+            {/* Profile Card */}
+            <Card sx={{ p: 3 }}>
+              <Box sx={{ textAlign: "center", mb: 3 }}>
+                <Avatar
+                  src={
+                    currentUserLocal?.avatarUrl
+                      ? `/avatars/${currentUserLocal.avatarUrl}`
+                      : undefined
+                  }
+                  sx={{
+                    width: 120,
+                    height: 120,
+                    mx: "auto",
+                    mb: 2,
+                    boxShadow: 2,
+                  }}
+                />
+                <Typography variant="h6" gutterBottom>
+                  {instructor?.fullName}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  {instructor?.professionalTitle}
+                </Typography>
+              </Box>
+              <Button
+                fullWidth
+                variant="outlined"
+                component="label"
+                startIcon={<PhotoCamera />}
+              >
+                Thay đổi ảnh
+                <input type="file" hidden accept="image/*" />
+              </Button>
+            </Card>
+
+            {/* Account Status Card */}
+            <Card sx={{ p: 3 }}>
+              <Stack spacing={3}>
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <Security color="primary" />
+                  <Typography variant="h6">Trạng thái tài khoản</Typography>
+                </Box>
+                <Stack spacing={2}>
+                  <Box>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Tài khoản
+                    </Typography>
+                    <Chip
+                      label={
+                        currentUserLocal?.status === "active"
+                          ? "Đang hoạt động"
+                          : "Đã khóa"
+                      }
+                      color={
+                        currentUserLocal?.status === "active"
+                          ? "success"
+                          : "error"
+                      }
+                      sx={{ width: "100%" }}
+                    />
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Xác thực hai lớp
+                    </Typography>
+                    <Chip
+                      label={
+                        currentUserLocal?.twoFactorEnabled
+                          ? "Đã bật"
+                          : "Chưa bật"
+                      }
+                      color={
+                        currentUserLocal?.twoFactorEnabled
+                          ? "success"
+                          : "warning"
+                      }
+                      sx={{ width: "100%" }}
+                    />
+                  </Box>
+                  <Box>
+                    <Typography variant="subtitle2" gutterBottom>
+                      Trạng thái xác thực
+                    </Typography>
+                    <Chip
+                      label={
+                        instructor?.verificationStatus === "verified"
+                          ? "Đã xác thực"
+                          : instructor?.verificationStatus === "pending"
+                          ? "Đang chờ xác thực"
+                          : "Chưa xác thực"
+                      }
+                      color={
+                        instructor?.verificationStatus === "verified"
+                          ? "success"
+                          : instructor?.verificationStatus === "pending"
+                          ? "warning"
+                          : "error"
+                      }
+                      sx={{ width: "100%" }}
+                    />
+                  </Box>
+                </Stack>
+              </Stack>
+            </Card>
+          </Stack>
+        </Grid>
+
+        {/* Right Column */}
         <Grid item xs={12} md={8}>
           <Stack spacing={3}>
-            {/* Thông tin cơ bản */}
+            {/* Account Info */}
             <Card sx={{ p: 3 }}>
               <Box
-                sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  mb: 3,
+                }}
               >
+                <AccountBox color="primary" />
+                <Typography variant="h6">Thông tin tài khoản</Typography>
+                <Box flexGrow={1} />
+                <IconButton
+                  onClick={() =>
+                    setEditMode({ ...editMode, account: !editMode.account })
+                  }
+                  color={editMode.account ? "primary" : "default"}
+                >
+                  <Edit />
+                </IconButton>
+              </Box>
+              <Stack spacing={3}>
+                <StyledTextField
+                  fullWidth
+                  label="Tên đăng nhập"
+                  value={formData.user.username}
+                  onChange={handleUserDataChange("username")}
+                  disabled={!editMode.account}
+                />
+                <StyledTextField
+                  fullWidth
+                  label="Email"
+                  value={formData.user.email}
+                  onChange={handleUserDataChange("email")}
+                  disabled={!editMode.account}
+                  type="email"
+                />
+                <StyledTextField
+                  fullWidth
+                  label="Số điện thoại"
+                  value={formData.user.phone}
+                  onChange={handleUserDataChange("phone")}
+                  disabled={!editMode.account}
+                />
+                {editMode.account && (
+                  <Box
+                    sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}
+                  >
+                    <Button
+                      onClick={() =>
+                        setEditMode({ ...editMode, account: false })
+                      }
+                    >
+                      Hủy
+                    </Button>
+                    <Button
+                      variant="contained"
+                      onClick={() => handleSaveSection("account")}
+                    >
+                      Lưu thay đổi
+                    </Button>
+                  </Box>
+                )}
+              </Stack>
+            </Card>
+
+            {/* Basic Info */}
+            <Card sx={{ p: 3 }}>
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  mb: 3,
+                }}
+              >
+                <AccountBox color="primary" />
                 <Typography variant="h6">Thông tin cơ bản</Typography>
+                <Box flexGrow={1} />
                 <IconButton
                   onClick={() =>
                     setEditMode({ ...editMode, basic: !editMode.basic })
@@ -242,40 +493,25 @@ const InstructorSettings = () => {
                 </IconButton>
               </Box>
               <Stack spacing={3}>
-                {/* Avatar section */}
-                <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                  <Avatar
-                    src="/src/assets/avatar.png"
-                    sx={{ width: 100, height: 100 }}
-                  />
-                  <Box>
-                    <Button
-                      variant="outlined"
-                      component="label"
-                      startIcon={<PhotoCamera />}
-                    >
-                      Thay đổi ảnh
-                      <input type="file" hidden accept="image/*" />
-                    </Button>
-                  </Box>
-                </Box>
-
                 <StyledTextField
                   fullWidth
                   label="Họ và tên"
-                  defaultValue={instructorProfile.fullName}
+                  value={formData.instructor.fullName}
+                  onChange={handleInstructorDataChange("fullName")}
                   disabled={!editMode.basic}
                 />
                 <StyledTextField
                   fullWidth
                   label="Chức danh"
-                  defaultValue={instructorProfile.professionalTitle}
+                  value={formData.instructor.professionalTitle}
+                  onChange={handleInstructorDataChange("professionalTitle")}
                   disabled={!editMode.basic}
                 />
                 <StyledTextField
                   fullWidth
                   label="Chuyên môn"
-                  defaultValue={instructorProfile.specialization}
+                  value={formData.instructor.specialization}
+                  onChange={handleInstructorDataChange("specialization")}
                   disabled={!editMode.basic}
                 />
                 <StyledTextField
@@ -283,7 +519,8 @@ const InstructorSettings = () => {
                   multiline
                   rows={3}
                   label="Giới thiệu"
-                  defaultValue={instructorProfile.bio}
+                  value={formData.instructor.bio}
+                  onChange={handleInstructorDataChange("bio")}
                   disabled={!editMode.basic}
                 />
 
@@ -307,12 +544,19 @@ const InstructorSettings = () => {
               </Stack>
             </Card>
 
-            {/* Học vấn & Kinh nghiệm */}
+            {/* Education & Experience */}
             <Card sx={{ p: 3 }}>
               <Box
-                sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  mb: 3,
+                }}
               >
+                <School color="primary" />
                 <Typography variant="h6">Học vấn & Kinh nghiệm</Typography>
+                <Box flexGrow={1} />
                 <IconButton
                   onClick={() =>
                     setEditMode({ ...editMode, education: !editMode.education })
@@ -328,7 +572,8 @@ const InstructorSettings = () => {
                   multiline
                   rows={3}
                   label="Học vấn"
-                  defaultValue={instructorProfile.educationBackground}
+                  value={formData.instructor.educationBackground}
+                  onChange={handleInstructorDataChange("educationBackground")}
                   disabled={!editMode.education}
                 />
                 <StyledTextField
@@ -336,28 +581,26 @@ const InstructorSettings = () => {
                   multiline
                   rows={3}
                   label="Kinh nghiệm giảng dạy"
-                  defaultValue={instructorProfile.teachingExperience}
+                  value={formData.instructor.teachingExperience}
+                  onChange={handleInstructorDataChange("teachingExperience")}
                   disabled={!editMode.education}
                 />
-                <Box>
-                  <Typography variant="subtitle2" gutterBottom>
-                    Chứng chỉ
-                  </Typography>
-                  <Stack direction="row" flexWrap="wrap" gap={1}>
-                    {instructorProfile.certificates.map((cert, index) => (
-                      <Chip
-                        key={index}
-                        label={cert}
-                        onDelete={() => {}}
-                        color="primary"
-                      />
-                    ))}
-                    <Button variant="outlined" size="small" startIcon={<Add />}>
-                      Thêm chứng chỉ
-                    </Button>
-                  </Stack>
-                </Box>
-
+                <StyledTextField
+                  fullWidth
+                  label="Lĩnh vực chuyên môn"
+                  value={formData.instructor.expertiseAreas}
+                  onChange={handleInstructorDataChange("expertiseAreas")}
+                  disabled={!editMode.education}
+                  helperText="Phân tách bằng dấu phẩy (,)"
+                />
+                <StyledTextField
+                  fullWidth
+                  label="Chứng chỉ"
+                  value={formData.instructor.certificates}
+                  onChange={handleInstructorDataChange("certificates")}
+                  disabled={!editMode.education}
+                  helperText="Phân tách bằng dấu phẩy (,)"
+                />
                 {editMode.education && (
                   <Box
                     sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}
@@ -380,12 +623,19 @@ const InstructorSettings = () => {
               </Stack>
             </Card>
 
-            {/* Thông tin liên hệ và mạng xã hội */}
+            {/* Contact Info */}
             <Card sx={{ p: 3 }}>
               <Box
-                sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  mb: 3,
+                }}
               >
+                <ContactMail color="primary" />
                 <Typography variant="h6">Liên hệ & Mạng xã hội</Typography>
+                <Box flexGrow={1} />
                 <IconButton
                   onClick={() =>
                     setEditMode({ ...editMode, contact: !editMode.contact })
@@ -399,13 +649,15 @@ const InstructorSettings = () => {
                 <StyledTextField
                   fullWidth
                   label="LinkedIn Profile"
-                  defaultValue={instructorProfile.linkedinProfile}
+                  value={formData.instructor.linkedinProfile}
+                  onChange={handleInstructorDataChange("linkedinProfile")}
                   disabled={!editMode.contact}
                 />
                 <StyledTextField
                   fullWidth
                   label="Website"
-                  defaultValue={instructorProfile.website}
+                  value={formData.instructor.website}
+                  onChange={handleInstructorDataChange("website")}
                   disabled={!editMode.contact}
                 />
 
@@ -430,383 +682,27 @@ const InstructorSettings = () => {
                 )}
               </Stack>
             </Card>
-
-            {/* Thông tin thanh toán */}
-            <Card sx={{ p: 3 }}>
-              <Box
-                sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}
-              >
-                <Typography variant="h6">Thông tin thanh toán</Typography>
-                <IconButton
-                  onClick={() =>
-                    setEditMode({ ...editMode, payment: !editMode.payment })
-                  }
-                  color={editMode.payment ? "primary" : "default"}
-                >
-                  <Edit />
-                </IconButton>
-              </Box>
-              <Stack spacing={3}>
-                <StyledTextField
-                  fullWidth
-                  label="Tên ngân hàng"
-                  defaultValue={instructorProfile.bankAccountInfo.bankName}
-                  disabled={!editMode.payment}
-                />
-                <StyledTextField
-                  fullWidth
-                  label="Số tài khoản"
-                  defaultValue={instructorProfile.bankAccountInfo.accountNumber}
-                  disabled={!editMode.payment}
-                />
-                <StyledTextField
-                  fullWidth
-                  label="Chủ tài khoản"
-                  defaultValue={instructorProfile.bankAccountInfo.accountHolder}
-                  disabled={!editMode.payment}
-                />
-
-                {editMode.payment && (
-                  <Box
-                    sx={{ display: "flex", justifyContent: "flex-end", gap: 1 }}
-                  >
-                    <Button
-                      onClick={() =>
-                        setEditMode({ ...editMode, payment: false })
-                      }
-                    >
-                      Hủy
-                    </Button>
-                    <Button
-                      variant="contained"
-                      onClick={() => handleSaveSection("payment")}
-                    >
-                      Lưu thay đổi
-                    </Button>
-                  </Box>
-                )}
-              </Stack>
-            </Card>
-          </Stack>
-        </Grid>
-
-        {/* Sidebar */}
-        <Grid item xs={12} md={4}>
-          <Stack spacing={3}>
-            {/* Thống kê */}
-            <Card sx={{ p: 3 }}>
-              <Typography variant="h6" gutterBottom>
-                Thống kê
-              </Typography>
-              <Stack spacing={2}>
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Tổng số học viên
-                  </Typography>
-                  <Typography variant="h4">
-                    {instructorProfile.totalStudents}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Số khóa học
-                  </Typography>
-                  <Typography variant="h4">
-                    {instructorProfile.totalCourses}
-                  </Typography>
-                </Box>
-                <Box>
-                  <Typography variant="subtitle2" color="text.secondary">
-                    Đánh giá trung bình
-                  </Typography>
-                  <Stack direction="row" alignItems="center" spacing={1}>
-                    <Typography variant="h4">
-                      {instructorProfile.ratingAverage}
-                    </Typography>
-                    <Star color="warning" />
-                  </Stack>
-                </Box>
-              </Stack>
-            </Card>
-
-            {/* Thông báo */}
-            <Card sx={{ p: 3 }}>
-              <Stack spacing={3}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Notifications color="primary" />
-                  <Typography variant="h6">Thông báo</Typography>
-                </Box>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={settings.emailNotifications}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          emailNotifications: e.target.checked,
-                        })
-                      }
-                    />
-                  }
-                  label="Email thông báo"
-                />
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={settings.pushNotifications}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          pushNotifications: e.target.checked,
-                        })
-                      }
-                    />
-                  }
-                  label="Thông báo đẩy"
-                />
-              </Stack>
-            </Card>
-
-            {/* Bảo mật */}
-            <Card sx={{ p: 3 }}>
-              <Stack spacing={3}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Security color="primary" />
-                  <Typography variant="h6">Bảo mật</Typography>
-                </Box>
-                <Button variant="outlined" fullWidth>
-                  Đổi mật khẩu
-                </Button>
-                <FormControlLabel
-                  control={
-                    <Switch
-                      checked={settings.twoFactorAuth}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          twoFactorAuth: e.target.checked,
-                        })
-                      }
-                    />
-                  }
-                  label="Xác thực 2 lớp"
-                />
-              </Stack>
-            </Card>
-
-            {/* Ngôn ngữ */}
-            <Card sx={{ p: 3 }}>
-              <Stack spacing={3}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Language color="primary" />
-                  <Typography variant="h6">Ngôn ngữ</Typography>
-                </Box>
-                <StyledTextField
-                  select
-                  fullWidth
-                  value={settings.language}
-                  onChange={(e) =>
-                    setSettings({ ...settings, language: e.target.value })
-                  }
-                  SelectProps={{
-                    native: true,
-                  }}
-                >
-                  <option value="vi">Tiếng Việt</option>
-                  <option value="en">English</option>
-                </StyledTextField>
-              </Stack>
-            </Card>
-
-            {/* Thêm card đánh giá */}
-            <Card sx={{ p: 3 }}>
-              <Stack spacing={3}>
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Star color="primary" />
-                  <Typography variant="h6">Đánh giá từ học viên</Typography>
-                </Box>
-
-                <Box sx={{ textAlign: "center" }}>
-                  <Typography variant="h3" color="primary" gutterBottom>
-                    {ratingStats.averageRating}
-                  </Typography>
-                  <Stack
-                    direction="row"
-                    spacing={0.5}
-                    justifyContent="center"
-                    mb={1}
-                  >
-                    {[...Array(5)].map((_, index) => (
-                      <Star
-                        key={index}
-                        sx={{
-                          color:
-                            index < Math.floor(ratingStats.averageRating)
-                              ? "warning.main"
-                              : "grey.300",
-                        }}
-                      />
-                    ))}
-                  </Stack>
-                  <Typography color="text.secondary">
-                    {ratingStats.totalRatings} lượt đánh giá
-                  </Typography>
-                </Box>
-
-                <Stack spacing={1}>
-                  {Object.entries(ratingStats.ratingDistribution)
-                    .reverse()
-                    .map(([rating, count]) => (
-                      <Box
-                        key={rating}
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1,
-                        }}
-                      >
-                        <Typography variant="body2" sx={{ minWidth: 20 }}>
-                          {rating}★
-                        </Typography>
-                        <Box
-                          sx={{
-                            flexGrow: 1,
-                            bgcolor: "grey.100",
-                            height: 8,
-                            borderRadius: 1,
-                            overflow: "hidden",
-                          }}
-                        >
-                          <Box
-                            sx={{
-                              width: `${
-                                (count / ratingStats.totalRatings) * 100
-                              }%`,
-                              bgcolor: "warning.main",
-                              height: "100%",
-                            }}
-                          />
-                        </Box>
-                        <Typography variant="body2" color="text.secondary">
-                          {count}
-                        </Typography>
-                      </Box>
-                    ))}
-                </Stack>
-
-                <Box sx={{ textAlign: "center", mt: 2 }}>
-                  <Button
-                    variant="outlined"
-                    onClick={() => setOpenRatings(true)}
-                  >
-                    Xem chi tiết đánh giá
-                  </Button>
-                </Box>
-              </Stack>
-            </Card>
           </Stack>
         </Grid>
       </Grid>
 
-      {/* Dialog chi tiết đánh giá */}
+      {/* Logout Confirmation Dialog */}
       <Dialog
-        open={openRatings}
-        onClose={() => setOpenRatings(false)}
-        maxWidth="md"
-        fullWidth
+        open={logoutDialogOpen}
+        onClose={() => setLogoutDialogOpen(false)}
       >
-        <DialogTitle>
-          <Stack
-            direction="row"
-            alignItems="center"
-            justifyContent="space-between"
-          >
-            <Stack direction="row" alignItems="center" spacing={1}>
-              <Star color="warning" />
-              <Typography variant="h6">Chi tiết đánh giá</Typography>
-            </Stack>
-            <Stack direction="row" spacing={2} alignItems="center">
-              <FormControl size="small" sx={{ minWidth: 200 }}>
-                <InputLabel>Lọc theo khóa học</InputLabel>
-                <Select
-                  value={selectedCourse}
-                  label="Lọc theo khóa học"
-                  onChange={(e) => setSelectedCourse(e.target.value)}
-                >
-                  {courses.map((course) => (
-                    <MenuItem key={course.id} value={course.id}>
-                      {course.name}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-              <Tooltip title="Đóng">
-                <IconButton
-                  edge="end"
-                  onClick={() => setOpenRatings(false)}
-                  size="small"
-                >
-                  <Close />
-                </IconButton>
-              </Tooltip>
-            </Stack>
-          </Stack>
-        </DialogTitle>
+        <DialogTitle>Xác nhận đăng xuất</DialogTitle>
         <DialogContent>
-          {filteredRatings.length > 0 ? (
-            <List>
-              {filteredRatings.map((rating) => (
-                <ListItem
-                  key={rating.id}
-                  divider
-                  sx={{ flexDirection: "column", alignItems: "flex-start" }}
-                >
-                  <Box sx={{ width: "100%", display: "flex", mb: 1 }}>
-                    <ListItemAvatar>
-                      <Avatar src={rating.avatar} />
-                    </ListItemAvatar>
-                    <Box sx={{ flexGrow: 1 }}>
-                      <Typography variant="subtitle2">
-                        {rating.studentName}
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        {rating.courseName}
-                      </Typography>
-                    </Box>
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <Stack direction="row" spacing={0.5}>
-                        {[...Array(5)].map((_, index) => (
-                          <Star
-                            key={index}
-                            sx={{
-                              fontSize: 16,
-                              color:
-                                index < rating.rating
-                                  ? "warning.main"
-                                  : "grey.300",
-                            }}
-                          />
-                        ))}
-                      </Stack>
-                      <Typography variant="caption" color="text.secondary">
-                        {new Date(rating.date).toLocaleDateString()}
-                      </Typography>
-                    </Stack>
-                  </Box>
-                  <Typography variant="body2" sx={{ pl: 7 }}>
-                    {rating.comment}
-                  </Typography>
-                </ListItem>
-              ))}
-            </List>
-          ) : (
-            <Box sx={{ py: 3, textAlign: "center" }}>
-              <Typography color="text.secondary">
-                Không có đánh giá nào cho khóa học này
-              </Typography>
-            </Box>
-          )}
+          <DialogContentText>
+            Bạn có chắc chắn muốn đăng xuất khỏi tài khoản?
+          </DialogContentText>
         </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setLogoutDialogOpen(false)}>Hủy</Button>
+          <Button onClick={handleLogout} color="error" variant="contained">
+            Đăng xuất
+          </Button>
+        </DialogActions>
       </Dialog>
     </Box>
   );

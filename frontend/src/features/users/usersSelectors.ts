@@ -7,7 +7,7 @@ export const selectUsersState = (state: RootState) => state.users;
 export const selectAllUsers = (state: RootState) => state.users.users;
 export const selectInstructorStudents = (state: RootState) =>
   state.users.instructorStudents;
-export const selectCurrentUser = (state: RootState) => state.users.currentUser;
+export const selectUserId = (state: RootState) => state.users.currentUser;
 export const selectUsersStatus = (state: RootState) => state.users.status;
 export const selectUsersError = (state: RootState) => state.users.error;
 export const selectStudentAcademicCourses = (state: RootState) =>

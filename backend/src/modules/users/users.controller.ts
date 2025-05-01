@@ -4,6 +4,7 @@ import {
   Delete,
   Get,
   Param,
+  ParseIntPipe,
   Patch,
   Post,
   UseGuards,
@@ -12,6 +13,8 @@ import { UsersService } from './users.service';
 import { User, UserRole } from 'src/entities/User';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
+import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateInstructorDto } from './dto/update-instructor.dto';
 
 @Controller('users')
 export class UsersController {
@@ -76,5 +79,19 @@ export class UsersController {
   @Get('academic-class/:classId/students')
   async getStudentsByAcademicClass(@Param('classId') classId: number) {
     return this.usersService.findStudentsByAcademicClassId(classId);
+  }
+
+  @Patch(':userId/instructor-profile')
+  @Roles(UserRole.INSTRUCTOR)
+  async updateInstructorProfile(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Body()
+    updateData: {
+      user: UpdateUserDto;
+      instructor: UpdateInstructorDto;
+    },
+  ) {
+    console.log('updateData', updateData);
+    return this.usersService.updateInstructorProfile(userId, updateData);
   }
 }

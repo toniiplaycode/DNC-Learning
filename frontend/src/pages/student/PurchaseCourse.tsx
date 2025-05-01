@@ -42,6 +42,7 @@ import {
   fetchUserEnrollments,
 } from "../../features/enrollments/enrollmentsApiSlice";
 import { toast } from "react-toastify";
+import { createNotification } from "../../features/notifications/notificationsSlice";
 
 // Thêm interface cho thông tin ngân hàng
 interface BankInfo {
@@ -172,10 +173,26 @@ const PurchaseCourse = () => {
         courseId: Number(courseId),
       })
     ).then(() => {
+      try {
+        const notificationData = {
+          userIds: [currentCourse?.instructor?.user?.id],
+          title: "Tham gia khóa học",
+          content: `${currentUser?.username} đã tham gia khóa học "${courseData.title}"`,
+          type: "course",
+        };
+
+        dispatch(createNotification(notificationData));
+      } catch (error) {
+        console.error("Error sending notification:", error);
+        // Don't show error to user as this is not critical
+      }
+
       dispatch(fetchUserEnrollments(Number(currentUser?.id)));
       navigate(`/course/${courseId}/learn`);
     });
   };
+
+  console.log(currentCourse);
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>

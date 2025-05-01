@@ -119,8 +119,10 @@ const InstructorLayout = () => {
     if (currentUser?.role !== "instructor") {
       navigate("/instructor/login");
     }
-    dispatch(fetchUserNotifications(currentUser.id));
-    dispatch(fetchMessagesByUser(currentUser.id));
+    if (currentUser?.id) {
+      dispatch(fetchUserNotifications(currentUser.id));
+      dispatch(fetchMessagesByUser(currentUser.id));
+    }
   }, [currentUser, navigate]);
 
   useEffect(() => {
