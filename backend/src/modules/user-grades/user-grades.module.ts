@@ -7,8 +7,11 @@ import { User } from '../../entities/User';
 import { Course } from '../../entities/Course';
 import { UserInstructor } from '../../entities/UserInstructor';
 import { CourseLesson } from '../../entities/CourseLesson';
+import { Assignment } from '../../entities/Assignment';
+import { Quiz } from '../../entities/Quiz';
 import { QuizAttempt } from '../../entities/QuizAttempt';
 import { AssignmentSubmission } from '../../entities/AssignmentSubmission';
+import { AcademicClassInstructor } from '../../entities/AcademicClassInstructor';
 
 @Module({
   imports: [
@@ -18,8 +21,11 @@ import { AssignmentSubmission } from '../../entities/AssignmentSubmission';
       Course,
       UserInstructor,
       CourseLesson,
-      AssignmentSubmission,
+      Assignment,
+      Quiz,
       QuizAttempt,
+      AssignmentSubmission,
+      AcademicClassInstructor,
     ]),
   ],
   controllers: [UserGradesController],

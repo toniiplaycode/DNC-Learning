@@ -39,6 +39,9 @@ import {
   Message,
   CalendarMonth,
   Assignment,
+  Class,
+  PeopleAlt,
+  PeopleAltTwoTone,
 } from "@mui/icons-material";
 import { fetchMessagesByUser } from "../../../features/messages/messagesSlice";
 import { selectAllMessages } from "../../../features/messages/messagesSelector";
@@ -158,7 +161,12 @@ const AdminLayout = () => {
     { text: "Bảng điều khiển", icon: <Dashboard />, path: "/admin" },
     { text: "Khóa học", icon: <School />, path: "/admin/courses" },
     { text: "Giảng viên", icon: <People />, path: "/admin/instructors" },
-    { text: "Học viên", icon: <People />, path: "/admin/students" },
+    { text: "Học viên/sinh viên", icon: <People />, path: "/admin/students" },
+    {
+      text: "Lớp học thuật",
+      icon: <PeopleAltTwoTone />,
+      path: "/admin/academic-classes",
+    },
     {
       text: "Tin nhắn",
       icon: (
@@ -171,7 +179,6 @@ const AdminLayout = () => {
     { text: "Danh mục", icon: <Category />, path: "/admin/categories" },
     { text: "Thanh toán", icon: <Receipt />, path: "/admin/payments" },
     { text: "Lịch dạy", icon: <CalendarMonth />, path: "/admin/schedules" },
-    { text: "Phân công", icon: <Assignment />, path: "/admin/assignments" },
     { text: "Thống kê", icon: <BarChart />, path: "/admin/analytics" },
     { text: "Đánh giá", icon: <Feedback />, path: "/admin/reviews" },
     { text: "Cài đặt", icon: <Settings />, path: "/admin/settings" },
@@ -227,9 +234,7 @@ const AdminLayout = () => {
                 noWrap
                 component="div"
                 sx={{ flexGrow: 1 }}
-              >
-                Admin Portal
-              </Typography>
+              ></Typography>
 
               <IconButton
                 size="large"
@@ -309,11 +314,11 @@ const AdminLayout = () => {
               }}
             >
               <Typography
-                variant="h6"
+                variant="h5"
                 component="div"
                 sx={{ fontWeight: "bold", my: 2 }}
               >
-                E-Learning Admin
+                DNC LEARNING
               </Typography>
             </Toolbar>
             <Divider />

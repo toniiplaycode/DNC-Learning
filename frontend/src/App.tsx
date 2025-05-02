@@ -42,11 +42,11 @@ import AssessmentAssignment from "./pages/student/assessment/AssessmentAssignmen
 import AdminStudents from "./pages/admin/AdminStudents";
 import AdminCategories from "./pages/admin/AdminCategories";
 import AdminPayments from "./pages/admin/AdminPayments";
-import AdminAssignments from "./pages/admin/AdminAssignments";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminReviews from "./pages/admin/AdminReviews";
 import AdminSettings from "./pages/admin/AdminSettings";
 import InstructorStudentsAcademic from "./pages/instructor/InstructorStudentsAcademic";
+import AdminAcademicClasses from "./pages/admin/AdminAcademicClasses";
 
 const App = () => {
   return (
@@ -132,10 +132,13 @@ const App = () => {
           <Route path="/admin/courses" element={<AdminCourses />} />
           <Route path="/admin/instructors" element={<AdminInstructors />} />
           <Route path="/admin/students" element={<AdminStudents />} />
+          <Route
+            path="/admin/academic-classes"
+            element={<AdminAcademicClasses />}
+          />
           <Route path="/admin/chats" element={<ChatCommon />} />
           <Route path="/admin/categories" element={<AdminCategories />} />
           <Route path="/admin/payments" element={<AdminPayments />} />
-          <Route path="/admin/assignments" element={<AdminAssignments />} />
           <Route path="/admin/analytics" element={<AdminAnalytics />} />
           <Route path="/admin/reviews" element={<AdminReviews />} />
           <Route path="/admin/settings" element={<AdminSettings />} />

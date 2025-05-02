@@ -13,6 +13,7 @@ import { CreateClassInstructorDto } from './dto/create-class-instructor.dto';
 import { UpdateClassInstructorDto } from './dto/update-class-instructor.dto';
 import { plainToInstance } from 'class-transformer';
 import { ClassInstructorResponseDto } from './dto/class-instructor-response.dto';
+import { In } from 'typeorm';
 
 @Injectable()
 export class AcademicClassInstructorsService {
@@ -27,7 +28,7 @@ export class AcademicClassInstructorsService {
 
   async create(
     createDto: CreateClassInstructorDto,
-  ): Promise<ClassInstructorResponseDto> {
+  ): Promise<ClassInstructorResponseDto[]> {
     // Check if class exists
     const classExists = await this.academicClassRepository.findOne({
       where: { id: createDto.classId },
@@ -39,40 +40,70 @@ export class AcademicClassInstructorsService {
       );
     }
 
-    // Check if instructor exists
-    const instructorExists = await this.userInstructorRepository.findOne({
-      where: { id: createDto.instructorId },
-    });
+    // Convert single instructorId to array if provided
+    const instructorIds = createDto.instructorId
+      ? [createDto.instructorId]
+      : createDto.instructorIds || [];
 
-    if (!instructorExists) {
-      throw new NotFoundException(
-        `Instructor with ID ${createDto.instructorId} not found`,
+    if (instructorIds.length === 0) {
+      throw new BadRequestException(
+        'Either instructorId or instructorIds must be provided',
       );
     }
 
-    // Check if assignment already exists
-    const existingAssignment =
-      await this.academicClassInstructorRepository.findOne({
-        where: {
-          classId: createDto.classId,
-          instructorId: createDto.instructorId,
-        },
+    // Get current assignments for this class
+    const currentAssignments =
+      await this.academicClassInstructorRepository.find({
+        where: { classId: createDto.classId },
       });
 
-    if (existingAssignment) {
-      throw new ConflictException(
-        'This instructor is already assigned to this class',
+    // Check if all instructors exist
+    const instructors = await this.userInstructorRepository.find({
+      where: { id: In(instructorIds) },
+    });
+
+    if (instructors.length !== instructorIds.length) {
+      const foundIds = instructors.map((i) => i.id);
+      const missingIds = instructorIds.filter((id) => !foundIds.includes(id));
+      throw new NotFoundException(
+        `Instructors with IDs ${missingIds.join(', ')} not found`,
       );
     }
 
-    // Create new assignment
-    const newAssignment =
-      this.academicClassInstructorRepository.create(createDto);
-    const savedAssignment =
-      await this.academicClassInstructorRepository.save(newAssignment);
+    // Remove instructors that are not in the new list
+    const instructorsToRemove = currentAssignments.filter(
+      (assignment) => !instructorIds.includes(assignment.instructorId),
+    );
 
-    // Return formatted response
-    return plainToInstance(ClassInstructorResponseDto, savedAssignment);
+    if (instructorsToRemove.length > 0) {
+      await this.academicClassInstructorRepository.remove(instructorsToRemove);
+    }
+
+    // Add new instructors
+    const existingInstructorIds = currentAssignments.map((a) => a.instructorId);
+    const newInstructorIds = instructorIds.filter(
+      (id) => !existingInstructorIds.includes(id),
+    );
+
+    const newAssignments = newInstructorIds.map((instructorId) =>
+      this.academicClassInstructorRepository.create({
+        classId: createDto.classId,
+        instructorId,
+      }),
+    );
+
+    if (newAssignments.length > 0) {
+      await this.academicClassInstructorRepository.save(newAssignments);
+    }
+
+    // Get and return updated assignments
+    const updatedAssignments =
+      await this.academicClassInstructorRepository.find({
+        where: { classId: createDto.classId },
+        relations: ['instructor'],
+      });
+
+    return plainToInstance(ClassInstructorResponseDto, updatedAssignments);
   }
 
   async findAll(): Promise<ClassInstructorResponseDto[]> {

@@ -8,10 +8,10 @@ export interface AcademicClassInstructor {
 
 export interface CreateClassInstructorDto {
   classId: number;
-  instructorId: number;
+  instructorIds: number[];
 }
 
 export interface UpdateClassInstructorDto {
   classId?: number;
-  instructorId?: number;
+  instructorIds?: number[];
 }

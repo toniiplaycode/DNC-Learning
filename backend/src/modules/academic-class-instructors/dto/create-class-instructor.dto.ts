@@ -1,14 +1,20 @@
-import { IsNotEmpty, IsNumber } from 'class-validator';
+import { IsArray, IsNotEmpty, IsNumber, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class CreateClassInstructorDto {
-  @IsNumber()
   @IsNotEmpty()
+  @IsNumber()
   @Type(() => Number)
   classId: number;
 
+  @IsOptional()
   @IsNumber()
-  @IsNotEmpty()
   @Type(() => Number)
-  instructorId: number;
+  instructorId?: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsNumber({}, { each: true })
+  @Type(() => Number)
+  instructorIds?: number[];
 }

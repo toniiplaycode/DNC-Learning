@@ -19,6 +19,7 @@ import { CreateUserGradeDto } from './dto/create-user-grade.dto';
 import { UpdateUserGradeDto } from './dto/update-user-grade.dto';
 import { GradeSummaryDto } from './dto/grade-summary.dto';
 import { plainToClass } from 'class-transformer';
+import { AcademicClassInstructor } from '../../entities/AcademicClassInstructor';
 
 // Define an interface for the course performance object
 export interface CoursePerformance {
@@ -45,6 +46,8 @@ export class UserGradesService {
     private assignmentSubmissionsRepository: Repository<AssignmentSubmission>,
     @InjectRepository(QuizAttempt)
     private quizAttemptsRepository: Repository<QuizAttempt>,
+    @InjectRepository(AcademicClassInstructor)
+    private academicClassInstructorRepo: Repository<AcademicClassInstructor>,
   ) {}
 
   async create(createUserGradeDto: CreateUserGradeDto): Promise<UserGrade> {
@@ -331,15 +334,48 @@ export class UserGradesService {
 
   async findByInstructor(instructorId: number): Promise<UserGrade[]> {
     try {
+      // 1. Lấy điểm theo lớp học mà giảng viên phụ trách
+      const academicClassInstructors =
+        await this.academicClassInstructorRepo.find({
+          where: { instructorId },
+          relations: ['academicClass', 'academicClass.studentsAcademic'],
+        });
+
+      // Lấy danh sách user_id của các học viên trong các lớp học đó
+      const studentUserIds = academicClassInstructors
+        .flatMap((aci) => aci.academicClass.studentsAcademic)
+        .map((sa) => sa.userId);
+
+      // 2. Lấy điểm theo khóa học mà giảng viên phụ trách
+      const instructorCourses = await this.coursesRepository.find({
+        where: { instructorId },
+        select: ['id'],
+      });
+      const courseIds = instructorCourses.map((course) => course.id);
+
+      // Lấy điểm theo cả 2 điều kiện
       const grades = await this.userGradesRepository.find({
-        where: {
-          gradedBy: instructorId,
+        where: [
+          // Điểm của học viên trong các lớp học mà giảng viên phụ trách
+          { userId: In(studentUserIds) },
+          // Điểm của các khóa học mà giảng viên sở hữu
+          { courseId: In(courseIds) },
+          // Điểm mà giảng viên đã chấm
+          { gradedBy: instructorId },
+        ],
+        relations: [
+          'user',
+          'course',
+          'instructor',
+          'instructor.user',
+          'lesson',
+          'quizAttempt',
+          'assignmentSubmission',
+        ],
+        order: {
+          createdAt: 'DESC',
         },
       });
-
-      if (!grades.length) {
-        return [];
-      }
 
       return grades;
     } catch (error) {

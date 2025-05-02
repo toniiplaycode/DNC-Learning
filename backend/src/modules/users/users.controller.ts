@@ -70,6 +70,13 @@ export class UsersController {
     return this.usersService.findById(id);
   }
 
+  @Get('students/:id/academic-courses')
+  async getStudentAcademicCourses(@Param('id') id: string) {
+    return await this.usersService.findAcademicClassCoursesByStudentAcademicId(
+      +id,
+    );
+  }
+
   @Get('instructor/:instructorId/students')
   @UseGuards(JwtAuthGuard)
   @Roles(UserRole.INSTRUCTOR)

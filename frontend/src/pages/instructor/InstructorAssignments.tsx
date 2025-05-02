@@ -98,7 +98,8 @@ const InstructorAssignments = () => {
   const [selectedFile, setSelectedFile] = useState<any>(null);
   const [tabValue, setTabValue] = useState(0);
   const [weight, setWeight] = useState<number>(1.0);
-  const [selectedTab, setSelectedTab] = useState(0);
+
+  console.log(instructorGrades);
 
   // Thêm state và các hàm xử lý để mở dialog tạo bài tập
   const [openAddAssignmentModal, setOpenAddAssignmentModal] = useState(false);
@@ -129,8 +130,6 @@ const InstructorAssignments = () => {
       fetchInstructorAcademicClassAssignments(currentUser.userInstructor.id)
     );
   }, [dispatch, currentUser]);
-
-  console.log(instructorAssignments);
 
   const handleGrade = (submission: any) => {
     // Find matching grade if exists

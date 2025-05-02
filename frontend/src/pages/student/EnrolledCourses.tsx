@@ -38,6 +38,8 @@ const EnrolledCourses: React.FC = () => {
     dispatch(fetchUserProgress());
   }, [dispatch, currentUser, navigate]);
 
+  console.log("studentAcademicCourses ", studentAcademicCourses);
+
   // Process academic courses
   const academicCourses = React.useMemo(() => {
     if (!Array.isArray(studentAcademicCourses)) return [];

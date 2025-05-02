@@ -6,6 +6,8 @@ import { CreateAcademicClassDto } from './dto/create-class-academic.dto';
 import { UpdateAcademicClassDto } from './dto/update-class-academic.dto';
 import { UserInstructor } from '../../entities/UserInstructor';
 import { AcademicClassInstructor } from 'src/entities/AcademicClassInstructor';
+import { UserStudentAcademic } from 'src/entities/UserStudentAcademic';
+import { AcademicClassCourse } from 'src/entities/AcademicClassCourse';
 
 @Injectable()
 export class AcademicClassesService {
@@ -14,6 +16,12 @@ export class AcademicClassesService {
     private readonly academicClassRepo: Repository<AcademicClass>,
     @InjectRepository(AcademicClassInstructor)
     private readonly academicClassInstructorRepo: Repository<AcademicClassInstructor>,
+    @InjectRepository(UserInstructor)
+    private readonly userInstructorRepo: Repository<UserInstructor>,
+    @InjectRepository(UserStudentAcademic)
+    private readonly userStudentAcademicRepo: Repository<UserStudentAcademic>,
+    @InjectRepository(AcademicClassCourse)
+    private readonly academicClassCourseRepo: Repository<AcademicClassCourse>,
   ) {}
 
   async create(createDto: CreateAcademicClassDto, instructorId: number) {
@@ -42,7 +50,13 @@ export class AcademicClassesService {
 
   async findAll() {
     return this.academicClassRepo.find({
-      relations: ['studentsAcademic', 'instructors', 'classCourses'],
+      relations: [
+        'studentsAcademic',
+        'instructors',
+        'instructors.instructor',
+        'classCourses',
+        'classCourses.course',
+      ],
       order: { createdAt: 'DESC' },
     });
   }
