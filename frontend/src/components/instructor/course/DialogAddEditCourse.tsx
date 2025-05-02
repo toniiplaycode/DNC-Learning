@@ -14,6 +14,7 @@ import {
   InputAdornment,
   Typography,
   Box,
+  Avatar,
 } from "@mui/material";
 import {
   CalendarToday,
@@ -28,6 +29,7 @@ import {
 import { selectCurrentUser } from "../../../features/auth/authSelectors";
 import {
   createCourse,
+  fetchCourses,
   fetchCoursesByInstructor,
   updateCourse,
 } from "../../../features/courses/coursesApiSlice";
@@ -35,6 +37,9 @@ import { fetchCategories } from "../../../features/categories/categoriesApiSlice
 import { selectAllCategories } from "../../../features/categories/categoriesSelectors";
 import { toast } from "react-toastify";
 import { Course } from "../../../features/courses/coursesSlice";
+import { fetchInstructors } from "../../../features/user_instructors/instructorsApiSlice";
+import { selectAllInstructors } from "../../../features/user_instructors/instructorsSelectors";
+import { fetchAllDocuments } from "../../../features/documents/documentsSlice";
 
 // Update interface to include edit mode props
 interface DialogAddEditCourseProps {
@@ -42,6 +47,7 @@ interface DialogAddEditCourseProps {
   onClose: () => void;
   courseToEdit?: Course | null;
   editMode?: boolean;
+  isAdmin?: boolean;
 }
 
 interface CourseFormData {
@@ -62,20 +68,23 @@ const DialogAddEditCourse: React.FC<DialogAddEditCourseProps> = ({
   onClose,
   courseToEdit,
   editMode = false,
+  isAdmin,
 }) => {
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector(selectCurrentUser);
   const categories = useAppSelector(selectAllCategories);
+  const instructors = useAppSelector(selectAllInstructors);
 
   useEffect(() => {
     dispatch(fetchCategories());
+    dispatch(fetchInstructors());
   }, [dispatch]);
 
   const [formData, setFormData] = useState<CourseFormData>({
     title: "",
     description: "",
     categoryId: null,
-    instructorId: Number(currentUser?.userInstructor?.id),
+    instructorId: isAdmin ? null : Number(currentUser?.userInstructor?.id),
     price: 0,
     level: "beginner",
     status: "published",
@@ -139,8 +148,8 @@ const DialogAddEditCourse: React.FC<DialogAddEditCourseProps> = ({
       } else {
         await dispatch(createCourse(formData));
       }
-
       await dispatch(fetchCoursesByInstructor(currentUser?.userInstructor?.id));
+      await dispatch(fetchCourses());
       toast.success(
         editMode ? "Cập nhật khóa học thành công!" : "Tạo khóa học thành công!"
       );
@@ -159,7 +168,7 @@ const DialogAddEditCourse: React.FC<DialogAddEditCourseProps> = ({
       title: "",
       description: "",
       categoryId: null,
-      instructorId: Number(currentUser?.userInstructor?.id),
+      instructorId: isAdmin ? null : Number(currentUser?.userInstructor?.id),
       price: 0,
       level: "beginner",
       status: "published",
@@ -179,6 +188,43 @@ const DialogAddEditCourse: React.FC<DialogAddEditCourseProps> = ({
       </DialogTitle>
       <DialogContent dividers>
         <Stack spacing={3} sx={{ pt: 1 }}>
+          {isAdmin && (
+            <FormControl fullWidth>
+              <InputLabel>Giảng viên</InputLabel>
+              <Select
+                value={formData.instructorId || ""}
+                label="Giảng viên phụ trách"
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    instructorId: Number(e.target.value) || null,
+                  })
+                }
+              >
+                {instructors.map((instructor) => (
+                  <MenuItem key={instructor.id} value={instructor.id}>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Avatar
+                        src={instructor.user?.avatarUrl}
+                        sx={{ width: 24, height: 24 }}
+                      >
+                        {instructor.fullName?.charAt(0)}
+                      </Avatar>
+                      <Box>
+                        <Typography variant="body2">
+                          {instructor.fullName}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {instructor.professionalTitle}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+          )}
+
           {/* Basic Information */}
           <TextField
             label="Tên khóa học"

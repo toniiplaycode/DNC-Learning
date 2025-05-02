@@ -73,14 +73,18 @@ const InstructorSettings = () => {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   useEffect(() => {
-    dispatch(fetchUserById(currentUserLocal.id));
+    dispatch(fetchUserById(Number(currentUserLocal?.id)));
   }, [dispatch, navigate]);
 
   useEffect(() => {
     const instructorData = currentUser?.userInstructor;
     setInstructor(instructorData);
-    localStorage.setItem("user", JSON.stringify(currentUser));
+    if (currentUser) {
+      localStorage.setItem("user", JSON.stringify(currentUser));
+    }
   }, [currentUser]);
+
+  console.log(instructor);
 
   const [editMode, setEditMode] = useState<{
     account: boolean;

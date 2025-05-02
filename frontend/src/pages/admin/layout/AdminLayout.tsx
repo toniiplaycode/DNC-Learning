@@ -1,7 +1,8 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
-import { useAppSelector } from "../../../app/hooks";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { selectCurrentUser } from "../../../features/auth/authSelectors";
+import { io, Socket } from "socket.io-client";
 import {
   Box,
   CssBaseline,
@@ -20,6 +21,7 @@ import {
   Menu,
   MenuItem,
   Container,
+  Badge,
 } from "@mui/material";
 import {
   Menu as MenuIcon,
@@ -38,16 +40,101 @@ import {
   CalendarMonth,
   Assignment,
 } from "@mui/icons-material";
-import { useState } from "react";
+import { fetchMessagesByUser } from "../../../features/messages/messagesSlice";
+import { selectAllMessages } from "../../../features/messages/messagesSelector";
+import { addMessage } from "../../../features/messages/messagesSlice";
 
 const drawerWidth = 240;
 
 const AdminLayout = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
   const location = useLocation();
   const currentUser = useAppSelector(selectCurrentUser);
+  const messages = useAppSelector(selectAllMessages);
   const [open, setOpen] = useState(true);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const socketRef = useRef<Socket | null>(null);
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (!currentUser?.id) return;
+    // Fetch messages every 30 seconds
+    const fetchMessages = () => {
+      dispatch(fetchMessagesByUser(currentUser.id));
+    };
+
+    fetchMessages(); // Initial fetch
+    const interval = setInterval(fetchMessages, 30000);
+
+    return () => clearInterval(interval);
+  }, [dispatch, currentUser?.id]);
+
+  // Socket connection and message handling
+  useEffect(() => {
+    if (!currentUser?.id) return;
+
+    socketRef.current = io("http://localhost:3000", {
+      auth: {
+        userId: currentUser.id,
+        authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+      reconnection: true,
+      reconnectionAttempts: 5,
+    });
+
+    const handleNewMessage = (message: any) => {
+      dispatch(addMessage(message));
+
+      // Force immediate badge update
+      if (message.receiver.id === currentUser.id && !message.isRead) {
+        setUnreadCount((prev) => prev + 1);
+      }
+    };
+
+    const handleMessageRead = ({ messageId }: { messageId: number }) => {
+      // Update messages in Redux store
+      dispatch({
+        type: "messages/messageRead",
+        payload: messageId,
+      });
+
+      // Force immediate badge update
+      setUnreadCount((prev) => {
+        const newCount = messages.filter(
+          (msg) =>
+            !msg.isRead &&
+            msg.id !== messageId &&
+            msg.receiver.id === currentUser.id
+        ).length;
+        return newCount;
+      });
+    };
+
+    socketRef.current.on("connect", () => {
+      console.log("Socket connected in AdminLayout");
+    });
+
+    socketRef.current.on("newMessage", handleNewMessage);
+    socketRef.current.on("messageRead", handleMessageRead);
+
+    // Initial unread count
+    setUnreadCount(
+      messages.filter(
+        (msg) => !msg.isRead && msg.receiver.id === currentUser.id
+      ).length
+    );
+
+    // Cleanup function
+    return () => {
+      if (socketRef.current) {
+        socketRef.current.off("connect");
+        socketRef.current.off("newMessage", handleNewMessage);
+        socketRef.current.off("messageRead", handleMessageRead);
+        socketRef.current.disconnect();
+      }
+    };
+  }, [currentUser?.id, dispatch, messages]);
 
   const handleDrawerToggle = () => {
     setOpen(!open);
@@ -72,7 +159,15 @@ const AdminLayout = () => {
     { text: "Khóa học", icon: <School />, path: "/admin/courses" },
     { text: "Giảng viên", icon: <People />, path: "/admin/instructors" },
     { text: "Học viên", icon: <People />, path: "/admin/students" },
-    { text: "Tin nhắn", icon: <Message />, path: "/admin/chats" },
+    {
+      text: "Tin nhắn",
+      icon: (
+        <Badge badgeContent={unreadCount} color="error" max={99}>
+          <Message />
+        </Badge>
+      ),
+      path: "/admin/chats",
+    },
     { text: "Danh mục", icon: <Category />, path: "/admin/categories" },
     { text: "Thanh toán", icon: <Receipt />, path: "/admin/payments" },
     { text: "Lịch dạy", icon: <CalendarMonth />, path: "/admin/schedules" },

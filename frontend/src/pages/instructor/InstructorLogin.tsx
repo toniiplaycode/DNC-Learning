@@ -15,6 +15,7 @@ import {
   Divider,
   Checkbox,
   FormControlLabel,
+  CircularProgress,
 } from "@mui/material";
 import { useNavigate, Link as RouterLink } from "react-router-dom";
 import {
@@ -37,6 +38,7 @@ const InstructorLogin = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
   const [rememberMe, setRememberMe] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const dispatch = useAppDispatch();
   const [formData, setFormData] = useState({
     email: "",
@@ -45,15 +47,51 @@ const InstructorLogin = () => {
   const currentUser = useAppSelector(selectCurrentUser);
 
   useEffect(() => {
-    if (currentUser) {
-      if (currentUser.role === "instructor") {
-        navigate("/instructor");
-      } else {
-        dispatch(logout());
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+    const checkAuth = async () => {
+      try {
+        // Kiểm tra xem có phải admin đang impersonate không
+        const isAdminImpersonating =
+          localStorage.getItem("adminImpersonating") === "true";
+        const impersonatedInstructorId = localStorage.getItem(
+          "impersonatedInstructorId"
+        );
+        const impersonatedInstructorName = localStorage.getItem(
+          "impersonatedInstructorName"
+        );
+
+        if (isAdminImpersonating && impersonatedInstructorId) {
+          // Tạo một mock user cho instructor khi admin impersonate
+          const mockInstructorUser = {
+            id: parseInt(impersonatedInstructorId),
+            role: "instructor",
+            fullName: impersonatedInstructorName || "Instructor",
+            isImpersonated: true,
+          };
+
+          // Lưu mock user vào localStorage để InstructorLayout có thể sử dụng
+          localStorage.setItem("user", JSON.stringify(mockInstructorUser));
+
+          // Chuyển hướng đến trang instructor
+          navigate("/instructor");
+          return;
+        }
+
+        if (currentUser) {
+          if (currentUser.role === "instructor") {
+            navigate("/instructor");
+            return;
+          } else {
+            dispatch(logout());
+            localStorage.removeItem("token");
+            localStorage.removeItem("user");
+          }
+        }
+      } finally {
+        setIsLoading(false);
       }
-    }
+    };
+
+    checkAuth();
   }, [currentUser, navigate, dispatch]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -92,6 +130,22 @@ const InstructorLogin = () => {
       toast.error("Đã có lỗi xảy ra!");
     }
   };
+
+  if (isLoading) {
+    return (
+      <Box
+        sx={{
+          minHeight: "100vh",
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
 
   return (
     <Box

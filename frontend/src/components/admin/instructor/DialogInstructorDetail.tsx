@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -48,6 +48,9 @@ import {
   Group,
   BarChart,
 } from "@mui/icons-material";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import { selectAllInstructors } from "../../../features/user_instructors/instructorsSelectors";
+import { fetchInstructors } from "../../../features/user_instructors/instructorsApiSlice";
 
 interface DialogInstructorDetailProps {
   open: boolean;
@@ -55,139 +58,24 @@ interface DialogInstructorDetailProps {
   instructorId: number | null;
 }
 
-// Mock data for instructor detail
-const mockInstructorDetail = {
-  id: 1,
-  name: "TS. Nguyễn Văn A",
-  avatar: "/src/assets/avatar.png",
-  cover: "/src/assets/logo.png",
-  email: "nguyenvana@example.com",
-  phone: "0912345678",
-  address: "Quận 1, TP. Hồ Chí Minh",
-  website: "https://instructor-portfolio.com",
-  linkedin: "https://linkedin.com/in/instructor",
-  bio: "Tiến sĩ Khoa học Máy tính với hơn 10 năm kinh nghiệm giảng dạy và nghiên cứu trong lĩnh vực AI và Phát triển Web. Tôi từng làm việc tại các công ty công nghệ hàng đầu và có niềm đam mê chia sẻ kiến thức với sinh viên và người học.",
-  specialization: "Web Development, AI/ML",
-  joinDate: "2022-01-15T00:00:00Z",
-  verified: true,
-  status: "active",
-  education: [
-    {
-      degree: "Tiến sĩ Khoa học Máy tính",
-      institution: "Đại học Quốc gia Hà Nội",
-      year: "2015-2019",
-    },
-    {
-      degree: "Thạc sĩ Kỹ thuật Phần mềm",
-      institution: "Đại học Bách Khoa TP.HCM",
-      year: "2012-2014",
-    },
-    {
-      degree: "Cử nhân Công nghệ Thông tin",
-      institution: "Đại học Bách Khoa Hà Nội",
-      year: "2008-2012",
-    },
-  ],
-  experience: [
-    {
-      position: "Senior Software Engineer",
-      company: "Tech Company XYZ",
-      year: "2019-2022",
-    },
-    {
-      position: "Web Developer",
-      company: "Digital Agency ABC",
-      year: "2014-2019",
-    },
-    {
-      position: "Intern Developer",
-      company: "Startup DEF",
-      year: "2012-2014",
-    },
-  ],
-  courses: [
-    {
-      id: 101,
-      title: "Lập trình Web với React & TypeScript",
-      students: 245,
-      rating: 4.8,
-      status: "active",
-    },
-    {
-      id: 102,
-      title: "Machine Learning cơ bản",
-      students: 180,
-      rating: 4.5,
-      status: "active",
-    },
-    {
-      id: 103,
-      title: "Node.js cho người mới bắt đầu",
-      students: 120,
-      rating: 4.6,
-      status: "draft",
-    },
-  ],
-  reviews: [
-    {
-      id: 1,
-      student: "Học viên A",
-      avatar: "/src/assets/avatar.png",
-      rating: 5,
-      date: "2023-05-15T00:00:00Z",
-      comment:
-        "Giảng viên rất nhiệt tình và am hiểu sâu về chủ đề. Bài giảng được trình bày rõ ràng và dễ hiểu.",
-    },
-    {
-      id: 2,
-      student: "Học viên B",
-      avatar: "/src/assets/avatar.png",
-      rating: 4,
-      date: "2023-04-20T00:00:00Z",
-      comment:
-        "Khóa học rất hữu ích, tôi đã học được nhiều kỹ năng mới. Giảng viên rất tận tâm trong việc giải đáp thắc mắc.",
-    },
-    {
-      id: 3,
-      student: "Học viên C",
-      avatar: "/src/assets/avatar.png",
-      rating: 5,
-      date: "2023-03-10T00:00:00Z",
-      comment:
-        "Tôi rất hài lòng với khóa học này. Nội dung cập nhật và phù hợp với nhu cầu thực tế của thị trường.",
-    },
-  ],
-  statistics: {
-    totalStudents: 545,
-    totalCourses: 3,
-    totalRevenue: 98500000,
-    averageRating: 4.7,
-    completionRate: 87,
-    monthlyStudents: [45, 60, 75, 90, 85, 70, 65, 80, 95, 105, 110, 120],
-    monthlyRevenue: [
-      8500000, 10000000, 12500000, 15000000, 14000000, 12000000, 11000000,
-      13500000, 16000000, 17500000, 18500000, 20000000,
-    ],
-  },
-};
-
 const DialogInstructorDetail = ({
   open,
   onClose,
   instructorId,
 }: DialogInstructorDetailProps) => {
   const [tabValue, setTabValue] = useState(0);
+  const dispatch = useAppDispatch();
+  const instructors = useAppSelector(selectAllInstructors);
 
-  // Sử dụng mockInstructorDetail mỗi lần cho mục đích demo
-  const instructor = mockInstructorDetail;
+  // Fetch instructors when dialog opens
+  useEffect(() => {
+    if (open) {
+      dispatch(fetchInstructors());
+    }
+  }, [dispatch, open]);
 
-  // Định dạng tiền tệ
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat("vi-VN", {
-      style: "currency",
-      currency: "VND",
-    }).format(amount);
-  };
+  // Get instructor data
+  const instructor = instructors.find((i) => i.id === instructorId);
 
   // Xử lý chuyển tab
   const handleChangeTab = (event: React.SyntheticEvent, newValue: number) => {
@@ -229,7 +117,12 @@ const DialogInstructorDetail = ({
               gap: 3,
             }}
           >
-            <Avatar src={instructor.avatar} sx={{ width: 120, height: 120 }} />
+            <Avatar
+              src={instructor.user?.avatarUrl}
+              sx={{ width: 120, height: 120 }}
+            >
+              {instructor.fullName?.charAt(0)}
+            </Avatar>
             <Box sx={{ flex: 1 }}>
               <Box
                 sx={{
@@ -240,31 +133,16 @@ const DialogInstructorDetail = ({
                   mb: 1,
                 }}
               >
-                <Typography variant="h5">{instructor.name}</Typography>
-                {instructor.verified && (
+                <Typography variant="h5">{instructor.fullName}</Typography>
+                {instructor.verificationStatus === "verified" && (
                   <Tooltip title="Giảng viên đã được xác minh">
                     <VerifiedUser color="primary" />
                   </Tooltip>
                 )}
                 <Chip
-                  label={
-                    instructor.status === "active"
-                      ? "Đang hoạt động"
-                      : instructor.status === "blocked"
-                      ? "Đã bị khóa"
-                      : instructor.status === "pending"
-                      ? "Chờ xác minh"
-                      : "Không hoạt động"
-                  }
-                  color={
-                    instructor.status === "active"
-                      ? "success"
-                      : instructor.status === "blocked"
-                      ? "error"
-                      : instructor.status === "pending"
-                      ? "warning"
-                      : "default"
-                  }
+                  label={instructor.professionalTitle}
+                  color="primary"
+                  variant="outlined"
                   size="small"
                 />
               </Box>
@@ -286,16 +164,20 @@ const DialogInstructorDetail = ({
                     <Phone />
                   </IconButton>
                 </Tooltip>
-                <Tooltip title="Website">
-                  <IconButton size="small" color="primary">
-                    <Language />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="LinkedIn">
-                  <IconButton size="small" color="primary">
-                    <LinkedIn />
-                  </IconButton>
-                </Tooltip>
+                {instructor.website && (
+                  <Tooltip title="Website">
+                    <IconButton size="small" color="primary">
+                      <Language />
+                    </IconButton>
+                  </Tooltip>
+                )}
+                {instructor.linkedinProfile && (
+                  <Tooltip title="LinkedIn">
+                    <IconButton size="small" color="primary">
+                      <LinkedIn />
+                    </IconButton>
+                  </Tooltip>
+                )}
               </Stack>
             </Box>
           </Box>
@@ -310,8 +192,6 @@ const DialogInstructorDetail = ({
           sx={{ borderBottom: 1, borderColor: "divider", mb: 2 }}
         >
           <Tab label="Thông tin chung" />
-          <Tab label="Khóa học" />
-          <Tab label="Đánh giá" />
           <Tab label="Thống kê" />
         </Tabs>
 
@@ -331,7 +211,7 @@ const DialogInstructorDetail = ({
                       </ListItemIcon>
                       <ListItemText
                         primary="Email"
-                        secondary={instructor.email}
+                        secondary={instructor.user?.email}
                       />
                     </ListItem>
                     <ListItem>
@@ -340,34 +220,7 @@ const DialogInstructorDetail = ({
                       </ListItemIcon>
                       <ListItemText
                         primary="Số điện thoại"
-                        secondary={instructor.phone}
-                      />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemIcon>
-                        <LocationOn />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary="Địa chỉ"
-                        secondary={instructor.address}
-                      />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemIcon>
-                        <Language />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary="Website"
-                        secondary={instructor.website}
-                      />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemIcon>
-                        <LinkedIn />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary="LinkedIn"
-                        secondary={instructor.linkedin}
+                        secondary={instructor.user?.phone}
                       />
                     </ListItem>
                     <ListItem>
@@ -377,7 +230,7 @@ const DialogInstructorDetail = ({
                       <ListItemText
                         primary="Ngày tham gia"
                         secondary={new Date(
-                          instructor.joinDate
+                          instructor.createdAt
                         ).toLocaleDateString("vi-VN")}
                       />
                     </ListItem>
@@ -401,12 +254,12 @@ const DialogInstructorDetail = ({
                       Chuyên môn
                     </Typography>
                     <Stack direction="row" spacing={1}>
-                      {instructor.specialization
-                        .split(", ")
-                        .map((spec, index) => (
+                      {instructor.expertiseAreas
+                        ?.split(", ")
+                        .map((area, index) => (
                           <Chip
                             key={index}
-                            label={spec}
+                            label={area}
                             color="primary"
                             variant="outlined"
                           />
@@ -419,55 +272,38 @@ const DialogInstructorDetail = ({
               <Card>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
-                    Học vấn
+                    Học vấn & Kinh nghiệm
                   </Typography>
                   <List>
-                    {instructor.education.map((edu, index) => (
-                      <React.Fragment key={index}>
-                        {index > 0 && (
-                          <Divider variant="inset" component="li" />
-                        )}
-                        <ListItem>
-                          <ListItemAvatar>
-                            <Avatar>
-                              <School />
-                            </Avatar>
-                          </ListItemAvatar>
-                          <ListItemText
-                            primary={edu.degree}
-                            secondary={`${edu.institution} | ${edu.year}`}
-                          />
-                        </ListItem>
-                      </React.Fragment>
-                    ))}
-                  </List>
-                </CardContent>
-              </Card>
-
-              <Card sx={{ mt: 3 }}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Kinh nghiệm làm việc
-                  </Typography>
-                  <List>
-                    {instructor.experience.map((exp, index) => (
-                      <React.Fragment key={index}>
-                        {index > 0 && (
-                          <Divider variant="inset" component="li" />
-                        )}
-                        <ListItem>
-                          <ListItemAvatar>
-                            <Avatar>
-                              <Work />
-                            </Avatar>
-                          </ListItemAvatar>
-                          <ListItemText
-                            primary={exp.position}
-                            secondary={`${exp.company} | ${exp.year}`}
-                          />
-                        </ListItem>
-                      </React.Fragment>
-                    ))}
+                    <ListItem>
+                      <ListItemIcon>
+                        <School />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary="Trình độ học vấn"
+                        secondary={instructor.educationBackground}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon>
+                        <Work />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary="Kinh nghiệm giảng dạy"
+                        secondary={instructor.teachingExperience}
+                      />
+                    </ListItem>
+                    {instructor.certificates && (
+                      <ListItem>
+                        <ListItemIcon>
+                          <Assignment />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Chứng chỉ"
+                          secondary={instructor.certificates}
+                        />
+                      </ListItem>
+                    )}
                   </List>
                 </CardContent>
               </Card>
@@ -475,136 +311,8 @@ const DialogInstructorDetail = ({
           </Grid>
         </TabPanel>
 
-        {/* Tab khóa học */}
-        <TabPanel value={tabValue} index={1}>
-          <TableContainer component={Paper} sx={{ mb: 2 }}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Khóa học</TableCell>
-                  <TableCell>Số học viên</TableCell>
-                  <TableCell>Đánh giá</TableCell>
-                  <TableCell>Trạng thái</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {instructor.courses.map((course) => (
-                  <TableRow key={course.id}>
-                    <TableCell>{course.title}</TableCell>
-                    <TableCell>{course.students}</TableCell>
-                    <TableCell>
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <Rating
-                          value={course.rating}
-                          precision={0.1}
-                          size="small"
-                          readOnly
-                        />
-                        <Typography variant="body2" sx={{ ml: 1 }}>
-                          ({course.rating})
-                        </Typography>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={
-                          course.status === "active" ? "Đang mở" : "Bản nháp"
-                        }
-                        color={
-                          course.status === "active" ? "success" : "default"
-                        }
-                        size="small"
-                      />
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </TableContainer>
-        </TabPanel>
-
-        {/* Tab đánh giá */}
-        <TabPanel value={tabValue} index={2}>
-          <Box sx={{ mb: 3 }}>
-            <Card>
-              <CardContent>
-                <Box
-                  sx={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    mb: 2,
-                  }}
-                >
-                  <Typography variant="h6">
-                    Đánh giá từ học viên ({instructor.reviews.length})
-                  </Typography>
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <Rating
-                      value={instructor.statistics.averageRating}
-                      precision={0.1}
-                      readOnly
-                    />
-                    <Typography variant="body1" sx={{ ml: 1 }}>
-                      {instructor.statistics.averageRating}/5
-                    </Typography>
-                  </Box>
-                </Box>
-
-                <List>
-                  {instructor.reviews.map((review) => (
-                    <React.Fragment key={review.id}>
-                      <ListItem alignItems="flex-start">
-                        <ListItemAvatar>
-                          <Avatar src={review.avatar} />
-                        </ListItemAvatar>
-                        <ListItemText
-                          primary={
-                            <Box
-                              sx={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                              }}
-                            >
-                              <Typography variant="subtitle1">
-                                {review.student}
-                              </Typography>
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                              >
-                                {new Date(review.date).toLocaleDateString(
-                                  "vi-VN"
-                                )}
-                              </Typography>
-                            </Box>
-                          }
-                          secondary={
-                            <>
-                              <Rating
-                                value={review.rating}
-                                size="small"
-                                readOnly
-                                sx={{ mb: 1 }}
-                              />
-                              <Typography variant="body2">
-                                {review.comment}
-                              </Typography>
-                            </>
-                          }
-                        />
-                      </ListItem>
-                      <Divider variant="inset" component="li" />
-                    </React.Fragment>
-                  ))}
-                </List>
-              </CardContent>
-            </Card>
-          </Box>
-        </TabPanel>
-
         {/* Tab thống kê */}
-        <TabPanel value={tabValue} index={3}>
+        <TabPanel value={tabValue} index={1}>
           <Grid container spacing={3}>
             <Grid item xs={12} md={6}>
               <Card>
@@ -619,7 +327,7 @@ const DialogInstructorDetail = ({
                       </ListItemIcon>
                       <ListItemText
                         primary="Tổng số học viên"
-                        secondary={instructor.statistics.totalStudents}
+                        secondary={instructor.totalStudents}
                       />
                     </ListItem>
                     <ListItem>
@@ -628,7 +336,7 @@ const DialogInstructorDetail = ({
                       </ListItemIcon>
                       <ListItemText
                         primary="Tổng số khóa học"
-                        secondary={instructor.statistics.totalCourses}
+                        secondary={instructor.totalCourses}
                       />
                     </ListItem>
                     <ListItem>
@@ -637,34 +345,24 @@ const DialogInstructorDetail = ({
                       </ListItemIcon>
                       <ListItemText
                         primary="Đánh giá trung bình"
-                        secondary={`${instructor.statistics.averageRating}/5`}
-                      />
-                    </ListItem>
-                    <ListItem>
-                      <ListItemIcon>
-                        <BarChart />
-                      </ListItemIcon>
-                      <ListItemText
-                        primary="Tỉ lệ hoàn thành khóa học"
-                        secondary={`${instructor.statistics.completionRate}%`}
+                        secondary={
+                          <Box sx={{ display: "flex", alignItems: "center" }}>
+                            <Rating
+                              value={parseFloat(
+                                instructor.averageRating || "0"
+                              )}
+                              precision={0.5}
+                              size="small"
+                              readOnly
+                            />
+                            <Typography variant="body2" sx={{ ml: 1 }}>
+                              ({instructor.totalReviews} đánh giá)
+                            </Typography>
+                          </Box>
+                        }
                       />
                     </ListItem>
                   </List>
-                </CardContent>
-              </Card>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Doanh thu
-                  </Typography>
-                  <Typography variant="h4" gutterBottom color="primary">
-                    {formatCurrency(instructor.statistics.totalRevenue)}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Tổng doanh thu từ tất cả các khóa học
-                  </Typography>
                 </CardContent>
               </Card>
             </Grid>

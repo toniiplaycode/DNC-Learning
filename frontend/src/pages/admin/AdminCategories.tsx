@@ -44,106 +44,51 @@ import {
   School,
   MenuBook,
 } from "@mui/icons-material";
-
-// Mock data cho danh mục khóa học
-const mockCategories = [
-  {
-    id: 1,
-    name: "Lập trình web",
-    description: "Các khóa học về phát triển ứng dụng web",
-    status: "active",
-    order: 1,
-    courseCount: 15,
-    createdAt: "2023-01-15T00:00:00Z",
-    updatedAt: "2023-10-05T00:00:00Z",
-  },
-  {
-    id: 2,
-    name: "Phát triển di động",
-    description: "Khóa học về ứng dụng di động iOS, Android",
-    status: "active",
-    order: 2,
-    courseCount: 8,
-    createdAt: "2023-02-10T00:00:00Z",
-    updatedAt: "2023-09-20T00:00:00Z",
-  },
-  {
-    id: 3,
-    name: "Thiết kế UI/UX",
-    description: "Khóa học về thiết kế giao diện người dùng",
-    status: "active",
-    order: 3,
-    courseCount: 6,
-    createdAt: "2023-03-05T00:00:00Z",
-    updatedAt: "2023-11-10T00:00:00Z",
-  },
-  {
-    id: 4,
-    name: "Machine Learning",
-    description: "Các khóa học về học máy và trí tuệ nhân tạo",
-    status: "active",
-    order: 4,
-    courseCount: 10,
-    createdAt: "2023-04-20T00:00:00Z",
-    updatedAt: "2023-10-25T00:00:00Z",
-  },
-  {
-    id: 5,
-    name: "Devops",
-    description: "Khóa học về CI/CD, Docker, Kubernetes",
-    status: "inactive",
-    order: 5,
-    courseCount: 4,
-    createdAt: "2023-05-15T00:00:00Z",
-    updatedAt: "2023-08-30T00:00:00Z",
-  },
-  {
-    id: 6,
-    name: "Database Administration",
-    description: "Quản trị cơ sở dữ liệu",
-    status: "active",
-    order: 6,
-    courseCount: 7,
-    createdAt: "2023-06-10T00:00:00Z",
-    updatedAt: "2023-09-15T00:00:00Z",
-  },
-  {
-    id: 7,
-    name: "Blockchain",
-    description: "Công nghệ blockchain và phát triển ứng dụng",
-    status: "inactive",
-    order: 7,
-    courseCount: 3,
-    createdAt: "2023-07-05T00:00:00Z",
-    updatedAt: "2023-11-20T00:00:00Z",
-  },
-];
+import { useAppDispatch } from "../../app/hooks";
+import { useAppSelector } from "../../app/hooks";
+import { selectAllCategories } from "../../features/categories/categoriesSelectors";
+import {
+  fetchCategories,
+  createCategory,
+  updateCategory,
+  deleteCategory,
+  Category,
+} from "../../features/categories/categoriesApiSlice";
+import { toast } from "react-toastify";
 
 const AdminCategories = () => {
-  const [categories, setCategories] = useState(mockCategories);
+  const dispatch = useAppDispatch();
+  const categories = useAppSelector(selectAllCategories);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState<
+    "newest" | "oldest" | "mostCourses" | "leastCourses"
+  >("newest");
   const [page, setPage] = useState(1);
-  const [rowsPerPage] = useState(5);
+  const [rowsPerPage] = useState(10);
   const [openAddEditDialog, setOpenAddEditDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
-  const [selectedCategory, setSelectedCategory] = useState<any>(null);
-  const [formData, setFormData] = useState({
-    id: 0,
+  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
+    null
+  );
+  const [formData, setFormData] = useState<Partial<Category>>({
     name: "",
     description: "",
     status: "active",
-    order: 0,
   });
 
-  // Xử lý tìm kiếm và lọc
+  useEffect(() => {
+    dispatch(fetchCategories());
+  }, [dispatch]);
+
+  // Xử lý tìm kiếm, lọc và sắp xếp
   const filteredCategories = categories
     .filter((category) => {
       // Lọc theo từ khóa tìm kiếm
       if (
         searchQuery &&
         !category.name.toLowerCase().includes(searchQuery.toLowerCase()) &&
-        !category.description.toLowerCase().includes(searchQuery.toLowerCase())
+        !category.description?.toLowerCase().includes(searchQuery.toLowerCase())
       ) {
         return false;
       }
@@ -155,7 +100,24 @@ const AdminCategories = () => {
 
       return true;
     })
-    .sort((a, b) => a.order - b.order);
+    .sort((a, b) => {
+      switch (sortBy) {
+        case "newest":
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        case "oldest":
+          return (
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
+        case "mostCourses":
+          return (b.courseCount ?? 0) - (a.courseCount ?? 0);
+        case "leastCourses":
+          return (a.courseCount ?? 0) - (b.courseCount ?? 0);
+        default:
+          return 0;
+      }
+    });
 
   // Phân trang
   const paginatedCategories = filteredCategories.slice(
@@ -168,135 +130,99 @@ const AdminCategories = () => {
   const handleOpenAddDialog = () => {
     setSelectedCategory(null);
     setFormData({
-      id: 0,
       name: "",
       description: "",
       status: "active",
-      order: categories.length + 1,
     });
     setOpenAddEditDialog(true);
   };
 
   // Mở dialog chỉnh sửa danh mục
-  const handleOpenEditDialog = (category: any) => {
+  const handleOpenEditDialog = (category: Category) => {
     setSelectedCategory(category);
     setFormData({
-      id: category.id,
       name: category.name,
-      description: category.description,
+      description: category.description || "",
       status: category.status,
-      order: category.order,
     });
     setOpenAddEditDialog(true);
   };
 
   // Mở dialog xóa danh mục
-  const handleOpenDeleteDialog = (category: any) => {
+  const handleOpenDeleteDialog = (category: Category) => {
     setSelectedCategory(category);
     setOpenDeleteDialog(true);
   };
 
   // Xử lý lưu danh mục (thêm/sửa)
-  const handleSaveCategory = () => {
-    if (selectedCategory) {
-      // Cập nhật danh mục đã có
-      setCategories(
-        categories.map((category) =>
-          category.id === selectedCategory.id
-            ? {
-                ...category,
-                name: formData.name,
-                description: formData.description,
-                status: formData.status,
-                order: formData.order,
-                updatedAt: new Date().toISOString(),
-              }
-            : category
-        )
-      );
-    } else {
-      // Thêm danh mục mới
-      const newCategory = {
-        id: categories.length + 1,
-        name: formData.name,
-        description: formData.description,
-        status: formData.status,
-        order: formData.order,
-        courseCount: 0,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-      setCategories([...categories, newCategory]);
+  const handleSaveCategory = async () => {
+    if (!formData.name) {
+      return; // Don't proceed if name is empty
     }
-    setOpenAddEditDialog(false);
+    try {
+      if (selectedCategory) {
+        // Update existing category
+        await dispatch(
+          updateCategory({
+            id: selectedCategory.id,
+            categoryData: formData,
+          })
+        ).unwrap();
+        toast.success("Cập nhật danh mục thành công");
+      } else {
+        // Create new category
+        await dispatch(createCategory(formData as Category)).unwrap();
+        toast.success("Tạo danh mục thành công");
+      }
+      setOpenAddEditDialog(false);
+      setFormData({
+        name: "",
+        description: "",
+        status: "active",
+      });
+      setSelectedCategory(null);
+    } catch (error) {
+      console.error("Lỗi khi lưu danh mục:", error);
+      toast.error(
+        selectedCategory
+          ? "Không thể cập nhật danh mục"
+          : "Không thể tạo danh mục"
+      );
+    }
   };
 
   // Xử lý xóa danh mục
-  const handleDeleteCategory = () => {
-    if (selectedCategory) {
-      setCategories(
-        categories.filter((category) => category.id !== selectedCategory.id)
-      );
-    }
-    setOpenDeleteDialog(false);
-  };
+  const handleDeleteCategory = async () => {
+    if (!selectedCategory) return;
 
-  // Xử lý thay đổi thứ tự hiển thị
-  const handleChangeOrder = (categoryId: number, direction: "up" | "down") => {
-    const categoryIndex = categories.findIndex(
-      (category) => category.id === categoryId
-    );
-
-    if (
-      (direction === "up" && categoryIndex === 0) ||
-      (direction === "down" && categoryIndex === categories.length - 1)
-    ) {
-      return; // Không thể di chuyển lên trên đầu hoặc xuống dưới cuối
+    // Kiểm tra nếu danh mục có khóa học
+    if (selectedCategory.courseCount && selectedCategory.courseCount > 0) {
+      toast.error("Không thể xóa danh mục đang có khóa học");
+      setOpenDeleteDialog(false);
+      return;
     }
 
-    const newCategories = [...categories];
-    const swapIndex =
-      direction === "up" ? categoryIndex - 1 : categoryIndex + 1;
-
-    // Đổi thứ tự order
-    const tempOrder = newCategories[categoryIndex].order;
-    newCategories[categoryIndex].order = newCategories[swapIndex].order;
-    newCategories[swapIndex].order = tempOrder;
-
-    // Đổi vị trí trong mảng
-    [newCategories[categoryIndex], newCategories[swapIndex]] = [
-      newCategories[swapIndex],
-      newCategories[categoryIndex],
-    ];
-
-    setCategories(newCategories);
-  };
-
-  // Xử lý thay đổi trạng thái
-  const handleToggleStatus = (categoryId: number) => {
-    setCategories(
-      categories.map((category) =>
-        category.id === categoryId
-          ? {
-              ...category,
-              status: category.status === "active" ? "inactive" : "active",
-              updatedAt: new Date().toISOString(),
-            }
-          : category
-      )
-    );
+    try {
+      await dispatch(deleteCategory(selectedCategory.id)).unwrap();
+      setOpenDeleteDialog(false);
+      setSelectedCategory(null);
+      toast.success("Xóa danh mục thành công");
+    } catch (error) {
+      console.error("Lỗi khi xóa danh mục:", error);
+      toast.error("Không thể xóa danh mục");
+    }
   };
 
   return (
     <Box>
-      <Typography variant="h4" sx={{ mb: 3 }}>
+      <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>
         Quản lý danh mục khóa học
       </Typography>
 
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} sm={6} md={4}>
+            <Grid item xs={12} sm={6} md={3}>
               <TextField
                 fullWidth
                 placeholder="Tìm kiếm danh mục..."
@@ -335,7 +261,22 @@ const AdminCategories = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} sm={12} md={5} textAlign="right">
+            <Grid item xs={12} sm={6} md={3}>
+              <FormControl fullWidth>
+                <InputLabel>Sắp xếp</InputLabel>
+                <Select
+                  value={sortBy}
+                  label="Sắp xếp"
+                  onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                >
+                  <MenuItem value="newest">Mới nhất</MenuItem>
+                  <MenuItem value="oldest">Cũ nhất</MenuItem>
+                  <MenuItem value="mostCourses">Nhiều khóa học nhất</MenuItem>
+                  <MenuItem value="leastCourses">Ít khóa học nhất</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={6} md={3} textAlign="right">
               <Button
                 variant="contained"
                 startIcon={<Add />}
@@ -357,7 +298,6 @@ const AdminCategories = () => {
               <TableCell>Mô tả</TableCell>
               <TableCell align="center">Khóa học</TableCell>
               <TableCell align="center">Trạng thái</TableCell>
-              <TableCell align="center">Thứ tự</TableCell>
               <TableCell align="center">Thao tác</TableCell>
             </TableRow>
           </TableHead>
@@ -367,15 +307,12 @@ const AdminCategories = () => {
                 <TableCell>{(page - 1) * rowsPerPage + index + 1}</TableCell>
                 <TableCell>
                   <Typography variant="subtitle2">{category.name}</Typography>
-                  <Typography variant="caption" color="text.secondary">
-                    ID: {category.id}
-                  </Typography>
                 </TableCell>
                 <TableCell>{category.description}</TableCell>
                 <TableCell align="center">
                   <Chip
                     icon={<MenuBook fontSize="small" />}
-                    label={category.courseCount}
+                    label={category.courseCount ?? 0}
                     variant="outlined"
                     size="small"
                   />
@@ -390,31 +327,6 @@ const AdminCategories = () => {
                   />
                 </TableCell>
                 <TableCell align="center">
-                  <Box
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                    }}
-                  >
-                    <IconButton
-                      size="small"
-                      onClick={() => handleChangeOrder(category.id, "up")}
-                      disabled={index === 0}
-                    >
-                      <ArrowUpward fontSize="small" />
-                    </IconButton>
-                    <Typography sx={{ mx: 1 }}>{category.order}</Typography>
-                    <IconButton
-                      size="small"
-                      onClick={() => handleChangeOrder(category.id, "down")}
-                      disabled={index === paginatedCategories.length - 1}
-                    >
-                      <ArrowDownward fontSize="small" />
-                    </IconButton>
-                  </Box>
-                </TableCell>
-                <TableCell align="center">
                   <Box>
                     <Tooltip title="Chỉnh sửa">
                       <IconButton
@@ -423,27 +335,6 @@ const AdminCategories = () => {
                         onClick={() => handleOpenEditDialog(category)}
                       >
                         <Edit fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip
-                      title={
-                        category.status === "active"
-                          ? "Ẩn danh mục"
-                          : "Hiện danh mục"
-                      }
-                    >
-                      <IconButton
-                        size="small"
-                        color={
-                          category.status === "active" ? "default" : "success"
-                        }
-                        onClick={() => handleToggleStatus(category.id)}
-                      >
-                        {category.status === "active" ? (
-                          <VisibilityOff fontSize="small" />
-                        ) : (
-                          <Visibility fontSize="small" />
-                        )}
                       </IconButton>
                     </Tooltip>
                     <Tooltip title="Xóa">
@@ -462,7 +353,7 @@ const AdminCategories = () => {
             ))}
             {paginatedCategories.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} align="center" sx={{ py: 3 }}>
+                <TableCell colSpan={6} align="center" sx={{ py: 3 }}>
                   <Typography color="text.secondary">
                     Không tìm thấy danh mục nào
                   </Typography>
@@ -518,41 +409,22 @@ const AdminCategories = () => {
                 setFormData({ ...formData, description: e.target.value })
               }
             />
-            <Grid container spacing={2} sx={{ mt: 1 }}>
-              <Grid item xs={6}>
-                <FormControl fullWidth margin="normal">
-                  <InputLabel>Trạng thái</InputLabel>
-                  <Select
-                    value={formData.status}
-                    label="Trạng thái"
-                    onChange={(e) =>
-                      setFormData({
-                        ...formData,
-                        status: e.target.value as string,
-                      })
-                    }
-                  >
-                    <MenuItem value="active">Đang hoạt động</MenuItem>
-                    <MenuItem value="inactive">Ẩn</MenuItem>
-                  </Select>
-                </FormControl>
-              </Grid>
-              <Grid item xs={6}>
-                <TextField
-                  label="Thứ tự hiển thị"
-                  fullWidth
-                  margin="normal"
-                  type="number"
-                  value={formData.order}
-                  onChange={(e) =>
-                    setFormData({
-                      ...formData,
-                      order: parseInt(e.target.value),
-                    })
-                  }
-                />
-              </Grid>
-            </Grid>
+            <FormControl fullWidth margin="normal">
+              <InputLabel>Trạng thái</InputLabel>
+              <Select
+                value={formData.status}
+                label="Trạng thái"
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    status: e.target.value as "active" | "inactive",
+                  })
+                }
+              >
+                <MenuItem value="active">Đang hoạt động</MenuItem>
+                <MenuItem value="inactive">Ẩn</MenuItem>
+              </Select>
+            </FormControl>
           </Box>
         </DialogContent>
         <DialogActions>

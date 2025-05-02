@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -20,33 +20,114 @@ import {
   Stack,
   Switch,
   FormControlLabel,
+  SelectChangeEvent,
 } from "@mui/material";
 import { Close, PhotoCamera, Save } from "@mui/icons-material";
+import { UserRole, UserStatus } from "../../../types/user";
+import { useAppDispatch } from "../../../app/hooks";
+import {
+  createInstructor,
+  CreateInstructorRequest,
+  fetchInstructors,
+  updateInstructor,
+} from "../../../features/user_instructors/instructorsApiSlice";
+import { toast } from "react-toastify";
+import { VerificationStatus } from "../../../types/user-instructor.types";
+import { updateInstructorProfile } from "../../../features/users/usersApiSlice";
 
 interface DialogAddInstructorProps {
   open: boolean;
   onClose: () => void;
-  onSave: (instructorData: any) => void;
+  editMode?: boolean;
+  instructorData?: {
+    user: {
+      id: number;
+      username: string;
+      email: string;
+      phone?: string;
+      avatarUrl?: string;
+    };
+    instructor: {
+      id: number;
+      fullName: string;
+      professionalTitle?: string;
+      specialization: string;
+      educationBackground?: string;
+      teachingExperience?: string;
+      bio?: string;
+      expertiseAreas?: string;
+      certificates?: string;
+      linkedinProfile?: string;
+      website?: string;
+      verificationDocuments?: string;
+      verificationStatus: VerificationStatus;
+    };
+  };
 }
 
 const DialogAddInstructor = ({
   open,
   onClose,
-  onSave,
+  editMode = false,
+  instructorData,
 }: DialogAddInstructorProps) => {
-  const [avatar, setAvatar] = useState<string | null>(null);
+  const dispatch = useAppDispatch();
+  const [avatar, setAvatar] = useState<string | null>(
+    instructorData?.user?.avatarUrl || null
+  );
   const [formData, setFormData] = useState({
-    name: "",
+    // User fields
+    username: "",
     email: "",
+    password: "",
     phone: "",
+    role: UserRole.INSTRUCTOR,
+    status: UserStatus.ACTIVE,
+
+    // UserInstructor fields
+    fullName: "",
+    professionalTitle: "",
     specialization: "",
-    address: "",
-    website: "",
-    linkedin: "",
+    educationBackground: "",
+    teachingExperience: "",
     bio: "",
-    verified: false,
+    expertiseAreas: "",
+    certificates: "",
+    linkedinProfile: "",
+    website: "",
+    verificationDocuments: "",
+    verificationStatus: VerificationStatus.VERIFIED,
   });
+
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Initialize form data when in edit mode
+  useEffect(() => {
+    if (editMode && instructorData) {
+      setFormData({
+        ...formData,
+        username: instructorData.user.username,
+        email: instructorData.user.email,
+        phone: instructorData.user.phone || "",
+        fullName: instructorData.instructor.fullName,
+        professionalTitle: instructorData.instructor.professionalTitle || "",
+        specialization: instructorData.instructor.specialization,
+        educationBackground:
+          instructorData.instructor.educationBackground || "",
+        teachingExperience: instructorData.instructor.teachingExperience || "",
+        bio: instructorData.instructor.bio || "",
+        expertiseAreas: instructorData.instructor.expertiseAreas || "",
+        certificates: instructorData.instructor.certificates || "",
+        linkedinProfile: instructorData.instructor.linkedinProfile || "",
+        website: instructorData.instructor.website || "",
+        verificationDocuments:
+          instructorData.instructor.verificationDocuments || "",
+        verificationStatus: instructorData.instructor.verificationStatus,
+      });
+      setAvatar(instructorData.user.avatarUrl || null);
+    }
+  }, [editMode, instructorData]);
 
   // Xử lý thay đổi giá trị trường input
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,21 +146,12 @@ const DialogAddInstructor = ({
     }
   };
 
-  // Xử lý thay đổi select
-  const handleSelectChange = (e: any) => {
+  // Thêm handler riêng cho Select
+  const handleSelectChange = (e: SelectChangeEvent<any>) => {
     const { name, value } = e.target;
     setFormData({
       ...formData,
       [name]: value,
-    });
-  };
-
-  // Xử lý thay đổi switch
-  const handleSwitchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, checked } = e.target;
-    setFormData({
-      ...formData,
-      [name]: checked,
     });
   };
 
@@ -100,26 +172,33 @@ const DialogAddInstructor = ({
   const validateForm = () => {
     const newErrors: Record<string, string> = {};
 
-    // Kiểm tra tên
-    if (!formData.name.trim()) {
-      newErrors.name = "Tên giảng viên không được để trống";
+    // Validate User fields
+    if (!editMode && !formData.username.trim()) {
+      newErrors.username = "Tên đăng nhập không được để trống";
     }
 
-    // Kiểm tra email
+    if (!editMode && !formData.password.trim()) {
+      newErrors.password = "Mật khẩu không được để trống";
+    }
+
     if (!formData.email.trim()) {
       newErrors.email = "Email không được để trống";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
       newErrors.email = "Email không hợp lệ";
     }
 
-    // Kiểm tra số điện thoại
-    if (!formData.phone.trim()) {
-      newErrors.phone = "Số điện thoại không được để trống";
-    } else if (!/^[0-9]{10,11}$/.test(formData.phone.replace(/\s/g, ""))) {
+    if (
+      formData.phone &&
+      !/^[0-9]{10,11}$/.test(formData.phone.replace(/\s/g, ""))
+    ) {
       newErrors.phone = "Số điện thoại không hợp lệ";
     }
 
-    // Kiểm tra chuyên môn
+    // Validate UserInstructor fields
+    if (!formData.fullName.trim()) {
+      newErrors.fullName = "Họ tên không được để trống";
+    }
+
     if (!formData.specialization.trim()) {
       newErrors.specialization = "Chuyên môn không được để trống";
     }
@@ -129,35 +208,107 @@ const DialogAddInstructor = ({
   };
 
   // Xử lý lưu
-  const handleSave = () => {
+  const handleSave = async () => {
     if (validateForm()) {
-      const newInstructor = {
-        ...formData,
-        avatar: avatar || "/src/assets/avatar.png",
-        joinDate: new Date().toISOString(),
-        status: "active",
-        coursesCount: 0,
-        studentsCount: 0,
-        rating: 0,
-      };
+      try {
+        setIsSubmitting(true);
 
-      onSave(newInstructor);
-      handleReset();
+        if (editMode && instructorData) {
+          // Update existing instructor
+          const updateData = {
+            user: {
+              username: formData.username,
+              email: formData.email,
+              phone: formData.phone || undefined,
+              avatarUrl: avatar || undefined,
+            },
+            instructor: {
+              fullName: formData.fullName,
+              professionalTitle: formData.professionalTitle || undefined,
+              specialization: formData.specialization,
+              educationBackground: formData.educationBackground || undefined,
+              teachingExperience: formData.teachingExperience || undefined,
+              bio: formData.bio || undefined,
+              expertiseAreas: formData.expertiseAreas || undefined,
+              certificates: formData.certificates || undefined,
+              linkedinProfile: formData.linkedinProfile || undefined,
+              website: formData.website || undefined,
+              verificationDocuments:
+                formData.verificationDocuments || undefined,
+              verificationStatus: formData.verificationStatus,
+            },
+          };
+
+          await dispatch(
+            updateInstructorProfile({
+              userId: instructorData.user.id,
+              data: updateData,
+            })
+          ).unwrap();
+          toast.success("Cập nhật giảng viên thành công!");
+        } else {
+          // Create new instructor
+          const instructorData: CreateInstructorRequest = {
+            user: {
+              username: formData.username,
+              email: formData.email,
+              password: formData.password,
+              phone: formData.phone || undefined,
+              avatarUrl: avatar || undefined,
+            },
+            instructor: {
+              fullName: formData.fullName,
+              professionalTitle: formData.professionalTitle || undefined,
+              specialization: formData.specialization,
+              educationBackground: formData.educationBackground || undefined,
+              teachingExperience: formData.teachingExperience || undefined,
+              bio: formData.bio || undefined,
+              expertiseAreas: formData.expertiseAreas || undefined,
+              certificates: formData.certificates || undefined,
+              linkedinProfile: formData.linkedinProfile || undefined,
+              website: formData.website || undefined,
+              verificationDocuments:
+                formData.verificationDocuments || undefined,
+              verificationStatus: formData.verificationStatus,
+            },
+          };
+
+          await dispatch(createInstructor(instructorData)).unwrap();
+          toast.success("Tạo giảng viên thành công!");
+        }
+
+        await dispatch(fetchInstructors());
+        handleReset();
+        onClose();
+      } catch (error: any) {
+        toast.error(error.message || "Không thể lưu giảng viên");
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
   // Reset form
   const handleReset = () => {
     setFormData({
-      name: "",
+      username: "",
       email: "",
+      password: "",
       phone: "",
+      role: UserRole.INSTRUCTOR,
+      status: UserStatus.ACTIVE,
+      fullName: "",
+      professionalTitle: "",
       specialization: "",
-      address: "",
-      website: "",
-      linkedin: "",
+      educationBackground: "",
+      teachingExperience: "",
       bio: "",
-      verified: false,
+      expertiseAreas: "",
+      certificates: "",
+      linkedinProfile: "",
+      website: "",
+      verificationDocuments: "",
+      verificationStatus: VerificationStatus.VERIFIED,
     });
     setAvatar(null);
     setErrors({});
@@ -178,7 +329,9 @@ const DialogAddInstructor = ({
           alignItems: "center",
         }}
       >
-        <Typography variant="h6">Thêm giảng viên mới</Typography>
+        <Typography variant="h6">
+          {editMode ? "Chỉnh sửa giảng viên" : "Thêm giảng viên mới"}
+        </Typography>
         <IconButton onClick={handleCloseDialog} size="small">
           <Close />
         </IconButton>
@@ -219,11 +372,70 @@ const DialogAddInstructor = ({
             </Box>
           </Box>
 
+          <Grid spacing={2} mb={2}>
+            <FormControl fullWidth>
+              <InputLabel>Trạng thái xác minh</InputLabel>
+              <Select
+                name="verificationStatus"
+                value={formData.verificationStatus}
+                label="Trạng thái xác minh"
+                onChange={handleSelectChange}
+              >
+                <MenuItem value={VerificationStatus.PENDING}>
+                  Đang xét duyệt
+                </MenuItem>
+                <MenuItem value={VerificationStatus.VERIFIED}>
+                  Đã xác minh
+                </MenuItem>
+                <MenuItem value={VerificationStatus.REJECTED}>Từ chối</MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+
           <Grid container spacing={2}>
-            {/* Thông tin cơ bản */}
+            {/* Thông tin tài khoản */}
             <Grid item xs={12}>
               <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                Thông tin cơ bản
+                Thông tin tài khoản
+              </Typography>
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                required={!editMode}
+                label="Tên đăng nhập"
+                name="username"
+                value={formData.username}
+                onChange={handleChange}
+                error={!!errors.username}
+                helperText={errors.username}
+                placeholder={editMode ? "Không thể thay đổi tên đăng nhập" : ""}
+              />
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                required={!editMode}
+                label="Mật khẩu"
+                name="password"
+                type="password"
+                value={formData.password}
+                onChange={handleChange}
+                error={!!errors.password}
+                helperText={errors.password}
+                placeholder={
+                  editMode ? "Để trống nếu không muốn thay đổi mật khẩu" : ""
+                }
+              />
+            </Grid>
+
+            {/* Thông tin cá nhân */}
+            <Grid item xs={12}>
+              <Divider sx={{ my: 2 }} />
+              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                Thông tin cá nhân
               </Typography>
             </Grid>
 
@@ -231,12 +443,12 @@ const DialogAddInstructor = ({
               <TextField
                 fullWidth
                 required
-                label="Tên giảng viên"
-                name="name"
-                value={formData.name}
+                label="Họ tên"
+                name="fullName"
+                value={formData.fullName}
                 onChange={handleChange}
-                error={!!errors.name}
-                helperText={errors.name}
+                error={!!errors.fullName}
+                helperText={errors.fullName}
               />
             </Grid>
 
@@ -257,7 +469,6 @@ const DialogAddInstructor = ({
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                required
                 label="Số điện thoại"
                 name="phone"
                 value={formData.phone}
@@ -265,6 +476,25 @@ const DialogAddInstructor = ({
                 error={!!errors.phone}
                 helperText={errors.phone}
               />
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Chức danh"
+                name="professionalTitle"
+                value={formData.professionalTitle}
+                onChange={handleChange}
+                placeholder="VD: Giảng viên cao cấp, Chuyên gia..."
+              />
+            </Grid>
+
+            {/* Thông tin chuyên môn */}
+            <Grid item xs={12}>
+              <Divider sx={{ my: 2 }} />
+              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
+                Thông tin chuyên môn
+              </Typography>
             </Grid>
 
             <Grid item xs={12} md={6}>
@@ -281,22 +511,58 @@ const DialogAddInstructor = ({
               />
             </Grid>
 
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Lĩnh vực chuyên môn"
+                name="expertiseAreas"
+                value={formData.expertiseAreas}
+                onChange={handleChange}
+                placeholder="VD: React, Node.js, Python"
+              />
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Bằng cấp/Chứng chỉ"
+                name="certificates"
+                value={formData.certificates}
+                onChange={handleChange}
+                placeholder="VD: Thạc sĩ CNTT, AWS Certified"
+              />
+            </Grid>
+
+            <Grid item xs={12} md={6}>
+              <TextField
+                fullWidth
+                label="Kinh nghiệm giảng dạy"
+                name="teachingExperience"
+                value={formData.teachingExperience}
+                onChange={handleChange}
+                placeholder="VD: 5 năm giảng dạy tại..."
+              />
+            </Grid>
+
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                label="Học vấn"
+                name="educationBackground"
+                value={formData.educationBackground}
+                onChange={handleChange}
+                placeholder="Mô tả quá trình học tập và bằng cấp"
+              />
+            </Grid>
+
             {/* Thông tin bổ sung */}
             <Grid item xs={12}>
               <Divider sx={{ my: 2 }} />
               <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
                 Thông tin bổ sung
               </Typography>
-            </Grid>
-
-            <Grid item xs={12}>
-              <TextField
-                fullWidth
-                label="Địa chỉ"
-                name="address"
-                value={formData.address}
-                onChange={handleChange}
-              />
             </Grid>
 
             <Grid item xs={12} md={6}>
@@ -314,8 +580,8 @@ const DialogAddInstructor = ({
               <TextField
                 fullWidth
                 label="LinkedIn"
-                name="linkedin"
-                value={formData.linkedin}
+                name="linkedinProfile"
+                value={formData.linkedinProfile}
                 onChange={handleChange}
                 placeholder="https://linkedin.com/in/username"
               />
@@ -334,39 +600,35 @@ const DialogAddInstructor = ({
               />
             </Grid>
 
-            {/* Trạng thái */}
             <Grid item xs={12}>
-              <Divider sx={{ my: 2 }} />
-              <Typography variant="subtitle1" fontWeight="bold" gutterBottom>
-                Trạng thái
-              </Typography>
-            </Grid>
-
-            <Grid item xs={12}>
-              <FormControlLabel
-                control={
-                  <Switch
-                    checked={formData.verified}
-                    onChange={handleSwitchChange}
-                    name="verified"
-                    color="primary"
-                  />
-                }
-                label="Đã xác minh"
+              <TextField
+                fullWidth
+                label="Tài liệu xác minh"
+                name="verificationDocuments"
+                value={formData.verificationDocuments}
+                onChange={handleChange}
+                placeholder="Liên kết đến các tài liệu xác minh (CV, bằng cấp, etc.)"
               />
-              <FormHelperText>
-                Giảng viên đã xác minh sẽ được đánh dấu và hiển thị nổi bật trên
-                hệ thống
-              </FormHelperText>
             </Grid>
           </Grid>
         </Box>
       </DialogContent>
 
       <DialogActions sx={{ p: 2 }}>
-        <Button onClick={handleCloseDialog}>Hủy</Button>
-        <Button onClick={handleSave} variant="contained" startIcon={<Save />}>
-          Lưu giảng viên
+        <Button onClick={handleCloseDialog} disabled={isSubmitting}>
+          Hủy
+        </Button>
+        <Button
+          onClick={handleSave}
+          variant="contained"
+          startIcon={<Save />}
+          disabled={isSubmitting}
+        >
+          {isSubmitting
+            ? "Đang lưu..."
+            : editMode
+            ? "Lưu thay đổi"
+            : "Lưu giảng viên"}
         </Button>
       </DialogActions>
     </Dialog>

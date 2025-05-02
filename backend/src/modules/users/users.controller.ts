@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpException,
+  HttpStatus,
   Param,
   ParseIntPipe,
   Patch,
@@ -17,6 +19,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateInstructorDto } from './dto/update-instructor.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
+import { CreateInstructorData } from './dto/create-instructor.dto';
 
 @Controller('users')
 export class UsersController {
@@ -48,6 +51,20 @@ export class UsersController {
     return this.usersService.findAll();
   }
 
+  @Get('students')
+  @UseGuards(JwtAuthGuard)
+  @Roles(UserRole.ADMIN)
+  async getAllRegularStudents() {
+    return await this.usersService.findAllStudents();
+  }
+
+  @Get('students-academic')
+  @UseGuards(JwtAuthGuard)
+  @Roles(UserRole.ADMIN)
+  async getAllAcademicStudents() {
+    return await this.usersService.findAllStudentAcademics();
+  }
+
   @Get(':id')
   findById(@Param('id') id: number): Promise<User | null> {
     return this.usersService.findById(id);
@@ -69,18 +86,6 @@ export class UsersController {
     @Param('instructorId') instructorId: number,
   ): Promise<User[]> {
     return this.usersService.findStudentAcademicByInstructorId(instructorId);
-  }
-
-  @Get('students/:id/academic-courses')
-  async getStudentAcademicCourses(@Param('id') id: string) {
-    return await this.usersService.findAcademicClassCoursesByStudentAcademicId(
-      +id,
-    );
-  }
-
-  @Get('academic-class/:classId/students')
-  async getStudentsByAcademicClass(@Param('classId') classId: number) {
-    return this.usersService.findStudentsByAcademicClassId(classId);
   }
 
   @Patch(':userId/change-password')
@@ -118,5 +123,30 @@ export class UsersController {
     },
   ) {
     return this.usersService.updateStudentProfile(userId, updateData);
+  }
+
+  @Post('instructor')
+  @UseGuards(JwtAuthGuard)
+  @Roles(UserRole.ADMIN)
+  async createInstructor(@Body() data: CreateInstructorData) {
+    return this.usersService.createInstructor(data);
+  }
+
+  @Delete('instructor/:userId')
+  @UseGuards(JwtAuthGuard)
+  @Roles(UserRole.ADMIN)
+  async deleteInstructor(
+    @Param('userId', ParseIntPipe) userId: number,
+  ): Promise<void> {
+    return this.usersService.deleteInstructor(userId);
+  }
+
+  @Delete(':userId')
+  @UseGuards(JwtAuthGuard)
+  @Roles(UserRole.ADMIN)
+  async deleteUser(
+    @Param('userId', ParseIntPipe) userId: number,
+  ): Promise<void> {
+    return this.usersService.deleteUser(userId);
   }
 }

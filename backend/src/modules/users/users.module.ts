@@ -1,11 +1,15 @@
 import { Module } from '@nestjs/common';
-import { UsersService } from './users.service';
-import { UsersController } from './users.controller';
 import { TypeOrmModule } from '@nestjs/typeorm';
+
+// Controllers & Services
+import { UsersController } from './users.controller';
+import { UsersService } from './users.service';
+
+// Entities
 import { User } from 'src/entities/User';
 import { UserStudent } from 'src/entities/UserStudent';
 import { UserInstructor } from 'src/entities/UserInstructor';
-import { UserStudentAcademic } from '../../entities/UserStudentAcademic';
+import { UserStudentAcademic } from 'src/entities/UserStudentAcademic';
 import { AcademicClass } from 'src/entities/AcademicClass';
 import { AcademicClassCourse } from 'src/entities/AcademicClassCourse';
 import { AcademicClassInstructor } from 'src/entities/AcademicClassInstructor';
@@ -15,10 +19,12 @@ import { CourseLesson } from 'src/entities/CourseLesson';
 import { Assignment } from 'src/entities/Assignment';
 import { QuizAttempt } from 'src/entities/QuizAttempt';
 import { Quiz } from 'src/entities/Quiz';
+import { Course } from 'src/entities/Course';
+import { Enrollment } from 'src/entities/Enrollment';
+import { Category } from 'src/entities/Category';
+import { Notification } from 'src/entities/Notification';
 
 @Module({
-  controllers: [UsersController],
-  providers: [UsersService],
   imports: [
     TypeOrmModule.forFeature([
       User,
@@ -34,8 +40,14 @@ import { Quiz } from 'src/entities/Quiz';
       Assignment,
       QuizAttempt,
       Quiz,
+      Course,
+      Enrollment,
+      Category,
+      Notification,
     ]),
   ],
+  controllers: [UsersController],
+  providers: [UsersService],
   exports: [UsersService],
 })
 export class UsersModule {}

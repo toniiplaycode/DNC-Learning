@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Box,
   Typography,
@@ -53,37 +53,18 @@ import {
 import { useNavigate } from "react-router-dom";
 import DialogInstructorDetail from "../../components/admin/instructor/DialogInstructorDetail";
 import DialogAddInstructor from "../../components/admin/instructor/DialogAddInstructor";
-
-// Mock data for instructors
-const mockInstructors = Array(20)
-  .fill(null)
-  .map((_, index) => ({
-    id: index + 1,
-    name: `Giảng viên ${index + 1}`,
-    email: `instructor${index + 1}@example.com`,
-    phone: `09${Math.floor(Math.random() * 100000000)
-      .toString()
-      .padStart(8, "0")}`,
-    avatar: `/src/assets/avatar.png`,
-    specialization: [
-      "Web Development",
-      "Mobile App",
-      "Data Science",
-      "UI/UX Design",
-      "AI/ML",
-    ][index % 5],
-    joinDate: new Date(
-      Date.now() - Math.floor(Math.random() * 365 * 2) * 24 * 60 * 60 * 1000
-    ).toISOString(),
-    coursesCount: Math.floor(Math.random() * 10),
-    studentsCount: Math.floor(Math.random() * 1000),
-    rating: (3 + Math.random() * 2).toFixed(1),
-    status: ["active", "pending", "inactive", "blocked"][index % 4],
-    verified: index % 3 === 0,
-  }));
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import { selectAllInstructors } from "../../features/user_instructors/instructorsSelectors";
+import {
+  fetchInstructors,
+  deleteInstructor,
+} from "../../features/user_instructors/instructorsApiSlice";
+import { toast } from "react-toastify";
 
 const AdminInstructors = () => {
   const navigate = useNavigate();
+  const dispatch = useAppDispatch();
+  const instructors = useAppSelector(selectAllInstructors);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [specializationFilter, setSpecializationFilter] = useState("all");
@@ -96,10 +77,16 @@ const AdminInstructors = () => {
   const [openBlockDialog, setOpenBlockDialog] = useState(false);
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [openVerifyDialog, setOpenVerifyDialog] = useState(false);
-  const [instructors, setInstructors] = useState(mockInstructors);
   const [openAddDialog, setOpenAddDialog] = useState(false);
+  const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [selectedInstructorData, setSelectedInstructorData] =
+    useState<any>(null);
 
   const rowsPerPage = 10;
+
+  useEffect(() => {
+    dispatch(fetchInstructors());
+  }, [dispatch]);
 
   // Handle menu open/close
   const handleMenuOpen = (
@@ -127,12 +114,6 @@ const AdminInstructors = () => {
     setOpenDetailDialog(true);
   };
 
-  // Handle block/unblock
-  const handleToggleBlockClick = () => {
-    handleMenuClose();
-    setOpenBlockDialog(true);
-  };
-
   const handleToggleBlockConfirm = () => {
     if (selectedInstructor) {
       const updatedInstructors = instructors.map((instructor) => {
@@ -143,7 +124,7 @@ const AdminInstructors = () => {
         }
         return instructor;
       });
-      setInstructors(updatedInstructors);
+
       console.log(
         `Đã ${
           getSelectedInstructor()?.status === "blocked" ? "mở khóa" : "khóa"
@@ -151,12 +132,6 @@ const AdminInstructors = () => {
       );
       setOpenBlockDialog(false);
     }
-  };
-
-  // Handle verify/unverify
-  const handleToggleVerifyClick = () => {
-    handleMenuClose();
-    setOpenVerifyDialog(true);
   };
 
   const handleToggleVerifyConfirm = () => {
@@ -167,7 +142,7 @@ const AdminInstructors = () => {
         }
         return instructor;
       });
-      setInstructors(updatedInstructors);
+
       console.log(
         `Đã ${
           getSelectedInstructor()?.verified ? "hủy xác minh" : "xác minh"
@@ -183,14 +158,36 @@ const AdminInstructors = () => {
     setOpenDeleteDialog(true);
   };
 
-  const handleDeleteConfirm = () => {
-    if (selectedInstructor) {
-      const updatedInstructors = instructors.filter(
-        (instructor) => instructor.id !== selectedInstructor
-      );
-      setInstructors(updatedInstructors);
-      console.log(`Đã xóa giảng viên có ID: ${selectedInstructor}`);
+  const handleDeleteConfirm = async () => {
+    if (!selectedInstructor) return;
+
+    const instructor = instructors.find((i) => i.id === selectedInstructor);
+
+    if (!instructor) {
+      toast.error("Không tìm thấy thông tin giảng viên");
       setOpenDeleteDialog(false);
+      return;
+    }
+
+    // Kiểm tra xem giảng viên có khóa học hoặc học viên không
+    if (
+      (instructor.totalCourses && instructor.totalCourses > 0) ||
+      (instructor.totalStudents && instructor.totalStudents > 0)
+    ) {
+      toast.error(
+        "Không thể xóa giảng viên này vì họ đang có khóa học hoặc học viên. " +
+          "Vui lòng xóa tất cả khóa học và học viên trước."
+      );
+      setOpenDeleteDialog(false);
+      return;
+    }
+
+    try {
+      await dispatch(deleteInstructor(instructor.userId)).unwrap();
+      toast.success("Xóa giảng viên thành công");
+      setOpenDeleteDialog(false);
+    } catch (error: any) {
+      toast.error(error.message || "Không thể xóa giảng viên");
     }
   };
 
@@ -206,7 +203,7 @@ const AdminInstructors = () => {
     );
     localStorage.setItem(
       "impersonatedInstructorName",
-      getSelectedInstructor()?.name || ""
+      getSelectedInstructor()?.fullName || ""
     );
 
     // Chuyển hướng đến trang dashboard của giảng viên
@@ -215,11 +212,11 @@ const AdminInstructors = () => {
 
   // Filter instructors
   const filteredInstructors = instructors.filter((instructor) => {
-    const matchesSearch = instructor.name
-      .toLowerCase()
-      .includes(searchQuery.toLowerCase());
+    const matchesSearch =
+      instructor.fullName?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      false;
     const matchesStatus =
-      statusFilter === "all" || instructor.status === statusFilter;
+      statusFilter === "all" || instructor.verificationStatus === statusFilter;
     const matchesSpecialization =
       specializationFilter === "all" ||
       instructor.specialization === specializationFilter;
@@ -258,30 +255,41 @@ const AdminInstructors = () => {
     setOpenAddDialog(true);
   };
 
-  // Hàm xử lý lưu giảng viên mới
-  const handleSaveInstructor = (instructorData: any) => {
-    // Tạo ID mới cho giảng viên
-    const newId = Math.max(...instructors.map((i) => i.id)) + 1;
-
-    // Tạo giảng viên mới
-    const newInstructor = {
-      id: newId,
-      ...instructorData,
-    };
-
-    // Cập nhật danh sách giảng viên
-    setInstructors([newInstructor, ...instructors]);
-
-    // Đóng dialog
-    setOpenAddDialog(false);
-
-    // Log để debug
-    console.log("Đã thêm giảng viên mới:", newInstructor);
+  const handleEditClick = () => {
+    const instructor = getSelectedInstructor();
+    if (instructor) {
+      setSelectedInstructorData({
+        user: {
+          id: instructor.userId,
+          username: instructor.user?.username,
+          email: instructor.user?.email,
+          phone: instructor.user?.phone,
+          avatarUrl: instructor.user?.avatarUrl,
+        },
+        instructor: {
+          id: instructor.id,
+          fullName: instructor.fullName,
+          professionalTitle: instructor.professionalTitle,
+          specialization: instructor.specialization,
+          educationBackground: instructor.educationBackground,
+          teachingExperience: instructor.teachingExperience,
+          bio: instructor.bio,
+          expertiseAreas: instructor.expertiseAreas,
+          certificates: instructor.certificates,
+          linkedinProfile: instructor.linkedinProfile,
+          website: instructor.website,
+          verificationDocuments: instructor.verificationDocuments,
+          verificationStatus: instructor.verificationStatus,
+        },
+      });
+      setOpenEditDialog(true);
+    }
+    handleMenuClose();
   };
 
   return (
     <Box>
-      <Typography variant="h4" gutterBottom>
+      <Typography variant="h5" fontWeight="bold" gutterBottom>
         Quản lý giảng viên
       </Typography>
 
@@ -372,14 +380,14 @@ const AdminInstructors = () => {
                 <TableCell>
                   <Box sx={{ display: "flex", alignItems: "center" }}>
                     <Avatar
-                      src={instructor.avatar}
-                      alt={instructor.name}
+                      src={instructor.user?.avatarUrl}
+                      alt={instructor.fullName}
                       sx={{ mr: 2 }}
                     />
                     <Box>
                       <Typography variant="body1">
-                        {instructor.name}{" "}
-                        {instructor.verified && (
+                        {instructor.fullName}{" "}
+                        {instructor.verificationStatus === "verified" && (
                           <Tooltip title="Đã xác minh">
                             <VerifiedUser
                               fontSize="small"
@@ -390,7 +398,7 @@ const AdminInstructors = () => {
                         )}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        ID: {instructor.id}
+                        {instructor.professionalTitle}
                       </Typography>
                     </Box>
                   </Box>
@@ -400,35 +408,44 @@ const AdminInstructors = () => {
                     <Box sx={{ display: "flex", alignItems: "center" }}>
                       <Email fontSize="small" sx={{ mr: 1, opacity: 0.7 }} />
                       <Typography variant="body2">
-                        {instructor.email}
+                        {instructor.user?.email}
                       </Typography>
                     </Box>
                     <Box sx={{ display: "flex", alignItems: "center" }}>
                       <Phone fontSize="small" sx={{ mr: 1, opacity: 0.7 }} />
                       <Typography variant="body2">
-                        {instructor.phone}
+                        {instructor.user?.phone}
                       </Typography>
                     </Box>
                   </Stack>
                 </TableCell>
-                <TableCell>{instructor.specialization}</TableCell>
+                <TableCell>
+                  <Stack spacing={0.5}>
+                    <Typography variant="body2">
+                      {instructor.specialization}
+                    </Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {instructor.educationBackground}
+                    </Typography>
+                  </Stack>
+                </TableCell>
                 <TableCell>
                   <Stack spacing={1}>
                     <Typography variant="body2">
-                      {instructor.coursesCount} khóa học
+                      {instructor.totalCourses} khóa học
                     </Typography>
                     <Typography variant="body2">
-                      {instructor.studentsCount} học viên
+                      {instructor.totalStudents} học viên
                     </Typography>
                     <Box sx={{ display: "flex", alignItems: "center" }}>
                       <Rating
-                        value={parseFloat(instructor.rating)}
+                        value={parseFloat(instructor.averageRating)}
                         precision={0.5}
                         size="small"
                         readOnly
                       />
                       <Typography variant="body2" sx={{ ml: 1 }}>
-                        ({instructor.rating})
+                        ({instructor.totalReviews})
                       </Typography>
                     </Box>
                   </Stack>
@@ -437,18 +454,23 @@ const AdminInstructors = () => {
                   <Chip
                     label={
                       {
-                        active: "Đang hoạt động",
+                        verified: "Đã xác minh",
                         pending: "Đang xét duyệt",
-                        inactive: "Không hoạt động",
-                        blocked: "Đã khóa",
-                      }[instructor.status]
+                        rejected: "Từ chối",
+                      }[instructor.verificationStatus]
                     }
-                    color={getStatusColor(instructor.status) as any}
+                    color={
+                      {
+                        verified: "success",
+                        pending: "warning",
+                        rejected: "error",
+                      }[instructor.verificationStatus] as any
+                    }
                     size="small"
                   />
                 </TableCell>
                 <TableCell>
-                  {new Date(instructor.joinDate).toLocaleDateString("vi-VN")}
+                  {new Date(instructor.createdAt).toLocaleDateString("vi-VN")}
                 </TableCell>
                 <TableCell align="right">
                   <IconButton
@@ -492,39 +514,11 @@ const AdminInstructors = () => {
           </ListItemIcon>
           <ListItemText>Truy cập trang giảng viên</ListItemText>
         </MenuItem>
-        <MenuItem onClick={handleMenuClose}>
+        <MenuItem onClick={handleEditClick}>
           <ListItemIcon>
             <Edit fontSize="small" />
           </ListItemIcon>
           <ListItemText>Chỉnh sửa</ListItemText>
-        </MenuItem>
-        <MenuItem onClick={handleToggleVerifyClick}>
-          <ListItemIcon>
-            {getSelectedInstructor()?.verified ? (
-              <Cancel fontSize="small" color="warning" />
-            ) : (
-              <CheckCircle fontSize="small" color="success" />
-            )}
-          </ListItemIcon>
-          <ListItemText>
-            {getSelectedInstructor()?.verified
-              ? "Hủy xác minh"
-              : "Xác minh giảng viên"}
-          </ListItemText>
-        </MenuItem>
-        <MenuItem onClick={handleToggleBlockClick}>
-          <ListItemIcon>
-            {getSelectedInstructor()?.status === "blocked" ? (
-              <CheckCircle fontSize="small" color="success" />
-            ) : (
-              <Block fontSize="small" color="error" />
-            )}
-          </ListItemIcon>
-          <ListItemText>
-            {getSelectedInstructor()?.status === "blocked"
-              ? "Mở khóa giảng viên"
-              : "Khóa giảng viên"}
-          </ListItemText>
         </MenuItem>
         <MenuItem onClick={handleDeleteClick} sx={{ color: "error.main" }}>
           <ListItemIcon>
@@ -624,7 +618,14 @@ const AdminInstructors = () => {
       <DialogAddInstructor
         open={openAddDialog}
         onClose={() => setOpenAddDialog(false)}
-        onSave={handleSaveInstructor}
+      />
+
+      {/* Dialog chỉnh sửa giảng viên */}
+      <DialogAddInstructor
+        open={openEditDialog}
+        onClose={() => setOpenEditDialog(false)}
+        editMode={true}
+        instructorData={selectedInstructorData}
       />
     </Box>
   );

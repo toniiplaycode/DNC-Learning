@@ -17,6 +17,8 @@ export interface UsersState {
   studentAcademicCourses: AcademicClassCourse[];
   instructorAcademicStudents: User[];
   academicClassStudents: User[];
+  regularStudents: User[];
+  academicStudents: User[];
 }
 
 const initialState: UsersState = {
@@ -28,6 +30,8 @@ const initialState: UsersState = {
   studentAcademicCourses: [],
   instructorAcademicStudents: [],
   academicClassStudents: [],
+  regularStudents: [],
+  academicStudents: [],
 };
 
 // Create many students academic for a academic class
@@ -278,6 +282,57 @@ export const updateStudentProfile = createAsyncThunk(
   }
 );
 
+// Fetch all regular students
+export const fetchRegularStudents = createAsyncThunk(
+  "users/fetchRegularStudents",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get("/users/students");
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch regular students"
+      );
+    }
+  }
+);
+
+// Fetch all academic students
+export const fetchAcademicStudents = createAsyncThunk(
+  "users/fetchAcademicStudents",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get("/users/students-academic");
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch academic students"
+      );
+    }
+  }
+);
+
+// Delete user
+export const deleteUser = createAsyncThunk(
+  "users/deleteUser",
+  async (userId: number, { rejectWithValue }) => {
+    try {
+      await api.delete(`/users/${userId}`);
+      return userId;
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || "Failed to delete user";
+      if (errorMessage.includes("enrolled courses")) {
+        return rejectWithValue("Không thể xóa sinh viên đã đăng ký khóa học");
+      }
+      if (errorMessage.includes("grades")) {
+        return rejectWithValue("Không thể xóa sinh viên đã có điểm");
+      }
+      return rejectWithValue(errorMessage);
+    }
+  }
+);
+
 const usersSlice = createSlice({
   name: "users",
   initialState,
@@ -452,6 +507,70 @@ const usersSlice = createSlice({
         state.error = null;
       })
       .addCase(updateStudentProfile.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
+
+      // Fetch regular students
+      .addCase(fetchRegularStudents.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchRegularStudents.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.regularStudents = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchRegularStudents.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
+
+      // Fetch academic students
+      .addCase(fetchAcademicStudents.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchAcademicStudents.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.academicStudents = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchAcademicStudents.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
+
+      // Delete user
+      .addCase(deleteUser.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(deleteUser.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        // Remove from regular students
+        state.regularStudents = state.regularStudents.filter(
+          (student) => student.id !== action.payload
+        );
+        // Remove from academic students
+        state.academicStudents = state.academicStudents.filter(
+          (student) => student.id !== action.payload
+        );
+        // Remove from instructor students
+        state.instructorStudents = state.instructorStudents.filter(
+          (student) => student.id !== action.payload
+        );
+        // Remove from academic class students
+        state.academicClassStudents = state.academicClassStudents.filter(
+          (student) => student.id !== action.payload
+        );
+        // Remove from instructor academic students
+        state.instructorAcademicStudents =
+          state.instructorAcademicStudents.filter(
+            (student) => student.id !== action.payload
+          );
+        // Remove from all users
+        state.users = state.users.filter((user) => user.id !== action.payload);
+        state.error = null;
+      })
+      .addCase(deleteUser.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
       });

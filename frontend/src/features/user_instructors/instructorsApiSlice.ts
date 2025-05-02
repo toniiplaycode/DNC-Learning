@@ -1,5 +1,6 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { api } from "../../services/api";
+import { VerificationStatus } from "../../types/user-instructor.types";
 
 export interface Instructor {
   id: number;
@@ -32,6 +33,30 @@ export interface Instructor {
   totalCourses?: number;
   totalStudents?: number;
   courses?: any[];
+}
+
+export interface CreateInstructorRequest {
+  user: {
+    username: string;
+    email: string;
+    password: string;
+    phone?: string;
+    avatarUrl?: string;
+  };
+  instructor: {
+    fullName: string;
+    professionalTitle?: string;
+    specialization?: string;
+    educationBackground?: string;
+    teachingExperience?: string;
+    bio?: string;
+    expertiseAreas?: string;
+    certificates?: string;
+    linkedinProfile?: string;
+    website?: string;
+    verificationDocuments?: string;
+    verificationStatus?: VerificationStatus;
+  };
 }
 
 // Lấy danh sách tất cả giảng viên
@@ -67,16 +92,13 @@ export const fetchInstructorById = createAsyncThunk(
 // Tạo giảng viên mới
 export const createInstructor = createAsyncThunk(
   "instructors/create",
-  async (
-    instructorData: Omit<Instructor, "id" | "createdAt" | "updatedAt">,
-    { rejectWithValue }
-  ) => {
+  async (data: CreateInstructorRequest, { rejectWithValue }) => {
     try {
-      const response = await api.post("/user-instructors", instructorData);
+      const response = await api.post("/users/instructor", data);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data || "Không thể tạo giảng viên"
+        error.response?.data?.message || "Không thể tạo giảng viên"
       );
     }
   }
@@ -136,13 +158,15 @@ export const rejectInstructor = createAsyncThunk(
 // Xóa giảng viên
 export const deleteInstructor = createAsyncThunk(
   "instructors/delete",
-  async (id: number, { rejectWithValue }) => {
+  async (userId: number, { rejectWithValue, dispatch }) => {
     try {
-      await api.delete(`/user-instructors/${id}`);
-      return id;
+      await api.delete(`/users/instructor/${userId}`);
+      // Sau khi xóa thành công, fetch lại danh sách
+      await dispatch(fetchInstructors());
+      return userId;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data || "Không thể xóa giảng viên"
+        error.response?.data?.message || "Không thể xóa giảng viên"
       );
     }
   }

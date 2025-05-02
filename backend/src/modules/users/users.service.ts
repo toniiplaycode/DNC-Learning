@@ -5,19 +5,24 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User, UserRole } from 'src/entities/User';
+import { User, UserRole, UserStatus } from 'src/entities/User';
 import { DataSource, Repository } from 'typeorm';
 import * as bcrypt from 'bcrypt';
 import { UserStudentAcademic } from '../../entities/UserStudentAcademic';
 import { AcademicClass } from '../../entities/AcademicClass';
 import { AcademicClassCourse } from '../../entities/AcademicClassCourse';
 import { AcademicClassInstructor } from 'src/entities/AcademicClassInstructor';
-import { UserInstructor } from 'src/entities/UserInstructor';
+import {
+  UserInstructor,
+  VerificationStatus,
+} from 'src/entities/UserInstructor';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateInstructorDto } from './dto/update-instructor.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import { UserStudent } from 'src/entities/UserStudent';
+import { CreateInstructorData } from './dto/create-instructor.dto';
+import { Notification } from 'src/entities/Notification';
 
 interface StudentUserData {
   user: {
@@ -40,6 +45,8 @@ export class UsersService {
   constructor(
     @InjectRepository(User)
     private userRepository: Repository<User>,
+    @InjectRepository(UserStudent)
+    private userStudent: Repository<UserStudent>,
     @InjectRepository(UserStudentAcademic)
     private userStudentAcademic: Repository<UserStudentAcademic>,
     @InjectRepository(AcademicClass)
@@ -48,6 +55,10 @@ export class UsersService {
     private academicClassCourse: Repository<AcademicClassCourse>,
     @InjectRepository(AcademicClassInstructor)
     private academicClassInstructor: Repository<AcademicClassInstructor>,
+    @InjectRepository(UserInstructor)
+    private userInstructorRepository: Repository<UserInstructor>,
+    @InjectRepository(Notification)
+    private notification: Repository<Notification>,
     private dataSource: DataSource,
   ) {}
   findAll(): Promise<User[]> {
@@ -309,6 +320,9 @@ export class UsersService {
   }
 
   async findById(id: number): Promise<User | null> {
+    if (!id || isNaN(id)) {
+      throw new BadRequestException('Invalid user ID provided');
+    }
     return this.userRepository.findOne({
       where: { id },
       relations: {
@@ -486,6 +500,10 @@ export class UsersService {
       instructor: UpdateInstructorDto;
     },
   ) {
+    if (!userId || isNaN(userId)) {
+      throw new BadRequestException('Invalid user ID provided');
+    }
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -504,6 +522,16 @@ export class UsersService {
         throw new NotFoundException(
           `Instructor profile not found for user ${userId}`,
         );
+      }
+
+      // Check for duplicate email if email is being updated
+      if (updateData.user.email && updateData.user.email !== user.email) {
+        const existingUser = await this.userRepository.findOne({
+          where: { email: updateData.user.email },
+        });
+        if (existingUser) {
+          throw new BadRequestException('Email already exists');
+        }
       }
 
       // Update user data
@@ -561,6 +589,10 @@ export class UsersService {
       student: UpdateStudentDto;
     },
   ) {
+    if (!userId || isNaN(userId)) {
+      throw new BadRequestException('Invalid user ID provided');
+    }
+
     const queryRunner = this.dataSource.createQueryRunner();
     await queryRunner.connect();
     await queryRunner.startTransaction();
@@ -627,6 +659,261 @@ export class UsersService {
         throw error;
       }
       throw new Error(`Failed to update student profile: ${error.message}`);
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async createInstructor(
+    data: CreateInstructorData,
+  ): Promise<{ user: User; instructor: UserInstructor }> {
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Check for duplicate email
+      const existingUser = await this.userRepository.findOne({
+        where: { email: data.user.email },
+      });
+      if (existingUser) {
+        throw new BadRequestException('Email already exists');
+      }
+
+      // 1. Create user
+      const hashedPassword = await bcrypt.hash(data.user.password, 10);
+      const newUser = this.userRepository.create({
+        ...data.user,
+        password: hashedPassword,
+        role: data.user.role || UserRole.INSTRUCTOR,
+        status: data.user.status || UserStatus.ACTIVE,
+      });
+
+      const savedUser = await queryRunner.manager.save(User, newUser);
+
+      // 2. Create instructor profile
+      const newInstructor = this.userInstructorRepository.create({
+        userId: savedUser.id,
+        fullName: data.instructor.fullName,
+        professionalTitle: data.instructor.professionalTitle,
+        specialization: data.instructor.specialization,
+        educationBackground: data.instructor.educationBackground,
+        teachingExperience: data.instructor.teachingExperience,
+        bio: data.instructor.bio,
+        expertiseAreas: data.instructor.expertiseAreas,
+        certificates: data.instructor.certificates,
+        linkedinProfile: data.instructor.linkedinProfile,
+        website: data.instructor.website,
+        verificationStatus: data.instructor.verificationStatus,
+        verificationDocuments: data.instructor.verificationDocuments,
+      });
+
+      const savedInstructor = await queryRunner.manager.save(
+        UserInstructor,
+        newInstructor,
+      );
+
+      // 3. Update user with instructor relation
+      savedUser.userInstructor = savedInstructor;
+      await queryRunner.manager.save(User, savedUser);
+
+      await queryRunner.commitTransaction();
+
+      return {
+        user: savedUser,
+        instructor: savedInstructor,
+      };
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+
+      // Check for specific errors
+      if (error.code === '23505') {
+        if (error.detail.includes('email')) {
+          throw new BadRequestException('Email already exists');
+        }
+        if (error.detail.includes('username')) {
+          throw new BadRequestException('Username already exists');
+        }
+      }
+
+      throw new Error(`Failed to create instructor: ${error.message}`);
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async deleteInstructor(userId: number): Promise<void> {
+    if (!userId || isNaN(userId)) {
+      throw new BadRequestException('Invalid user ID provided');
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Tìm user và instructor
+      const user = await queryRunner.manager.findOne(User, {
+        where: { id: userId },
+        relations: ['userInstructor'],
+      });
+
+      if (!user) {
+        throw new NotFoundException(`User with ID ${userId} not found`);
+      }
+
+      if (!user.userInstructor) {
+        throw new NotFoundException(
+          `Instructor profile not found for user ${userId}`,
+        );
+      }
+
+      // Xóa instructor profile trước
+      await queryRunner.manager.delete(UserInstructor, {
+        userId: user.id,
+      });
+
+      // Sau đó xóa user
+      await queryRunner.manager.delete(User, {
+        id: user.id,
+      });
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      throw new Error(`Failed to delete instructor: ${error.message}`);
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  async findAllStudents() {
+    try {
+      const students = await this.userRepository
+        .createQueryBuilder('user')
+        .leftJoinAndSelect('user.userStudent', 'userStudent')
+        .leftJoinAndSelect('user.enrollments', 'enrollments')
+        .leftJoinAndSelect('enrollments.course', 'course')
+        .leftJoinAndSelect('course.instructor', 'instructor')
+        .leftJoinAndSelect('course.category', 'category')
+        .leftJoinAndSelect('user.userGrades', 'userGrades')
+        .leftJoinAndSelect(
+          'userGrades.assignmentSubmission',
+          'assignmentSubmission',
+        )
+        .leftJoinAndSelect('assignmentSubmission.assignment', 'assignment')
+        .leftJoinAndSelect('userGrades.quizAttempt', 'quizAttempt')
+        .leftJoinAndSelect('quizAttempt.quiz', 'quiz')
+        .where('user.role = :role', { role: UserRole.STUDENT })
+        .orderBy('user.createdAt', 'DESC')
+        .getMany();
+
+      return students;
+    } catch (error) {
+      throw new Error(`Failed to get students: ${error.message}`);
+    }
+  }
+
+  async findAllStudentAcademics() {
+    try {
+      const students = await this.userRepository
+        .createQueryBuilder('user')
+        .leftJoinAndSelect('user.userStudentAcademic', 'userStudentAcademic')
+        .leftJoinAndSelect('userStudentAcademic.academicClass', 'academicClass')
+        .leftJoinAndSelect('user.userGrades', 'userGrades')
+        .leftJoinAndSelect(
+          'userGrades.assignmentSubmission',
+          'assignmentSubmission',
+        )
+        .leftJoinAndSelect('assignmentSubmission.assignment', 'assignment')
+        .leftJoinAndSelect('userGrades.quizAttempt', 'quizAttempt')
+        .leftJoinAndSelect('quizAttempt.quiz', 'quiz')
+        .where('user.role = :role', { role: UserRole.STUDENT_ACADEMIC })
+        .orderBy('userStudentAcademic.studentCode', 'ASC')
+        .getMany();
+
+      return students;
+    } catch (error) {
+      throw new Error(`Failed to get academic students: ${error.message}`);
+    }
+  }
+
+  async deleteUser(userId: number): Promise<void> {
+    if (!userId || isNaN(userId)) {
+      throw new BadRequestException('Invalid user ID provided');
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Find the user with all relations
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+        relations: [
+          'userStudent',
+          'userStudentAcademic',
+          'userInstructor',
+          'enrollments',
+          'userGrades',
+        ],
+      });
+
+      if (!user) {
+        throw new NotFoundException(`User with ID ${userId} not found`);
+      }
+
+      // Check if user has any enrolled courses
+      if (user.enrollments && user.enrollments.length > 0) {
+        throw new BadRequestException(
+          'Cannot delete user with enrolled courses',
+        );
+      }
+
+      // Check if user has any grades
+      if (user.userGrades && user.userGrades.length > 0) {
+        throw new BadRequestException('Cannot delete user with grades');
+      }
+
+      // Delete notifications first using repository
+      await this.notification.delete({ userId: userId });
+
+      // Delete student records if they exist
+      if (user.userStudent) {
+        await queryRunner.manager.delete(UserStudent, {
+          userId: user.id,
+        });
+      }
+
+      if (user.userStudentAcademic) {
+        await queryRunner.manager.delete(UserStudentAcademic, {
+          userId: user.id,
+        });
+      }
+
+      // Delete instructor record if it exists
+      if (user.userInstructor) {
+        await queryRunner.manager.delete(UserInstructor, {
+          userId: user.id,
+        });
+      }
+
+      // Delete the user
+      await queryRunner.manager.delete(User, {
+        id: user.id,
+      });
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      throw new Error(`Failed to delete user: ${error.message}`);
     } finally {
       await queryRunner.release();
     }

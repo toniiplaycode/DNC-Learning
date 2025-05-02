@@ -49,9 +49,15 @@ import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { selectCurrentUser } from "../../features/auth/authSelectors";
 import { selectAllCourses } from "../../features/courses/coursesSelector";
 import { fetchCategories } from "../../features/categories/categoriesApiSlice";
-import { fetchCourses } from "../../features/courses/coursesApiSlice";
+import {
+  deleteCourse,
+  fetchCourses,
+} from "../../features/courses/coursesApiSlice";
 import { selectActiveCategories } from "../../features/categories/categoriesSelectors";
 import DialogAddEditCourse from "../../components/instructor/course/DialogAddEditCourse";
+import { fetchInstructors } from "../../features/user_instructors/instructorsApiSlice";
+import { selectAllInstructors } from "../../features/user_instructors/instructorsSelectors";
+import { toast } from "react-toastify";
 
 interface Instructor {
   id: string;
@@ -93,9 +99,12 @@ const AdminCourses = () => {
   const currentUser = useAppSelector(selectCurrentUser);
   const courses = useAppSelector(selectAllCourses);
   const categories = useAppSelector(selectActiveCategories);
+  const instructors = useAppSelector(selectAllInstructors);
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [instructorFilter, setInstructorFilter] = useState("all");
+  const [dateSort, setDateSort] = useState<"newest" | "oldest">("newest");
   const [page, setPage] = useState(1);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedCourse, setSelectedCourse] = useState<Course | null>(null);
@@ -103,14 +112,15 @@ const AdminCourses = () => {
   const [openDetailDialog, setOpenDetailDialog] = useState(false);
   const [openLockDialog, setOpenLockDialog] = useState(false);
   const [openAddDialog, setOpenAddDialog] = useState(false);
+  const [openEditDialog, setOpenEditDialog] = useState(false);
+  const [courseToEdit, setCourseToEdit] = useState<Course | null>(null);
   const rowsPerPage = 10;
 
   useEffect(() => {
     dispatch(fetchCategories());
     dispatch(fetchCourses());
-  }, [dispatch, currentUser]);
-
-  console.log(categories);
+    dispatch(fetchInstructors());
+  }, [dispatch]);
 
   const handleMenuOpen = (
     event: React.MouseEvent<HTMLElement>,
@@ -129,19 +139,27 @@ const AdminCourses = () => {
     setOpenDeleteDialog(true);
   };
 
-  const handleDeleteConfirm = () => {
-    console.log(`Deleting course with ID: ${selectedCourse?.id}`);
+  const handleDeleteConfirm = async () => {
+    try {
+      if (selectedCourse) {
+        await dispatch(deleteCourse(selectedCourse.id))
+          .unwrap()
+          .then((res) => {
+            toast.success("Xóa khóa học thành công!");
+            // Refresh the courses list
+            dispatch(fetchCourses());
+          });
+      }
+    } catch (error) {
+      toast.error("Không thể xóa khóa học");
+      console.error("Error deleting course:", error);
+    }
     setOpenDeleteDialog(false);
   };
 
   const handleViewDetail = () => {
     handleMenuClose();
     setOpenDetailDialog(true);
-  };
-
-  const handleToggleLockClick = () => {
-    handleMenuClose();
-    setOpenLockDialog(true);
   };
 
   const handleToggleLockConfirm = () => {
@@ -166,19 +184,42 @@ const AdminCourses = () => {
     setOpenAddDialog(true);
   };
 
+  const handleEditClick = () => {
+    handleMenuClose();
+    setCourseToEdit(selectedCourse);
+    setOpenEditDialog(true);
+  };
+
   const filteredCourses =
     courses &&
-    courses.filter((course) => {
-      const matchesSearch = course.title
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
-      const matchesCategory =
-        categoryFilter === "all" || course.category.name === categoryFilter;
-      const matchesStatus =
-        statusFilter === "all" || course.status === statusFilter;
+    courses
+      .filter((course) => {
+        const matchesSearch = course.title
+          .toLowerCase()
+          .includes(searchQuery.toLowerCase());
+        const matchesCategory =
+          categoryFilter === "all" || course.category.name === categoryFilter;
+        const matchesStatus =
+          statusFilter === "all" || course.status === statusFilter;
+        const matchesInstructor =
+          instructorFilter === "all" ||
+          course.instructorId === instructorFilter;
 
-      return matchesSearch && matchesCategory && matchesStatus;
-    });
+        return (
+          matchesSearch && matchesCategory && matchesStatus && matchesInstructor
+        );
+      })
+      .sort((a, b) => {
+        if (dateSort === "newest") {
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        } else {
+          return (
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
+        }
+      });
 
   const paginatedCourses = filteredCourses.slice(
     (page - 1) * rowsPerPage,
@@ -206,18 +247,16 @@ const AdminCourses = () => {
     return new Intl.NumberFormat("vi-VN").format(parseFloat(price));
   };
 
-  console.log(selectedCourse);
-
   return (
     <Box>
-      <Typography variant="h4" gutterBottom fontWeight="bold">
+      <Typography variant="h5" gutterBottom fontWeight="bold">
         Quản lý khóa học
       </Typography>
 
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={4}>
+            <Grid item xs={12} md={2}>
               <TextField
                 fullWidth
                 placeholder="Tìm kiếm khóa học..."
@@ -234,7 +273,7 @@ const AdminCourses = () => {
               />
             </Grid>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} md={2}>
               <FormControl fullWidth size="small">
                 <InputLabel>Danh mục</InputLabel>
                 <Select
@@ -263,7 +302,7 @@ const AdminCourses = () => {
               </FormControl>
             </Grid>
 
-            <Grid item xs={12} sm={6} md={3}>
+            <Grid item xs={12} md={2}>
               <FormControl fullWidth size="small">
                 <InputLabel>Trạng thái</InputLabel>
                 <Select
@@ -275,6 +314,52 @@ const AdminCourses = () => {
                   <MenuItem value="published">Đã xuất bản</MenuItem>
                   <MenuItem value="draft">Bản nháp</MenuItem>
                   <MenuItem value="archived">Đã lưu trữ</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} md={2}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Giảng viên</InputLabel>
+                <Select
+                  value={instructorFilter}
+                  label="Giảng viên"
+                  onChange={(e) => setInstructorFilter(e.target.value)}
+                >
+                  <MenuItem value="all">Tất cả giảng viên</MenuItem>
+                  {instructors.map((instructor) => (
+                    <MenuItem key={instructor.id} value={instructor.id}>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        <Avatar
+                          src={instructor.user?.avatarUrl}
+                          sx={{ width: 24, height: 24 }}
+                        >
+                          {instructor.fullName?.charAt(0)}
+                        </Avatar>
+                        <Typography variant="body2">
+                          {instructor.fullName}
+                        </Typography>
+                      </Box>
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} md={2}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Sắp xếp</InputLabel>
+                <Select
+                  value={dateSort}
+                  label="Sắp xếp"
+                  onChange={(e) =>
+                    setDateSort(e.target.value as "newest" | "oldest")
+                  }
+                >
+                  <MenuItem value="newest">Mới nhất</MenuItem>
+                  <MenuItem value="oldest">Cũ nhất</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
@@ -307,14 +392,21 @@ const AdminCourses = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {paginatedCourses.map((course: Course) => (
+            {paginatedCourses.map((course: any) => (
               <TableRow key={course.id}>
                 <TableCell>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                    {course.thumbnailUrl && (
+                    {course.thumbnailUrl ? (
                       <Box
                         component="img"
                         src={course.thumbnailUrl}
+                        alt={course.title}
+                        sx={{ width: 40, height: 40, borderRadius: 1 }}
+                      />
+                    ) : (
+                      <Box
+                        component="img"
+                        src="/src/assets/logo.png"
                         alt={course.title}
                         sx={{ width: 40, height: 40, borderRadius: 1 }}
                       />
@@ -404,18 +496,13 @@ const AdminCourses = () => {
           </ListItemIcon>
           <ListItemText>Xem chi tiết</ListItemText>
         </MenuItem>
-        <MenuItem onClick={handleToggleLockClick}>
+        <MenuItem onClick={handleEditClick}>
           <ListItemIcon>
-            {selectedCourse?.isLocked ? (
-              <LockOpen fontSize="small" color="success" />
-            ) : (
-              <Lock fontSize="small" color="warning" />
-            )}
+            <Edit fontSize="small" />
           </ListItemIcon>
-          <ListItemText>
-            {selectedCourse?.isLocked ? "Mở khóa" : "Khóa khóa học"}
-          </ListItemText>
+          <ListItemText>Chỉnh sửa</ListItemText>
         </MenuItem>
+
         <MenuItem onClick={handleDeleteClick} sx={{ color: "error.main" }}>
           <ListItemIcon>
             <Delete fontSize="small" color="error" />
@@ -478,6 +565,18 @@ const AdminCourses = () => {
         open={openAddDialog}
         onClose={() => setOpenAddDialog(false)}
         editMode={false}
+        isAdmin={true}
+      />
+
+      <DialogAddEditCourse
+        open={openEditDialog}
+        onClose={() => {
+          setOpenEditDialog(false);
+          setCourseToEdit(null);
+        }}
+        editMode={true}
+        courseToEdit={courseToEdit}
+        isAdmin={true}
       />
     </Box>
   );
