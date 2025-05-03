@@ -116,6 +116,19 @@ const InstructorLayout = () => {
     useState("");
 
   useEffect(() => {
+    // Kiểm tra xem có phải admin đang impersonate không
+    const isImpersonating =
+      localStorage.getItem("adminImpersonating") == "true";
+    setAdminImpersonating(isImpersonating);
+
+    if (isImpersonating) {
+      setImpersonatedInstructorName(
+        localStorage.getItem("impersonatedInstructorName") || ""
+      );
+    }
+  }, []);
+
+  useEffect(() => {
     // Skip auth check for login page
     if (location.pathname === "/instructor/login") {
       return;
@@ -129,23 +142,10 @@ const InstructorLayout = () => {
 
     // Only fetch data if user is instructor
     if (currentUser.id) {
-      dispatch(fetchUserNotifications(currentUser.id));
-      dispatch(fetchMessagesByUser(currentUser.id));
+      dispatch(fetchUserNotifications(Number(currentUser.id)));
+      dispatch(fetchMessagesByUser(Number(currentUser.id)));
     }
   }, [currentUser, navigate, location.pathname, dispatch]);
-
-  useEffect(() => {
-    // Kiểm tra xem có phải admin đang impersonate không
-    const isImpersonating =
-      localStorage.getItem("adminImpersonating") === "true";
-    setAdminImpersonating(isImpersonating);
-
-    if (isImpersonating) {
-      setImpersonatedInstructorName(
-        localStorage.getItem("impersonatedInstructorName") || ""
-      );
-    }
-  }, []);
 
   // Thêm hàm để kết thúc impersonation
   const handleEndImpersonation = () => {
@@ -403,8 +403,11 @@ const InstructorLayout = () => {
     return <Outlet />;
   }
 
-  // Add early return if not authenticated
-  if (!currentUser || currentUser.role !== "instructor") {
+  // Add early return if not authenticated and not impersonating
+  if (
+    (!currentUser || currentUser.role !== "instructor") &&
+    !adminImpersonating
+  ) {
     return null;
   }
 

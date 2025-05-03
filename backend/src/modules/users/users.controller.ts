@@ -156,4 +156,11 @@ export class UsersController {
   ): Promise<void> {
     return this.usersService.deleteUser(userId);
   }
+
+  @Get('instructor/:id')
+  @UseGuards(JwtAuthGuard)
+  @Roles(UserRole.ADMIN)
+  async getUsersByInstructorId(@Param('id') instructorId: number) {
+    return this.usersService.findByInstructorId(instructorId);
+  }
 }

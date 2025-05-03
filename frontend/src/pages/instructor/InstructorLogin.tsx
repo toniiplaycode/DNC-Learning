@@ -32,6 +32,8 @@ import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { login, logout } from "../../features/auth/authApiSlice";
 import { toast, ToastContainer } from "react-toastify";
 import { selectCurrentUser } from "../../features/auth/authSelectors";
+import { fetchUsersByInstructorId } from "../../features/users/usersApiSlice";
+import { setCredentials } from "../../features/auth/authSlice";
 
 const InstructorLogin = () => {
   const navigate = useNavigate();
@@ -55,21 +57,23 @@ const InstructorLogin = () => {
         const impersonatedInstructorId = localStorage.getItem(
           "impersonatedInstructorId"
         );
-        const impersonatedInstructorName = localStorage.getItem(
-          "impersonatedInstructorName"
-        );
 
         if (isAdminImpersonating && impersonatedInstructorId) {
           // Tạo một mock user cho instructor khi admin impersonate
-          const mockInstructorUser = {
-            id: parseInt(impersonatedInstructorId),
-            role: "instructor",
-            fullName: impersonatedInstructorName || "Instructor",
-            isImpersonated: true,
-          };
+          const result = await dispatch(
+            fetchUsersByInstructorId(parseInt(impersonatedInstructorId))
+          ).unwrap();
 
-          // Lưu mock user vào localStorage để InstructorLayout có thể sử dụng
-          localStorage.setItem("user", JSON.stringify(mockInstructorUser));
+          // Set credentials in Redux store
+          dispatch(
+            setCredentials({
+              user: result,
+              accessToken: localStorage.getItem("token") || "",
+            })
+          );
+
+          // Set user in localStorage
+          localStorage.setItem("user", JSON.stringify(result));
 
           // Chuyển hướng đến trang instructor
           navigate("/instructor");

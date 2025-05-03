@@ -918,4 +918,36 @@ export class UsersService {
       await queryRunner.release();
     }
   }
+
+  async findByInstructorId(instructorId: number): Promise<User> {
+    if (!instructorId || isNaN(instructorId)) {
+      throw new BadRequestException('Invalid instructor ID provided');
+    }
+
+    try {
+      const user = await this.userRepository
+        .createQueryBuilder('user')
+        .leftJoinAndSelect('user.userInstructor', 'userInstructor')
+        .where('userInstructor.id = :instructorId', { instructorId })
+        .getOne();
+
+      if (!user) {
+        throw new NotFoundException(
+          `No users found for instructor ID ${instructorId}`,
+        );
+      }
+
+      return user;
+    } catch (error) {
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException
+      ) {
+        throw error;
+      }
+      throw new Error(
+        `Failed to find users by instructor ID: ${error.message}`,
+      );
+    }
+  }
 }

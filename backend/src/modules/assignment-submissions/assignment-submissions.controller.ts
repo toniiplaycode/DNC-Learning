@@ -58,8 +58,7 @@ export class AssignmentSubmissionsController {
   }
 
   @Get('instructor/:id')
-  @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.INSTRUCTOR)
+  @UseGuards(JwtAuthGuard)
   async findAllByInstructor(@Param('id') id: number) {
     return this.submissionsService.findAllSubmissionsByInstructor(id);
   }

@@ -329,7 +329,7 @@ const AdminLayout = () => {
                     onClick={() => navigate(item.path)}
                     selected={location.pathname === item.path}
                   >
-                    <ListItemIcon>{item.icon}</ListItemIcon>
+                    <ListItemIcon sx={{ mr: -2 }}>{item.icon}</ListItemIcon>
                     <ListItemText primary={item.text} />
                   </ListItemButton>
                 </ListItem>
