@@ -58,6 +58,9 @@ export interface UserStudent {
   address?: string;
   city?: string;
   country?: string;
+  interests?: string;
+  learningGoals?: string;
+  preferredLanguage?: string;
   totalCoursesEnrolled: number;
   totalCoursesCompleted: number;
   achievementPoints: number;

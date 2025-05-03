@@ -34,7 +34,7 @@ const EnrolledCourses: React.FC = () => {
 
   useEffect(() => {
     dispatch(fetchUserEnrollments(Number(currentUser?.id)));
-    dispatch(fetchStudentAcademicCourses(currentUser?.id));
+    dispatch(fetchStudentAcademicCourses(Number(currentUser?.id)));
     dispatch(fetchUserProgress());
   }, [dispatch, currentUser, navigate]);
 
