@@ -52,6 +52,7 @@ export class AcademicClassesService {
     return this.academicClassRepo.find({
       relations: [
         'studentsAcademic',
+        'studentsAcademic.user',
         'instructors',
         'instructors.instructor',
         'classCourses',

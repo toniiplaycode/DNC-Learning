@@ -59,6 +59,7 @@ import {
   deleteAcademicClass,
   updateAcademicClass,
 } from "../../features/academic-classes/academicClassesSlice";
+import * as XLSX from "xlsx";
 
 const InstructorStudentsAcademic = () => {
   const dispatch = useAppDispatch();
@@ -83,6 +84,8 @@ const InstructorStudentsAcademic = () => {
   const [openAddClass, setOpenAddClass] = useState(false);
   const [openDeleteClassDialog, setOpenDeleteClassDialog] = useState(false);
   const [selectedEditClass, setSelectedEditClass] = useState(null);
+  const [studentSort, setStudentSort] = useState<"az" | "za" | "none">("none");
+  const [studentYearFilter, setStudentYearFilter] = useState<string>("all");
 
   useEffect(() => {
     dispatch(fetchClassInstructorById(Number(currentUser?.userInstructor?.id)));
@@ -308,6 +311,50 @@ const InstructorStudentsAcademic = () => {
       matchesSearch && matchesSemester && matchesStatus && matchesStudentCount
     );
   });
+
+  let studentsList = selectedClass?.academicClass?.studentsAcademic || [];
+
+  if (studentYearFilter !== "all") {
+    studentsList = studentsList.filter(
+      (s) => s.academicYear === studentYearFilter
+    );
+  }
+
+  if (studentSort === "az") {
+    studentsList = [...studentsList].sort((a, b) =>
+      a.fullName.localeCompare(b.fullName, "vi", { sensitivity: "base" })
+    );
+  } else if (studentSort === "za") {
+    studentsList = [...studentsList].sort((a, b) =>
+      b.fullName.localeCompare(a.fullName, "vi", { sensitivity: "base" })
+    );
+  }
+
+  const handleExportStudents = () => {
+    if (!studentsList.length) {
+      toast.info("Không có sinh viên để xuất file!");
+      return;
+    }
+    const data = studentsList.map((student, idx) => ({
+      STT: idx + 1,
+      "Mã sinh viên": student.studentCode,
+      "Họ và tên": student.fullName,
+      Khóa: student.academicYear,
+      Email: student.user?.email || "",
+      "Số điện thoại": student.user?.phone || "",
+      "Trạng thái": student.status === "studying" ? "Đang học" : "Nghỉ học",
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "DanhSachSinhVien");
+    XLSX.writeFile(
+      wb,
+      `DanhSachSinhVien_${
+        selectedClass?.academicClass?.classCode || "Lop"
+      }.xlsx`
+    );
+  };
 
   return (
     <Box sx={{ p: 3 }}>
@@ -606,6 +653,46 @@ const InstructorStudentsAcademic = () => {
           </Box>
         </DialogTitle>
         <DialogContent>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, mt: 2 }}>
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel>Lọc theo khóa</InputLabel>
+              <Select
+                value={studentYearFilter}
+                label="Lọc theo khóa"
+                onChange={(e) => setStudentYearFilter(e.target.value)}
+              >
+                <MenuItem value="all">Tất cả</MenuItem>
+                {Array.from(new Set(studentsList.map((s) => s.academicYear)))
+                  .sort()
+                  .map((year) => (
+                    <MenuItem key={year} value={year}>
+                      {year}
+                    </MenuItem>
+                  ))}
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel>Sắp xếp</InputLabel>
+              <Select
+                value={studentSort}
+                label="Sắp xếp"
+                onChange={(e) =>
+                  setStudentSort(e.target.value as "az" | "za" | "none")
+                }
+              >
+                <MenuItem value="none">Mặc định</MenuItem>
+                <MenuItem value="az">Tên A-Z</MenuItem>
+                <MenuItem value="za">Tên Z-A</MenuItem>
+              </Select>
+            </FormControl>
+            <Button
+              variant="outlined"
+              color="success"
+              onClick={handleExportStudents}
+            >
+              Tải danh sách
+            </Button>
+          </Box>
           <TableContainer>
             <Table>
               <TableHead>
@@ -618,19 +705,16 @@ const InstructorStudentsAcademic = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {selectedClass?.academicClass.studentsAcademic?.length === 0 ? (
+                {studentsList.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={5} align="center">
                       Chưa có sinh viên trong lớp này
                     </TableCell>
                   </TableRow>
                 ) : (
-                  selectedClass?.academicClass.studentsAcademic
-                    ?.slice(
-                      page * rowsPerPage,
-                      page * rowsPerPage + rowsPerPage
-                    )
-                    ?.map((student) => (
+                  studentsList
+                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                    .map((student) => (
                       <TableRow key={student.id}>
                         <TableCell>
                           <Box
@@ -713,7 +797,7 @@ const InstructorStudentsAcademic = () => {
 
           <TablePagination
             component="div"
-            count={selectedClass?.academicClass.studentsAcademic?.length || 0}
+            count={studentsList.length}
             page={page}
             onPageChange={handleChangePage}
             rowsPerPage={rowsPerPage}

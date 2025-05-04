@@ -56,6 +56,7 @@ import { fetchInstructors } from "../../../features/user_instructors/instructors
 import { selectAllInstructors } from "../../../features/user_instructors/instructorsSelectors";
 import { selectAllForums } from "../../../features/forums/forumsSelectors";
 import { fetchForums } from "../../../features/forums/forumsApiSlice";
+import { toast } from "react-toastify";
 
 // Styled components
 const SearchDialog = styled(Dialog)(({ theme }) => ({
@@ -110,12 +111,23 @@ const Header = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchResults, setSearchResults] = useState<any[]>([]);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [isLogin, setIsLogin] = useState(false);
-  const [user, setUser] = useState(null);
   const [mobileSubmenuOpen, setMobileSubmenuOpen] = useState(false);
   const courses = useAppSelector(selectAllCourses);
   const instructors = useAppSelector(selectAllInstructors);
   const forums = useAppSelector(selectAllForums);
+
+  // Check user role and redirect if not authorized
+  useEffect(() => {
+    if (
+      currentUser &&
+      currentUser.role !== "student" &&
+      currentUser.role !== "student_academic"
+    ) {
+      dispatch(logout());
+      navigate("/login");
+      toast.error("Hãy nhập với tài khoản học viên hoặc sinh viên !");
+    }
+  }, [currentUser, navigate]);
 
   // Lấy danh sách danh mục khi component được mount
   useEffect(() => {
@@ -124,32 +136,6 @@ const Header = () => {
     dispatch(fetchInstructors());
     dispatch(fetchForums());
   }, [dispatch]);
-
-  useEffect(() => {
-    if (currentUser) {
-      setUser(currentUser);
-      setIsLogin(true);
-    }
-  }, [currentUser]);
-
-  // Check for user in localStorage on component mount
-  useEffect(() => {
-    const userDataString = localStorage.getItem("user");
-    if (userDataString) {
-      try {
-        const userData = JSON.parse(userDataString);
-        setUser(userData);
-        setIsLogin(true);
-      } catch (error) {
-        localStorage.removeItem("user"); // Remove invalid data
-        setIsLogin(false);
-        setUser(null);
-      }
-    } else {
-      setIsLogin(false);
-      setUser(null);
-    }
-  }, []);
 
   const handleCoursesClick = (event: React.MouseEvent<HTMLElement>) => {
     setCoursesAnchor(event.currentTarget);
@@ -244,8 +230,6 @@ const Header = () => {
   // Handle logout function
   const handleLogout = () => {
     dispatch(logout());
-    setIsLogin(false);
-    setUser(null);
     navigate("/login");
     // Close any open menus
     setProfileAnchor(null);
@@ -427,7 +411,7 @@ const Header = () => {
             }}
           >
             {/* Nút Làm kiểm tra */}
-            {isLogin && (
+            {currentUser && (
               <Button
                 variant="contained"
                 color="secondary"
@@ -497,7 +481,7 @@ const Header = () => {
             {currentUser && <NotificationCenter />}
 
             {/* Desktop Profile */}
-            {isLogin ? (
+            {currentUser ? (
               <Box
                 sx={{
                   display: { xs: "none", lg: "flex" },
@@ -515,16 +499,18 @@ const Header = () => {
                 >
                   <Avatar
                     sx={{ width: 32, height: 32 }}
-                    src={user?.avatarUrl || "/src/assets/avatar.png"}
+                    src={currentUser.avatarUrl || "/src/assets/avatar.png"}
                   />
                   <Box sx={{ textAlign: "left" }}>
                     <Typography variant="subtitle2">
-                      {user?.userStudent?.fullName ||
-                        user?.userStudentAcademic?.fullName ||
+                      {currentUser.userStudent?.fullName ||
+                        currentUser.userStudentAcademic?.fullName ||
                         "User"}
                     </Typography>
                     <Typography variant="caption" sx={{ opacity: 0.7 }}>
-                      {user?.role === "student" ? "Học viên" : "Sinh viên"}
+                      {currentUser.role === "student"
+                        ? "Học viên"
+                        : "Sinh viên"}
                     </Typography>
                   </Box>
                 </Button>
@@ -607,16 +593,16 @@ const Header = () => {
             sx={{
               bgcolor: "primary.main",
               display: "flex",
-              justifyContent: isLogin ? "space-between" : "flex-end",
+              justifyContent: currentUser ? "space-between" : "flex-end",
               alignItems: "center",
               width: "100%",
             }}
           >
-            {isLogin && user && (
+            {currentUser && (
               <Box sx={{ px: 2, py: 3, bgcolor: "primary.main" }}>
                 <Stack direction="row" spacing={2} alignItems="center">
                   <Avatar
-                    src={user?.avatarUrl || "/src/assets/avatar.png"}
+                    src={currentUser.avatarUrl || "/src/assets/avatar.png"}
                     sx={{ width: 50, height: 50 }}
                   />
                   <Box>
@@ -624,13 +610,15 @@ const Header = () => {
                       variant="subtitle1"
                       sx={{ color: "white", fontWeight: "bold" }}
                     >
-                      {user?.userStudent?.fullName || "User"}
+                      {currentUser.userStudent?.fullName || "User"}
                     </Typography>
                     <Typography
                       variant="body2"
                       sx={{ color: "white", opacity: 0.8 }}
                     >
-                      {user?.role === "student" ? "Học viên" : "Giảng viên"}
+                      {currentUser.role === "student"
+                        ? "Học viên"
+                        : "Giảng viên"}
                     </Typography>
                   </Box>
                 </Stack>
@@ -647,7 +635,7 @@ const Header = () => {
 
           {/* Main Navigation */}
           <List sx={{ pt: 0 }}>
-            {isLogin && (
+            {currentUser && (
               <>
                 <ListItem disablePadding>
                   <ListItemButton onClick={handleToggleMobileSubmenu}>
@@ -704,7 +692,7 @@ const Header = () => {
               </ListItemButton>
             </ListItem>
 
-            {isLogin && (
+            {currentUser && (
               <>
                 <ListItem disablePadding>
                   <ListItemButton
@@ -764,7 +752,7 @@ const Header = () => {
               </ListItemButton>
             </ListItem>
 
-            {isLogin && (
+            {currentUser && (
               <ListItem disablePadding>
                 <ListItemButton
                   onClick={() => {
@@ -782,7 +770,7 @@ const Header = () => {
           </List>
 
           {/* Auth Buttons */}
-          {!isLogin && (
+          {!currentUser && (
             <Box sx={{ p: 2, mt: 2 }}>
               <Stack spacing={1}>
                 <Button
@@ -810,7 +798,7 @@ const Header = () => {
           )}
 
           {/* Logout Button */}
-          {isLogin && (
+          {currentUser && (
             <Box sx={{ p: 2, mt: "auto" }}>
               <Button
                 fullWidth

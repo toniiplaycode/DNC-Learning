@@ -29,6 +29,7 @@ import {
   Tooltip,
   OutlinedInput,
   Avatar,
+  TablePagination,
 } from "@mui/material";
 import {
   Add,
@@ -38,6 +39,8 @@ import {
   Delete,
   School,
   PersonAdd,
+  People,
+  Class as ClassIcon,
 } from "@mui/icons-material";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { format } from "date-fns";
@@ -57,6 +60,14 @@ import { selectAllInstructors } from "../../features/user_instructors/instructor
 import { fetchInstructors } from "../../features/user_instructors/instructorsApiSlice";
 import { createClassInstructor } from "../../features/academic-class-instructors/academicClassInstructorsSlice";
 import { toast } from "react-toastify";
+import { AddStudentsDialog } from "../instructor/component/AddStudentsDialog";
+import { EditStudentDialog } from "../instructor/component/EditStudentDialog";
+import {
+  createManyStudentsAcademic,
+  updateStudentAcademic,
+  deleteStudentAcademic,
+} from "../../features/users/usersApiSlice";
+import * as XLSX from "xlsx";
 
 interface FormData {
   id?: number;
@@ -71,6 +82,22 @@ interface AssignInstructorFormData {
   instructorIds: number[];
 }
 
+interface StudentData {
+  user: {
+    username: string;
+    email: string;
+    password: string;
+    role: string;
+    phone?: string;
+  };
+  userStudentAcademic: {
+    academicClassId: string;
+    studentCode: string;
+    fullName: string;
+    academicYear: string;
+  };
+}
+
 const AdminAcademicClasses: React.FC = () => {
   const dispatch = useAppDispatch();
   const academicClasses = useAppSelector(selectAllAcademicClasses);
@@ -81,8 +108,8 @@ const AdminAcademicClasses: React.FC = () => {
   const [instructorFilter, setInstructorFilter] = useState<number | "all">(
     "all"
   );
-  const [page, setPage] = useState(1);
-  const [rowsPerPage] = useState(10);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
 
   const [openDialog, setOpenDialog] = useState(false);
   const [selectedClass, setSelectedClass] = useState<AcademicClass | null>(
@@ -107,6 +134,20 @@ const AdminAcademicClasses: React.FC = () => {
   const [classToDelete, setClassToDelete] = useState<AcademicClass | null>(
     null
   );
+
+  const [openStudentListDialog, setOpenStudentListDialog] = useState(false);
+  const [selectedClassForStudents, setSelectedClassForStudents] =
+    useState<AcademicClass | null>(null);
+
+  const [openAddStudents, setOpenAddStudents] = useState(false);
+  const [openEditStudent, setOpenEditStudent] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState(null);
+
+  const [openDeleteStudentDialog, setOpenDeleteStudentDialog] = useState(false);
+  const [studentToDelete, setStudentToDelete] = useState<any>(null);
+
+  const [studentSort, setStudentSort] = useState<"az" | "za" | "none">("none");
+  const [studentYearFilter, setStudentYearFilter] = useState<string>("all");
 
   useEffect(() => {
     dispatch(fetchAcademicClasses());
@@ -192,6 +233,16 @@ const AdminAcademicClasses: React.FC = () => {
     }
   };
 
+  const handleOpenStudentList = (academicClass: AcademicClass) => {
+    setSelectedClassForStudents(academicClass);
+    setOpenStudentListDialog(true);
+  };
+
+  const handleCloseStudentList = () => {
+    setOpenStudentListDialog(false);
+    setSelectedClassForStudents(null);
+  };
+
   const filteredClasses = academicClasses.filter((academicClass) => {
     const matchesSearch =
       academicClass.className
@@ -213,14 +264,14 @@ const AdminAcademicClasses: React.FC = () => {
   });
 
   // Pagination calculation
-  const startIndex = (page - 1) * rowsPerPage;
+  const startIndex = page * rowsPerPage;
   const endIndex = startIndex + rowsPerPage;
   const paginatedClasses = filteredClasses.slice(startIndex, endIndex);
   const totalPages = Math.ceil(filteredClasses.length / rowsPerPage);
 
   // Reset to first page when filters change
   useEffect(() => {
-    setPage(1);
+    setPage(0);
   }, [searchTerm, statusFilter, instructorFilter]);
 
   const getStatusColor = (status: AcademicClassStatus) => {
@@ -307,6 +358,138 @@ const AdminAcademicClasses: React.FC = () => {
       toast.error(error?.message || "Có lỗi xảy ra khi lưu lớp học!");
     }
   };
+
+  const handleChangePage = (event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const handleAddStudents = async (students) => {
+    try {
+      await dispatch(createManyStudentsAcademic(students)).then((response) => {
+        if (response.error) {
+          toast.error("Không đúng định dạng thêm hoặc sinh viên đã tồn tại !");
+        } else {
+          toast.success("Thêm sinh viên thành công!");
+        }
+      });
+
+      // Refresh the class data
+      await dispatch(fetchAcademicClasses()).unwrap();
+      setOpenAddStudents(false);
+    } catch (error) {
+      console.error("Error adding students:", error);
+    }
+  };
+
+  const handleEditStudent = (student) => {
+    if (!student) return null;
+    setSelectedStudent(student);
+    setOpenEditStudent(true);
+  };
+
+  const handleUpdateStudent = async (updatedStudent) => {
+    try {
+      await dispatch(
+        updateStudentAcademic({
+          user: {
+            id: updatedStudent.userId,
+            username: updatedStudent.username,
+            email: updatedStudent.email,
+            phone: updatedStudent.phone,
+          },
+          userStudentAcademic: {
+            id: updatedStudent.id,
+            fullName: updatedStudent.fullName,
+            studentCode: updatedStudent.studentCode,
+            academicYear: updatedStudent.academicYear,
+            status: updatedStudent.status,
+          },
+        })
+      ).unwrap();
+
+      // Refresh the class data
+      await dispatch(fetchAcademicClasses()).unwrap();
+      setOpenEditStudent(false);
+      setSelectedStudent(null);
+      toast.success("Cập nhật thông tin sinh viên thành công!");
+    } catch (error: any) {
+      toast.error(
+        error.message || "Có lỗi xảy ra khi cập nhật thông tin sinh viên!"
+      );
+    }
+  };
+
+  const handleDeleteStudent = async (student) => {
+    try {
+      await dispatch(deleteStudentAcademic(student.user.id)).unwrap();
+      // Refresh the class data
+      await dispatch(fetchAcademicClasses()).unwrap();
+      toast.success("Xóa sinh viên thành công!");
+    } catch (error) {
+      toast.error("Có lỗi xảy ra khi xóa sinh viên!");
+    }
+  };
+
+  const handleOpenDeleteStudentDialog = (student: any) => {
+    setStudentToDelete(student);
+    setOpenDeleteStudentDialog(true);
+  };
+
+  const handleConfirmDeleteStudent = async () => {
+    if (!studentToDelete) return;
+    await handleDeleteStudent(studentToDelete);
+    setOpenDeleteStudentDialog(false);
+    setStudentToDelete(null);
+  };
+
+  const handleExportStudents = () => {
+    if (!studentsList.length) {
+      toast.info("Không có sinh viên để xuất file!");
+      return;
+    }
+    const data = studentsList.map((student, idx) => ({
+      STT: idx + 1,
+      "Mã sinh viên": student.studentCode,
+      "Họ và tên": student.fullName,
+      Khóa: student.academicYear,
+      Email: student.user?.email || "",
+      "Số điện thoại": student.user?.phone || "",
+      "Trạng thái": student.status === "studying" ? "Đang học" : "Nghỉ học",
+    }));
+
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "DanhSachSinhVien");
+    XLSX.writeFile(
+      wb,
+      `DanhSachSinhVien_${selectedClassForStudents?.classCode || "Lop"}.xlsx`
+    );
+  };
+
+  let studentsList = selectedClassForStudents?.studentsAcademic || [];
+
+  if (studentYearFilter !== "all") {
+    studentsList = studentsList.filter(
+      (s) => s.academicYear === studentYearFilter
+    );
+  }
+
+  if (studentSort === "az") {
+    studentsList = [...studentsList].sort((a, b) =>
+      a.fullName.localeCompare(b.fullName, "vi", { sensitivity: "base" })
+    );
+  } else if (studentSort === "za") {
+    studentsList = [...studentsList].sort((a, b) =>
+      b.fullName.localeCompare(a.fullName, "vi", { sensitivity: "base" })
+    );
+  }
 
   return (
     <Box>
@@ -444,6 +627,14 @@ const AdminAcademicClasses: React.FC = () => {
                 </TableCell>
                 <TableCell>
                   <Box sx={{ display: "flex", gap: 1 }}>
+                    <Tooltip title="Xem danh sách sinh viên">
+                      <IconButton
+                        size="small"
+                        onClick={() => handleOpenStudentList(academicClass)}
+                      >
+                        <People />
+                      </IconButton>
+                    </Tooltip>
                     <Tooltip title="Chỉnh sửa">
                       <IconButton
                         size="small"
@@ -496,7 +687,7 @@ const AdminAcademicClasses: React.FC = () => {
           <Pagination
             count={totalPages}
             page={page}
-            onChange={(e, newPage) => setPage(newPage)}
+            onChange={handleChangePage}
             color="primary"
             showFirstButton
             showLastButton
@@ -703,6 +894,267 @@ const AdminAcademicClasses: React.FC = () => {
           <Button onClick={() => setOpenDeleteDialog(false)}>Hủy</Button>
           <Button
             onClick={handleConfirmDelete}
+            variant="contained"
+            color="error"
+          >
+            Xóa
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog danh sách sinh viên */}
+      <Dialog
+        open={openStudentListDialog}
+        onClose={handleCloseStudentList}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+            }}
+          >
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <Avatar sx={{ bgcolor: "primary.light" }}>
+                <ClassIcon />
+              </Avatar>
+              <Box>
+                <Typography variant="h6">
+                  {selectedClassForStudents?.className}
+                </Typography>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Mã lớp: {selectedClassForStudents?.classCode}
+                </Typography>
+              </Box>
+            </Box>
+            <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+              <Button
+                variant="contained"
+                startIcon={<Add />}
+                onClick={() => setOpenAddStudents(true)}
+              >
+                Thêm sinh viên
+              </Button>
+              <Button
+                variant="outlined"
+                color="success"
+                onClick={handleExportStudents}
+              >
+                Tải danh sách
+              </Button>
+            </Box>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2, mt: 2 }}>
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel>Lọc theo khóa</InputLabel>
+              <Select
+                value={studentYearFilter}
+                label="Lọc theo khóa"
+                onChange={(e) => setStudentYearFilter(e.target.value)}
+              >
+                <MenuItem value="all">Tất cả</MenuItem>
+                {Array.from(
+                  new Set(
+                    selectedClassForStudents?.studentsAcademic?.map(
+                      (s) => s.academicYear
+                    )
+                  )
+                )
+                  .sort()
+                  .map((year) => (
+                    <MenuItem key={year} value={year}>
+                      {year}
+                    </MenuItem>
+                  ))}
+              </Select>
+            </FormControl>
+            <FormControl size="small" sx={{ minWidth: 120 }}>
+              <InputLabel>Sắp xếp</InputLabel>
+              <Select
+                value={studentSort}
+                label="Sắp xếp"
+                onChange={(e) => setStudentSort(e.target.value)}
+              >
+                <MenuItem value="none">Mặc định</MenuItem>
+                <MenuItem value="az">Tên A-Z</MenuItem>
+                <MenuItem value="za">Tên Z-A</MenuItem>
+              </Select>
+            </FormControl>
+          </Box>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Sinh viên</TableCell>
+                  <TableCell>MSSV</TableCell>
+                  <TableCell>Khóa</TableCell>
+                  <TableCell>Email</TableCell>
+                  <TableCell>Trạng thái</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {studentsList.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={5} align="center">
+                      Chưa có sinh viên trong lớp này
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  studentsList
+                    .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+                    .map((student) => (
+                      <TableRow key={student.id}>
+                        <TableCell>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 2,
+                            }}
+                          >
+                            <Avatar
+                              src={student.user?.avatarUrl}
+                              alt={student.fullName}
+                            >
+                              {student.fullName[0]}
+                            </Avatar>
+                            <Box>
+                              <Typography variant="body1">
+                                {student.fullName}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                {student.user?.phone}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </TableCell>
+                        <TableCell>{student.studentCode}</TableCell>
+                        <TableCell>{student.academicYear}</TableCell>
+                        <TableCell>{student.user?.email}</TableCell>
+                        <TableCell>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                            }}
+                          >
+                            <Chip
+                              label={
+                                student.status === "studying"
+                                  ? "Đang học"
+                                  : "Nghỉ học"
+                              }
+                              color={
+                                student.status === "studying"
+                                  ? "success"
+                                  : "error"
+                              }
+                              size="small"
+                            />
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleEditStudent(student);
+                              }}
+                            >
+                              <Edit fontSize="small" />
+                            </IconButton>
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenDeleteStudentDialog(student);
+                              }}
+                            >
+                              <Delete fontSize="small" color="error" />
+                            </IconButton>
+                          </Box>
+                        </TableCell>
+                      </TableRow>
+                    ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          <TablePagination
+            component="div"
+            count={studentsList.length}
+            page={page}
+            onPageChange={handleChangePage}
+            rowsPerPage={rowsPerPage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+            rowsPerPageOptions={[5, 10, 25]}
+            labelRowsPerPage="Số hàng mỗi trang:"
+            labelDisplayedRows={({ from, to, count }) =>
+              `${from}-${to} của ${count}`
+            }
+          />
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog thêm sinh viên */}
+      <AddStudentsDialog
+        open={openAddStudents}
+        onClose={() => setOpenAddStudents(false)}
+        classData={{
+          id: selectedClassForStudents?.id,
+          academicClass: {
+            id: selectedClassForStudents?.id,
+            className: selectedClassForStudents?.className,
+            classCode: selectedClassForStudents?.classCode,
+          },
+        }}
+        onSubmit={handleAddStudents}
+      />
+
+      {/* Dialog chỉnh sửa sinh viên */}
+      <EditStudentDialog
+        open={openEditStudent}
+        onClose={() => {
+          setOpenEditStudent(false);
+          setSelectedStudent(null);
+        }}
+        student={selectedStudent}
+        onSubmit={handleUpdateStudent}
+      />
+
+      {/* Dialog xác nhận xóa sinh viên */}
+      <Dialog
+        open={openDeleteStudentDialog}
+        onClose={() => setOpenDeleteStudentDialog(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Avatar sx={{ bgcolor: "error.light" }}>
+              <Delete />
+            </Avatar>
+            <Typography variant="h6">Xác nhận xóa sinh viên</Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <Typography>
+            Bạn có chắc chắn muốn xóa sinh viên{" "}
+            <strong>{studentToDelete?.fullName}</strong> (MSSV:{" "}
+            {studentToDelete?.studentCode})?
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setOpenDeleteStudentDialog(false)}>Hủy</Button>
+          <Button
+            onClick={handleConfirmDeleteStudent}
             variant="contained"
             color="error"
           >

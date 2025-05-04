@@ -47,6 +47,7 @@ import AdminReviews from "./pages/admin/AdminReviews";
 import AdminSettings from "./pages/admin/AdminSettings";
 import InstructorStudentsAcademic from "./pages/instructor/InstructorStudentsAcademic";
 import AdminAcademicClasses from "./pages/admin/AdminAcademicClasses";
+import AdminSchedules from "./pages/admin/AdminSchedules";
 
 const App = () => {
   return (
@@ -139,6 +140,7 @@ const App = () => {
           <Route path="/admin/chats" element={<ChatCommon />} />
           <Route path="/admin/categories" element={<AdminCategories />} />
           <Route path="/admin/payments" element={<AdminPayments />} />
+          <Route path="/admin/schedules" element={<AdminSchedules />} />
           <Route path="/admin/analytics" element={<AdminAnalytics />} />
           <Route path="/admin/reviews" element={<AdminReviews />} />
           <Route path="/admin/settings" element={<AdminSettings />} />
