@@ -143,10 +143,6 @@ const CourseContent = () => {
     dispatch(fetchCourseProgress({ courseId: Number(courseId) }));
   }, [dispatch, courseId]);
 
-  useEffect(() => {
-    setSelectedLesson(getFirstLesson(course?.sections));
-  }, [course]);
-
   const handleLessonClick = (id: string) => {
     let selectedLesson = null;
 
@@ -289,7 +285,6 @@ const CourseContent = () => {
                     <CourseStructure
                       sections={course?.sections}
                       handleLessonClick={handleLessonClick}
-                      activeLesson={selectedLesson?.id?.toString()}
                       setActiveTab={setActiveTab}
                       onMarkAsCompleted={handleMarkAsCompleted}
                       userProgress={userProgress}

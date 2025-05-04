@@ -73,7 +73,6 @@ interface Section {
 interface CourseStructureProps {
   sections: Section[];
   handleLessonClick?: (lessonId: string) => void;
-  activeLesson?: string;
   setActiveTab?: (tab: number) => void;
   onMarkAsCompleted?: (lessonId: string) => void;
   userProgress?: Array<{
@@ -99,7 +98,6 @@ interface CourseStructureProps {
 const CourseStructure: React.FC<CourseStructureProps> = ({
   sections = [],
   handleLessonClick,
-  activeLesson,
   setActiveTab,
   onMarkAsCompleted,
   userProgress = [],
@@ -112,24 +110,48 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
       {}
     )
   );
+  const [activeLesson, setActiveLesson] = useState<string | undefined>();
 
-  // Effect để tự động mở section chứa active lesson
+  // Effect để tự động chọn lesson được mở khóa mới nhất và mở section tương ứng
   useEffect(() => {
-    if (activeLesson) {
-      // Tìm section chứa active lesson
+    if (!sections.length) return;
+
+    const allLessons = sections.flatMap((section) => section.lessons);
+
+    // Tìm lesson được mở khóa mới nhất
+    let latestUnlockedLesson = null;
+    for (let i = allLessons.length - 1; i >= 0; i--) {
+      const lesson = allLessons[i];
+      if (!isLessonLocked(lesson.id, 0, i)) {
+        latestUnlockedLesson = lesson;
+        break;
+      }
+    }
+
+    if (latestUnlockedLesson) {
+      // Set active lesson
+      setActiveLesson(latestUnlockedLesson.id);
+      handleLessonClick?.(latestUnlockedLesson.id);
+
+      // Chỉ mở section chứa lesson được chọn, đóng tất cả section khác
       const sectionWithActiveLesson = sections.find((section) =>
-        section.lessons.some((lesson) => lesson.id === activeLesson)
+        section.lessons.some((lesson) => lesson.id === latestUnlockedLesson.id)
       );
 
       if (sectionWithActiveLesson) {
-        // Đảm bảo section này được mở
-        setExpandedSections((prev) => ({
-          ...prev,
-          [sectionWithActiveLesson.id]: true,
-        }));
+        // Đóng tất cả section và chỉ mở section chứa lesson được chọn
+        const newExpandedSections = sections.reduce(
+          (acc, section) => ({
+            ...acc,
+            [section.id]: section.id === sectionWithActiveLesson.id,
+          }),
+          {}
+        );
+
+        setExpandedSections(newExpandedSections);
       }
     }
-  }, [activeLesson, sections]);
+  }, [sections]);
 
   const handleSectionToggle = (sectionId: string) => {
     setExpandedSections((prev) => ({
@@ -269,6 +291,7 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
                     }}
                     onClick={() => {
                       if (!locked) {
+                        setActiveLesson(lesson.id);
                         handleLessonClick?.(lesson.id);
                         setActiveTab?.(0);
                       }
