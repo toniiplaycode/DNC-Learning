@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import {
   Box,
   Grid,
@@ -17,6 +17,7 @@ import {
   Chip,
   Tabs,
   Tab,
+  CircularProgress,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -27,7 +28,9 @@ import {
   Select,
   MenuItem,
   IconButton,
-  CircularProgress,
+  SelectChangeEvent,
+  TextFieldProps,
+  Alert,
 } from "@mui/material";
 import {
   Email,
@@ -46,6 +49,12 @@ import {
   Person as PersonIcon,
   ContactPhone as ContactPhoneIcon,
   Assessment as AssessmentIcon,
+  Favorite,
+  PhotoCamera,
+  Logout,
+  AccountBox,
+  ContactMail,
+  Security,
 } from "@mui/icons-material";
 import CustomContainer from "../../components/common/CustomContainer";
 import CertificateDetail from "../../components/student/profile/CertificateDetail";
@@ -67,18 +76,61 @@ import { selectUserGradesByUser } from "../../features/user-grades/userGradesSel
 import { fetchStudentAcademicCourses } from "../../features/users/usersApiSlice";
 import { selectStudentAcademicCourses } from "../../features/users/usersSelectors";
 import {
-  updateStudentProfile,
-  updateStudentAcademic,
-} from "../../features/users/usersApiSlice";
-import { toast } from "react-toastify";
-import {
-  UserRole,
   User,
   UserStudent,
   UserStudentAcademic,
+  UserRole,
 } from "../../types/user.types";
+import { toast } from "react-toastify";
+import {
+  updateStudentProfile,
+  updateStudentAcademic,
+} from "../../features/users/usersApiSlice";
+import { useNavigate } from "react-router-dom";
+import { logout } from "../../features/auth/authApiSlice";
+import { fetchUserById } from "../../features/users/usersApiSlice";
+
+type Gender = "male" | "female" | "other";
+
+// Tạo component TextField tùy chỉnh
+const StyledTextField = (props: TextFieldProps) => (
+  <TextField
+    {...props}
+    fullWidth
+    sx={{
+      "& .MuiInputBase-input.Mui-disabled": {
+        WebkitTextFillColor: "rgba(0, 0, 0, 0.87)",
+        color: "rgba(0, 0, 0, 0.87)",
+      },
+      "& .MuiInputLabel-root.Mui-disabled": {
+        color: "rgba(0, 0, 0, 0.6)",
+      },
+      ...props.sx,
+    }}
+  />
+);
+
+interface FormData {
+  email: string;
+  phone: string;
+  fullName: string;
+  bio: string;
+  dateOfBirth: string;
+  gender: Gender;
+  occupation: string;
+  educationLevel: string;
+  address: string;
+  city: string;
+  country: string;
+  interests: string;
+  learningGoals: string;
+  preferredLanguage: string;
+  studentCode: string;
+  academicYear: string;
+}
 
 const ProfileAccount: React.FC = () => {
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector(selectCurrentUser) as
     | (User & {
@@ -92,75 +144,11 @@ const ProfileAccount: React.FC = () => {
   const userGrades = useAppSelector(selectUserGradesByUser);
   const userProgress = useAppSelector(selectUserProgress);
   const [currentTab, setCurrentTab] = useState(0);
-  const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [isEditingPersonal, setIsEditingPersonal] = useState(false);
-  const [isEditingContact, setIsEditingContact] = useState(false);
-  const [formData, setFormData] = useState({
-    // Common fields for both roles
-    email: currentUser?.email || "",
-    phone: currentUser?.phone || "",
-
-    // Student specific fields
-    fullName:
-      currentUser?.role === UserRole.STUDENT
-        ? currentUser?.userStudent?.fullName
-        : currentUser?.userStudentAcademic?.fullName,
-    bio:
-      currentUser?.role === UserRole.STUDENT
-        ? currentUser?.userStudent?.bio
-        : "",
-    dateOfBirth:
-      currentUser?.role === UserRole.STUDENT
-        ? currentUser?.userStudent?.dateOfBirth
-        : undefined,
-    gender:
-      currentUser?.role === UserRole.STUDENT
-        ? currentUser?.userStudent?.gender
-        : undefined,
-    occupation:
-      currentUser?.role === UserRole.STUDENT
-        ? currentUser?.userStudent?.occupation
-        : "",
-    educationLevel:
-      currentUser?.role === UserRole.STUDENT
-        ? currentUser?.userStudent?.educationLevel
-        : "",
-    address:
-      currentUser?.role === UserRole.STUDENT
-        ? currentUser?.userStudent?.address
-        : "",
-    city:
-      currentUser?.role === UserRole.STUDENT
-        ? currentUser?.userStudent?.city
-        : "",
-    country:
-      currentUser?.role === UserRole.STUDENT
-        ? currentUser?.userStudent?.country
-        : "",
-    interests:
-      currentUser?.role === UserRole.STUDENT
-        ? currentUser?.userStudent?.interests
-        : "",
-    learningGoals:
-      currentUser?.role === UserRole.STUDENT
-        ? currentUser?.userStudent?.learningGoals
-        : "",
-    preferredLanguage:
-      currentUser?.role === UserRole.STUDENT
-        ? currentUser?.userStudent?.preferredLanguage
-        : "",
-
-    // Student academic specific fields
-    studentCode:
-      currentUser?.role === UserRole.STUDENT_ACADEMIC
-        ? currentUser?.userStudentAcademic?.studentCode
-        : "",
-    academicYear:
-      currentUser?.role === UserRole.STUDENT_ACADEMIC
-        ? currentUser?.userStudentAcademic?.academicYear
-        : "",
-  });
   const [loadingGrades, setLoadingGrades] = useState(false);
+  const [showAlert, setShowAlert] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+
+  console.log(currentUser);
 
   useEffect(() => {
     if (currentUser) {
@@ -180,18 +168,76 @@ const ProfileAccount: React.FC = () => {
     }
   }, [dispatch, currentUser?.id]);
 
-  // Thêm state cho form mật khẩu
-  const [formPassword, setFormPassword] = useState({
-    currentPassword: "",
-    newPassword: "",
-    confirmPassword: "",
-  });
-
   // Thêm state cho modal đổi mật khẩu
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   // Thêm state cho dialog chứng chỉ
   const [selectedCertificate, setSelectedCertificate] = useState<any>(null);
+
+  const [formData, setFormData] = useState<FormData>({
+    email: currentUser?.email || "",
+    phone: currentUser?.phone || "",
+    fullName:
+      currentUser?.role === UserRole.STUDENT
+        ? currentUser?.userStudent?.fullName || ""
+        : currentUser?.userStudentAcademic?.fullName || "",
+    bio:
+      currentUser?.role === UserRole.STUDENT
+        ? currentUser?.userStudent?.bio || ""
+        : "",
+    dateOfBirth:
+      currentUser?.role === UserRole.STUDENT
+        ? currentUser?.userStudent?.dateOfBirth?.toString() || ""
+        : "",
+    gender:
+      currentUser?.role === UserRole.STUDENT
+        ? currentUser?.userStudent?.gender || "other"
+        : "other",
+    occupation:
+      currentUser?.role === UserRole.STUDENT
+        ? currentUser?.userStudent?.occupation || ""
+        : "",
+    educationLevel:
+      currentUser?.role === UserRole.STUDENT
+        ? currentUser?.userStudent?.educationLevel || ""
+        : "",
+    address:
+      currentUser?.role === UserRole.STUDENT
+        ? currentUser?.userStudent?.address || ""
+        : "",
+    city:
+      currentUser?.role === UserRole.STUDENT
+        ? currentUser?.userStudent?.city || ""
+        : "",
+    country:
+      currentUser?.role === UserRole.STUDENT
+        ? currentUser?.userStudent?.country || ""
+        : "",
+    interests:
+      currentUser?.role === UserRole.STUDENT
+        ? currentUser?.userStudent?.interests || ""
+        : "",
+    learningGoals:
+      currentUser?.role === UserRole.STUDENT
+        ? currentUser?.userStudent?.learningGoals || ""
+        : "",
+    preferredLanguage:
+      currentUser?.role === UserRole.STUDENT
+        ? currentUser?.userStudent?.preferredLanguage === "Tiếng Anh"
+          ? "English"
+          : currentUser?.userStudent?.preferredLanguage === "Tiếng Việt"
+          ? "Vietnamese"
+          : ""
+        : "",
+    studentCode:
+      currentUser?.role === UserRole.STUDENT_ACADEMIC
+        ? currentUser?.userStudentAcademic?.studentCode || ""
+        : "",
+    academicYear:
+      currentUser?.role === UserRole.STUDENT_ACADEMIC
+        ? currentUser?.userStudentAcademic?.academicYear || ""
+        : "",
+  });
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setCurrentTab(newValue);
@@ -215,119 +261,84 @@ const ProfileAccount: React.FC = () => {
     );
   };
 
-  const handleFormChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]: value,
-    }));
-    console.log(formData);
-  };
-
-  const handleSaveProfile = async () => {
-    try {
-      if (currentUser?.role === UserRole.STUDENT) {
-        const updateData = {
-          userId: Number(currentUser.id),
-          data: {
-            user: {
-              email: formData.email,
-              phone: formData.phone,
-            },
-            student: {
-              fullName: formData.fullName,
-              bio: formData.bio,
-              interests: formData.interests,
-              learningGoals: formData.learningGoals,
-            },
-          },
-        };
-        await dispatch(updateStudentProfile(updateData)).unwrap();
-      } else if (currentUser?.role === UserRole.STUDENT_ACADEMIC) {
-        const updateData = {
-          userId: Number(currentUser.id),
-          data: {
-            user: {
-              email: formData.email,
-              phone: formData.phone,
-            },
-            studentAcademic: {
-              fullName: formData.fullName,
-            },
-          },
-        };
-        await dispatch(updateStudentAcademic(updateData)).unwrap();
-      }
-      setIsEditingProfile(false);
-      toast.success("Cập nhật thông tin hồ sơ thành công");
-    } catch (error) {
-      toast.error("Có lỗi xảy ra khi cập nhật thông tin hồ sơ");
-    }
-  };
-
-  const handleSavePersonal = async () => {
-    try {
-      if (currentUser?.role === UserRole.STUDENT) {
-        const updateData = {
-          userId: Number(currentUser.id),
-          data: {
-            user: {},
-            student: {
-              dateOfBirth: formData.dateOfBirth,
-              gender: formData.gender,
-              occupation: formData.occupation,
-              educationLevel: formData.educationLevel,
-            },
-          },
-        };
-        await dispatch(updateStudentProfile(updateData)).unwrap();
-      }
-      setIsEditingPersonal(false);
-      toast.success("Cập nhật thông tin cá nhân thành công");
-    } catch (error) {
-      toast.error("Có lỗi xảy ra khi cập nhật thông tin cá nhân");
-    }
-  };
-
-  const handleSaveContact = async () => {
-    try {
-      if (currentUser?.role === UserRole.STUDENT) {
-        const updateData = {
-          userId: Number(currentUser.id),
-          data: {
-            user: {
-              phone: formData.phone,
-            },
-            student: {
-              address: formData.address,
-              city: formData.city,
-              country: formData.country,
-              preferredLanguage: formData.preferredLanguage,
-            },
-          },
-        };
-        await dispatch(updateStudentProfile(updateData)).unwrap();
-      } else if (currentUser?.role === UserRole.STUDENT_ACADEMIC) {
-        const updateData = {
-          userId: Number(currentUser.id),
-          data: {
-            user: {
-              phone: formData.phone,
-            },
-          },
-        };
-        await dispatch(updateStudentAcademic(updateData)).unwrap();
-      }
-      setIsEditingContact(false);
-      toast.success("Cập nhật thông tin liên hệ thành công");
-    } catch (error) {
-      toast.error("Có lỗi xảy ra khi cập nhật thông tin liên hệ");
-    }
-  };
-
   const handleAvatarChange = (file: File) => {
     // Xử lý upload avatar
     // Sau này sẽ gọi API để upload file và cập nhật avatar_url
+  };
+
+  const handleFormChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      const { name, value } = e.target;
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    },
+    []
+  );
+
+  const handleSelectChange = useCallback((e: SelectChangeEvent<string>) => {
+    const { name, value } = e.target;
+    if (name) {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
+  }, []);
+
+  const handleGenderChange = useCallback((e: SelectChangeEvent<Gender>) => {
+    const { name, value } = e.target;
+    if (name) {
+      setFormData((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    }
+  }, []);
+
+  const handleSave = async () => {
+    if (!currentUser?.id) return;
+
+    try {
+      const dataToUpdate = {
+        user: {
+          email: formData.email,
+          phone: formData.phone,
+        },
+        student: {
+          fullName: formData.fullName,
+          dateOfBirth: new Date(formData.dateOfBirth),
+          gender: formData.gender,
+          educationLevel: formData.educationLevel,
+          occupation: formData.occupation,
+          bio: formData.bio,
+          interests: formData.interests,
+          address: formData.address,
+          city: formData.city,
+          country: formData.country,
+          learningGoals: formData.learningGoals,
+          preferredLanguage:
+            formData.preferredLanguage === "English"
+              ? "Tiếng Anh"
+              : "Tiếng Việt",
+        },
+      };
+
+      await dispatch(
+        updateStudentProfile({
+          userId: currentUser.id,
+          data: dataToUpdate,
+        })
+      ).unwrap();
+
+      dispatch(fetchUserById(currentUser.id));
+      setIsEditing(false);
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 3000);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+    }
   };
 
   return (
@@ -506,182 +517,6 @@ const ProfileAccount: React.FC = () => {
               {/* Tab Thông tin cá nhân */}
               <TabPanel value={currentTab} index={0}>
                 <Stack spacing={3} px={2}>
-                  {/* Profile Information */}
-                  <Box>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        mb: 2,
-                      }}
-                    >
-                      <Typography variant="h6" gutterBottom>
-                        Thông tin hồ sơ
-                      </Typography>
-                      <Button
-                        variant="outlined"
-                        startIcon={<Edit />}
-                        size="small"
-                        onClick={() => setIsEditingProfile(!isEditingProfile)}
-                      >
-                        {isEditingProfile ? "Lưu thay đổi" : "Chỉnh sửa"}
-                      </Button>
-                    </Box>
-
-                    {isEditingProfile ? (
-                      <Stack spacing={2}>
-                        <TextField
-                          fullWidth
-                          label="Họ và tên"
-                          name="fullName"
-                          value={formData.fullName}
-                          onChange={handleFormChange}
-                        />
-                        <TextField
-                          fullWidth
-                          label="Giới thiệu"
-                          name="bio"
-                          multiline
-                          rows={3}
-                          value={formData.bio}
-                          onChange={handleFormChange}
-                        />
-                        {currentUser?.role === UserRole.STUDENT && (
-                          <>
-                            <FormControl fullWidth>
-                              <InputLabel>Giới tính</InputLabel>
-                              <Select
-                                name="gender"
-                                value={formData.gender}
-                                label="Giới tính"
-                                onChange={(e) => handleFormChange(e as any)}
-                              >
-                                <MenuItem value="male">Nam</MenuItem>
-                                <MenuItem value="female">Nữ</MenuItem>
-                                <MenuItem value="other">Khác</MenuItem>
-                              </Select>
-                            </FormControl>
-                            <TextField
-                              fullWidth
-                              label="Sở thích"
-                              name="interests"
-                              value={formData.interests}
-                              onChange={handleFormChange}
-                            />
-                            <TextField
-                              fullWidth
-                              label="Mục tiêu học tập"
-                              name="learningGoals"
-                              multiline
-                              rows={2}
-                              value={formData.learningGoals}
-                              onChange={handleFormChange}
-                            />
-                          </>
-                        )}
-                        {currentUser?.role === UserRole.STUDENT_ACADEMIC && (
-                          <>
-                            <TextField
-                              fullWidth
-                              label="Mã sinh viên"
-                              name="studentCode"
-                              value={formData.studentCode}
-                              disabled
-                            />
-                            <TextField
-                              fullWidth
-                              label="Khóa học"
-                              name="academicYear"
-                              value={formData.academicYear}
-                              disabled
-                            />
-                          </>
-                        )}
-                      </Stack>
-                    ) : (
-                      <>
-                        <Box sx={{ mb: 2 }}>
-                          <Typography
-                            variant="subtitle2"
-                            color="text.secondary"
-                            gutterBottom
-                          >
-                            {currentUser?.role === UserRole.STUDENT
-                              ? "Mã học viên"
-                              : "Mã sinh viên"}
-                          </Typography>
-                          <Typography
-                            variant="body1"
-                            sx={{
-                              fontFamily: "monospace",
-                              fontSize: "1.1rem",
-                              fontWeight: "medium",
-                              color: "primary.main",
-                            }}
-                          >
-                            {currentUser?.role === UserRole.STUDENT
-                              ? currentUser?.userStudent?.id
-                              : currentUser?.userStudentAcademic?.studentCode}
-                          </Typography>
-                        </Box>
-
-                        <Box sx={{ mb: 2 }}>
-                          <Typography
-                            variant="subtitle2"
-                            color="text.secondary"
-                            gutterBottom
-                          >
-                            Giới thiệu
-                          </Typography>
-                          <Typography variant="body1">
-                            {currentUser?.role === UserRole.STUDENT
-                              ? currentUser?.userStudent?.bio
-                              : "Sinh viên " +
-                                currentUser?.userStudentAcademic?.academicYear}
-                          </Typography>
-                        </Box>
-
-                        {currentUser?.role === UserRole.STUDENT && (
-                          <>
-                            {currentUser?.userStudent?.learningGoals && (
-                              <Box sx={{ mb: 2 }}>
-                                <Typography
-                                  variant="subtitle2"
-                                  color="text.secondary"
-                                  gutterBottom
-                                >
-                                  Mục tiêu học tập
-                                </Typography>
-                                <Typography variant="body1">
-                                  {currentUser?.userStudent?.learningGoals}
-                                </Typography>
-                              </Box>
-                            )}
-
-                            {currentUser?.userStudent?.interests && (
-                              <Box sx={{ mb: 2 }}>
-                                <Typography
-                                  variant="subtitle2"
-                                  color="text.secondary"
-                                  gutterBottom
-                                >
-                                  Sở thích
-                                </Typography>
-                                <Typography variant="body1">
-                                  {currentUser?.userStudent?.interests}
-                                </Typography>
-                              </Box>
-                            )}
-                          </>
-                        )}
-                      </>
-                    )}
-                  </Box>
-
-                  <Divider />
-
-                  {/* Personal Information */}
                   <Box>
                     <Box
                       sx={{
@@ -698,18 +533,51 @@ const ProfileAccount: React.FC = () => {
                         variant="outlined"
                         startIcon={<Edit />}
                         size="small"
-                        onClick={() => setIsEditingPersonal(!isEditingPersonal)}
+                        onClick={() => {
+                          if (isEditing) {
+                            handleSave();
+                          } else {
+                            setIsEditing(true);
+                          }
+                        }}
                       >
-                        {isEditingPersonal ? "Lưu thay đổi" : "Chỉnh sửa"}
+                        {isEditing ? "Lưu thay đổi" : "Chỉnh sửa"}
                       </Button>
                     </Box>
 
-                    {isEditingPersonal ? (
+                    {isEditing ? (
                       <Stack spacing={2}>
+                        <StyledTextField
+                          label="Email"
+                          name="email"
+                          type="email"
+                          value={formData.email}
+                          onChange={handleFormChange}
+                        />
+                        <StyledTextField
+                          label="Số điện thoại"
+                          name="phone"
+                          value={formData.phone}
+                          onChange={handleFormChange}
+                        />
+                        <StyledTextField
+                          label="Họ và tên"
+                          name="fullName"
+                          value={formData.fullName}
+                          onChange={handleFormChange}
+                        />
+
                         {currentUser?.role === UserRole.STUDENT ? (
                           <>
-                            <TextField
-                              fullWidth
+                            <StyledTextField
+                              label="Giới thiệu"
+                              name="bio"
+                              multiline
+                              rows={3}
+                              value={formData.bio}
+                              onChange={handleFormChange}
+                            />
+                            <StyledTextField
                               type="date"
                               label="Ngày sinh"
                               name="dateOfBirth"
@@ -719,52 +587,105 @@ const ProfileAccount: React.FC = () => {
                                 shrink: true,
                               }}
                             />
-                            <TextField
-                              fullWidth
+                            <FormControl fullWidth>
+                              <InputLabel>Giới tính</InputLabel>
+                              <Select
+                                name="gender"
+                                value={formData.gender}
+                                label="Giới tính"
+                                onChange={handleGenderChange}
+                              >
+                                <MenuItem value="male">Nam</MenuItem>
+                                <MenuItem value="female">Nữ</MenuItem>
+                                <MenuItem value="other">Khác</MenuItem>
+                              </Select>
+                            </FormControl>
+                            <StyledTextField
                               label="Nghề nghiệp"
                               name="occupation"
                               value={formData.occupation}
                               onChange={handleFormChange}
                             />
-                            <TextField
-                              fullWidth
+                            <StyledTextField
                               label="Trình độ học vấn"
                               name="educationLevel"
                               value={formData.educationLevel}
                               onChange={handleFormChange}
                             />
+                            <StyledTextField
+                              label="Địa chỉ"
+                              name="address"
+                              value={formData.address}
+                              onChange={handleFormChange}
+                            />
+                            <StyledTextField
+                              label="Thành phố"
+                              name="city"
+                              value={formData.city}
+                              onChange={handleFormChange}
+                            />
+                            <StyledTextField
+                              label="Quốc gia"
+                              name="country"
+                              value={formData.country}
+                              onChange={handleFormChange}
+                            />
+                            <StyledTextField
+                              label="Sở thích"
+                              name="interests"
+                              value={formData.interests}
+                              onChange={handleFormChange}
+                            />
+                            <StyledTextField
+                              label="Mục tiêu học tập"
+                              name="learningGoals"
+                              multiline
+                              rows={2}
+                              value={formData.learningGoals}
+                              onChange={handleFormChange}
+                            />
+                            <FormControl fullWidth>
+                              <InputLabel>Ngôn ngữ ưu tiên</InputLabel>
+                              <Select
+                                name="preferredLanguage"
+                                value={formData.preferredLanguage}
+                                label="Ngôn ngữ ưu tiên"
+                                onChange={handleSelectChange}
+                              >
+                                <MenuItem value="Vietnamese">
+                                  Tiếng Việt
+                                </MenuItem>
+                                <MenuItem value="English">Tiếng Anh</MenuItem>
+                              </Select>
+                            </FormControl>
                           </>
                         ) : (
                           <>
-                            <TextField
-                              fullWidth
+                            <StyledTextField
                               label="Mã sinh viên"
                               name="studentCode"
                               value={formData.studentCode}
                               disabled
                             />
-                            <TextField
-                              fullWidth
+                            <StyledTextField
                               label="Khóa học"
                               name="academicYear"
                               value={formData.academicYear}
                               disabled
                             />
-                            <TextField
-                              fullWidth
+                            <StyledTextField
                               label="Lớp học"
                               value={
                                 currentUser?.userStudentAcademic?.academicClass
-                                  ?.classCode
+                                  ?.classCode || ""
                               }
                               disabled
                             />
-                            <TextField
-                              fullWidth
+                            <StyledTextField
                               label="Học kỳ"
                               value={
                                 currentUser?.userStudentAcademic?.academicClass
-                                  ?.semester
+                                  ?.semester || ""
                               }
                               disabled
                             />
@@ -773,6 +694,38 @@ const ProfileAccount: React.FC = () => {
                       </Stack>
                     ) : (
                       <List>
+                        <ListItem>
+                          <ListItemIcon>
+                            <Email />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary="Email"
+                            secondary={currentUser?.email}
+                          />
+                        </ListItem>
+                        <ListItem>
+                          <ListItemIcon>
+                            <Phone />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary="Số điện thoại"
+                            secondary={currentUser?.phone}
+                          />
+                        </ListItem>
+                        <ListItem>
+                          <ListItemIcon>
+                            <PersonIcon />
+                          </ListItemIcon>
+                          <ListItemText
+                            primary="Họ và tên"
+                            secondary={
+                              currentUser?.role === UserRole.STUDENT
+                                ? currentUser?.userStudent?.fullName
+                                : currentUser?.userStudentAcademic?.fullName
+                            }
+                          />
+                        </ListItem>
+
                         {currentUser?.role === UserRole.STUDENT ? (
                           <>
                             {currentUser?.userStudent?.dateOfBirth && (
@@ -817,6 +770,77 @@ const ProfileAccount: React.FC = () => {
                                   primary="Trình độ học vấn"
                                   secondary={
                                     currentUser?.userStudent?.educationLevel
+                                  }
+                                />
+                              </ListItem>
+                            )}
+                            {currentUser?.userStudent?.address && (
+                              <ListItem>
+                                <ListItemIcon>
+                                  <LocationOn />
+                                </ListItemIcon>
+                                <ListItemText
+                                  primary="Địa chỉ"
+                                  secondary={
+                                    <Box>
+                                      <Typography variant="body2">
+                                        {currentUser?.userStudent?.address}
+                                      </Typography>
+                                      <Stack
+                                        direction="row"
+                                        spacing={1}
+                                        mt={0.5}
+                                      >
+                                        <Typography variant="body2">
+                                          {currentUser?.userStudent?.city}
+                                        </Typography>
+                                        <Typography variant="body2">
+                                          •
+                                        </Typography>
+                                        <Typography variant="body2">
+                                          {currentUser?.userStudent?.country}
+                                        </Typography>
+                                      </Stack>
+                                    </Box>
+                                  }
+                                />
+                              </ListItem>
+                            )}
+                            {currentUser?.userStudent?.interests && (
+                              <ListItem>
+                                <ListItemIcon>
+                                  <Favorite />
+                                </ListItemIcon>
+                                <ListItemText
+                                  primary="Sở thích"
+                                  secondary={
+                                    currentUser?.userStudent?.interests
+                                  }
+                                />
+                              </ListItem>
+                            )}
+                            {currentUser?.userStudent?.learningGoals && (
+                              <ListItem>
+                                <ListItemIcon>
+                                  <School />
+                                </ListItemIcon>
+                                <ListItemText
+                                  primary="Mục tiêu học tập"
+                                  secondary={
+                                    currentUser?.userStudent?.learningGoals
+                                  }
+                                />
+                              </ListItem>
+                            )}
+                            {currentUser?.userStudent?.preferredLanguage && (
+                              <ListItem>
+                                <ListItemIcon>
+                                  <Language />
+                                </ListItemIcon>
+                                <ListItemText
+                                  primary="Ngôn ngữ ưu tiên"
+                                  secondary={
+                                    currentUser?.userStudent?.preferredLanguage
                                   }
                                 />
                               </ListItem>
@@ -872,230 +896,6 @@ const ProfileAccount: React.FC = () => {
                             </ListItem>
                           </>
                         )}
-                      </List>
-                    )}
-                  </Box>
-
-                  <Divider />
-
-                  {/* Contact Information */}
-                  <Box>
-                    <Box
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        mb: 2,
-                      }}
-                    >
-                      <Typography variant="h6" gutterBottom>
-                        Thông tin liên hệ
-                      </Typography>
-                      <Button
-                        variant="outlined"
-                        startIcon={<Edit />}
-                        size="small"
-                        onClick={() => setIsEditingContact(!isEditingContact)}
-                      >
-                        {isEditingContact ? "Lưu thay đổi" : "Chỉnh sửa"}
-                      </Button>
-                    </Box>
-
-                    {isEditingContact ? (
-                      <Stack spacing={2}>
-                        <TextField
-                          fullWidth
-                          label="Email"
-                          name="email"
-                          type="email"
-                          value={formData.email}
-                          onChange={handleFormChange}
-                        />
-                        <TextField
-                          fullWidth
-                          label="Số điện thoại"
-                          name="phone"
-                          value={formData.phone}
-                          onChange={handleFormChange}
-                        />
-                        {currentUser?.role === "student" && (
-                          <>
-                            <TextField
-                              fullWidth
-                              label="Địa chỉ"
-                              name="address"
-                              value={formData.address}
-                              onChange={handleFormChange}
-                            />
-                            <TextField
-                              fullWidth
-                              label="Thành phố"
-                              name="city"
-                              value={formData.city}
-                              onChange={handleFormChange}
-                            />
-                            <TextField
-                              fullWidth
-                              label="Quốc gia"
-                              name="country"
-                              value={formData.country}
-                              onChange={handleFormChange}
-                            />
-                          </>
-                        )}
-                        <FormControl fullWidth>
-                          <InputLabel>Ngôn ngữ ưu tiên</InputLabel>
-                          <Select
-                            name="preferredLanguage"
-                            value={formData.preferredLanguage}
-                            label="Ngôn ngữ ưu tiên"
-                            onChange={(e) => handleFormChange(e as any)}
-                          >
-                            <MenuItem value="Vietnamese">Tiếng Việt</MenuItem>
-                            <MenuItem value="English">Tiếng Anh</MenuItem>
-                          </Select>
-                        </FormControl>
-                      </Stack>
-                    ) : (
-                      <List>
-                        <ListItem>
-                          <ListItemIcon>
-                            <Email />
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 1,
-                                }}
-                              >
-                                <Typography variant="body1">Email</Typography>
-                                {currentUser?.status === "active" && (
-                                  <Chip
-                                    label="Đã xác thực"
-                                    size="small"
-                                    color="success"
-                                    variant="outlined"
-                                  />
-                                )}
-                              </Box>
-                            }
-                            secondary={
-                              <Box>
-                                <Typography variant="body2">
-                                  {currentUser?.email}
-                                </Typography>
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
-                                  Email chính để nhận thông báo
-                                </Typography>
-                              </Box>
-                            }
-                          />
-                        </ListItem>
-
-                        <ListItem>
-                          <ListItemIcon>
-                            <Phone />
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 1,
-                                }}
-                              >
-                                <Typography variant="body1">
-                                  Số điện thoại
-                                </Typography>
-                                {currentUser?.status === "active" && (
-                                  <Chip
-                                    label="Đã xác thực"
-                                    size="small"
-                                    color="success"
-                                    variant="outlined"
-                                  />
-                                )}
-                              </Box>
-                            }
-                            secondary={
-                              <Box>
-                                <Typography variant="body2">
-                                  {currentUser?.phone}
-                                </Typography>
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
-                                >
-                                  Số điện thoại để liên hệ và xác thực
-                                </Typography>
-                              </Box>
-                            }
-                          />
-                        </ListItem>
-
-                        {currentUser?.role === "student" &&
-                          currentUser?.userStudent && (
-                            <ListItem>
-                              <ListItemIcon>
-                                <LocationOn />
-                              </ListItemIcon>
-                              <ListItemText
-                                primary="Địa chỉ"
-                                secondary={
-                                  <Box>
-                                    <Typography variant="body2">
-                                      {currentUser?.userStudent?.address}
-                                    </Typography>
-                                    <Stack direction="row" spacing={1} mt={0.5}>
-                                      <Typography variant="body2">
-                                        {currentUser?.userStudent?.city}
-                                      </Typography>
-                                      <Typography variant="body2">•</Typography>
-                                      <Typography variant="body2">
-                                        {currentUser?.userStudent?.country}
-                                      </Typography>
-                                    </Stack>
-                                  </Box>
-                                }
-                              />
-                            </ListItem>
-                          )}
-
-                        {currentUser?.role === "student" &&
-                          currentUser?.userStudent?.preferredLanguage && (
-                            <ListItem>
-                              <ListItemIcon>
-                                <Language />
-                              </ListItemIcon>
-                              <ListItemText
-                                primary="Ngôn ngữ ưu tiên"
-                                secondary={
-                                  <Box>
-                                    <Typography variant="body2">
-                                      {
-                                        currentUser?.userStudent
-                                          ?.preferredLanguage
-                                      }
-                                    </Typography>
-                                    <Typography
-                                      variant="caption"
-                                      color="text.secondary"
-                                    >
-                                      Ngôn ngữ sử dụng trong khóa học và thông
-                                      báo
-                                    </Typography>
-                                  </Box>
-                                }
-                              />
-                            </ListItem>
-                          )}
                       </List>
                     )}
                   </Box>

@@ -85,11 +85,10 @@ const CourseDetail: React.FC = () => {
     if (id) {
       dispatch(fetchCourseById(parseInt(id)));
     }
-
     if (currentUser?.id) {
       dispatch(fetchUserEnrollments(Number(currentUser?.id)));
     }
-  }, [dispatch, id, currentUser]);
+  }, [dispatch, id, currentUser, navigate]);
 
   useEffect(() => {
     // Kiểm tra người dùng trước tiên
@@ -453,7 +452,7 @@ const CourseDetail: React.FC = () => {
                 </CardContent>
               </Card>
 
-              <CourseRating />
+              {isEnrolled && <CourseRating />}
             </TabPanel>
 
             {/* Documents Tab */}

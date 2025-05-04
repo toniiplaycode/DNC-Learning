@@ -9,6 +9,9 @@ import {
   Chip,
   Collapse,
   ListItemButton,
+  Checkbox,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
 import {
   PlayCircle,
@@ -22,6 +25,8 @@ import {
   TableChart,
   PictureAsPdf,
   Slideshow,
+  CheckCircle,
+  Lock,
 } from "@mui/icons-material";
 
 interface Lesson {
@@ -35,6 +40,7 @@ interface Lesson {
   orderNumber: number;
   createdAt: string;
   updatedAt: string;
+  completed?: boolean;
 }
 
 interface Document {
@@ -67,7 +73,27 @@ interface Section {
 interface CourseStructureProps {
   sections: Section[];
   handleLessonClick?: (lessonId: string) => void;
-  activeLesson?: number;
+  activeLesson?: string;
+  setActiveTab?: (tab: number) => void;
+  onMarkAsCompleted?: (lessonId: string) => void;
+  userProgress?: Array<{
+    id: string;
+    userId: string;
+    lessonId: string;
+    completedAt: string;
+    lastAccessed: string;
+    lesson: {
+      id: string;
+      sectionId: string;
+      title: string;
+      contentType: string;
+      contentUrl: string | null;
+      content: string;
+      duration: number | null;
+      orderNumber: number;
+      isFree: boolean;
+    };
+  }>;
 }
 
 const CourseStructure: React.FC<CourseStructureProps> = ({
@@ -75,6 +101,8 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
   handleLessonClick,
   activeLesson,
   setActiveTab,
+  onMarkAsCompleted,
+  userProgress = [],
 }) => {
   const [expandedSections, setExpandedSections] = useState<
     Record<string, boolean>
@@ -90,7 +118,7 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
     if (activeLesson) {
       // Tìm section chứa active lesson
       const sectionWithActiveLesson = sections.find((section) =>
-        section.lessons.some((lesson) => lesson.id === activeLesson.toString())
+        section.lessons.some((lesson) => lesson.id === activeLesson)
       );
 
       if (sectionWithActiveLesson) {
@@ -138,9 +166,43 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
     (a, b) => a.orderNumber - b.orderNumber
   );
 
+  const isLessonCompleted = (lessonId: string) => {
+    return userProgress.some(
+      (progress) => progress.lessonId === lessonId && progress.completedAt
+    );
+  };
+
+  const isLessonLocked = (
+    lessonId: string,
+    sectionIndex: number,
+    lessonIndex: number
+  ) => {
+    // First lesson of first section is always unlocked
+    if (sectionIndex === 0 && lessonIndex === 0) return false;
+
+    // Get all lessons in order
+    const allLessons = sections.flatMap((section) => section.lessons);
+    const currentLessonIndex = allLessons.findIndex(
+      (lesson) => lesson.id === lessonId
+    );
+
+    // If this is the first lesson, check if it's in the first section
+    if (currentLessonIndex === 0) return false;
+
+    // Check if any previous lesson is not completed
+    for (let i = 0; i < currentLessonIndex; i++) {
+      const previousLesson = allLessons[i];
+      if (!isLessonCompleted(previousLesson.id)) {
+        return true; // Lock if any previous lesson is not completed
+      }
+    }
+
+    return false;
+  };
+
   return (
     <List sx={{ width: "100%" }}>
-      {sortedSections.map((section) => (
+      {sortedSections.map((section, sectionIndex) => (
         <Box
           key={section.id}
           sx={{ mb: 2, border: "1px solid #e0e0e0", borderRadius: 1 }}
@@ -181,37 +243,74 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
             unmountOnExit
           >
             <List component="div" disablePadding>
-              {section.lessons.map((lesson) => (
-                <ListItem
-                  key={lesson.id}
-                  sx={{
-                    pl: 4,
-                    cursor: "pointer",
-                    bgcolor:
-                      activeLesson === lesson.id
-                        ? "rgba(25, 118, 210, 0.08)"
-                        : "transparent",
-                    borderLeft:
-                      activeLesson === lesson.id ? "4px solid #ff9f1c" : "none",
-                  }}
-                  onClick={() => {
-                    handleLessonClick?.(lesson.id);
-                    setActiveTab?.(0);
-                  }}
-                >
-                  <ListItemIcon>
-                    {getContentIcon(lesson.contentType)}
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={`${section.orderNumber}.${lesson.orderNumber} ${lesson.title}`}
-                    secondary={
-                      lesson.duration
-                        ? `${lesson.duration} phút`
-                        : lesson.content
-                    }
-                  />
-                </ListItem>
-              ))}
+              {section.lessons.map((lesson, lessonIndex) => {
+                const completed = isLessonCompleted(lesson.id);
+                const locked = isLessonLocked(
+                  lesson.id,
+                  sectionIndex,
+                  lessonIndex
+                );
+
+                return (
+                  <ListItem
+                    key={lesson.id}
+                    sx={{
+                      pl: 4,
+                      cursor: locked ? "not-allowed" : "pointer",
+                      bgcolor:
+                        activeLesson === lesson.id
+                          ? "rgba(25, 118, 210, 0.08)"
+                          : "transparent",
+                      borderLeft:
+                        activeLesson === lesson.id
+                          ? "4px solid #ff9f1c"
+                          : "none",
+                      opacity: locked ? 0.7 : 1,
+                    }}
+                    onClick={() => {
+                      if (!locked) {
+                        handleLessonClick?.(lesson.id);
+                        setActiveTab?.(0);
+                      }
+                    }}
+                  >
+                    <ListItemIcon>
+                      {locked ? (
+                        <Tooltip title="Hoàn thành bài học trước để mở khóa">
+                          <Lock color="disabled" />
+                        </Tooltip>
+                      ) : (
+                        getContentIcon(lesson.contentType)
+                      )}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={`${section.orderNumber}.${lesson.orderNumber} ${lesson.title}`}
+                      secondary={
+                        lesson.duration
+                          ? `${lesson.duration} phút`
+                          : lesson.content
+                      }
+                    />
+                    {!locked && (
+                      <Tooltip
+                        title={
+                          completed ? "Đã hoàn thành" : "Đánh dấu hoàn thành"
+                        }
+                      >
+                        <IconButton
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onMarkAsCompleted?.(lesson.id);
+                          }}
+                          color={completed ? "success" : "default"}
+                        >
+                          <CheckCircle />
+                        </IconButton>
+                      </Tooltip>
+                    )}
+                  </ListItem>
+                );
+              })}
 
               {section.documents && section.documents.length > 0 && (
                 <>

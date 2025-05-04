@@ -34,6 +34,11 @@ import {
 import { selectStudentAcademicCourses } from "../../../features/users/usersSelectors";
 import { fetchStudentAcademicCourses } from "../../../features/users/usersApiSlice";
 import { selectCurrentUser } from "../../../features/auth/authSelectors";
+import {
+  createProgress,
+  fetchUserProgress,
+} from "../../../features/course-progress/courseProgressSlice";
+import { selectUserProgress } from "../../../features/course-progress/courseProgressSelectors";
 interface TabPanelProps {
   children?: React.ReactNode;
   value: number;
@@ -103,6 +108,9 @@ const CourseContent = () => {
   const courseProgress = useAppSelector(selectCourseProgress);
   const userEnrollments = useAppSelector(selectUserEnrollments);
   const studentAcademicCourses = useAppSelector(selectStudentAcademicCourses);
+  const userProgress = useAppSelector(selectUserProgress);
+  const [activeTab, setActiveTab] = useState(0);
+  const [selectedLesson, setSelectedLesson] = useState<ContentItem | null>();
 
   // Add check for course access
   const hasAccess = useMemo(() => {
@@ -127,6 +135,7 @@ const CourseContent = () => {
 
     dispatch(fetchUserEnrollments(Number(currentUser?.id)));
     dispatch(fetchStudentAcademicCourses(currentUser?.id));
+    dispatch(fetchUserProgress(Number(currentUser?.id)));
   }, [dispatch, currentUser, navigate, hasAccess, courseId]);
 
   useEffect(() => {
@@ -138,16 +147,9 @@ const CourseContent = () => {
     setSelectedLesson(getFirstLesson(course?.sections));
   }, [course]);
 
-  console.log(userEnrollments, studentAcademicCourses);
-
-  const [selectedLesson, setSelectedLesson] = useState<ContentItem | null>();
-
   const handleLessonClick = (id: string) => {
-    console.log("Lesson clicked:", id);
-
     let selectedLesson = null;
 
-    // Tìm lesson trong tất cả các sections
     course?.sections?.forEach((section) => {
       const lesson = section.lessons.find((lesson) => lesson.id === id);
       if (lesson) {
@@ -159,8 +161,8 @@ const CourseContent = () => {
           description: lesson.content,
           duration: lesson.duration ? `${lesson.duration}:00` : undefined,
           url: lesson.contentUrl || "",
-          completed: false, // Cần add thêm trường này nếu API có
-          // Các trường khác nếu cần
+          completed: lesson.completed || false,
+          locked: false,
         };
       }
     });
@@ -170,7 +172,33 @@ const CourseContent = () => {
     }
   };
 
-  const [activeTab, setActiveTab] = useState(0);
+  const handleMarkAsCompleted = async (lessonId: string) => {
+    if (!currentUser) return;
+
+    try {
+      // Find the progress record for this lesson
+      const hasCompleted = userProgress?.some(
+        (progress) => Number(progress.lessonId) == Number(lessonId)
+      );
+
+      if (!hasCompleted) {
+        await dispatch(
+          createProgress({
+            userId: Number(currentUser.id),
+            lessonId: Number(lessonId),
+          })
+        );
+
+        // Fetch updated user progress after marking as completed
+        await dispatch(fetchUserProgress(Number(currentUser.id)));
+
+        // Refresh course progress
+        await dispatch(fetchCourseProgress({ courseId: Number(courseId) }));
+      }
+    } catch (error) {
+      console.error("Error marking lesson as completed:", error);
+    }
+  };
 
   return (
     <Container maxWidth="xl" sx={{ py: 4, mt: 2 }}>
@@ -261,8 +289,10 @@ const CourseContent = () => {
                     <CourseStructure
                       sections={course?.sections}
                       handleLessonClick={handleLessonClick}
-                      activeLesson={selectedLesson?.id}
+                      activeLesson={selectedLesson?.id?.toString()}
                       setActiveTab={setActiveTab}
+                      onMarkAsCompleted={handleMarkAsCompleted}
+                      userProgress={userProgress}
                     />
                   </CardContent>
                 </Card>
