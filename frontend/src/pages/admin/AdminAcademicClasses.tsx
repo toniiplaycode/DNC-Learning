@@ -382,6 +382,7 @@ const AdminAcademicClasses: React.FC = () => {
 
       // Refresh the class data
       await dispatch(fetchAcademicClasses()).unwrap();
+
       setOpenAddStudents(false);
     } catch (error) {
       console.error("Error adding students:", error);

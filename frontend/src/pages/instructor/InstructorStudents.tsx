@@ -68,6 +68,7 @@ import {
 import React from "react";
 import { fetchCoursesByInstructor } from "../../features/courses/coursesApiSlice";
 import { selectCoursesByInstructor } from "../../features/courses/coursesSelector";
+import * as XLSX from "xlsx";
 
 const TabPanel = (props: TabPanelProps) => {
   const { children, value, index, ...other } = props;
@@ -116,8 +117,6 @@ const InstructorStudents = () => {
     dispatch(fetchCoursesByInstructor(currentUser?.userInstructor?.id));
     dispatch(fetchAcademicStudentsByInstructor(currentUser.userInstructor.id));
   }, [dispatch, currentUser]);
-
-  console.log(instructorAcademicStudents);
 
   const handleStatusFilterChange = (event: any) => {
     setStatusFilter(event.target.value);
@@ -252,7 +251,12 @@ const InstructorStudents = () => {
             tabValue === "student_academic"
               ? b.userStudentAcademic?.fullName
               : b.userStudent?.fullName;
-          return nameA.localeCompare(nameB);
+          // Sort by first name (last word in fullName)
+          const firstNameA = (nameA || "").trim().split(" ").pop() || "";
+          const firstNameB = (nameB || "").trim().split(" ").pop() || "";
+          return firstNameA.localeCompare(firstNameB, "vi", {
+            sensitivity: "base",
+          });
         }
         if (sortBy === "joinDate") {
           return (
@@ -339,6 +343,63 @@ const InstructorStudents = () => {
     setDialogTabValue(newValue);
   };
 
+  // Export filtered students to Excel
+  const handleExportStudents = () => {
+    if (!filteredStudents.length) {
+      alert("Không có học viên/sinh viên để xuất file!");
+      return;
+    }
+    // filteredStudents đã được sort theo sortBy
+    const data = filteredStudents.map((student, idx) => {
+      if (tabValue === "student_academic") {
+        return {
+          STT: idx + 1,
+          "Mã sinh viên": student.userStudentAcademic?.studentCode || "",
+          "Họ và tên": student.userStudentAcademic?.fullName || "",
+          Khóa: student.userStudentAcademic?.academicYear || "",
+          Email: student.email || "",
+          "Số điện thoại":
+            student.userStudentAcademic?.phone || student.phone || "",
+          "Trạng thái":
+            student.userStudentAcademic?.status === "studying"
+              ? "Đang học"
+              : student.userStudentAcademic?.status || "-",
+          Lớp: student.userStudentAcademic?.academicClass?.className || "",
+          "Ngày tham gia": student.createdAt
+            ? new Date(student.createdAt).toLocaleDateString("vi-VN")
+            : "",
+          "Khóa học tham gia":
+            student.userStudentAcademic.academicClass.classCourses.length,
+        };
+      } else {
+        return {
+          STT: idx + 1,
+          "Mã học viên": student.userStudent?.studentCode || "",
+          "Họ và tên": student.userStudent?.fullName || "",
+          Email: student.email || "",
+          "Số điện thoại": student.userStudent?.phone || student.phone || "",
+          "Trạng thái":
+            student.status === "active"
+              ? "Đang hoạt động"
+              : student.status || "-",
+          "Ngày tham gia": student.createdAt
+            ? new Date(student.createdAt).toLocaleDateString("vi-VN")
+            : "",
+          "Số khóa học đã đăng ký": student.enrollments?.length || 0,
+        };
+      }
+    });
+    const ws = XLSX.utils.json_to_sheet(data);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "DanhSachHocVien");
+    XLSX.writeFile(
+      wb,
+      `DanhSach_${
+        tabValue === "student_academic" ? "SinhVien" : "HocVien"
+      }.xlsx`
+    );
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h5" gutterBottom fontWeight="bold">
@@ -422,6 +483,16 @@ const InstructorStudents = () => {
                 <MenuItem value="enrolledCourses">Số khóa học</MenuItem>
               </Select>
             </FormControl>
+
+            <Button
+              variant="outlined"
+              color="success"
+              onClick={handleExportStudents}
+              sx={{ minWidth: 180 }}
+            >
+              Tải danh sách{" "}
+              {tabValue === "student_academic" ? "sinh viên" : "học viên"}
+            </Button>
           </Stack>
 
           <Box sx={{ mb: 3 }}>
