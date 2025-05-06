@@ -12,6 +12,8 @@ import { UserStudentAcademic } from 'src/entities/UserStudentAcademic';
 import { WsJwtAuthGuard } from 'src/guards/ws-jwt.guard';
 import { ChatbotResponse } from '../../entities/ChatbotResponse';
 import { ChatbotService } from '../chatbot-response/chatbot-response.service';
+import { RagModule } from '../rag/rag.module';
+import { ChatbotResponseModule } from '../chatbot-response/chatbot-response.module';
 
 @Module({
   controllers: [MessagesController],
@@ -27,6 +29,8 @@ import { ChatbotService } from '../chatbot-response/chatbot-response.service';
     JwtModule.register({
       secret: process.env.JWT_SECRET,
     }),
+    RagModule,
+    ChatbotResponseModule,
   ],
   providers: [MessagesService, MessagesGateway, WsJwtAuthGuard, ChatbotService],
   exports: [MessagesService],

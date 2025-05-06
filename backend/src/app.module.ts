@@ -66,6 +66,8 @@ import { AcademicClassesModule } from './modules/academic-classes/academic-class
 import { Notification } from './entities/Notification';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { CourseProgressModule } from './modules/course-progress/course-progress.module';
+import { RagModule } from './modules/rag/rag.module';
+import { OllamaModule } from './modules/ollama/ollama.module';
 
 @Module({
   imports: [
@@ -150,6 +152,8 @@ import { CourseProgressModule } from './modules/course-progress/course-progress.
     AcademicClassesModule,
     NotificationsModule,
     CourseProgressModule,
+    RagModule,
+    OllamaModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthMiddleware, InstructorMiddleware],

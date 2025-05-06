@@ -3,11 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ChatbotResponse } from '../../entities/ChatbotResponse';
 import { Message } from '../../entities/Message';
+import { RagService } from '../rag/rag.service';
 
 @Injectable()
 export class ChatbotService {
   private readonly logger = new Logger(ChatbotService.name);
-  private readonly CONFIDENCE_THRESHOLD = 0.5; // Lowered threshold for better matching
   private readonly CHATBOT_USER_ID = -1; // Special ID for chatbot
 
   constructor(
@@ -15,6 +15,7 @@ export class ChatbotService {
     private chatbotResponseRepo: Repository<ChatbotResponse>,
     @InjectRepository(Message)
     private messageRepo: Repository<Message>,
+    private ragService: RagService,
   ) {}
 
   async processMessage(message: Message): Promise<Message | null> {
@@ -25,17 +26,30 @@ export class ChatbotService {
       return null;
     }
 
-    const response = await this.findBestResponse(message.messageText);
-    this.logger.debug('Found response:', response);
+    try {
+      // Sử dụng pipeline keyword search mới
+      const ragResult = await this.ragService.testRag(message.messageText);
+      const response = ragResult.response;
 
-    if (!response) {
-      return this.createBotMessage(
-        message.senderId,
-        'Xin lỗi, tôi không hiểu câu hỏi của bạn. Vui lòng thử câu hỏi khác.',
-      );
+      if (!response) {
+        throw new Error('Failed to generate response');
+      }
+
+      return this.createBotMessage(message.senderId, response);
+    } catch (error) {
+      this.logger.error('Error processing message with RAG:', error);
+
+      // Fallback to traditional response if RAG fails
+      const fallbackResponse = await this.findBestResponse(message.messageText);
+      if (!fallbackResponse) {
+        return this.createBotMessage(
+          message.senderId,
+          'Xin lỗi, tôi không hiểu câu hỏi của bạn. Vui lòng thử câu hỏi khác.',
+        );
+      }
+
+      return this.createBotMessage(message.senderId, fallbackResponse.response);
     }
-
-    return this.createBotMessage(message.senderId, response.response);
   }
 
   private async findBestResponse(
