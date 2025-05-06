@@ -257,4 +257,14 @@ export class RagService {
       return { success: false, error: error.message };
     }
   }
+
+  async clearAllVectors() {
+    await this.qdrantClient.deleteCollection(this.collectionName);
+    await this.qdrantClient.createCollection(this.collectionName, {
+      vectors: {
+        size: 1536,
+        distance: 'Cosine',
+      },
+    });
+  }
 }

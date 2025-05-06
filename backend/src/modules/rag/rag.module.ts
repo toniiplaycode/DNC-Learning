@@ -17,6 +17,16 @@ import { Assignment } from '../../entities/Assignment';
 import { AcademicClass } from '../../entities/AcademicClass';
 import { UserInstructor } from '../../entities/UserInstructor';
 import { User } from '../../entities/User';
+import { Review } from 'src/entities/Review';
+import { UserStudent } from 'src/entities/UserStudent';
+import { Enrollment } from 'src/entities/Enrollment';
+import { QuizAttempt } from 'src/entities/QuizAttempt';
+import { UserGrade } from 'src/entities/UserGrade';
+import { QuizQuestion } from 'src/entities/QuizQuestion';
+import { AssignmentSubmission } from 'src/entities/AssignmentSubmission';
+import { Certificate } from 'src/entities/Certificate';
+import { QuizResponse } from 'src/entities/QuizResponse';
+import { QuizOption } from 'src/entities/QuizOption';
 
 @Module({
   imports: [
@@ -34,6 +44,16 @@ import { User } from '../../entities/User';
       AcademicClass,
       UserInstructor,
       User,
+      UserStudent,
+      UserGrade,
+      Review,
+      Enrollment,
+      QuizAttempt,
+      QuizQuestion,
+      QuizOption,
+      QuizResponse,
+      AssignmentSubmission,
+      Certificate,
     ]),
     OpenAIModule,
   ],

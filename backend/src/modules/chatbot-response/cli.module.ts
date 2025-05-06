@@ -13,6 +13,19 @@ import { Enrollment } from 'src/entities/Enrollment';
 import { Forum } from 'src/entities/Forum';
 import { Category } from 'src/entities/Category';
 import { Document } from 'src/entities/Document';
+import { RagClearCommand, RagCommand } from '../rag/rag.command';
+import { RagModule } from '../rag/rag.module';
+import { CourseSection } from '../../entities/CourseSection';
+import { CourseLesson } from '../../entities/CourseLesson';
+import { AcademicClass } from '../../entities/AcademicClass';
+import { User } from '../../entities/User';
+import { UserStudent } from '../../entities/UserStudent';
+import { UserGrade } from '../../entities/UserGrade';
+import { QuizAttempt } from '../../entities/QuizAttempt';
+import { QuizQuestion } from '../../entities/QuizQuestion';
+import { QuizOption } from '../../entities/QuizOption';
+import { QuizResponse } from '../../entities/QuizResponse';
+import { AssignmentSubmission } from '../../entities/AssignmentSubmission';
 
 @Module({
   imports: [
@@ -28,8 +41,32 @@ import { Document } from 'src/entities/Document';
       Forum,
       Document,
       Category,
+      CourseSection,
+      CourseLesson,
+      AcademicClass,
+      User,
+      UserStudent,
+      UserGrade,
+      QuizAttempt,
+      QuizQuestion,
+      QuizOption,
+      QuizResponse,
+      AssignmentSubmission,
+      CourseSection,
+      CourseLesson,
+      AcademicClass,
+      User,
+      UserStudent,
+      UserGrade,
+      QuizAttempt,
     ]),
+    RagModule,
   ],
-  providers: [ChatbotAnalyzerService, AnalyzeChatbotDataCommand],
+  providers: [
+    ChatbotAnalyzerService,
+    AnalyzeChatbotDataCommand,
+    RagClearCommand,
+    RagCommand,
+  ],
 })
 export class CliModule {}
