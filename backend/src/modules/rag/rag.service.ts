@@ -92,6 +92,20 @@ export class RagService {
       await this.qdrantClient.upsert(this.collectionName, {
         points,
       });
+      // Thêm document chào hỏi hoặc giao tiếp
+      const greetingDoc =
+        'Xin chào! Tôi là trợ lý AI, rất vui được gặp bạn. Bạn có thể hỏi tôi về các khóa học, thông tin, hoặc bất kỳ điều gì khác. Tôi sẽ cố gắng hỗ trợ bạn tốt nhất có thể.';
+      const greetingEmbedding =
+        await this.openaiService.getEmbedding(greetingDoc);
+      await this.qdrantClient.upsert(this.collectionName, {
+        points: [
+          {
+            id: points.length,
+            vector: greetingEmbedding,
+            payload: { text: greetingDoc },
+          },
+        ],
+      });
     } catch (error) {
       this.logger.error('Error adding documents:', error);
       throw error;
@@ -167,7 +181,7 @@ export class RagService {
         removeAccents(str.toLowerCase().replace(/[^a-zA-Z0-9 ]/g, ' '));
       const keywords = normalize(query)
         .split(' ')
-        .filter((word) => word.length > 2);
+        .filter((word) => !!word);
       this.logger.debug(`[RAG] Normalized keywords:`, keywords);
 
       // Lấy toàn bộ vector từ Qdrant
