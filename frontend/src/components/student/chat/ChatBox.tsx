@@ -51,6 +51,7 @@ import { selectAllMessages } from "../../../features/messages/messagesSelector";
 import ChatErrorBoundary from "./ChatErrorBoundary";
 import { fetchUsers } from "../../../features/users/usersApiSlice";
 import { selectAllUsers } from "../../../features/users/usersSelectors";
+import parse, { domToReact } from "html-react-parser";
 
 // Add CHATBOT constant at the top
 const CHATBOT = {
@@ -190,6 +191,42 @@ const formatLastMessageTime = (timestamp: string) => {
       year: "2-digit",
     });
   }
+};
+
+const chatHtmlParserOptions = {
+  replace: (domNode: any) => {
+    if (domNode.type === "tag") {
+      const { name, children } = domNode;
+      if (name === "ol" || name === "ul") {
+        return (
+          <ol style={{ margin: "0 0 0 20px", paddingLeft: "20px" }}>
+            {domToReact(children, chatHtmlParserOptions)}
+          </ol>
+        );
+      }
+      if (name === "li") {
+        return (
+          <li style={{ marginBottom: "4px", fontSize: 16 }}>
+            {domToReact(children, chatHtmlParserOptions)}
+          </li>
+        );
+      }
+      if (name === "p") {
+        return (
+          <p style={{ margin: "0 0 8px 0", fontSize: 16, lineHeight: 1.7 }}>
+            {domToReact(children, chatHtmlParserOptions)}
+          </p>
+        );
+      }
+      if (name === "strong" || name === "b") {
+        return (
+          <strong style={{ fontWeight: 600 }}>
+            {domToReact(children, chatHtmlParserOptions)}
+          </strong>
+        );
+      }
+    }
+  },
 };
 
 // Or for a more detailed approach with login prompt:
@@ -1568,15 +1605,17 @@ const ChatBox = () => {
                                   </Stack>
                                 </Box>
                               )}
-                              <Typography
-                                color={
-                                  msg.sender === "user"
-                                    ? "white"
-                                    : "text.primary"
-                                }
+                              <div
+                                style={{
+                                  color:
+                                    msg.sender === "user" ? "white" : undefined,
+                                  wordBreak: "break-word",
+                                  fontSize: 16,
+                                  lineHeight: 1.7,
+                                }}
                               >
-                                {msg.content}
-                              </Typography>
+                                {parse(msg.content, chatHtmlParserOptions)}
+                              </div>
                               <Box
                                 sx={{
                                   display: "flex",

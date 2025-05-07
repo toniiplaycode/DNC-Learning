@@ -56,6 +56,7 @@ import {
 import { fetchUsers } from "../../features/users/usersApiSlice";
 import { selectAllUsers } from "../../features/users/usersSelectors";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import parse, { domToReact } from "html-react-parser";
 
 interface Message {
   id: number;
@@ -211,6 +212,58 @@ const USER_TYPE_OPTIONS: FilterOption[] = [
   { value: "instructor", label: "Giảng viên" },
   { value: "admin", label: "Quản trị viên" },
 ];
+
+const chatHtmlParserOptions = {
+  replace: (domNode) => {
+    if (domNode.type === "tag") {
+      const { name, children, attribs } = domNode;
+      if (name === "ol" || name === "ul") {
+        return (
+          <ol
+            style={{
+              margin: "0 0 0 20px",
+              paddingLeft: "20px",
+            }}
+          >
+            {domToReact(children, chatHtmlParserOptions)}
+          </ol>
+        );
+      }
+      if (name === "li") {
+        return (
+          <li
+            style={{
+              marginBottom: "4px",
+              fontSize: 16,
+            }}
+          >
+            {domToReact(children, chatHtmlParserOptions)}
+          </li>
+        );
+      }
+      if (name === "p") {
+        return (
+          <p
+            style={{
+              margin: "0 0 8px 0",
+              fontSize: 16,
+              lineHeight: 1.7,
+            }}
+          >
+            {domToReact(children, chatHtmlParserOptions)}
+          </p>
+        );
+      }
+      if (name === "strong" || name === "b") {
+        return (
+          <strong style={{ fontWeight: 600 }}>
+            {domToReact(children, chatHtmlParserOptions)}
+          </strong>
+        );
+      }
+    }
+  },
+};
 
 // Or for a more detailed approach with login prompt:
 const ChatCommon = () => {
@@ -1047,7 +1100,7 @@ const ChatCommon = () => {
         </Box>
 
         {/* Chat List */}
-        <List sx={{ flex: 1, overflowY: "auto" }}>
+        <List sx={{ flex: 1, overflowY: "scroll", height: "100px" }}>
           <ListItemButton
             key="chatbot"
             selected={selectedRoom?.id === -1}
@@ -1290,7 +1343,16 @@ const ChatCommon = () => {
                         boxShadow: 1,
                       }}
                     >
-                      <Typography>{msg.content}</Typography>
+                      <div
+                        style={{
+                          color: msg.sender === "user" ? "white" : undefined,
+                          wordBreak: "break-word",
+                          fontSize: 16,
+                          lineHeight: 1.7,
+                        }}
+                      >
+                        {parse(msg.content, chatHtmlParserOptions)}
+                      </div>
                       <Box
                         sx={{
                           display: "flex",

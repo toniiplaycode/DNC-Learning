@@ -87,7 +87,6 @@ import {
   updateStudentAcademic,
 } from "../../features/users/usersApiSlice";
 import { useNavigate } from "react-router-dom";
-import { logout } from "../../features/auth/authApiSlice";
 import { fetchUserById } from "../../features/users/usersApiSlice";
 
 type Gender = "male" | "female" | "other";
@@ -148,8 +147,6 @@ const ProfileAccount: React.FC = () => {
   const [showAlert, setShowAlert] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
 
-  console.log(currentUser);
-
   useEffect(() => {
     if (currentUser) {
       setLoadingGrades(true);
@@ -159,6 +156,8 @@ const ProfileAccount: React.FC = () => {
       dispatch(fetchUserProgress());
     }
   }, [dispatch, currentUser]);
+
+  console.log(userProgress);
 
   useEffect(() => {
     if (currentUser?.id) {
@@ -928,6 +927,7 @@ const ProfileAccount: React.FC = () => {
                               }}
                             >
                               <ListItemText
+                                primary={enrollment.course.title}
                                 secondary={
                                   <Box sx={{ mt: 1 }}>
                                     <Box

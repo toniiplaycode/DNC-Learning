@@ -146,14 +146,42 @@ export class ChatbotService {
     return bestMatch;
   }
 
+  private textToHtml(text: string): string {
+    const lines = text
+      .split('\n')
+      .map((line) => line.trim())
+      .filter(Boolean);
+    let html = '';
+    let inList = false;
+    for (const line of lines) {
+      const match = line.match(/^\d+\.\s*(.+)$/);
+      if (match) {
+        if (!inList) {
+          html += '<ol>';
+          inList = true;
+        }
+        html += `<li>${match[1]}</li>`;
+      } else {
+        if (inList) {
+          html += '</ol>';
+          inList = false;
+        }
+        html += `<p>${line}</p>`;
+      }
+    }
+    if (inList) html += '</ol>';
+    return html;
+  }
+
   private async createBotMessage(
     receiverId: number,
     text: string,
   ): Promise<Message> {
+    const html = this.textToHtml(text);
     const botMessage = this.messageRepo.create({
       senderId: this.CHATBOT_USER_ID,
       receiverId: receiverId,
-      messageText: text,
+      messageText: html,
       isRead: true,
       createdAt: new Date(),
       updatedAt: new Date(),

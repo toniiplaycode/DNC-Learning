@@ -191,7 +191,34 @@ export class RagService {
         with_vector: false,
       });
 
-      // So khớp từ khóa với từng vector
+      // 1. Ưu tiên phrase match tuyệt đối
+      const phrase = keywords.join(' ');
+      const phraseMatchedVectors = result.points
+        .map((point) => {
+          if (!point.payload || typeof point.payload.text !== 'string')
+            return null;
+          const textNorm = normalize(point.payload.text);
+          if (textNorm.includes(phrase)) {
+            return { text: point.payload.text, score: 100, phraseMatch: true };
+          }
+          return null;
+        })
+        .filter(
+          (
+            item,
+          ): item is { text: string; score: number; phraseMatch: boolean } =>
+            item !== null,
+        );
+
+      if (phraseMatchedVectors.length > 0) {
+        // Nếu có phrase match, trả về ngay
+        const context = phraseMatchedVectors.map((v) => v.text);
+        this.logger.debug(`[RAG] Phrase match context:`, context);
+        const response = await this.generateResponse(query, context);
+        return { success: true, searchResults: context, response };
+      }
+
+      // 2. Nếu không có phrase match, so khớp từng từ như hiện tại
       const scoredVectors = result.points
         .map((point) => {
           if (!point.payload || typeof point.payload.text !== 'string')
@@ -200,17 +227,15 @@ export class RagService {
           const matchedKeywords = keywords.filter((keyword) =>
             textNorm.includes(keyword),
           );
-          const score = matchedKeywords.length;
-          if (score > 0) {
-            this.logger.debug(
-              `[RAG] Vector match: "${point.payload.text}" | Matched keywords: ${JSON.stringify(matchedKeywords)} | Score: ${score}`,
-            );
-          }
-          return {
-            text: point.payload.text,
-            score,
-            matchedKeywords,
-          };
+          let score = matchedKeywords.length;
+          return score > 0
+            ? {
+                text: point.payload.text,
+                score,
+                matchedKeywords,
+                phraseMatch: false,
+              }
+            : null;
         })
         .filter(
           (
@@ -219,31 +244,41 @@ export class RagService {
             text: string;
             score: number;
             matchedKeywords: string[];
+            phraseMatch: boolean;
           } => item !== null,
         );
 
-      // Lấy các vector có score > 0, sắp xếp giảm dần, lấy top 5
-      const matchedVectors = scoredVectors
-        .filter((v) => v.score > 0)
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 5);
-
-      const context = matchedVectors.map((v) => v.text);
-      this.logger.debug(`[RAG] Final context for prompt:`, context);
-
-      let response;
-      if (context.length === 0) {
-        response =
-          'Tôi không tìm thấy thông tin phù hợp. Bạn hãy hỏi đầy đủ tên khóa học hoặc mô tả chi tiết để được trả lời chính xác.';
-      } else {
-        response = await this.generateResponse(query, context);
+      if (scoredVectors.length > 0) {
+        // Nếu có ít nhất 1 từ khớp, trả về top 3-5 kết quả, kèm cảnh báo nếu score thấp
+        const topVectors = scoredVectors
+          .sort((a, b) => b.score - a.score)
+          .slice(0, 5);
+        const context = topVectors.map((v) => v.text);
+        let response;
+        if (topVectors[0].score === 1) {
+          response = `Tôi tìm thấy một số thông tin liên quan, nhưng chưa chắc đã đúng ý bạn:\n${context.join('\n---\n')}`;
+        } else {
+          response = await this.generateResponse(query, context);
+        }
+        return { success: true, searchResults: context, response };
       }
 
-      return {
-        success: true,
-        searchResults: context,
-        response,
-      };
+      // 3. Nếu không có từ nào khớp, đề xuất các chủ đề gần nhất
+      const allVectors = result.points
+        .map((point) =>
+          point.payload && typeof point.payload.text === 'string'
+            ? point.payload.text
+            : null,
+        )
+        .filter((text): text is string => !!text);
+
+      const suggest = allVectors
+        .slice(0, 3)
+        .map((text, idx) => `${idx + 1}. ${text}`)
+        .join('\n');
+      const response = `Tôi không tìm thấy thông tin chính xác về "${query}". Bạn có muốn tham khảo các chủ đề sau?\n${suggest}`;
+
+      return { success: true, searchResults: [], response };
     } catch (error) {
       this.logger.error('Error in testRag:', error);
       return { success: false, error: error.message };
