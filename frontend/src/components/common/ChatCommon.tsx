@@ -1100,7 +1100,9 @@ const ChatCommon = () => {
         </Box>
 
         {/* Chat List */}
-        <List sx={{ flex: 1, overflowY: "scroll", height: "100px" }}>
+        <List
+          sx={{ flex: 1, overflowY: "auto", maxHeight: "calc(100vh - 200px)" }}
+        >
           <ListItemButton
             key="chatbot"
             selected={selectedRoom?.id === -1}
@@ -1313,7 +1315,15 @@ const ChatCommon = () => {
             </Box>
 
             {/* Messages */}
-            <Box sx={{ flex: 1, overflowY: "auto", p: 2, bgcolor: "grey.50" }}>
+            <Box
+              sx={{
+                flex: 1,
+                overflowY: "auto",
+                p: 2,
+                bgcolor: "grey.50",
+                height: "calc(100vh - 280px)",
+              }}
+            >
               <Stack spacing={2}>
                 {selectedRoom.messages.map((msg) => (
                   <Box

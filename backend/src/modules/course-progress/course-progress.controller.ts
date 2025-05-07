@@ -7,10 +7,13 @@ import {
   Param,
   Body,
   UseGuards,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { CourseProgressService } from './course-progress.service';
 import { CourseProgress } from '../../entities/CourseProgress';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
+import { User } from 'src/entities/User';
+import { GetUser } from '../auth/decorators/get-user.decorator';
 
 @Controller('course-progress')
 @UseGuards(JwtAuthGuard)
@@ -52,5 +55,27 @@ export class CourseProgressController {
   @Delete(':id')
   async delete(@Param('id') id: number): Promise<void> {
     return this.courseProgressService.delete(id);
+  }
+
+  @Get('user-course-progress')
+  async getUserCourseProgress(@GetUser() user: User): Promise<any[]> {
+    if (!user || !user.id) {
+      throw new UnauthorizedException('User not authenticated properly');
+    }
+    return this.courseProgressService.getUserCourseProgress(user.id);
+  }
+
+  @Get('user-course-progress/course/:courseId')
+  async getCourseProgressDetail(
+    @GetUser() user: User,
+    @Param('courseId') courseId: number,
+  ): Promise<any> {
+    if (!user || !user.id) {
+      throw new UnauthorizedException('User not authenticated properly');
+    }
+    return this.courseProgressService.getCourseProgressDetail(
+      user.id,
+      courseId,
+    );
   }
 }

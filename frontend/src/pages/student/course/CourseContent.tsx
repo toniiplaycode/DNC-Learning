@@ -36,9 +36,14 @@ import { fetchStudentAcademicCourses } from "../../../features/users/usersApiSli
 import { selectCurrentUser } from "../../../features/auth/authSelectors";
 import {
   createProgress,
+  fetchCourseProgressDetail,
   fetchUserProgress,
 } from "../../../features/course-progress/courseProgressSlice";
-import { selectUserProgress } from "../../../features/course-progress/courseProgressSelectors";
+import {
+  selectCourseProgressDetail,
+  selectUserProgress,
+} from "../../../features/course-progress/courseProgressSelectors";
+import { UserRole } from "../../../types/user.types";
 interface TabPanelProps {
   children?: React.ReactNode;
   value: number;
@@ -77,28 +82,6 @@ interface ContentItem {
   keywords?: string[];
 }
 
-// Cập nhật hàm helper để lấy bài học đầu tiên
-const getFirstLesson = (sections: any[]) => {
-  if (
-    !sections ||
-    sections.length === 0 ||
-    !sections[0].lessons ||
-    sections[0].lessons.length === 0
-  ) {
-    return null;
-  }
-
-  const firstLesson = sections[0].lessons[0];
-  return {
-    id: firstLesson.id,
-    type: firstLesson.contentType,
-    title: firstLesson.title,
-    description: firstLesson.content,
-    duration: firstLesson.duration ? `${firstLesson.duration}:00` : undefined,
-    url: firstLesson.contentUrl || "",
-  };
-};
-
 const CourseContent = () => {
   const { id: courseId } = useParams();
   const navigate = useNavigate();
@@ -108,6 +91,7 @@ const CourseContent = () => {
   const courseProgress = useAppSelector(selectCourseProgress);
   const userEnrollments = useAppSelector(selectUserEnrollments);
   const studentAcademicCourses = useAppSelector(selectStudentAcademicCourses);
+  const courseProgressDetail = useAppSelector(selectCourseProgressDetail);
   const userProgress = useAppSelector(selectUserProgress);
   const [activeTab, setActiveTab] = useState(0);
   const [selectedLesson, setSelectedLesson] = useState<ContentItem | null>();
@@ -132,7 +116,6 @@ const CourseContent = () => {
       navigate("/login");
       return;
     }
-
     dispatch(fetchUserEnrollments(Number(currentUser?.id)));
     dispatch(fetchStudentAcademicCourses(currentUser?.id));
     dispatch(fetchUserProgress(Number(currentUser?.id)));
@@ -141,7 +124,12 @@ const CourseContent = () => {
   useEffect(() => {
     dispatch(fetchCourseById(Number(courseId)));
     dispatch(fetchCourseProgress({ courseId: Number(courseId) }));
-  }, [dispatch, courseId]);
+
+    // Use a direct string comparison instead of enum
+    if (currentUser && currentUser.role === UserRole.STUDENT_ACADEMIC) {
+      dispatch(fetchCourseProgressDetail({ courseId: Number(courseId) }));
+    }
+  }, [dispatch, courseId, currentUser]);
 
   const handleLessonClick = (id: string) => {
     let selectedLesson = null;
@@ -190,6 +178,12 @@ const CourseContent = () => {
 
         // Refresh course progress
         await dispatch(fetchCourseProgress({ courseId: Number(courseId) }));
+        // Fetch updated course progress detail
+        if (currentUser && currentUser.role === UserRole.STUDENT_ACADEMIC) {
+          await dispatch(
+            fetchCourseProgressDetail({ courseId: Number(courseId) })
+          );
+        }
       }
     } catch (error) {
       console.error("Error marking lesson as completed:", error);
@@ -235,47 +229,222 @@ const CourseContent = () => {
                       </Typography>
                       <LinearProgress
                         variant="determinate"
-                        value={courseProgress?.completionPercentage || 0}
-                        sx={{ height: 10, borderRadius: 1 }}
+                        value={
+                          courseProgressDetail?.completionPercentage ||
+                          courseProgress?.completionPercentage ||
+                          0
+                        }
+                        sx={{
+                          height: 10,
+                          borderRadius: 1,
+                          bgcolor: "grey.200",
+                          "& .MuiLinearProgress-bar": {
+                            bgcolor: (theme) => {
+                              const percentage =
+                                courseProgressDetail?.completionPercentage ||
+                                courseProgress?.completionPercentage ||
+                                0;
+                              return percentage < 30
+                                ? theme.palette.error.main
+                                : percentage < 70
+                                ? theme.palette.warning.main
+                                : theme.palette.success.main;
+                            },
+                          },
+                        }}
                       />
                       <Typography variant="body2" sx={{ mt: 1 }}>
-                        {courseProgress?.completionPercentage || 0}% hoàn thành
+                        {courseProgressDetail?.completionPercentage ||
+                          courseProgress?.completionPercentage ||
+                          0}
+                        % hoàn thành
                       </Typography>
                     </Box>
-                    <Stack spacing={1}>
-                      <Typography variant="body2" color="text.secondary">
-                        •{" "}
-                        {courseProgress?.sections?.filter(
-                          (section: any) => section.completionPercentage === 100
-                        ).length || 0}
-                        /{courseProgress?.sections?.length || 0} chương hoàn
-                        thành
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        • {courseProgress?.completedLessons || 0}/
-                        {courseProgress?.totalLessons || 0} bài học hoàn thành
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        •{" "}
-                        {courseProgress?.sections
-                          ?.flatMap((s: any) => s.lessons)
-                          .filter(
-                            (l: any) =>
-                              l.completed &&
-                              (l.contentType === "quiz" ||
-                                l.contentType === "assignment")
+
+                    {courseProgressDetail ? (
+                      /* Detailed progress information for academic students */
+                      <Stack spacing={1.5}>
+                        <Typography variant="body2" color="text.secondary">
+                          •{" "}
+                          {
+                            courseProgressDetail.sections.filter(
+                              (section) => section.completionPercentage === 100
+                            ).length
+                          }
+                          /{courseProgressDetail.sections.length} chương hoàn
+                          thành
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          • {courseProgressDetail.completedLessons}/
+                          {courseProgressDetail.totalLessons} bài học hoàn thành
+                        </Typography>
+
+                        {/* Count completed quizzes/assignments */}
+                        <Typography variant="body2" color="text.secondary">
+                          •{" "}
+                          {
+                            courseProgressDetail.sections
+                              .flatMap((s) => s.lessons)
+                              .filter(
+                                (l) =>
+                                  l.completed &&
+                                  (l.contentType === "quiz" ||
+                                    l.contentType === "assignment")
+                              ).length
+                          }
+                          /
+                          {
+                            courseProgressDetail.sections
+                              .flatMap((s) => s.lessons)
+                              .filter(
+                                (l) =>
+                                  l.contentType === "quiz" ||
+                                  l.contentType === "assignment"
+                              ).length
+                          }{" "}
+                          bài kiểm tra hoàn thành
+                        </Typography>
+
+                        {/* Show last accessed lesson */}
+                        {courseProgressDetail?.lastAccessedLesson && (
+                          <Box
+                            sx={{
+                              mt: 1,
+                              p: 1.5,
+                              bgcolor: "primary.lighter",
+                              borderRadius: 1,
+                            }}
+                          >
+                            <Typography
+                              variant="body2"
+                              fontWeight="medium"
+                              color="primary.dark"
+                            >
+                              Bài học gần đây nhất:
+                            </Typography>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ mt: 0.5 }}
+                            >
+                              {courseProgressDetail.lastAccessedLesson.title}
+                            </Typography>
+                            {courseProgressDetail.lastAccessTime && (
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                                sx={{ display: "block", mt: 0.5 }}
+                              >
+                                {new Date(
+                                  courseProgressDetail.lastAccessTime
+                                ).toLocaleString("vi-VN")}
+                              </Typography>
+                            )}
+                            <Button
+                              variant="contained"
+                              size="small"
+                              color="primary"
+                              sx={{ mt: 1, fontSize: "0.75rem" }}
+                              onClick={() =>
+                                courseProgressDetail.lastAccessedLesson &&
+                                handleLessonClick(
+                                  courseProgressDetail.lastAccessedLesson.id.toString()
+                                )
+                              }
+                            >
+                              Tiếp tục học
+                            </Button>
+                          </Box>
+                        )}
+
+                        {/* Section completion progress */}
+                        <Box sx={{ mt: 1 }}>
+                          <Typography
+                            variant="body2"
+                            fontWeight="medium"
+                            sx={{ mb: 1 }}
+                          >
+                            Tiến độ theo chương:
+                          </Typography>
+                          {courseProgressDetail.sections.map((section) => (
+                            <Box key={section.sectionId} sx={{ mb: 1.5 }}>
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  mb: 0.5,
+                                }}
+                              >
+                                <Typography
+                                  variant="caption"
+                                  sx={{ fontWeight: "medium" }}
+                                >
+                                  {section.title}
+                                </Typography>
+                                <Typography variant="caption">
+                                  {section.completionPercentage}%
+                                </Typography>
+                              </Box>
+                              <LinearProgress
+                                variant="determinate"
+                                value={section.completionPercentage}
+                                sx={{
+                                  height: 6,
+                                  borderRadius: 5,
+                                  bgcolor: "grey.200",
+                                  "& .MuiLinearProgress-bar": {
+                                    bgcolor: (theme) => {
+                                      return section.completionPercentage < 30
+                                        ? theme.palette.error.main
+                                        : section.completionPercentage < 70
+                                        ? theme.palette.warning.main
+                                        : theme.palette.success.main;
+                                    },
+                                  },
+                                }}
+                              />
+                            </Box>
+                          ))}
+                        </Box>
+                      </Stack>
+                    ) : (
+                      /* Original content for non-academic students */
+                      <Stack spacing={1}>
+                        <Typography variant="body2" color="text.secondary">
+                          •{" "}
+                          {courseProgress?.sections?.filter(
+                            (section: any) =>
+                              section.completionPercentage === 100
                           ).length || 0}
-                        /
-                        {courseProgress?.sections
-                          ?.flatMap((s: any) => s.lessons)
-                          .filter(
-                            (l: any) =>
-                              l.contentType === "quiz" ||
-                              l.contentType === "assignment"
-                          ).length || 0}{" "}
-                        Bài trắc nghiệm hoàn thành
-                      </Typography>
-                    </Stack>
+                          /{courseProgress?.sections?.length || 0} chương hoàn
+                          thành
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          • {courseProgress?.completedLessons || 0}/
+                          {courseProgress?.totalLessons || 0} bài học hoàn thành
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          •{" "}
+                          {courseProgress?.sections
+                            ?.flatMap((s: any) => s.lessons)
+                            .filter(
+                              (l: any) =>
+                                l.completed &&
+                                (l.contentType === "quiz" ||
+                                  l.contentType === "assignment")
+                            ).length || 0}
+                          /
+                          {courseProgress?.sections
+                            ?.flatMap((s: any) => s.lessons)
+                            .filter(
+                              (l: any) =>
+                                l.contentType === "quiz" ||
+                                l.contentType === "assignment"
+                            ).length || 0}{" "}
+                          Bài trắc nghiệm hoàn thành
+                        </Typography>
+                      </Stack>
+                    )}
                   </CardContent>
                 </Card>
 

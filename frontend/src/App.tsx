@@ -1,5 +1,5 @@
 import { Routes, Route, useNavigate } from "react-router-dom";
-import { ToastContainer } from "react-toastify";
+import { toast, ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import HomePage from "./pages/student/HomePage";
 import EnrolledCourses from "./pages/student/EnrolledCourses";
@@ -58,10 +58,10 @@ const App = () => {
 
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const accessToken = params.get("accessToken");
-    if (accessToken) {
-      localStorage.setItem("accessToken", accessToken);
-      // Xóa accessToken khỏi URL
+    const token = params.get("token");
+    if (token) {
+      localStorage.setItem("token", token);
+      // Xóa token khỏi URL
       window.history.replaceState({}, document.title, "/");
       // Chuyển về trang chủ
       navigate("/");
@@ -69,7 +69,7 @@ const App = () => {
   }, [navigate]);
 
   useEffect(() => {
-    const token = localStorage.getItem("accessToken");
+    const token = localStorage.getItem("token");
     if (token) {
       dispatch(fetchCurrentUser());
     }

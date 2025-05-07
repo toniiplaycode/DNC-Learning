@@ -638,6 +638,7 @@ const ChatBox = () => {
         socketRef.current.disconnect();
         setChatRooms([]);
         dispatch(setMessages([]));
+        setIsChatbotTyping(false); // Reset typing state on cleanup
       }
     };
   }, [currentUser, dispatch]);
@@ -752,21 +753,31 @@ const ChatBox = () => {
     if (selectedRoom.id === -1) {
       console.log("💬 Sending message to chatbot:", {
         message: message.trim(),
-        userId: currentUser.id,
+        userId: currentUser?.id,
       });
 
       // Clear input before sending
       const messageText = message.trim();
       setMessage("");
 
-      // Show typing indicator
-      setIsChatbotTyping(true);
+      try {
+        // Show typing indicator
+        setIsChatbotTyping(true);
 
-      // Only emit message, don't update UI here
-      console.log("🚀 Sending to chatbot:", messageText);
-      socketRef.current.emit("chatbotMessage", {
-        messageText: messageText,
-      });
+        // Only emit message, don't update UI here
+        console.log("🚀 Sending to chatbot:", messageText);
+        socketRef.current.emit("chatbotMessage", {
+          messageText: messageText,
+        });
+
+        // Set a backup timeout to turn off typing indicator in case of no response
+        setTimeout(() => {
+          setIsChatbotTyping(false);
+        }, 15000); // 15 seconds timeout
+      } catch (error) {
+        console.error("Error sending message to chatbot:", error);
+        setIsChatbotTyping(false);
+      }
 
       scrollToBottom();
       return;
@@ -1016,9 +1027,22 @@ const ChatBox = () => {
   useEffect(() => {
     if (!currentUser?.id || !socketRef.current) return;
 
+    // Handle all new messages
+    socketRef.current.on("newMessage", (message: Message) => {
+      console.log("📩 New message received:", message);
+
+      // Turn off typing indicator if message is from chatbot
+      if (message.sender.id === "-1") {
+        setIsChatbotTyping(false);
+      }
+    });
+
     // Add chatbot response handler
     socketRef.current.on("chatbotResponse", (response) => {
       console.log("📩 Received chatbot response:", response);
+
+      // Turn off typing indicator when response is received
+      setIsChatbotTyping(false);
 
       // Add bot response to Redux store
       dispatch(
@@ -1093,6 +1117,7 @@ const ChatBox = () => {
 
     setSelectedRoom(room);
     setShowInstructors(false);
+    setIsChatbotTyping(false); // Reset typing indicator when changing rooms
 
     // Special handling for chatbot
     if (room.id === -1) {
@@ -1136,6 +1161,7 @@ const ChatBox = () => {
   const handleClose = () => {
     setOpen(false);
     setShowInstructors(true);
+    setIsChatbotTyping(false); // Reset typing state when closing chat
   };
 
   // Add search function
@@ -1196,6 +1222,22 @@ const ChatBox = () => {
   const getTotalUnreadMessages = (rooms: ChatRoom[]) => {
     return rooms.reduce((total, room) => total + (room.unread || 0), 0);
   };
+
+  // Add error handler for socket
+  useEffect(() => {
+    if (!currentUser?.id || !socketRef.current) return;
+
+    // Add error handler
+    socketRef.current.on("error", (error) => {
+      console.error("Socket error:", error);
+      setIsChatbotTyping(false); // Turn off typing indicator on error
+    });
+
+    return () => {
+      socketRef.current?.off("error");
+      setIsChatbotTyping(false); // Reset on unmount
+    };
+  }, [currentUser?.id]);
 
   return (
     <>

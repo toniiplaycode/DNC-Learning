@@ -22,12 +22,12 @@ import { AuthGuard } from '@nestjs/passport';
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly userService: UsersService,
+    private readonly usersService: UsersService,
   ) {}
 
   @Post('register')
   async register(@Body() userData: any) {
-    return this.userService.create(userData);
+    return this.usersService.create(userData);
   }
 
   @UseGuards(LocalAuthGuard)
@@ -50,8 +50,9 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('profile')
-  profile(@Request() req: any) {
-    return req.user;
+  async profile(@Request() req: any) {
+    const user = await this.usersService.findById(req.user.id);
+    return user;
   }
 
   @Post('register/student')
@@ -70,9 +71,9 @@ export class AuthController {
   @UseGuards(AuthGuard('google'))
   async googleAuthRedirect(@Req() req, @Res() res) {
     const result = await this.authService.loginWithGoogle(req.user);
-    // Redirect về FE, truyền accessToken qua query
+    // Redirect về FE, truyền token qua query
     return res.redirect(
-      `${process.env.JAVASCRIPT_ORIGINS}?accessToken=${result.accessToken}`,
+      `${process.env.JAVASCRIPT_ORIGINS}?token=${result.token}`,
     );
   }
 }

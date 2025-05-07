@@ -22,6 +22,14 @@ import {
   MenuItem,
   Container,
   Badge,
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  Paper,
+  Grid,
+  Button,
+  DialogActions,
 } from "@mui/material";
 import {
   Menu as MenuIcon,
@@ -42,10 +50,16 @@ import {
   Class,
   PeopleAlt,
   PeopleAltTwoTone,
+  Close,
+  Email,
+  Phone as PhoneIcon,
+  CalendarToday,
+  AccountCircle,
 } from "@mui/icons-material";
 import { fetchMessagesByUser } from "../../../features/messages/messagesSlice";
 import { selectAllMessages } from "../../../features/messages/messagesSelector";
 import { addMessage } from "../../../features/messages/messagesSlice";
+import { logout } from "../../../features/auth/authApiSlice";
 
 const drawerWidth = 240;
 
@@ -59,6 +73,8 @@ const AdminLayout = () => {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const socketRef = useRef<Socket | null>(null);
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isLoggingOut, setIsLoggingOut] = useState(false);
+  const [profileDialogOpen, setProfileDialogOpen] = useState(false);
 
   useEffect(() => {
     if (!currentUser?.id) return;
@@ -152,9 +168,19 @@ const AdminLayout = () => {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
-    navigate("/admin/login");
+    setIsLoggingOut(true);
+
+    // Disconnect socket before logout
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+    }
+    dispatch(logout());
+  };
+
+  // Handle profile dialog open
+  const handleOpenProfileDialog = () => {
+    setProfileDialogOpen(true);
+    handleMenuClose();
   };
 
   const menuItems = [
@@ -269,7 +295,7 @@ const AdminLayout = () => {
                 open={Boolean(anchorEl)}
                 onClose={handleMenuClose}
               >
-                <MenuItem onClick={() => navigate("/admin/profile")}>
+                <MenuItem onClick={handleOpenProfileDialog}>
                   <ListItemIcon>
                     <Person fontSize="small" />
                   </ListItemIcon>
@@ -282,11 +308,17 @@ const AdminLayout = () => {
                   <ListItemText>Cài đặt</ListItemText>
                 </MenuItem>
                 <Divider />
-                <MenuItem onClick={handleLogout}>
+                <MenuItem onClick={handleLogout} disabled={isLoggingOut}>
                   <ListItemIcon>
-                    <Logout fontSize="small" />
+                    {isLoggingOut ? (
+                      <CircularProgress size={20} color="inherit" />
+                    ) : (
+                      <Logout fontSize="small" />
+                    )}
                   </ListItemIcon>
-                  <ListItemText>Đăng xuất</ListItemText>
+                  <ListItemText>
+                    {isLoggingOut ? "Đang đăng xuất..." : "Đăng xuất"}
+                  </ListItemText>
                 </MenuItem>
               </Menu>
             </Toolbar>
@@ -336,6 +368,246 @@ const AdminLayout = () => {
               ))}
             </List>
           </Drawer>
+
+          {/* Profile Dialog */}
+          <Dialog
+            open={profileDialogOpen}
+            onClose={() => setProfileDialogOpen(false)}
+            maxWidth="sm"
+            fullWidth
+          >
+            <DialogTitle
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+              }}
+            >
+              Thông tin tài khoản
+              <IconButton onClick={() => setProfileDialogOpen(false)}>
+                <Close />
+              </IconButton>
+            </DialogTitle>
+            <DialogContent>
+              {currentUser && (
+                <Box sx={{ py: 2 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      mb: 3,
+                    }}
+                  >
+                    <Avatar
+                      src={
+                        currentUser.avatarUrl
+                          ? `/src/assets/${currentUser.avatarUrl}`
+                          : ""
+                      }
+                      sx={{ width: 100, height: 100, mb: 2 }}
+                    />
+                    <Typography variant="h5" fontWeight="bold">
+                      {currentUser.username}
+                    </Typography>
+                    <Typography variant="subtitle1" color="primary">
+                      {currentUser.role === "admin" ? "Quản trị viên" : ""}
+                    </Typography>
+                  </Box>
+
+                  <Paper elevation={1} sx={{ p: 3, mb: 3 }}>
+                    <Typography
+                      variant="h6"
+                      gutterBottom
+                      sx={{
+                        borderBottom: "1px solid",
+                        borderColor: "divider",
+                        pb: 1,
+                        mb: 2,
+                      }}
+                    >
+                      Thông tin cá nhân
+                    </Typography>
+
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} md={6}>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", mb: 2 }}
+                        >
+                          <AccountCircle
+                            sx={{ mr: 2, color: "primary.main" }}
+                          />
+                          <Box>
+                            <Typography variant="body2" color="text.secondary">
+                              Tên đăng nhập
+                            </Typography>
+                            <Typography variant="body1">
+                              {currentUser.username}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Grid>
+                      <Grid item xs={12} md={6}>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", mb: 2 }}
+                        >
+                          <Email sx={{ mr: 2, color: "primary.main" }} />
+                          <Box>
+                            <Typography variant="body2" color="text.secondary">
+                              Email
+                            </Typography>
+                            <Typography variant="body1">
+                              {currentUser.email}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Grid>
+                      {currentUser.phone && (
+                        <Grid item xs={12} md={6}>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              mb: 2,
+                            }}
+                          >
+                            <PhoneIcon sx={{ mr: 2, color: "primary.main" }} />
+                            <Box>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                Số điện thoại
+                              </Typography>
+                              <Typography variant="body1">
+                                {currentUser.phone}
+                              </Typography>
+                            </Box>
+                          </Box>
+                        </Grid>
+                      )}
+                      <Grid item xs={12} md={6}>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", mb: 2 }}
+                        >
+                          <CalendarToday
+                            sx={{ mr: 2, color: "primary.main" }}
+                          />
+                          <Box>
+                            <Typography variant="body2" color="text.secondary">
+                              Lần đăng nhập cuối
+                            </Typography>
+                            <Typography variant="body1">
+                              {currentUser.lastLogin
+                                ? new Date(
+                                    currentUser.lastLogin
+                                  ).toLocaleString("vi-VN")
+                                : "Chưa có thông tin"}
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Grid>
+                    </Grid>
+                  </Paper>
+
+                  <Paper elevation={1} sx={{ p: 3 }}>
+                    <Typography
+                      variant="h6"
+                      gutterBottom
+                      sx={{
+                        borderBottom: "1px solid",
+                        borderColor: "divider",
+                        pb: 1,
+                        mb: 2,
+                      }}
+                    >
+                      Thông tin tài khoản
+                    </Typography>
+
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} md={6}>
+                        <Box sx={{ mb: 1 }}>
+                          <Typography variant="body2" color="text.secondary">
+                            Trạng thái
+                          </Typography>
+                          <Typography
+                            variant="body1"
+                            sx={{
+                              color:
+                                currentUser.status === "active"
+                                  ? "success.main"
+                                  : "error.main",
+                              fontWeight: "medium",
+                            }}
+                          >
+                            {currentUser.status === "active"
+                              ? "Đang hoạt động"
+                              : "Không hoạt động"}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                      <Grid item xs={12} md={6}>
+                        <Box sx={{ mb: 1 }}>
+                          <Typography variant="body2" color="text.secondary">
+                            Ngày tạo tài khoản
+                          </Typography>
+                          <Typography variant="body1">
+                            {new Date(currentUser.createdAt).toLocaleDateString(
+                              "vi-VN"
+                            )}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                      <Grid item xs={12} md={6}>
+                        <Box sx={{ mb: 1 }}>
+                          <Typography variant="body2" color="text.secondary">
+                            Cập nhật lần cuối
+                          </Typography>
+                          <Typography variant="body1">
+                            {new Date(currentUser.updatedAt).toLocaleDateString(
+                              "vi-VN"
+                            )}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                      <Grid item xs={12} md={6}>
+                        <Box sx={{ mb: 1 }}>
+                          <Typography variant="body2" color="text.secondary">
+                            Xác thực 2 lớp
+                          </Typography>
+                          <Typography
+                            variant="body1"
+                            sx={{
+                              color: currentUser.twoFactorEnabled
+                                ? "success.main"
+                                : "warning.main",
+                              fontWeight: "medium",
+                            }}
+                          >
+                            {currentUser.twoFactorEnabled
+                              ? "Đã bật"
+                              : "Chưa bật"}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    </Grid>
+                  </Paper>
+                </Box>
+              )}
+            </DialogContent>
+            <DialogActions>
+              <Button onClick={() => setProfileDialogOpen(false)}>Đóng</Button>
+              <Button
+                variant="contained"
+                onClick={() => {
+                  setProfileDialogOpen(false);
+                  navigate("/admin/profile");
+                }}
+              >
+                Chỉnh sửa
+              </Button>
+            </DialogActions>
+          </Dialog>
         </>
       )}
 

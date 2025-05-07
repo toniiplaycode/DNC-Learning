@@ -131,24 +131,57 @@ export class AuthService {
     // Tìm user theo email
     let user = await this.userService.findByEmail(googleUser.email);
     if (!user) {
-      // Nếu chưa có, tạo user mới
-      user = this.userRepository.create({
-        email: googleUser.email,
-        username: googleUser.email.split('@')[0],
-        password: '', // Không cần mật khẩu cho social login
-        role: UserRole.STUDENT,
-        status: UserStatus.ACTIVE,
-        avatarUrl: googleUser.picture,
-        socialLoginProvider: 'google',
-        socialLoginId: googleUser.accessToken, // Hoặc googleUser.id nếu có
-      });
-      user = await this.userRepository.save(user);
+      // Nếu chưa có, tạo user mới và userStudent trong transaction
+      user = await this.userRepository.manager.transaction(
+        async (transactionalEntityManager) => {
+          // 1. Create user
+          const newUser = this.userRepository.create({
+            email: googleUser.email,
+            username: googleUser.email.split('@')[0],
+            password: '', // Không cần mật khẩu cho social login
+            role: UserRole.STUDENT,
+            status: UserStatus.ACTIVE,
+            avatarUrl: googleUser.picture,
+            socialLoginProvider: 'google',
+            socialLoginId: googleUser.accessToken,
+          });
+          const savedUser = await transactionalEntityManager.save(
+            User,
+            newUser,
+          );
+
+          // 2. Create userStudent
+          const userStudentData: Partial<UserStudent> = {
+            userId: savedUser.id,
+            fullName: googleUser.name || googleUser.email.split('@')[0],
+            dateOfBirth: undefined,
+            gender: undefined,
+            educationLevel: undefined,
+            occupation: undefined,
+            bio: undefined,
+            interests: undefined,
+            address: undefined,
+            city: undefined,
+            country: undefined,
+            learningGoals: undefined,
+            preferredLanguage: undefined,
+            notificationPreferences: undefined,
+            totalCoursesEnrolled: 0,
+            totalCoursesCompleted: 0,
+            achievementPoints: 0,
+          };
+          const userStudent =
+            this.userStudentRepository.create(userStudentData);
+          await transactionalEntityManager.save(UserStudent, userStudent);
+
+          return savedUser;
+        },
+      );
     }
-    console.log(user);
     // Tạo JWT token
     const payload = { sub: user.id, email: user.email };
     return {
-      accessToken: this.jwtService.sign(payload),
+      token: this.jwtService.sign(payload),
       user,
     };
   }

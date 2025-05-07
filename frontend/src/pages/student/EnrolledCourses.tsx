@@ -134,16 +134,17 @@ const EnrolledCourses: React.FC = () => {
         )}
 
         {/* No Courses Message */}
-        {!academicCourses.length && !userEnrollments?.length && (
-          <Typography
-            variant="h6"
-            textAlign="center"
-            color="text.secondary"
-            py={2}
-          >
-            Bạn chưa có khóa học nào
-          </Typography>
-        )}
+        {!academicCourses.length &&
+          !(Array.isArray(userEnrollments) && userEnrollments.length) && (
+            <Typography
+              variant="h6"
+              textAlign="center"
+              color="text.secondary"
+              py={2}
+            >
+              Bạn chưa có khóa học nào
+            </Typography>
+          )}
       </Box>
     </CustomContainer>
   );

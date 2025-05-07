@@ -1,5 +1,9 @@
 import { RootState } from "../../store/store";
-import { CourseProgress } from "../../types/course-progress.types";
+import {
+  CourseProgress,
+  UserCourseProgressSummary,
+  CourseProgressDetail,
+} from "../../types/course-progress.types";
 
 // Select all progress
 export const selectAllProgress = (state: RootState): CourseProgress[] =>
@@ -8,6 +12,16 @@ export const selectAllProgress = (state: RootState): CourseProgress[] =>
 // Select user progress
 export const selectUserProgress = (state: RootState): CourseProgress[] =>
   state.courseProgress.userProgress;
+
+// Select user course progress
+export const selectUserCourseProgress = (
+  state: RootState
+): UserCourseProgressSummary[] => state.courseProgress.userCourseProgress;
+
+// Select course progress detail
+export const selectCourseProgressDetail = (
+  state: RootState
+): CourseProgressDetail | null => state.courseProgress.courseProgressDetail;
 
 // Select current progress
 export const selectCurrentProgress = (

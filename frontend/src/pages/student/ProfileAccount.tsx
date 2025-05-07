@@ -18,10 +18,6 @@ import {
   Tabs,
   Tab,
   CircularProgress,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   TextField,
   FormControl,
   InputLabel,
@@ -50,11 +46,6 @@ import {
   ContactPhone as ContactPhoneIcon,
   Assessment as AssessmentIcon,
   Favorite,
-  PhotoCamera,
-  Logout,
-  AccountBox,
-  ContactMail,
-  Security,
 } from "@mui/icons-material";
 import CustomContainer from "../../components/common/CustomContainer";
 import CertificateDetail from "../../components/student/profile/CertificateDetail";
@@ -81,13 +72,11 @@ import {
   UserStudentAcademic,
   UserRole,
 } from "../../types/user.types";
-import { toast } from "react-toastify";
-import {
-  updateStudentProfile,
-  updateStudentAcademic,
-} from "../../features/users/usersApiSlice";
+import { updateStudentProfile } from "../../features/users/usersApiSlice";
 import { useNavigate } from "react-router-dom";
 import { fetchUserById } from "../../features/users/usersApiSlice";
+import { fetchUserCourseProgress } from "../../features/course-progress/courseProgressSlice";
+import { selectUserCourseProgress } from "../../features/course-progress/courseProgressSelectors";
 
 type Gender = "male" | "female" | "other";
 
@@ -142,6 +131,7 @@ const ProfileAccount: React.FC = () => {
   const userCertificates = useAppSelector(selectUserCertificates);
   const userGrades = useAppSelector(selectUserGradesByUser);
   const userProgress = useAppSelector(selectUserProgress);
+  const userCourseProgress = useAppSelector(selectUserCourseProgress);
   const [currentTab, setCurrentTab] = useState(0);
   const [loadingGrades, setLoadingGrades] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
@@ -154,10 +144,11 @@ const ProfileAccount: React.FC = () => {
         setLoadingGrades(false)
       );
       dispatch(fetchUserProgress());
+      if (currentUser.role == UserRole.STUDENT_ACADEMIC) {
+        dispatch(fetchUserCourseProgress());
+      }
     }
   }, [dispatch, currentUser]);
-
-  console.log(userProgress);
 
   useEffect(() => {
     if (currentUser?.id) {
@@ -417,7 +408,9 @@ const ProfileAccount: React.FC = () => {
                         sx={{ fontSize: 32, mb: 1 }}
                       />
                       <Typography variant="h6">
-                        {userEnrollments?.length}
+                        {Array.isArray(userEnrollments)
+                          ? userEnrollments.length
+                          : 0}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Khóa học
@@ -437,11 +430,11 @@ const ProfileAccount: React.FC = () => {
                         sx={{ fontSize: 32, mb: 1 }}
                       />
                       <Typography variant="h6">
-                        {
-                          userEnrollments?.filter(
-                            (enrollment) => enrollment.status === "completed"
-                          )?.length
-                        }
+                        {Array.isArray(userEnrollments)
+                          ? userEnrollments.filter(
+                              (enrollment) => enrollment.status === "completed"
+                            )?.length
+                          : 0}
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
                         Đã hoàn thành
@@ -911,9 +904,158 @@ const ProfileAccount: React.FC = () => {
                         ? "Các môn học đang học"
                         : "Khóa học đang học"}
                     </Typography>
+
                     <List>
-                      {currentUser?.role === "student_academic"
-                        ? studentAcademicCourses?.map((enrollment: any) => (
+                      {currentUser?.role === "student_academic" &&
+                      Array.isArray(userCourseProgress) &&
+                      userCourseProgress.length > 0 ? (
+                        userCourseProgress.map((progress) => (
+                          <ListItem
+                            key={progress.courseId}
+                            sx={{
+                              border: 1,
+                              borderColor: "divider",
+                              borderRadius: 1,
+                              mb: 1,
+                              display: "flex",
+                              flexDirection: { xs: "column", sm: "row" },
+                              alignItems: { xs: "stretch", sm: "center" },
+                              "&:last-child": {
+                                mb: 0,
+                              },
+                              pb: 2,
+                            }}
+                          >
+                            <Box sx={{ display: "flex", width: "100%" }}>
+                              {progress.courseImage && (
+                                <Box sx={{ mr: 2, width: 80, height: 80 }}>
+                                  <img
+                                    src={progress.courseImage}
+                                    alt={progress.courseTitle}
+                                    style={{
+                                      width: "100%",
+                                      height: "100%",
+                                      objectFit: "cover",
+                                      borderRadius: "4px",
+                                    }}
+                                  />
+                                </Box>
+                              )}
+                              <Box sx={{ flexGrow: 1 }}>
+                                <ListItemText
+                                  primary={progress.courseTitle}
+                                  secondary={
+                                    <Box sx={{ mt: 1 }}>
+                                      <Box
+                                        sx={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          mb: 0.5,
+                                        }}
+                                      >
+                                        <Box sx={{ flexGrow: 1, mr: 1 }}>
+                                          <LinearProgress
+                                            variant="determinate"
+                                            value={
+                                              progress.completionPercentage
+                                            }
+                                            sx={{
+                                              height: 6,
+                                              borderRadius: 1,
+                                              "& .MuiLinearProgress-bar": {
+                                                backgroundColor:
+                                                  progress.completionPercentage >
+                                                  75
+                                                    ? "success.main"
+                                                    : progress.completionPercentage >
+                                                      50
+                                                    ? "info.main"
+                                                    : progress.completionPercentage >
+                                                      25
+                                                    ? "warning.main"
+                                                    : "error.main",
+                                              },
+                                            }}
+                                          />
+                                        </Box>
+                                        <Typography
+                                          variant="body2"
+                                          color="text.secondary"
+                                        >
+                                          {progress.completionPercentage.toFixed(
+                                            0
+                                          )}
+                                          %
+                                        </Typography>
+                                      </Box>
+                                      <Stack direction="row" spacing={1}>
+                                        <Typography
+                                          variant="caption"
+                                          color="text.secondary"
+                                        >
+                                          Bài học: {progress.completedLessons}/
+                                          {progress.totalLessons}
+                                        </Typography>
+                                      </Stack>
+                                      {progress.lastAccessedLesson && (
+                                        <Typography
+                                          variant="caption"
+                                          color="text.secondary"
+                                          display="block"
+                                        >
+                                          Bài học gần nhất:{" "}
+                                          {progress.lastAccessedLesson.title}
+                                        </Typography>
+                                      )}
+                                      {progress.lastAccessTime && (
+                                        <Typography
+                                          variant="caption"
+                                          color="text.secondary"
+                                          display="block"
+                                        >
+                                          Truy cập lần cuối:{" "}
+                                          {new Date(
+                                            progress.lastAccessTime
+                                          ).toLocaleDateString("vi-VN", {
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                          })}
+                                        </Typography>
+                                      )}
+                                    </Box>
+                                  }
+                                />
+                              </Box>
+                            </Box>
+                            <Box
+                              sx={{
+                                mt: { xs: 2, sm: 0 },
+                                ml: { xs: 0, sm: 2 },
+                                display: "flex",
+                                justifyContent: "flex-end",
+                              }}
+                            >
+                              <Button
+                                variant="contained"
+                                color="primary"
+                                size="medium"
+                                startIcon={<MenuBookIcon />}
+                                onClick={() =>
+                                  navigate(`/course/${progress.courseId}/learn`)
+                                }
+                                sx={{
+                                  minWidth: "150px",
+                                }}
+                              >
+                                Tiếp tục học
+                              </Button>
+                            </Box>
+                          </ListItem>
+                        ))
+                      ) : currentUser?.role === "student_academic" ? (
+                        Array.isArray(studentAcademicCourses) &&
+                        studentAcademicCourses.length > 0 ? (
+                          studentAcademicCourses.map((enrollment: any) => (
                             <ListItem
                               key={enrollment.id}
                               sx={{
@@ -980,51 +1122,147 @@ const ProfileAccount: React.FC = () => {
                               />
                             </ListItem>
                           ))
-                        : userProgress?.map((enrollment: any) => (
-                            <ListItem key={enrollment.id}>
-                              <ListItemText
-                                primary={enrollment?.courseTitle}
-                                secondary={
-                                  <Box sx={{ mt: 1 }}>
-                                    <Box
-                                      sx={{
-                                        display: "flex",
-                                        alignItems: "center",
-                                        mb: 0.5,
-                                      }}
-                                    >
-                                      <Box sx={{ flexGrow: 1, mr: 1 }}>
-                                        <LinearProgress
-                                          variant="determinate"
-                                          value={
-                                            enrollment?.completionPercentage
-                                          }
-                                          sx={{ height: 6, borderRadius: 1 }}
-                                        />
+                        ) : (
+                          <Typography
+                            variant="body1"
+                            textAlign="center"
+                            color="text.secondary"
+                            py={2}
+                          >
+                            Bạn chưa có môn học nào
+                          </Typography>
+                        )
+                      ) : Array.isArray(userProgress) &&
+                        userProgress.length > 0 ? (
+                        userProgress.map((enrollment: any) => (
+                          <ListItem
+                            key={enrollment.id}
+                            sx={{
+                              border: 1,
+                              borderColor: "divider",
+                              borderRadius: 1,
+                              mb: 1,
+                              display: "flex",
+                              flexDirection: { xs: "column", sm: "row" },
+                              alignItems: { xs: "stretch", sm: "center" },
+                              "&:last-child": {
+                                mb: 0,
+                              },
+                              pb: 2,
+                            }}
+                          >
+                            <Box sx={{ display: "flex", width: "100%" }}>
+                              {enrollment?.courseImage && (
+                                <Box sx={{ mr: 2, width: 80, height: 80 }}>
+                                  <img
+                                    src={enrollment.courseImage}
+                                    alt={enrollment.courseTitle}
+                                    style={{
+                                      width: "100%",
+                                      height: "100%",
+                                      objectFit: "cover",
+                                      borderRadius: "4px",
+                                    }}
+                                  />
+                                </Box>
+                              )}
+                              <Box sx={{ flexGrow: 1 }}>
+                                <ListItemText
+                                  primary={enrollment?.courseTitle}
+                                  secondary={
+                                    <Box sx={{ mt: 1 }}>
+                                      <Box
+                                        sx={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          mb: 0.5,
+                                        }}
+                                      >
+                                        <Box sx={{ flexGrow: 1, mr: 1 }}>
+                                          <LinearProgress
+                                            variant="determinate"
+                                            value={
+                                              enrollment?.completionPercentage
+                                            }
+                                            sx={{
+                                              height: 6,
+                                              borderRadius: 1,
+                                              "& .MuiLinearProgress-bar": {
+                                                backgroundColor:
+                                                  enrollment?.completionPercentage >
+                                                  75
+                                                    ? "success.main"
+                                                    : enrollment?.completionPercentage >
+                                                      50
+                                                    ? "info.main"
+                                                    : enrollment?.completionPercentage >
+                                                      25
+                                                    ? "warning.main"
+                                                    : "error.main",
+                                              },
+                                            }}
+                                          />
+                                        </Box>
+                                        <Typography
+                                          variant="body2"
+                                          color="text.secondary"
+                                        >
+                                          {enrollment?.completionPercentage}%
+                                        </Typography>
                                       </Box>
                                       <Typography
-                                        variant="body2"
+                                        variant="caption"
                                         color="text.secondary"
                                       >
-                                        {enrollment?.completionPercentage}%
+                                        Truy cập gần nhất:{" "}
+                                        {enrollment?.lastAccessTime
+                                          ? new Date(
+                                              enrollment?.lastAccessTime
+                                            ).toLocaleDateString("vi-VN")
+                                          : "Chưa truy cập"}
                                       </Typography>
                                     </Box>
-                                    <Typography
-                                      variant="caption"
-                                      color="text.secondary"
-                                    >
-                                      Truy cập gần nhất:{" "}
-                                      {enrollment?.lastAccessTime
-                                        ? new Date(
-                                            enrollment?.lastAccessTime
-                                          ).toLocaleDateString("vi-VN")
-                                        : "Chưa truy cập"}
-                                    </Typography>
-                                  </Box>
+                                  }
+                                />
+                              </Box>
+                            </Box>
+                            <Box
+                              sx={{
+                                mt: { xs: 2, sm: 0 },
+                                ml: { xs: 0, sm: 2 },
+                                display: "flex",
+                                justifyContent: "flex-end",
+                              }}
+                            >
+                              <Button
+                                variant="contained"
+                                color="primary"
+                                size="medium"
+                                startIcon={<MenuBookIcon />}
+                                onClick={() =>
+                                  navigate(
+                                    `/course/${enrollment.courseId}/learn`
+                                  )
                                 }
-                              />
-                            </ListItem>
-                          ))}
+                                sx={{
+                                  minWidth: "130px",
+                                }}
+                              >
+                                Tiếp tục học
+                              </Button>
+                            </Box>
+                          </ListItem>
+                        ))
+                      ) : (
+                        <Typography
+                          variant="body1"
+                          textAlign="center"
+                          color="text.secondary"
+                          py={2}
+                        >
+                          Bạn chưa có khóa học nào
+                        </Typography>
+                      )}
                     </List>
                   </Box>
 
@@ -1036,57 +1274,66 @@ const ProfileAccount: React.FC = () => {
                       <Typography variant="h6" gutterBottom>
                         Chứng chỉ đã đạt được
                       </Typography>
-                      <List>
-                        {userCertificates?.length > 0
-                          ? userCertificates?.map((cert) => (
-                              <ListItem
-                                key={cert.id}
-                                sx={{
-                                  border: 1,
-                                  borderColor: "divider",
-                                  borderRadius: 1,
-                                  mb: 1,
-                                  "&:last-child": {
-                                    mb: 0,
-                                  },
-                                }}
+                      {Array.isArray(userCertificates) &&
+                      userCertificates.length > 0 ? (
+                        <List>
+                          {userCertificates.map((cert) => (
+                            <ListItem
+                              key={cert.id}
+                              sx={{
+                                border: 1,
+                                borderColor: "divider",
+                                borderRadius: 1,
+                                mb: 1,
+                                "&:last-child": {
+                                  mb: 0,
+                                },
+                              }}
+                            >
+                              <ListItemIcon>
+                                <School color="primary" />
+                              </ListItemIcon>
+                              <ListItemText
+                                primary={cert?.course?.title}
+                                secondary={
+                                  <>
+                                    Cấp ngày:{" "}
+                                    {new Date(
+                                      cert?.createdAt
+                                    ).toLocaleDateString("vi-VN")}{" "}
+                                    | Số chứng chỉ: {cert?.certificateNumber}
+                                  </>
+                                }
+                              />
+                              <Button
+                                variant="outlined"
+                                size="small"
+                                onClick={() =>
+                                  setSelectedCertificate({
+                                    ...cert,
+                                    student_name:
+                                      currentUser?.userStudent?.fullName,
+                                    student_code: currentUser?.userStudent?.id,
+                                    certificate_url: cert?.certificateUrl,
+                                  })
+                                }
+                                sx={{ minWidth: 100 }}
                               >
-                                <ListItemIcon>
-                                  <School color="primary" />
-                                </ListItemIcon>
-                                <ListItemText
-                                  primary={cert?.course?.title}
-                                  secondary={
-                                    <>
-                                      Cấp ngày:{" "}
-                                      {new Date(
-                                        cert?.createdAt
-                                      ).toLocaleDateString("vi-VN")}{" "}
-                                      | Số chứng chỉ: {cert?.certificateNumber}
-                                    </>
-                                  }
-                                />
-                                <Button
-                                  variant="outlined"
-                                  size="small"
-                                  onClick={() =>
-                                    setSelectedCertificate({
-                                      ...cert,
-                                      student_name:
-                                        currentUser?.userStudent?.fullName,
-                                      student_code:
-                                        currentUser?.userStudent?.id,
-                                      certificate_url: cert?.certificateUrl,
-                                    })
-                                  }
-                                  sx={{ minWidth: 100 }}
-                                >
-                                  Xem chi tiết
-                                </Button>
-                              </ListItem>
-                            ))
-                          : "Không có chứng chỉ"}
-                      </List>
+                                Xem chi tiết
+                              </Button>
+                            </ListItem>
+                          ))}
+                        </List>
+                      ) : (
+                        <Typography
+                          variant="body1"
+                          textAlign="center"
+                          color="text.secondary"
+                          py={2}
+                        >
+                          Bạn chưa có chứng chỉ nào
+                        </Typography>
+                      )}
                     </Box>
                   )}
                 </Stack>
@@ -1453,9 +1700,10 @@ const ProfileAccount: React.FC = () => {
                       )
                     ) : (
                       <Typography
+                        variant="body1"
+                        textAlign="center"
                         color="text.secondary"
-                        align="center"
-                        sx={{ py: 3 }}
+                        py={3}
                       >
                         Chưa có thông tin điểm
                       </Typography>

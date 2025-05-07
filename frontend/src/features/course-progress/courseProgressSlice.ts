@@ -31,6 +31,21 @@ export const fetchUserProgress = createAsyncThunk(
   }
 );
 
+export const fetchUserCourseProgress = createAsyncThunk(
+  "courseProgress/fetchUserCourseProgress",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/course-progress/user-course-progress`);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          "Không thể tải tiến độ khóa học của người dùng"
+      );
+    }
+  }
+);
+
 export const createProgress = createAsyncThunk(
   "courseProgress/create",
   async (data: { userId: number; lessonId: number }, { rejectWithValue }) => {
@@ -87,9 +102,28 @@ export const deleteProgress = createAsyncThunk(
   }
 );
 
+export const fetchCourseProgressDetail = createAsyncThunk(
+  "courseProgress/fetchCourseProgressDetail",
+  async ({ courseId }: { courseId: number }, { rejectWithValue }) => {
+    try {
+      const response = await api.get(
+        `/course-progress/user-course-progress/course/${courseId}`
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          "Không thể tải chi tiết tiến độ khóa học"
+      );
+    }
+  }
+);
+
 const initialState: CourseProgressState = {
   progress: [],
   userProgress: [],
+  userCourseProgress: [],
+  courseProgressDetail: null,
   currentProgress: null,
   status: "idle",
   error: null,
@@ -102,6 +136,8 @@ const courseProgressSlice = createSlice({
     resetProgressState: (state) => {
       state.progress = [];
       state.userProgress = [];
+      state.userCourseProgress = [];
+      state.courseProgressDetail = null;
       state.currentProgress = null;
       state.status = "idle";
       state.error = null;
@@ -136,6 +172,20 @@ const courseProgressSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchUserProgress.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
+
+      // Get user course progress summary
+      .addCase(fetchUserCourseProgress.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchUserCourseProgress.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.userCourseProgress = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchUserCourseProgress.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
       })
@@ -183,6 +233,20 @@ const courseProgressSlice = createSlice({
           (progress) => progress.id !== deletedId
         );
         state.error = null;
+      })
+
+      // Fetch course progress detail
+      .addCase(fetchCourseProgressDetail.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchCourseProgressDetail.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.courseProgressDetail = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchCourseProgressDetail.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
       });
   },
 });
