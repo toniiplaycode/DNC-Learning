@@ -93,6 +93,9 @@ export const fetchCurrentUser = createAsyncThunk(
   async (_) => {
     try {
       const response = await api.get("/auth/profile");
+      if (response.data) {
+        localStorage.setItem("user", JSON.stringify(response.data));
+      }
       return response.data;
     } catch (error: any) {
       return error.response?.data || "Không thể lấy thông tin người dùng";

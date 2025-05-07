@@ -119,9 +119,10 @@ const Register = () => {
     }
   };
 
-  const handleGoogleRegister = async () => {
-    // Xử lý đăng ký bằng Google
-    console.log("Google register - chức năng chưa được triển khai");
+  const handleGoogleRegister = () => {
+    window.location.href = `${
+      process.env.REACT_APP_API_URL || "http://127.0.0.1:3000"
+    }/auth/google`;
   };
 
   return (

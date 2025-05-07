@@ -75,7 +75,7 @@ export class User {
   @Column({ length: 50, nullable: true, name: 'social_login_provider' })
   socialLoginProvider: string;
 
-  @Column({ length: 100, nullable: true, name: 'social_login_id' })
+  @Column({ length: 'text', nullable: true, name: 'social_login_id' })
   socialLoginId: string;
 
   @Column({ nullable: true, name: 'last_login' })

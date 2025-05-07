@@ -123,4 +123,33 @@ export class AuthService {
       await queryRunner.release();
     }
   }
+
+  /**
+   * Đăng nhập/đăng ký user bằng Google
+   */
+  async loginWithGoogle(googleUser: any) {
+    // Tìm user theo email
+    let user = await this.userService.findByEmail(googleUser.email);
+    if (!user) {
+      // Nếu chưa có, tạo user mới
+      user = this.userRepository.create({
+        email: googleUser.email,
+        username: googleUser.email.split('@')[0],
+        password: '', // Không cần mật khẩu cho social login
+        role: UserRole.STUDENT,
+        status: UserStatus.ACTIVE,
+        avatarUrl: googleUser.picture,
+        socialLoginProvider: 'google',
+        socialLoginId: googleUser.accessToken, // Hoặc googleUser.id nếu có
+      });
+      user = await this.userRepository.save(user);
+    }
+    console.log(user);
+    // Tạo JWT token
+    const payload = { sub: user.id, email: user.email };
+    return {
+      accessToken: this.jwtService.sign(payload),
+      user,
+    };
+  }
 }

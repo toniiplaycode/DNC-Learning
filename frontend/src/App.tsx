@@ -1,4 +1,4 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useNavigate } from "react-router-dom";
 import { ToastContainer } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import HomePage from "./pages/student/HomePage";
@@ -48,8 +48,33 @@ import AdminSettings from "./pages/admin/AdminSettings";
 import InstructorStudentsAcademic from "./pages/instructor/InstructorStudentsAcademic";
 import AdminAcademicClasses from "./pages/admin/AdminAcademicClasses";
 import AdminSchedules from "./pages/admin/AdminSchedules";
+import { useEffect } from "react";
+import { useDispatch } from "react-redux";
+import { fetchCurrentUser } from "./features/auth/authApiSlice";
 
 const App = () => {
+  const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const accessToken = params.get("accessToken");
+    if (accessToken) {
+      localStorage.setItem("accessToken", accessToken);
+      // Xóa accessToken khỏi URL
+      window.history.replaceState({}, document.title, "/");
+      // Chuyển về trang chủ
+      navigate("/");
+    }
+  }, [navigate]);
+
+  useEffect(() => {
+    const token = localStorage.getItem("accessToken");
+    if (token) {
+      dispatch(fetchCurrentUser());
+    }
+  }, [dispatch]);
+
   return (
     <>
       <ToastContainer

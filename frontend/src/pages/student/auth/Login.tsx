@@ -91,9 +91,10 @@ const Login = () => {
     }
   };
 
-  const handleGoogleLogin = async () => {
-    console.log("Google login - chức năng chưa được triển khai");
-    toast.info("Đăng nhập bằng Google chưa được triển khai");
+  const handleGoogleLogin = () => {
+    window.location.href = `${
+      process.env.REACT_APP_API_URL || "http://localhost:3000"
+    }/auth/google`;
   };
 
   return (
