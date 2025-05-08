@@ -18,22 +18,30 @@ const initialState: MessagesState = {
 
 export const fetchMessagesByUser = createAsyncThunk(
   "messages/fetchByUser",
-  async (userId: number | string, { rejectWithValue }) => {
+  async (userId: number, { rejectWithValue }) => {
     try {
-      if (!userId || isNaN(Number(userId))) {
-        throw new Error("Invalid user ID");
-      }
-
-      const token = localStorage.getItem("token");
-      const response = await api.get(`/messages/user/${userId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const response = await api.get(`/messages/user/${userId}`);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data || "Failed to fetch messages"
+        error.response?.data?.message || "Failed to fetch messages"
+      );
+    }
+  }
+);
+
+export const sendMessage = createAsyncThunk(
+  "messages/sendMessage",
+  async (
+    data: { receiverId: number; messageText: string; referenceLink?: string },
+    { rejectWithValue }
+  ) => {
+    try {
+      const response = await api.post("/messages", data);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to send message"
       );
     }
   }

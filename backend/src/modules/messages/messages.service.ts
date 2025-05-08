@@ -19,10 +19,18 @@ export class MessagesService {
       // Special handling for chatbot messages
       if (createMessageDto.receiverId === -1 || userId === -1) {
         console.log('🤖 Creating chatbot message');
+
+        // Set messageText to placeholder if empty but has referenceLink
+        const messageText =
+          !createMessageDto.messageText && createMessageDto.referenceLink
+            ? ' ' // Use space as minimal placeholder if only URL is provided
+            : createMessageDto.messageText;
+
         const message = this.messageRepository.create({
           senderId: userId,
           receiverId: createMessageDto.receiverId,
-          messageText: createMessageDto.messageText,
+          messageText: messageText,
+          referenceLink: createMessageDto.referenceLink || undefined,
           isRead: true, // Chatbot messages are always read
         });
 
@@ -35,10 +43,18 @@ export class MessagesService {
 
       // Regular message handling
       console.log('💬 Creating regular message');
+
+      // Set messageText to placeholder if empty but has referenceLink
+      const messageText =
+        !createMessageDto.messageText && createMessageDto.referenceLink
+          ? ' ' // Use space as minimal placeholder if only URL is provided
+          : createMessageDto.messageText;
+
       const message = this.messageRepository.create({
         senderId: userId,
         receiverId: createMessageDto.receiverId,
-        messageText: createMessageDto.messageText,
+        messageText: messageText,
+        referenceLink: createMessageDto.referenceLink || undefined,
         isRead: false,
       });
 
@@ -121,6 +137,7 @@ export class MessagesService {
       select: {
         id: true,
         messageText: true,
+        referenceLink: true,
         isRead: true,
         createdAt: true,
         sender: {

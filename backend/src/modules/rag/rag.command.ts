@@ -95,9 +95,10 @@ export class RagCommand extends CommandRunner {
 
   async run(): Promise<void> {
     try {
-      this.logger.log('Starting database import to RAG...');
+      this.logger.log('Bắt đầu nhập dữ liệu từ cơ sở dữ liệu vào RAG...');
 
       // Get all data from database
+      this.logger.log('Đang lấy dữ liệu từ cơ sở dữ liệu...');
       const [
         courses,
         documents,
@@ -144,10 +145,15 @@ export class RagCommand extends CommandRunner {
         this.certificateRepo.find(),
       ]);
 
+      this.logger.log(
+        'Đã lấy dữ liệu thành công, đang chuẩn bị tài liệu cho RAG...',
+      );
+
       // Prepare documents for RAG
       const documentsToAdd: string[] = [];
 
       // Add courses with their categories and more fields
+      this.logger.log(`Đang xử lý ${courses.length} khóa học...`);
       const courseDocs: string[] = [];
       courses.forEach((course) => {
         const keywords = [
@@ -169,15 +175,11 @@ export class RagCommand extends CommandRunner {
 Mô tả: ${course.description}
 Từ khóa phụ: ${keywords}
 Giá: ${course.price}
-Trạng thái: ${course.status}
 Danh mục: ${course.category?.name || 'Chưa phân loại'}
 Giảng viên: ${course.instructor?.user?.username || 'Chưa có'}
+URL: ${process.env.JAVASCRIPT_ORIGINS}/course/${course.id}
 Thống kê:
-- Tổng số khóa học: ${courses.length}
-- Số khóa học có danh mục: ${courses.filter((c) => c.category).length}
-- Số khóa học có giảng viên: ${courses.filter((c) => c.instructor).length}
-- Số khóa học đang hoạt động: ${courses.filter((c) => c.status === 'published').length}
-- Giá trung bình: ${Math.round(courses.reduce((sum, c) => sum + (c.price || 0), 0) / courses.length)}`,
+- Tổng số khóa học: ${courses.length}`,
         );
       });
       documentsToAdd.push(...courseDocs);
@@ -737,14 +739,24 @@ Thống kê:
       documentsToAdd.push(...certificateDocs);
       this.logger.log(`Added ${certificateDocs.length} certificate documents`);
 
-      this.logger.log(`Found ${documentsToAdd.length} total documents to add`);
+      this.logger.log(
+        `Tìm thấy tổng cộng ${documentsToAdd.length} tài liệu để thêm vào`,
+      );
+      this.logger.log(`Bắt đầu nhập tài liệu vào RAG...`);
 
-      // Add to RAG
-      await this.ragService.addDocuments(documentsToAdd);
-
-      this.logger.log('Successfully imported all database content to RAG');
+      // Add to RAG in smaller chunks
+      try {
+        await this.ragService.addDocuments(documentsToAdd);
+        this.logger.log('Nhập tất cả dữ liệu cơ sở dữ liệu vào RAG thành công');
+      } catch (error) {
+        this.logger.error('Lỗi khi nhập tài liệu vào RAG:', error);
+        if (error.data?.status?.error) {
+          this.logger.error(`Chi tiết lỗi: ${error.data.status.error}`);
+        }
+        throw error;
+      }
     } catch (error) {
-      this.logger.error('Error importing database content:', error);
+      this.logger.error('Lỗi khi nhập dữ liệu cơ sở dữ liệu:', error);
       throw error;
     }
   }

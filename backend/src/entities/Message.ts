@@ -23,6 +23,9 @@ export class Message {
   @Column({ name: 'message_text', type: 'text' })
   messageText: string;
 
+  @Column({ name: 'reference_link', type: 'text', nullable: true })
+  referenceLink: string;
+
   @Column({ name: 'is_read', default: false })
   isRead: boolean;
 

@@ -24,6 +24,7 @@ import {
   DialogContent,
   Grid,
   CircularProgress,
+  Button,
 } from "@mui/material";
 import {
   Chat as ChatIcon,
@@ -34,6 +35,10 @@ import {
   Person,
   Search,
   SmartToy,
+  Link as LinkIcon,
+  OpenInNew,
+  Article,
+  School,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
@@ -68,6 +73,7 @@ interface Message {
   messageText: string;
   isRead: boolean;
   createdAt: string;
+  referenceLink?: string;
   sender: {
     id: string;
     username: string;
@@ -229,6 +235,57 @@ const chatHtmlParserOptions = {
   },
 };
 
+// Improve the getPageNameFromUrl function to handle edge cases
+const getPageNameFromUrl = (url?: string | null): string => {
+  if (!url || typeof url !== "string" || url.trim() === "") return "";
+
+  try {
+    // Try to extract course ID or other patterns from URL
+    if (url.includes("/course") || url.includes("/courses")) {
+      return "Khóa học";
+    } else if (url.includes("/lesson") || url.includes("/lessons")) {
+      return "Bài học";
+    } else if (url.includes("/article")) {
+      return "Bài viết";
+    } else if (url.includes("/document")) {
+      return "Tài liệu";
+    } else {
+      return "Tham khảo";
+    }
+  } catch (e) {
+    return "Tham khảo";
+  }
+};
+
+// Enhance the isValidUrl function to be more robust
+const isValidUrl = (url?: string | null): boolean => {
+  // Return false for null, undefined, or empty strings
+  if (!url || typeof url !== "string" || url.trim() === "") return false;
+
+  try {
+    const urlObj = new URL(url);
+    // Only return true if it's a valid HTTP/HTTPS URL
+    return urlObj.protocol === "http:" || urlObj.protocol === "https:";
+  } catch (e) {
+    return false;
+  }
+};
+
+// Fix the shortenUrl function to handle invalid URLs
+const shortenUrl = (url?: string | null): string => {
+  if (!url || typeof url !== "string" || url.trim() === "") return "";
+
+  try {
+    const urlObj = new URL(url);
+    // Only show hostname and limited path
+    return `${urlObj.hostname}${urlObj.pathname.substring(0, 20)}${
+      urlObj.pathname.length > 20 ? "..." : ""
+    }`;
+  } catch (e) {
+    return url.substring(0, 30) + (url.length > 30 ? "..." : "");
+  }
+};
+
 // Or for a more detailed approach with login prompt:
 const ChatBox = () => {
   const dispatch = useAppDispatch();
@@ -239,6 +296,8 @@ const ChatBox = () => {
 
   // Add new state for chatbot typing
   const [isChatbotTyping, setIsChatbotTyping] = useState(false);
+
+  console.log("🔄 Messages:", messages);
 
   // Primary useEffect for fetching messages
   useEffect(() => {
@@ -333,6 +392,7 @@ const ChatBox = () => {
           isRead: true,
           senderId: msg.sender.id,
           receiverId: msg.receiver.id,
+          referenceLink: msg.referenceLink,
         })),
       unread: 0,
       isChatbot: true,
@@ -390,6 +450,7 @@ const ChatBox = () => {
           isRead: message.isRead,
           senderId: message.sender.id,
           receiverId: message.receiver.id,
+          referenceLink: message.referenceLink,
         });
 
         // Sort messages by timestamp after adding new message
@@ -489,6 +550,7 @@ const ChatBox = () => {
                     isRead: true,
                     senderId: message.sender.id,
                     receiverId: message.receiver.id,
+                    referenceLink: message.referenceLink,
                   },
                 ],
               };
@@ -542,6 +604,7 @@ const ChatBox = () => {
               isRead: message.isRead,
               senderId: message.sender.id,
               receiverId: message.receiver.id,
+              referenceLink: message.referenceLink,
             },
           ].sort(
             (a, b) =>
@@ -590,6 +653,7 @@ const ChatBox = () => {
                 isRead: message.isRead,
                 senderId: message.sender.id,
                 receiverId: message.receiver.id,
+                referenceLink: message.referenceLink,
               },
             ],
             unread: message.sender.id !== currentUser.id ? 1 : 0,
@@ -749,15 +813,29 @@ const ChatBox = () => {
   const handleSend = async () => {
     if (!message.trim() || !selectedRoom || !socketRef.current) return;
 
+    // Get reference link from message if any (e.g., a URL)
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const matches = message.match(urlRegex);
+    const referenceLink =
+      matches && matches.length > 0 ? matches[0] : undefined;
+
+    // Check if message is only a URL
+    const isOnlyUrl =
+      matches && matches.length === 1 && matches[0].trim() === message.trim();
+
+    // If it's only a URL, send empty messageText and just the referenceLink
+    const messageText = isOnlyUrl ? "" : message.trim();
+
     // Handle chatbot messages
     if (selectedRoom.id === -1) {
       console.log("💬 Sending message to chatbot:", {
-        message: message.trim(),
+        message: messageText,
         userId: currentUser?.id,
+        referenceLink,
+        isOnlyUrl,
       });
 
       // Clear input before sending
-      const messageText = message.trim();
       setMessage("");
 
       try {
@@ -765,9 +843,10 @@ const ChatBox = () => {
         setIsChatbotTyping(true);
 
         // Only emit message, don't update UI here
-        console.log("🚀 Sending to chatbot:", messageText);
+        console.log("🚀 Sending to chatbot:", messageText || "[URL only]");
         socketRef.current.emit("chatbotMessage", {
-          messageText: messageText,
+          messageText: messageText || " ", // Ensure we send at least a space if empty
+          referenceLink,
         });
 
         // Set a backup timeout to turn off typing indicator in case of no response
@@ -783,15 +862,15 @@ const ChatBox = () => {
       return;
     }
 
-    if (!currentUser || !message.trim() || !selectedRoom || !socketRef.current)
-      return;
+    if (!currentUser || !selectedRoom || !socketRef.current) return;
 
     // Create temporary message structure matching Message interface
     const tempMessage: Message = {
       id: Date.now(), // temporary id
-      messageText: message.trim(),
+      messageText: messageText,
       isRead: false,
       createdAt: new Date().toISOString(),
+      referenceLink,
       sender: {
         id: currentUser.id,
         username: currentUser.username,
@@ -832,6 +911,7 @@ const ChatBox = () => {
                 isRead: false,
                 senderId: currentUser.id,
                 receiverId: selectedRoom.instructor.id,
+                referenceLink: tempMessage.referenceLink,
               },
             ].sort(
               (a, b) =>
@@ -847,7 +927,8 @@ const ChatBox = () => {
     // Emit message through socket
     socketRef.current.emit("sendMessage", {
       receiverId: selectedRoom.instructor.id,
-      messageText: message.trim(),
+      messageText: messageText || " ", // Ensure we send at least a space if empty
+      referenceLink,
     });
 
     // Clear input
@@ -952,6 +1033,7 @@ const ChatBox = () => {
               isRead: message.isRead,
               senderId: message.sender.id,
               receiverId: message.receiver.id,
+              referenceLink: message.referenceLink,
             },
           ].sort(
             (a, b) =>
@@ -1002,6 +1084,7 @@ const ChatBox = () => {
                 isRead: message.isRead,
                 senderId: message.sender.id,
                 receiverId: message.receiver.id,
+                referenceLink: message.referenceLink,
               },
             ],
             unread: message.sender.id !== currentUser.id ? 1 : 0,
@@ -1051,19 +1134,20 @@ const ChatBox = () => {
           messageText: response.messageText,
           isRead: true,
           createdAt: response.createdAt,
+          referenceLink: response.referenceLink || undefined,
           sender: {
             id: "-1",
             username: "DNC Assistant",
             email: "chatbot@dnc.com",
             role: "chatbot",
-            avatarUrl: "/chatbot-avatar.png",
+            avatarUrl: CHATBOT.avatarUrl,
           },
           receiver: {
             id: currentUser.id,
             username: currentUser.username,
             email: currentUser.email,
             role: currentUser.role,
-            avatarUrl: currentUser.avatarUrl,
+            avatarUrl: currentUser.avatarUrl || "",
           },
         })
       );
@@ -1086,6 +1170,7 @@ const ChatBox = () => {
                   isRead: true,
                   senderId: "-1",
                   receiverId: currentUser.id,
+                  referenceLink: response.referenceLink || undefined,
                 },
               ],
             };
@@ -1656,8 +1741,164 @@ const ChatBox = () => {
                                   lineHeight: 1.7,
                                 }}
                               >
-                                {parse(msg.content, chatHtmlParserOptions)}
+                                {msg.content
+                                  ? parse(msg.content, chatHtmlParserOptions)
+                                  : null}
                               </div>
+                              {isValidUrl(msg.referenceLink) && (
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    mt: msg.content ? 1.5 : 0,
+                                    pt: msg.content ? 1 : 0,
+                                  }}
+                                >
+                                  {msg.sender === "support" ? (
+                                    <Paper
+                                      elevation={0}
+                                      sx={{
+                                        p: 1.5,
+                                        mt: 0.5,
+                                        borderRadius: 2,
+                                        bgcolor: "rgba(25, 118, 210, 0.05)",
+                                        border:
+                                          "1px solid rgba(25, 118, 210, 0.2)",
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        gap: 1,
+                                        position: "relative",
+                                        overflow: "hidden",
+                                        "&:hover": {
+                                          bgcolor: "rgba(25, 118, 210, 0.1)",
+                                        },
+                                      }}
+                                    >
+                                      <Box
+                                        sx={{
+                                          position: "absolute",
+                                          top: 0,
+                                          left: 0,
+                                          width: "4px",
+                                          height: "100%",
+                                          bgcolor: "primary.main",
+                                        }}
+                                      />
+
+                                      <Box
+                                        sx={{
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: 1,
+                                        }}
+                                      >
+                                        <Box
+                                          sx={{
+                                            bgcolor: "primary.main",
+                                            color: "white",
+                                            borderRadius: "50%",
+                                            p: 0.7,
+                                            display: "flex",
+                                            justifyContent: "center",
+                                            alignItems: "center",
+                                          }}
+                                        >
+                                          {getPageNameFromUrl(
+                                            msg.referenceLink || ""
+                                          ) === "Khóa học" ? (
+                                            <School fontSize="small" />
+                                          ) : (
+                                            <Article fontSize="small" />
+                                          )}
+                                        </Box>
+                                        <Typography
+                                          variant="subtitle2"
+                                          color="primary.main"
+                                        >
+                                          {getPageNameFromUrl(
+                                            msg.referenceLink || ""
+                                          )}
+                                        </Typography>
+                                      </Box>
+
+                                      <Typography
+                                        variant="body2"
+                                        sx={{
+                                          color: "text.secondary",
+                                          fontSize: 13,
+                                          pl: 0.5,
+                                        }}
+                                      >
+                                        {shortenUrl(msg.referenceLink || "")}
+                                      </Typography>
+
+                                      {msg.referenceLink && (
+                                        <Box
+                                          sx={{
+                                            display: "flex",
+                                            justifyContent: "flex-end",
+                                          }}
+                                        >
+                                          <Button
+                                            variant="contained"
+                                            size="small"
+                                            color="primary"
+                                            endIcon={
+                                              <OpenInNew fontSize="small" />
+                                            }
+                                            href={msg.referenceLink || "#"}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            sx={{
+                                              textTransform: "none",
+                                              mt: 0.5,
+                                              boxShadow:
+                                                "0 2px 4px rgba(0,0,0,0.1)",
+                                              fontWeight: 500,
+                                              borderRadius: "8px",
+                                            }}
+                                          >
+                                            Truy cập
+                                          </Button>
+                                        </Box>
+                                      )}
+                                    </Paper>
+                                  ) : (
+                                    <Box
+                                      sx={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        gap: 0.5,
+                                      }}
+                                    >
+                                      <LinkIcon
+                                        fontSize="small"
+                                        color={
+                                          msg.sender === "user"
+                                            ? "inherit"
+                                            : "primary"
+                                        }
+                                      />
+                                      <a
+                                        href={msg.referenceLink || "#"}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        style={{
+                                          color:
+                                            msg.sender === "user"
+                                              ? "white"
+                                              : "#1976d2",
+                                          textDecoration: "none",
+                                          fontSize: "14px",
+                                          wordBreak: "break-all",
+                                        }}
+                                      >
+                                        {shortenUrl(msg.referenceLink || "")}
+                                      </a>
+                                    </Box>
+                                  )}
+                                </Box>
+                              )}
                               <Box
                                 sx={{
                                   display: "flex",

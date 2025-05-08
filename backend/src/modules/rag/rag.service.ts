@@ -80,32 +80,55 @@ export class RagService {
 
   async addDocuments(documents: string[]): Promise<void> {
     try {
-      const embeddings = await Promise.all(
-        documents.map((doc) => this.openaiService.getEmbedding(doc)),
-      );
-      const points = documents.map((doc, i) => ({
-        id: i,
-        vector: embeddings[i],
-        payload: { text: doc },
-      }));
+      this.logger.log(`Bắt đầu thêm ${documents.length} tài liệu vào RAG`);
 
-      await this.qdrantClient.upsert(this.collectionName, {
-        points,
-      });
-      // Thêm document chào hỏi hoặc giao tiếp
+      // Xử lý theo lô để tránh vượt quá giới hạn kích thước payload
+      const batchSize = 100; // Kích thước lô nhỏ hơn để an toàn
+
+      for (let i = 0; i < documents.length; i += batchSize) {
+        const batch = documents.slice(i, i + batchSize);
+        this.logger.log(
+          `Đang xử lý lô ${Math.floor(i / batchSize) + 1}/${Math.ceil(documents.length / batchSize)} (${batch.length} tài liệu)`,
+        );
+
+        const embeddings = await Promise.all(
+          batch.map((doc) => this.openaiService.getEmbedding(doc)),
+        );
+
+        const points = batch.map((doc, j) => ({
+          id: i + j, // Sử dụng chỉ số toàn cục làm ID
+          vector: embeddings[j],
+          payload: { text: doc },
+        }));
+
+        await this.qdrantClient.upsert(this.collectionName, {
+          points,
+        });
+
+        this.logger.log(
+          `Đã thêm thành công lô ${Math.floor(i / batchSize) + 1}`,
+        );
+      }
+
+      // Thêm document chào hỏi vào cuối
       const greetingDoc =
         'Xin chào! Tôi là trợ lý AI, rất vui được gặp bạn. Bạn có thể hỏi tôi về các khóa học, thông tin, hoặc bất kỳ điều gì khác. Tôi sẽ cố gắng hỗ trợ bạn tốt nhất có thể.';
       const greetingEmbedding =
         await this.openaiService.getEmbedding(greetingDoc);
+
       await this.qdrantClient.upsert(this.collectionName, {
         points: [
           {
-            id: points.length,
+            id: documents.length, // Sử dụng ID sau tất cả tài liệu
             vector: greetingEmbedding,
             payload: { text: greetingDoc },
           },
         ],
       });
+
+      this.logger.log(
+        `Đã thêm thành công tất cả ${documents.length} tài liệu và lời chào`,
+      );
     } catch (error) {
       this.logger.error('Error adding documents:', error);
       throw error;
@@ -152,10 +175,40 @@ export class RagService {
   async generateResponse(query: string, context: string[]) {
     try {
       this.logger.debug('Context for prompt:', context);
+
+      // Check if the query is related to courses
+      const courseKeywords = [
+        'khóa học',
+        'khoá học',
+        'bài học',
+        'course',
+        'courses',
+      ];
+      const queryLower = query.toLowerCase();
+      const isCourseQuery = courseKeywords.some((keyword) =>
+        queryLower.includes(keyword),
+      );
+
+      // Extract URLs from context to use in the prompt
+      const extractUrls = (text: string) => {
+        const urlMatch = text.match(/URL: (https?:\/\/[^\s\n]+)/);
+        return urlMatch ? urlMatch[1] : null;
+      };
+
+      // Only extract and use URLs if the query is about courses
+      let urlInfo = '';
+      if (isCourseQuery) {
+        const contextUrls = context.map(extractUrls).filter(Boolean);
+        if (contextUrls.length > 0) {
+          urlInfo = `\n\nURL liên quan: ${contextUrls[0]}\nNếu phù hợp, hãy đề xuất người dùng tham khảo URL này để biết thêm chi tiết.`;
+        }
+      }
+
       const prompt = `Bạn là trợ lý AI thân thiện. Hãy trả lời câu hỏi sau bằng tiếng Việt dựa trên ngữ cảnh bên dưới.
       - Ưu tiên sử dụng thông tin trong ngữ cảnh để trả lời.
       - Nếu ngữ cảnh không đủ thông tin, hãy nói rõ là không tìm thấy thông tin phù hợp.
       - Trả lời ngắn gọn, dễ hiểu.
+      - Nếu có URL liên quan và phù hợp với câu hỏi, hãy mời người dùng truy cập URL đó.${urlInfo}
 
       Ngữ cảnh:
       ${context.join('\n')}
@@ -175,6 +228,20 @@ export class RagService {
   async testRag(query: string) {
     try {
       this.logger.debug(`[RAG] User question: "${query}"`);
+
+      // Check if the query is related to courses
+      const courseKeywords = [
+        'khóa học',
+        'học',
+        'khoá học',
+        'bài học',
+        'course',
+        'courses',
+      ];
+      const queryLower = query.toLowerCase();
+      const isCourseQuery = courseKeywords.some((keyword) =>
+        queryLower.includes(keyword),
+      );
 
       // Chuẩn hóa câu hỏi và tách từ khóa
       const normalize = (str: string) =>
@@ -199,7 +266,13 @@ export class RagService {
             return null;
           const textNorm = normalize(point.payload.text);
           if (textNorm.includes(phrase)) {
-            return { text: point.payload.text, score: 100, phraseMatch: true };
+            // Add bonus score for vectors with URL field only if course-related
+            const hasUrl = point.payload.text.includes('URL: http');
+            return {
+              text: point.payload.text,
+              score: hasUrl && isCourseQuery ? 110 : 100,
+              phraseMatch: true,
+            };
           }
           return null;
         })
@@ -211,8 +284,11 @@ export class RagService {
         );
 
       if (phraseMatchedVectors.length > 0) {
-        // Nếu có phrase match, trả về ngay
-        const context = phraseMatchedVectors.map((v) => v.text);
+        // Nếu có phrase match, sắp xếp và trả về
+        const sortedVectors = phraseMatchedVectors.sort(
+          (a, b) => b.score - a.score,
+        );
+        const context = sortedVectors.map((v) => v.text);
         this.logger.debug(`[RAG] Phrase match context:`, context);
         const response = await this.generateResponse(query, context);
         return { success: true, searchResults: context, response };
@@ -228,6 +304,11 @@ export class RagService {
             textNorm.includes(keyword),
           );
           let score = matchedKeywords.length;
+
+          // Boost score for documents with URLs only if course-related
+          const hasUrl = point.payload.text.includes('URL: http');
+          if (hasUrl && isCourseQuery) score += 2;
+
           return score > 0
             ? {
                 text: point.payload.text,

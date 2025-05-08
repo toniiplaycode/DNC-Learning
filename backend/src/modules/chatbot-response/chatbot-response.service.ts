@@ -31,11 +31,55 @@ export class ChatbotService {
       const ragResult = await this.ragService.testRag(message.messageText);
       const response = ragResult.response;
 
+      // Check if the query is related to courses
+      const courseKeywords = [
+        'khóa học',
+        'khoá học',
+        'bài học',
+        'course',
+        'courses',
+      ];
+      const queryLower = message.messageText.toLowerCase();
+      const isCourseQuery = courseKeywords.some((keyword) =>
+        queryLower.includes(keyword),
+      );
+
+      // Enhanced URL extraction from RAG results
+      let referenceLink: string | undefined = undefined;
+
+      // Only extract and use referenceLink if the query is about courses
+      if (
+        isCourseQuery &&
+        ragResult.searchResults &&
+        ragResult.searchResults.length > 0
+      ) {
+        // First try to find URL line in the context
+        for (const result of ragResult.searchResults) {
+          // Look for URL field
+          const urlLineMatch = result.match(/URL: (https?:\/\/[^\s\n]+)/);
+          if (urlLineMatch && urlLineMatch[1]) {
+            referenceLink = urlLineMatch[1];
+            this.logger.debug(`Found URL from field: ${referenceLink}`);
+            break;
+          }
+
+          // Standard URL regex fallback
+          const urlRegex = /(https?:\/\/[^\s\n]+)/g;
+          const matches = result.match(urlRegex);
+          if (matches && matches.length > 0) {
+            // Use the first URL found as reference
+            referenceLink = matches[0];
+            this.logger.debug(`Found URL from regex: ${referenceLink}`);
+            break;
+          }
+        }
+      }
+
       if (!response) {
         throw new Error('Failed to generate response');
       }
 
-      return this.createBotMessage(message.senderId, response);
+      return this.createBotMessage(message.senderId, response, referenceLink);
     } catch (error) {
       this.logger.error('Error processing message with RAG:', error);
 
@@ -48,7 +92,30 @@ export class ChatbotService {
         );
       }
 
-      return this.createBotMessage(message.senderId, fallbackResponse.response);
+      // Determine if the query is course-related
+      const courseKeywords = [
+        'khóa học',
+        'học',
+        'khoá học',
+        'bài học',
+        'course',
+        'courses',
+      ];
+      const queryLower = message.messageText.toLowerCase();
+      const isCourseQuery = courseKeywords.some((keyword) =>
+        queryLower.includes(keyword),
+      );
+
+      // Only use referenceUrl if the query is about courses
+      const referenceUrl = isCourseQuery
+        ? (fallbackResponse['referenceUrl'] as string | undefined)
+        : undefined;
+
+      return this.createBotMessage(
+        message.senderId,
+        fallbackResponse.response,
+        referenceUrl,
+      );
     }
   }
 
@@ -176,12 +243,17 @@ export class ChatbotService {
   private async createBotMessage(
     receiverId: number,
     text: string,
+    referenceLink?: string,
   ): Promise<Message> {
     const html = this.textToHtml(text);
+
+    // Only include referenceLink if it's defined and not empty
     const botMessage = this.messageRepo.create({
       senderId: this.CHATBOT_USER_ID,
       receiverId: receiverId,
       messageText: html,
+      referenceLink:
+        referenceLink && referenceLink.trim() ? referenceLink : undefined,
       isRead: true,
       createdAt: new Date(),
       updatedAt: new Date(),

@@ -5,6 +5,7 @@ export interface Message {
   receiverId: number;
   isRead: boolean;
   createdAt: string;
+  referenceLink: string;
   sender: {
     id: number;
     fullName: string;

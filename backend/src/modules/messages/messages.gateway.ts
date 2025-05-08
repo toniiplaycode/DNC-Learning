@@ -60,6 +60,7 @@ export class MessagesGateway
         from: userId,
         to: payload.receiverId,
         message: payload.messageText,
+        referenceLink: payload.referenceLink,
       });
 
       // Validate receiverId is not chatbot
@@ -82,6 +83,7 @@ export class MessagesGateway
         this.server.to(receiverSocketId).emit('newMessage', {
           id: newMessage.id,
           messageText: newMessage.messageText,
+          referenceLink: newMessage.referenceLink,
           isRead: false,
           createdAt: newMessage.createdAt,
           sender: {
@@ -105,6 +107,7 @@ export class MessagesGateway
       client.emit('messageSent', {
         id: newMessage.id,
         messageText: newMessage.messageText,
+        referenceLink: newMessage.referenceLink,
         isRead: false,
         createdAt: newMessage.createdAt,
         sender: {
@@ -202,7 +205,10 @@ export class MessagesGateway
   }
 
   @SubscribeMessage('chatbotMessage')
-  async handleChatbotMessage(client: Socket, payload: { messageText: string }) {
+  async handleChatbotMessage(
+    client: Socket,
+    payload: { messageText: string; referenceLink?: string },
+  ) {
     const userId = client.handshake.auth.userId;
 
     try {
@@ -213,12 +219,14 @@ export class MessagesGateway
       console.log('📩 Received chatbot message:', {
         userId,
         message: payload.messageText,
+        referenceLink: payload.referenceLink,
       });
 
       // Create user's message
       const message = await this.messagesService.create(userId, {
         receiverId: -1,
         messageText: payload.messageText,
+        referenceLink: payload.referenceLink,
       });
 
       if (!message) {
@@ -229,6 +237,7 @@ export class MessagesGateway
       client.emit('newMessage', {
         id: message.id,
         messageText: message.messageText,
+        referenceLink: message.referenceLink,
         isRead: true,
         createdAt: message.createdAt,
         sender: {

@@ -30,6 +30,9 @@ import {
   FormControl,
   InputLabel,
   CircularProgress,
+  Button,
+  CardContent,
+  Link,
 } from "@mui/material";
 import {
   Chat as ChatIcon,
@@ -38,6 +41,10 @@ import {
   Person,
   Search,
   SmartToy,
+  Link as LinkIcon,
+  OpenInNew,
+  Article,
+  School,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
@@ -63,6 +70,7 @@ interface Message {
   messageText: string;
   isRead: boolean;
   createdAt: string;
+  referenceLink?: string;
   sender: {
     id: string;
     username: string;
@@ -121,6 +129,20 @@ interface Message {
   };
 }
 
+// Add ProcessedMessage interface to match actual implementation
+interface ProcessedMessage {
+  id: number;
+  content: string;
+  sender: "user" | "support";
+  timestamp: string;
+  avatar: string;
+  name: string;
+  isRead: boolean;
+  senderId: string;
+  receiverId: string;
+  referenceLink?: string;
+}
+
 interface Instructor {
   id: number;
   name: string;
@@ -139,7 +161,7 @@ interface ChatRoom {
     role: string;
     online?: boolean; // This would need to come from socket status
   };
-  messages: Message[];
+  messages: ProcessedMessage[];
   unread: number;
 }
 
@@ -214,55 +236,51 @@ const USER_TYPE_OPTIONS: FilterOption[] = [
 ];
 
 const chatHtmlParserOptions = {
-  replace: (domNode) => {
+  replace: (domNode: any) => {
     if (domNode.type === "tag") {
       const { name, children, attribs } = domNode;
       if (name === "ol" || name === "ul") {
+        // Style lists better
         return (
-          <ol
-            style={{
-              margin: "0 0 0 20px",
-              paddingLeft: "20px",
-            }}
-          >
+          <Box component={name} sx={{ pl: 3, my: 1 }}>
             {domToReact(children, chatHtmlParserOptions)}
-          </ol>
-        );
-      }
-      if (name === "li") {
-        return (
-          <li
-            style={{
-              marginBottom: "4px",
-              fontSize: 16,
-            }}
-          >
-            {domToReact(children, chatHtmlParserOptions)}
-          </li>
-        );
-      }
-      if (name === "p") {
-        return (
-          <p
-            style={{
-              margin: "0 0 8px 0",
-              fontSize: 16,
-              lineHeight: 1.7,
-            }}
-          >
-            {domToReact(children, chatHtmlParserOptions)}
-          </p>
-        );
-      }
-      if (name === "strong" || name === "b") {
-        return (
-          <strong style={{ fontWeight: 600 }}>
-            {domToReact(children, chatHtmlParserOptions)}
-          </strong>
+          </Box>
         );
       }
     }
+    return undefined;
   },
+};
+
+// Improved URL validation function
+const isValidUrl = (url?: string): boolean => {
+  if (!url || typeof url !== "string" || url.trim() === "") return false;
+
+  try {
+    new URL(url);
+    // Only consider http and https links valid for security
+    return url.startsWith("http://") || url.startsWith("https://");
+  } catch (e) {
+    return false;
+  }
+};
+
+// Enhanced function to shorten URLs for display
+const shortenUrl = (url: string): string => {
+  if (!url || typeof url !== "string" || url.trim() === "") return "";
+
+  try {
+    const urlObj = new URL(url);
+    // Get hostname and truncate pathname if too long
+    const pathname =
+      urlObj.pathname.length > 20
+        ? urlObj.pathname.substring(0, 20) + "..."
+        : urlObj.pathname;
+    return `${urlObj.hostname}${pathname}`;
+  } catch (e) {
+    // Fallback for invalid URLs
+    return url.length > 30 ? url.substring(0, 30) + "..." : url;
+  }
 };
 
 // Or for a more detailed approach with login prompt:
@@ -282,6 +300,11 @@ const ChatCommon = () => {
 
   // Add chatbot typing state
   const [isChatbotTyping, setIsChatbotTyping] = useState(false);
+
+  // Add state for tracking when new links are added
+  const [recentLinkTimestamp, setRecentLinkTimestamp] = useState<number | null>(
+    null
+  );
 
   // Hàm filter chat rooms
   const getFilteredChatRooms = () => {
@@ -372,14 +395,28 @@ const ChatCommon = () => {
     if (!currentUser || !message.trim() || !selectedRoom || !socketRef.current)
       return;
 
+    // Get reference link from message if any (e.g., a URL)
+    const urlRegex = /(https?:\/\/[^\s]+)/g;
+    const matches = message.match(urlRegex);
+    const referenceLink =
+      matches && matches.length > 0 ? matches[0] : undefined;
+
+    // Check if message is only a URL
+    const isOnlyUrl =
+      matches && matches.length === 1 && matches[0].trim() === message.trim();
+
+    // If it's only a URL, send empty messageText and just the referenceLink
+    const messageText = isOnlyUrl ? "" : message.trim();
+
     // Handle chatbot messages
     if (selectedRoom.id === -1) {
       console.log("💬 Sending message to chatbot:", {
-        message: message.trim(),
+        message: messageText,
         userId: currentUser.id,
+        referenceLink,
+        isOnlyUrl,
       });
 
-      const messageText = message.trim();
       setMessage("");
 
       // Show typing indicator
@@ -387,7 +424,8 @@ const ChatCommon = () => {
 
       // Emit chatbot message
       socketRef.current.emit("chatbotMessage", {
-        messageText: messageText,
+        messageText: messageText || " ", // Ensure we send at least a space if empty
+        referenceLink,
       });
 
       scrollToBottom();
@@ -397,9 +435,10 @@ const ChatCommon = () => {
     // Create temporary message structure matching Message interface
     const tempMessage: Message = {
       id: Date.now(), // temporary id
-      messageText: message.trim(),
+      messageText: messageText,
       isRead: false,
       createdAt: new Date().toISOString(),
+      referenceLink,
       sender: {
         id: currentUser.id,
         username: currentUser.username,
@@ -440,6 +479,7 @@ const ChatCommon = () => {
                 isRead: false,
                 senderId: currentUser.id,
                 receiverId: selectedRoom.instructor.id,
+                referenceLink: tempMessage.referenceLink || undefined,
               },
             ].sort(
               (a, b) =>
@@ -455,7 +495,8 @@ const ChatCommon = () => {
     // Emit message through socket
     socketRef.current.emit("sendMessage", {
       receiverId: selectedRoom.instructor.id,
-      messageText: message.trim(),
+      messageText: messageText || " ", // Ensure we send at least a space if empty
+      referenceLink,
     });
 
     // Clear input
@@ -497,6 +538,7 @@ const ChatCommon = () => {
           isRead: true,
           senderId: msg.sender.id,
           receiverId: msg.receiver.id,
+          referenceLink: msg.referenceLink || undefined,
         }))
         .sort(
           (a, b) =>
@@ -559,6 +601,7 @@ const ChatCommon = () => {
           isRead: message.isRead,
           senderId: message.sender.id,
           receiverId: message.receiver.id,
+          referenceLink: message.referenceLink || undefined,
         });
 
         // Sort messages by timestamp after adding new message
@@ -599,13 +642,29 @@ const ChatCommon = () => {
     );
   }
 
+  // Improved scroll to bottom function with longer delay to handle reference links
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    // Use a multi-stage delay to ensure reference links are rendered
+    setTimeout(() => {
+      if (messagesEndRef.current) {
+        messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+      }
+
+      // Second attempt with longer delay
+      setTimeout(() => {
+        if (messagesEndRef.current) {
+          messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+        }
+      }, 500);
+    }, 200);
   };
 
+  // Make sure scrolling happens after messages update
   useEffect(() => {
-    scrollToBottom();
-  }, [selectedRoom?.messages]);
+    if (selectedRoom?.messages?.length) {
+      scrollToBottom();
+    }
+  }, [selectedRoom?.messages?.length]);
 
   // Add null checks in useEffect
   useEffect(() => {
@@ -707,6 +766,7 @@ const ChatCommon = () => {
               isRead: message.isRead,
               senderId: message.sender.id,
               receiverId: message.receiver.id,
+              referenceLink: message.referenceLink || undefined,
             },
           ].sort(
             (a, b) =>
@@ -757,6 +817,7 @@ const ChatCommon = () => {
                 isRead: message.isRead,
                 senderId: message.sender.id,
                 receiverId: message.receiver.id,
+                referenceLink: message.referenceLink || undefined,
               },
             ],
             unread: message.sender.id !== currentUser.id ? 1 : 0,
@@ -859,6 +920,7 @@ const ChatCommon = () => {
               isRead: message.isRead,
               senderId: message.sender.id,
               receiverId: message.receiver.id,
+              referenceLink: message.referenceLink || undefined,
             },
           ].sort(
             (a, b) =>
@@ -911,6 +973,7 @@ const ChatCommon = () => {
                 isRead: message.isRead,
                 senderId: message.sender.id,
                 receiverId: message.receiver.id,
+                referenceLink: message.referenceLink || undefined,
               },
             ],
             unread: message.sender.id !== currentUser.id ? 1 : 0,
@@ -1002,7 +1065,33 @@ const ChatCommon = () => {
     setSearchResults(results);
   };
 
-  // Update socket effect for chatbot messages
+  // Improve the function to extract URLs from markdown with better regex
+  const extractUrlFromMarkdown = (content: string): string | undefined => {
+    // Pattern to match markdown links: [text](url)
+    const markdownLinkPattern = /\[([^\]]+)\]\(([^)]+)\)/g;
+    const matches = [...content.matchAll(markdownLinkPattern)];
+
+    if (matches.length > 0) {
+      console.log("Found markdown link:", matches[0][2]);
+      // Return the URL part (the second capture group)
+      return matches[0][2];
+    }
+
+    // Also try to find plain URLs in the text
+    // This regex is more robust for finding URLs in text
+    const urlPattern =
+      /(https?:\/\/(?:www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b(?:[-a-zA-Z0-9()@:%_\+.~#?&//=]*))/g;
+    const urlMatches = content.match(urlPattern);
+
+    if (urlMatches && urlMatches.length > 0) {
+      console.log("Found plain URL:", urlMatches[0]);
+      return urlMatches[0];
+    }
+
+    return undefined;
+  };
+
+  // Update the socket event handler for chatbot responses
   useEffect(() => {
     if (!currentUser?.id || !socketRef.current) return;
 
@@ -1016,6 +1105,116 @@ const ChatCommon = () => {
       }
     });
 
+    // Add chatbot response handler
+    socketRef.current.on("chatbotResponse", (response) => {
+      console.log("📩 Received chatbot response:", response);
+      console.log("Original reference link:", response.referenceLink);
+
+      // Turn off typing indicator when response is received
+      setIsChatbotTyping(false);
+
+      // Extract URL from message content if it contains markdown link format
+      const extractedUrl = extractUrlFromMarkdown(response.messageText);
+      const finalReferenceLink = response.referenceLink || extractedUrl;
+
+      console.log("Extracted URL:", extractedUrl);
+      console.log("Final reference link:", finalReferenceLink);
+
+      // Track that we just added a link for delayed rendering
+      if (finalReferenceLink) {
+        setRecentLinkTimestamp(Date.now());
+      }
+
+      // Create the chatbot message with the link
+      const chatbotMessage = {
+        id: response.id,
+        messageText: response.messageText,
+        isRead: true,
+        createdAt: response.createdAt,
+        referenceLink: finalReferenceLink,
+        sender: {
+          id: "-1",
+          username: "DNC Assistant",
+          email: "chatbot@dnc.com",
+          role: "chatbot",
+          avatarUrl: CHATBOT.avatarUrl,
+        },
+        receiver: {
+          id: currentUser.id,
+          username: currentUser.username,
+          email: currentUser.email,
+          role: currentUser.role,
+          avatarUrl: currentUser.avatarUrl || "",
+        },
+      };
+
+      // Add bot response to Redux store
+      dispatch(addMessage(chatbotMessage));
+
+      // Direct update to selectedRoom state if we're in chatbot room
+      if (selectedRoom?.id === -1) {
+        setSelectedRoom((prevRoom) => {
+          if (!prevRoom) return prevRoom;
+
+          const processedMessage = {
+            id: response.id,
+            content: response.messageText,
+            sender: "support",
+            timestamp: response.createdAt,
+            avatar: CHATBOT.avatarUrl,
+            name: CHATBOT.fullName,
+            isRead: true,
+            senderId: "-1",
+            receiverId: currentUser.id,
+            referenceLink: finalReferenceLink,
+          };
+
+          return {
+            ...prevRoom,
+            messages: [...prevRoom.messages, processedMessage],
+          };
+        });
+      }
+
+      // Update chatRooms with bot response
+      setChatRooms((prev) => {
+        return prev.map((room) => {
+          if (room.id === -1) {
+            const processedMessage = {
+              id: response.id,
+              content: response.messageText,
+              sender: "support",
+              timestamp: response.createdAt,
+              avatar: CHATBOT.avatarUrl,
+              name: CHATBOT.fullName,
+              isRead: true,
+              senderId: "-1",
+              receiverId: currentUser.id,
+              referenceLink: finalReferenceLink,
+            };
+
+            return {
+              ...room,
+              messages: [...room.messages, processedMessage],
+            };
+          }
+          return room;
+        });
+      });
+
+      // Use a longer delay to ensure UI updates with link rendering
+      setTimeout(() => {
+        if (messagesEndRef.current) {
+          messagesEndRef.current.scrollIntoView({ behavior: "smooth" });
+        }
+
+        // Force a re-render after the link is added
+        if (finalReferenceLink) {
+          setRecentLinkTimestamp(null);
+        }
+      }, 300);
+    });
+
     // Add error handler
     socketRef.current.on("error", () => {
       setIsChatbotTyping(false); // Turn off typing on error
@@ -1023,10 +1222,34 @@ const ChatCommon = () => {
 
     return () => {
       socketRef.current?.off("newMessage");
+      socketRef.current?.off("chatbotResponse");
       socketRef.current?.off("error");
       setIsChatbotTyping(false); // Reset on unmount
     };
   }, [currentUser?.id, dispatch]);
+
+  // Add useEffect to handle recent link display
+  useEffect(() => {
+    // This effect triggers a re-render when a link is added
+    if (recentLinkTimestamp) {
+      // Force a state update after a delay to ensure link rendering
+      const timer = setTimeout(() => {
+        console.log("Re-rendering after link added");
+        setRecentLinkTimestamp(null);
+      }, 500);
+
+      return () => clearTimeout(timer);
+    }
+  }, [recentLinkTimestamp]);
+
+  // Add a function to remove markdown links from text but preserve the content
+  const removeMarkdownLinks = (content: string): string => {
+    if (!content) return "";
+
+    // Replace markdown links with just their text content
+    // [link text](http://example.com) becomes link text
+    return content.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+  };
 
   return (
     <Box sx={{ height: "100%", display: "flex" }}>
@@ -1361,8 +1584,148 @@ const ChatCommon = () => {
                           lineHeight: 1.7,
                         }}
                       >
-                        {parse(msg.content, chatHtmlParserOptions)}
+                        {msg.content
+                          ? parse(
+                              removeMarkdownLinks(msg.content),
+                              chatHtmlParserOptions
+                            )
+                          : null}
                       </div>
+                      {isValidUrl(msg.referenceLink) && (
+                        <Box
+                          key={`link-${msg.id}-${
+                            recentLinkTimestamp || "default"
+                          }`}
+                          sx={{
+                            display: "flex",
+                            flexDirection: "column",
+                            mt: msg.content ? 1.5 : 0,
+                            pt: msg.content ? 1 : 0,
+                            border: "1px solid",
+                            borderColor:
+                              msg.sender === "user"
+                                ? "rgba(255, 255, 255, 0.2)"
+                                : "rgba(25, 118, 210, 0.2)",
+                            borderRadius: 1,
+                            p: 1.5,
+                            backgroundColor:
+                              msg.sender === "user"
+                                ? "rgba(255, 255, 255, 0.1)"
+                                : "rgba(25, 118, 210, 0.05)",
+                            mb: 1,
+                            animation: "fadeIn 0.5s ease-in-out",
+                            "@keyframes fadeIn": {
+                              "0%": {
+                                opacity: 0,
+                                transform: "translateY(10px)",
+                              },
+                              "100%": {
+                                opacity: 1,
+                                transform: "translateY(0)",
+                              },
+                            },
+                          }}
+                        >
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 1,
+                              mb: 1,
+                            }}
+                          >
+                            <Box
+                              sx={{
+                                bgcolor:
+                                  msg.sender === "user"
+                                    ? "primary.light"
+                                    : "primary.main",
+                                color: "white",
+                                borderRadius: "50%",
+                                p: 0.7,
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
+                              }}
+                            >
+                              {getPageNameFromUrl(msg.referenceLink || "") ===
+                              "Khóa học" ? (
+                                <School fontSize="small" />
+                              ) : (
+                                <Article fontSize="small" />
+                              )}
+                            </Box>
+                            <Typography
+                              variant="subtitle2"
+                              color={
+                                msg.sender === "user" ? "white" : "primary.main"
+                              }
+                              sx={{ fontWeight: 600 }}
+                            >
+                              {getPageNameFromUrl(msg.referenceLink || "")}
+                            </Typography>
+                          </Box>
+
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color:
+                                msg.sender === "user"
+                                  ? "rgba(255, 255, 255, 0.8)"
+                                  : "text.secondary",
+                              fontSize: 13,
+                              pl: 0.5,
+                              mb: 1,
+                            }}
+                          >
+                            {shortenUrl(msg.referenceLink || "")}
+                          </Typography>
+
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "flex-end",
+                            }}
+                          >
+                            <Button
+                              variant={
+                                msg.sender === "user" ? "outlined" : "contained"
+                              }
+                              size="small"
+                              color="primary"
+                              endIcon={<OpenInNew fontSize="small" />}
+                              href={msg.referenceLink || "#"}
+                              target="_blank"
+                              rel="noreferrer"
+                              onClick={(e) => {
+                                // Log before navigation
+                                console.log("Link clicked:", msg.referenceLink);
+                                // Don't prevent default - let navigation happen
+                              }}
+                              sx={{
+                                textTransform: "none",
+                                ...(msg.sender === "user"
+                                  ? {
+                                      color: "white",
+                                      borderColor: "rgba(255, 255, 255, 0.5)",
+                                      "&:hover": {
+                                        borderColor: "white",
+                                        backgroundColor:
+                                          "rgba(255, 255, 255, 0.1)",
+                                      },
+                                    }
+                                  : {
+                                      boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                                      fontWeight: 500,
+                                      borderRadius: "8px",
+                                    }),
+                              }}
+                            >
+                              Truy cập
+                            </Button>
+                          </Box>
+                        </Box>
+                      )}
                       <Box
                         sx={{
                           display: "flex",
@@ -1388,9 +1751,15 @@ const ChatCommon = () => {
                     </Box>
                   </Box>
                 ))}
+                <div ref={messagesEndRef} />
+                {/* Add typing indicator for chatbot */}
                 {selectedRoom?.id === -1 && isChatbotTyping && (
                   <Box
-                    sx={{ display: "flex", alignItems: "center", gap: 1, p: 2 }}
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                    }}
                   >
                     <Avatar
                       src={CHATBOT.avatarUrl}
@@ -1413,7 +1782,6 @@ const ChatCommon = () => {
                     </Card>
                   </Box>
                 )}
-                <div ref={messagesEndRef} />
               </Stack>
             </Box>
 
@@ -1692,6 +2060,27 @@ const UserInfoDialog = ({ open, onClose, user, allUsers }: UserDialogProps) => {
       </DialogContent>
     </Dialog>
   );
+};
+
+// Fix the getPageNameFromUrl function to handle empty URLs
+const getPageNameFromUrl = (url: string): string => {
+  if (!url || typeof url !== "string" || url.trim() === "") return "";
+
+  try {
+    if (url.includes("/course/")) {
+      return "Khóa học";
+    } else if (url.includes("/article/")) {
+      return "Bài viết";
+    } else if (url.includes("/document/")) {
+      return "Tài liệu";
+    } else if (url.includes("/lesson/")) {
+      return "Bài học";
+    } else {
+      return "Tham khảo";
+    }
+  } catch (error) {
+    return "Tham khảo";
+  }
 };
 
 export default ChatCommon;

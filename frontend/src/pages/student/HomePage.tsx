@@ -11,53 +11,71 @@ const HomePage = () => {
       {/* Hero Section with Background */}
       <Box
         sx={{
-          bgcolor: "secondary.main",
-          color: "text.primary",
-          pt: 15,
-          pb: 8,
           position: "relative",
+          backgroundImage: "url('/src/assets/banner.png')",
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          minHeight: "70vh",
+          display: "flex",
+          alignItems: "center",
+          "&::before": {
+            content: '""',
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            height: "100%",
+            backgroundColor: "rgba(0, 0, 0, 0.5)", // Dark overlay for better text readability
+            zIndex: 1,
+          },
         }}
       >
-        <Container>
-          <Grid container alignItems="center">
+        <Container
+          sx={{
+            position: "relative",
+            zIndex: 2, // Places content above the dark overlay
+            color: "white",
+            py: 8,
+          }}
+        >
+          <Grid container>
             <Grid item xs={12} md={6}>
               <Typography
                 variant="h4"
                 component="h1"
                 gutterBottom
                 fontWeight="bold"
+                sx={{ textShadow: "1px 1px 3px rgba(0,0,0,0.7)" }}
               >
                 Nền tảng hỗ trợ học tập
-                <Box component="p" sx={{ color: "primary.main" }}>
+                <Box component="p" sx={{ color: "primary.light" }}>
                   {" "}
                   DNC LEARNING
                 </Box>
               </Typography>
-              <Typography variant="h6" paragraph>
+              <Typography
+                variant="h6"
+                paragraph
+                sx={{ textShadow: "1px 1px 2px rgba(0,0,0,0.6)" }}
+              >
                 Khám phá các khóa học từ các giảng viên chuyên nghiệp
               </Typography>
-              <Stack direction="row" spacing={2}>
+              <Stack direction="row" spacing={2} sx={{ mt: 4 }}>
                 <Button
                   variant="contained"
                   size="large"
                   sx={{
-                    bgcolor: "primary.dark",
-                    "&:hover": { bgcolor: "primary.main" },
+                    bgcolor: "primary.main",
+                    "&:hover": { bgcolor: "primary.dark" },
+                    fontWeight: "bold",
+                    px: 4,
+                    py: 1.5,
                   }}
                   onClick={() => navigate("/courses")}
                 >
                   Khám phá khóa học
                 </Button>
               </Stack>
-            </Grid>
-
-            <Grid item xs={12} md={6}>
-              <Box
-                component="img"
-                src="/src/assets/banner.png"
-                alt="Learning"
-                sx={{ width: "100%", maxWidth: 1000, objectFit: "cover" }}
-              />
             </Grid>
           </Grid>
         </Container>
