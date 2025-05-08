@@ -67,6 +67,8 @@ import { Notification } from './entities/Notification';
 import { NotificationsModule } from './modules/notifications/notifications.module';
 import { CourseProgressModule } from './modules/course-progress/course-progress.module';
 import { RagModule } from './modules/rag/rag.module';
+import { Payment } from './entities/Payment';
+import { PaymentsModule } from './modules/payments/payments.module';
 
 @Module({
   imports: [
@@ -122,8 +124,8 @@ import { RagModule } from './modules/rag/rag.module';
           ChatbotResponse,
           AcademicClassCourse,
           Notification,
+          Payment,
         ],
-        // synchronize: true, // tự động tạo bảng trong entity (chỉ dùng trong môi tường dev)
       }),
       inject: [ConfigService],
     }),
@@ -152,6 +154,7 @@ import { RagModule } from './modules/rag/rag.module';
     NotificationsModule,
     CourseProgressModule,
     RagModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthMiddleware, InstructorMiddleware],
