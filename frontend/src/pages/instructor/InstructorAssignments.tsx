@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import {
   Box,
   Card,
@@ -73,6 +73,8 @@ import {
   deleteAssignment,
 } from "../../features/assignments/assignmentsSlice";
 import { selectInstructorAcademicClassAssignments } from "../../features/assignments/assignmentsSelectors";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 const InstructorAssignments = () => {
   const dispatch = useAppDispatch();
@@ -99,6 +101,9 @@ const InstructorAssignments = () => {
   const [tabValue, setTabValue] = useState(0);
   const [weight, setWeight] = useState<number>(1.0);
 
+  // Thêm state cho bộ lọc bài tập
+  const [assignmentFilter, setAssignmentFilter] = useState("all");
+
   console.log(instructorGrades);
 
   // Thêm state và các hàm xử lý để mở dialog tạo bài tập
@@ -122,6 +127,28 @@ const InstructorAssignments = () => {
   const [deleteSubmissionDialogOpen, setDeleteSubmissionDialogOpen] =
     useState(false);
   const [submissionToDelete, setSubmissionToDelete] = useState<any>(null);
+
+  // Tạo danh sách bài tập không trùng lặp
+  const uniqueAssignments = useMemo(() => {
+    // Tạo Map để lọc các bài tập trùng lặp dựa trên ID
+    const assignmentsMap = new Map();
+
+    instructorSubmissions.forEach((submission) => {
+      if (submission.assignment?.id && submission.assignment?.title) {
+        // Chỉ thêm nếu chưa có assignment ID này trong map
+        if (!assignmentsMap.has(submission.assignment.id)) {
+          assignmentsMap.set(submission.assignment.id, {
+            id: submission.assignment.id,
+            title: submission.assignment.title,
+            type: submission.assignment.assignmentType,
+          });
+        }
+      }
+    });
+
+    // Chuyển Map thành mảng
+    return Array.from(assignmentsMap.values());
+  }, [instructorSubmissions]);
 
   useEffect(() => {
     dispatch(fetchSubmissionsByInstructor(currentUser.userInstructor.id));
@@ -366,6 +393,12 @@ const InstructorAssignments = () => {
         );
       }
 
+      // Thêm lọc theo bài tập
+      if (assignmentFilter !== "all") {
+        if (String(submission.assignment?.id) !== assignmentFilter)
+          return false;
+      }
+
       return true;
     });
   };
@@ -482,6 +515,95 @@ const InstructorAssignments = () => {
     }
   };
 
+  // Thêm hàm xuất Excel vào component InstructorAssignments
+  const exportToExcel = () => {
+    if (!filteredSubmissions || filteredSubmissions.length === 0) {
+      toast.warning("Không có dữ liệu để xuất!");
+      return;
+    }
+
+    // Tạo workbook
+    const workbook = XLSX.utils.book_new();
+
+    // Tạo mảng dữ liệu đầy đủ bắt đầu bằng tiêu đề
+    const fullData = [
+      [`DANH SÁCH BÀI TẬP ĐÃ NỘP`], // Dòng tiêu đề
+      [], // Dòng trống để tạo khoảng cách
+      // Tạo dòng header cho bảng dữ liệu
+      [
+        "STT",
+        "Họ và tên",
+        "Mã sinh viên",
+        "Bài tập",
+        "Lớp/Khóa học",
+        "Ngày nộp",
+        "Trạng thái",
+      ],
+    ];
+
+    // Thêm dữ liệu sinh viên
+    filteredSubmissions.forEach((submission, index) => {
+      fullData.push([
+        index + 1,
+        submission.user.userStudentAcademic?.fullName ||
+          submission.user.userStudent?.fullName,
+        submission.user.userStudentAcademic?.studentCode || "-",
+        submission.assignment.title,
+        submission.assignment.academicClass?.className
+          ? `Lớp: ${submission.assignment.academicClass?.className} - ${submission.assignment.academicClass?.classCode}`
+          : `Khóa học: ${submission.assignment.lesson?.section?.course?.title}`,
+        formatDateTime(submission.submittedAt),
+        // Find grade if exists
+        instructorGrades.some(
+          (grade) => grade.assignmentSubmissionId === submission.id
+        )
+          ? "Đã chấm"
+          : submission.status === "late"
+          ? "Nộp muộn"
+          : "Đã nộp",
+      ]);
+    });
+
+    // Tạo worksheet từ mảng dữ liệu đã chuẩn bị
+    const worksheet = XLSX.utils.aoa_to_sheet(fullData);
+
+    // Gộp các ô tiêu đề
+    if (!worksheet["!merges"]) worksheet["!merges"] = [];
+    worksheet["!merges"].push(
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } } // Gộp hàng đầu tiên từ cột A đến G
+    );
+
+    // Thiết lập độ rộng cột
+    const columnWidths = [
+      { wch: 5 }, // STT
+      { wch: 30 }, // Họ và tên
+      { wch: 15 }, // Mã sinh viên
+      { wch: 30 }, // Bài tập
+      { wch: 40 }, // Lớp/Khóa học
+      { wch: 20 }, // Ngày nộp
+      { wch: 15 }, // Trạng thái
+    ];
+    worksheet["!cols"] = columnWidths;
+
+    // Thêm worksheet vào workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Danh sách bài tập");
+
+    // Xuất file
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    });
+    const dataBlob = new Blob([excelBuffer], {
+      type: "application/octet-stream",
+    });
+    const fileName = `DS_BaiTap_${studentTypeFilter}_${new Date()
+      .toISOString()
+      .slice(0, 10)}.xlsx`;
+    saveAs(dataBlob, fileName);
+
+    toast.success("Xuất file Excel thành công!");
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h5" gutterBottom fontWeight="bold">
@@ -515,63 +637,86 @@ const InstructorAssignments = () => {
                 spacing={2}
                 alignItems={{ md: "center" }}
               >
-                {studentTypeFilter === "student_academic" ? (
-                  // Class filter for academic students
-                  <FormControl size="small" sx={{ minWidth: 200 }}>
-                    <InputLabel>Lớp</InputLabel>
-                    <Select
-                      value={classFilter}
-                      onChange={(e) => setClassFilter(e.target.value)}
-                      label="Lớp"
-                    >
-                      <MenuItem value="Tất cả">Tất cả lớp</MenuItem>
-                      {Array.from(
-                        new Set(
-                          instructorAssignments.map(
-                            (a) => a.academicClass.classCode
+                {/* Only show class filter when there are academic students */}
+                {instructorSubmissions.some(
+                  (s) => s.user?.role === "student_academic"
+                ) &&
+                  studentTypeFilter !== "student" && (
+                    <FormControl size="small" sx={{ minWidth: 200 }}>
+                      <InputLabel>Lớp</InputLabel>
+                      <Select
+                        value={classFilter}
+                        onChange={(e) => setClassFilter(e.target.value)}
+                        label="Lớp"
+                      >
+                        <MenuItem value="Tất cả">Tất cả lớp</MenuItem>
+                        {Array.from(
+                          new Set(
+                            instructorAssignments
+                              .filter((a) => a.academicClass?.classCode)
+                              .map((a) => a.academicClass.classCode)
                           )
-                        )
-                      ).map((classCode) => (
-                        <MenuItem key={classCode} value={classCode}>
-                          {classCode}
-                        </MenuItem>
-                      ))}
-                    </Select>
-                  </FormControl>
-                ) : (
-                  // Course filter for external students
-                  <FormControl size="small" sx={{ minWidth: 200 }}>
-                    <InputLabel>Khóa học</InputLabel>
-                    <Select
-                      value={courseFilter}
-                      onChange={(e) => setCourseFilter(e.target.value)}
-                      label="Khóa học"
-                    >
-                      <MenuItem value="all">Tất cả khóa học</MenuItem>
-                      {Array.from(
-                        new Set(
-                          instructorSubmissions
-                            .filter((s) => s.user.role === "student")
-                            .map((s) => ({
-                              id: s.assignment.lesson?.section?.courseId,
-                              title:
-                                s.assignment.lesson?.section?.course?.title,
-                            }))
-                            .filter((c) => c.id && c.title)
-                        ),
-                        (course) => JSON.stringify(course)
-                      ).map((courseStr) => {
-                        const course = JSON.parse(courseStr);
-                        return (
-                          <MenuItem key={course.id} value={course.id}>
-                            {course.title}
+                        ).map((classCode) => (
+                          <MenuItem key={classCode} value={classCode}>
+                            {classCode}
                           </MenuItem>
-                        );
-                      })}
-                    </Select>
-                  </FormControl>
-                )}
+                        ))}
+                      </Select>
+                    </FormControl>
+                  )}
 
+                {/* Only show course filter when there are external students */}
+                {instructorSubmissions.some(
+                  (s) => s.user?.role === "student"
+                ) &&
+                  studentTypeFilter !== "student_academic" && (
+                    <FormControl size="small" sx={{ minWidth: 200 }}>
+                      <InputLabel>Khóa học</InputLabel>
+                      <Select
+                        value={courseFilter}
+                        onChange={(e) => setCourseFilter(e.target.value)}
+                        label="Khóa học"
+                      >
+                        <MenuItem value="all">Tất cả khóa học</MenuItem>
+                        {(() => {
+                          // Tạo map để lọc các khóa học trùng lặp dựa trên ID
+                          const uniqueCourses = new Map();
+
+                          instructorSubmissions
+                            .filter(
+                              (s) =>
+                                s.user?.role === "student" &&
+                                s.assignment?.lesson?.section?.courseId
+                            )
+                            .forEach((s) => {
+                              const courseId =
+                                s.assignment.lesson.section.courseId;
+                              const courseTitle =
+                                s.assignment.lesson.section.course?.title;
+
+                              if (
+                                courseId &&
+                                courseTitle &&
+                                !uniqueCourses.has(courseId)
+                              ) {
+                                uniqueCourses.set(courseId, courseTitle);
+                              }
+                            });
+
+                          // Chuyển Map thành mảng các MenuItem
+                          return Array.from(uniqueCourses.entries()).map(
+                            ([id, title]) => (
+                              <MenuItem key={id} value={id}>
+                                {title}
+                              </MenuItem>
+                            )
+                          );
+                        })()}
+                      </Select>
+                    </FormControl>
+                  )}
+
+                {/* Always show status filter */}
                 <FormControl size="small" sx={{ minWidth: 130 }}>
                   <InputLabel>Trạng thái</InputLabel>
                   <Select
@@ -586,15 +731,51 @@ const InstructorAssignments = () => {
                   </Select>
                 </FormControl>
 
-                {studentTypeFilter === "student_academic" && (
+                {/* Only show assignment filter if there are assignments */}
+                {uniqueAssignments.length > 0 && (
+                  <FormControl size="small" sx={{ minWidth: 200 }}>
+                    <InputLabel>Bài tập</InputLabel>
+                    <Select
+                      value={assignmentFilter}
+                      onChange={(e) => setAssignmentFilter(e.target.value)}
+                      label="Bài tập"
+                    >
+                      <MenuItem value="all">Tất cả bài tập</MenuItem>
+                      {uniqueAssignments.map((assignment) => (
+                        <MenuItem
+                          key={assignment.id}
+                          value={String(assignment.id)}
+                        >
+                          {assignment.title}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
+
+                {/* Only show Create New Assignment button on academic tab */}
+                {tabValue === 2 && (
                   <Button
                     variant="contained"
                     color="primary"
+                    sx={{ minWidth: "150px" }}
                     onClick={handleOpenAddAssignmentModal}
                   >
                     Tạo bài tập mới
                   </Button>
                 )}
+
+                {/* Always show Export button if there's data */}
+                <Button
+                  variant="contained"
+                  color="success"
+                  startIcon={<Download />}
+                  onClick={exportToExcel}
+                  sx={{ minWidth: "150px" }}
+                  disabled={filteredSubmissions.length === 0}
+                >
+                  Xuất Excel
+                </Button>
               </Stack>
             </Grid>
           </Grid>
@@ -1481,11 +1662,6 @@ const AcademicClassAssignments: React.FC<AcademicClassAssignmentsProps> = ({
           variant="outlined"
         />
       </Box>
-
-      {/* Show result count */}
-      <Typography variant="body2" sx={{ mb: 2 }}>
-        Hiển thị {filteredAssignments.length} kết quả
-      </Typography>
 
       {/* Existing table code using filteredAssignments */}
       <TableContainer component={Paper}>

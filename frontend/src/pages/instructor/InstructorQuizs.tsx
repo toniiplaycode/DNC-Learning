@@ -82,6 +82,8 @@ import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { selectCurrentUser } from "../../features/auth/authSelectors";
 import { formatDateTime } from "../../utils/formatters";
 import { toast } from "react-toastify";
+import * as XLSX from "xlsx";
+import { saveAs } from "file-saver";
 
 // Thêm interface để định nghĩa kiểu dữ liệu
 interface QuizAttempt {
@@ -437,6 +439,90 @@ const InstructorQuizs = () => {
     });
   };
 
+  // Thêm hàm xuất Excel vào trong component InstructorQuizs
+  const exportToExcel = () => {
+    if (!quizAttempts || quizAttempts.length === 0) {
+      toast.warning("Không có dữ liệu để xuất!");
+      return;
+    }
+
+    // Tạo workbook
+    const workbook = XLSX.utils.book_new();
+
+    // Tạo mảng dữ liệu đầy đủ bắt đầu bằng tiêu đề
+    const fullData = [
+      [`BÀI TRẮC NGHIỆM: ${selectedQuiz.title}`], // Dòng tiêu đề
+      [], // Dòng trống để tạo khoảng cách
+      // Tạo dòng header cho bảng dữ liệu
+      [
+        "STT",
+        "Họ và tên",
+        "Mã sinh viên",
+        "Điểm số",
+        "Kết quả",
+        "Thời gian làm bài",
+        "Thời gian nộp",
+      ],
+    ];
+
+    // Thêm dữ liệu sinh viên
+    filteredAttempts.forEach((attempt, index) => {
+      fullData.push([
+        index + 1,
+        attempt.user.userStudentAcademic?.fullName ||
+          attempt.user.userStudent?.fullName ||
+          attempt.user.username,
+        attempt.user.userStudentAcademic?.studentCode || "-",
+        attempt.score,
+        Number(attempt.score) >= selectedQuiz.passingScore
+          ? "Đạt"
+          : "Không đạt",
+        formatDuration(attempt.startTime, attempt.endTime),
+        new Date(attempt.endTime).toLocaleString("vi-VN"),
+      ]);
+    });
+
+    // Tạo worksheet từ mảng dữ liệu đã chuẩn bị
+    const worksheet = XLSX.utils.aoa_to_sheet(fullData);
+
+    // Gộp các ô tiêu đề
+    if (!worksheet["!merges"]) worksheet["!merges"] = [];
+    worksheet["!merges"].push(
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } } // Gộp hàng đầu tiên từ cột A đến G
+    );
+
+    // Thiết lập độ rộng cột
+    const columnWidths = [
+      { wch: 5 }, // STT
+      { wch: 30 }, // Họ và tên
+      { wch: 15 }, // Mã sinh viên
+      { wch: 10 }, // Điểm số
+      { wch: 12 }, // Kết quả
+      { wch: 15 }, // Thời gian làm bài
+      { wch: 20 }, // Thời gian nộp
+    ];
+    worksheet["!cols"] = columnWidths;
+
+    // Thêm worksheet vào workbook
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Danh sách làm bài");
+
+    // Xuất file
+    const excelBuffer = XLSX.write(workbook, {
+      bookType: "xlsx",
+      type: "array",
+    });
+    const dataBlob = new Blob([excelBuffer], {
+      type: "application/octet-stream",
+    });
+    const fileName = `DS_SinhVien_${selectedQuiz.title.replace(
+      /[^a-zA-Z0-9]/g,
+      "_"
+    )}_${new Date().toISOString().slice(0, 10)}.xlsx`;
+    saveAs(dataBlob, fileName);
+
+    toast.success("Xuất file Excel thành công!");
+  };
+
   // Render danh sách quiz
   if (!selectedQuiz) {
     return (
@@ -713,6 +799,19 @@ const InstructorQuizs = () => {
                     <MenuItem value="failed">Không đạt</MenuItem>
                   </Select>
                 </FormControl>
+
+                {/* Thêm nút xuất Excel sau QuizStatistics */}
+                <Button
+                  variant="contained"
+                  color="success"
+                  sx={{
+                    minWidth: "220px",
+                  }}
+                  startIcon={<Download />}
+                  onClick={exportToExcel}
+                >
+                  Xuất danh sách Excel
+                </Button>
               </Stack>
 
               <TableContainer component={Paper}>
