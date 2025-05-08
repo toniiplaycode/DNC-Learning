@@ -5,7 +5,7 @@ import {
   IsOptional,
   IsString,
 } from 'class-validator';
-import { PaymentMethod } from '../../../entities/Payment';
+import { PaymentMethod, PaymentStatus } from '../../../entities/Payment';
 
 export class CreatePaymentDto {
   @IsNotEmpty()
@@ -27,4 +27,8 @@ export class CreatePaymentDto {
   @IsOptional()
   @IsString()
   transactionId?: string;
+
+  @IsOptional()
+  @IsEnum(PaymentStatus)
+  status?: PaymentStatus;
 }

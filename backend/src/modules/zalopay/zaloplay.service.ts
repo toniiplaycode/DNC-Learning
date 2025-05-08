@@ -56,8 +56,7 @@ export class ZalopayService {
       const callbackUrl = process.env.BACKEND_URL || 'http://localhost:3000';
       const embed_data = JSON.stringify({
         preferred_payment_method: [],
-        paymentId: payment.id,
-        redirecturl: 'http://localhost:3000',
+        redirecturl: 'http://localhost:3000/payments/zalopay/return',
       });
       const item = JSON.stringify([]);
       const orderInfo = {
