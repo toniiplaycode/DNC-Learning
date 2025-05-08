@@ -1,4 +1,5 @@
 import {
+  IsDate,
   IsEnum,
   IsNotEmpty,
   IsNumber,
@@ -31,4 +32,8 @@ export class CreatePaymentDto {
   @IsOptional()
   @IsEnum(PaymentStatus)
   status?: PaymentStatus;
+
+  @IsOptional()
+  @IsDate()
+  paymentDate?: Date;
 }

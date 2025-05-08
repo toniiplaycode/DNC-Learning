@@ -52,11 +52,11 @@ export class ZalopayService {
       const dateStr = `${today.getFullYear().toString().slice(-2)}${String(today.getMonth() + 1).padStart(2, '0')}${String(today.getDate()).padStart(2, '0')}`;
       const app_trans_id = `${dateStr}_${Date.now()}`;
 
-      // Create ZaloPay order
-      const callbackUrl = process.env.BACKEND_URL || 'http://localhost:3000';
+      // Create ZaloPay order with userId and courseId in redirect URL
+      const redirectUrl = `http://localhost:3000/payments/zalopay/return?userId=${userId}&courseId=${courseId}`;
       const embed_data = JSON.stringify({
         preferred_payment_method: [],
-        redirecturl: 'http://localhost:3000/payments/zalopay/return',
+        redirecturl: redirectUrl,
       });
       const item = JSON.stringify([]);
       const orderInfo = {
@@ -69,7 +69,6 @@ export class ZalopayService {
         amount,
         description,
         bank_code: '',
-        // bank_code: 'zalopayapp',
         callback_url: `https://b6ab-103-156-2-66.ngrok-free.app/zalopay/callback`,
       };
 
@@ -127,27 +126,33 @@ export class ZalopayService {
       });
 
       if (!payment) {
-        this.logger.error(
-          `Payment with transaction ID ${dataJson.app_trans_id} not found`,
-        );
-        return { return_code: 0, return_message: 'payment not found' };
-      }
-
-      // Update payment status
-      if (dataJson.status === 1) {
-        this.logger.log(`Payment ${payment.id} completed successfully`);
-        await this.paymentsRepository.update(payment.id, {
+        // Create a new payment if it doesn't exist
+        const userId = parseInt(dataJson.app_user.replace('user_', ''), 10);
+        const newPayment = this.paymentsRepository.create({
+          userId,
+          courseId: parseInt(
+            dataJson.embed_data.match(/course #(\d+)/)?.[1] || '1',
+            10,
+          ),
+          amount: dataJson.amount,
+          paymentMethod: PaymentMethod.E_WALLET,
+          transactionId: dataJson.app_trans_id,
           status: PaymentStatus.COMPLETED,
           paymentDate: new Date(),
         });
-      } else {
-        this.logger.warn(
-          `Payment ${payment.id} failed with status: ${dataJson.status}`,
+        await this.paymentsRepository.save(newPayment);
+        this.logger.log(
+          `Created new payment for transaction: ${dataJson.app_trans_id}`,
         );
-        await this.paymentsRepository.update(payment.id, {
-          status: PaymentStatus.FAILED,
-        });
+        return { return_code: 1, return_message: 'success' };
       }
+
+      // Always mark as completed on callback as ZaloPay only calls back on successful payments
+      this.logger.log(`Payment ${payment.id} completed successfully`);
+      await this.paymentsRepository.update(payment.id, {
+        status: PaymentStatus.COMPLETED,
+        paymentDate: new Date(),
+      });
 
       return { return_code: 1, return_message: 'success' };
     } catch (error) {
@@ -162,10 +167,23 @@ export class ZalopayService {
         app_id: this.appId,
         app_trans_id: appTransId,
       };
-      const mac = this.generateMac(data);
-      data['mac'] = mac;
 
-      const response = await axios.post(`${this.sandboxEndpoint}/query`, data);
+      // Calculate MAC correctly for the query API
+      const mac = this.hmacSha256(
+        `${this.appId}|${appTransId}|${this.key1}`,
+        this.key1,
+      );
+
+      const requestData = {
+        ...data,
+        mac: mac,
+      };
+
+      this.logger.log(`Query transaction status for: ${appTransId}`);
+      const response = await axios.post(
+        `${this.sandboxEndpoint}/query`,
+        requestData,
+      );
       return response.data;
     } catch (error) {
       this.logger.error(`Failed to get transaction status: ${error.message}`);
