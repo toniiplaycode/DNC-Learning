@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsEnum, IsOptional, IsArray } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsEnum,
+  IsOptional,
+  IsArray,
+  IsBoolean,
+} from 'class-validator';
 import { NotificationType } from '../../../entities/Notification';
 
 export class CreateNotificationDto {
@@ -20,4 +26,8 @@ export class CreateNotificationDto {
 
   @IsOptional()
   notificationTime?: Date;
+
+  @IsOptional()
+  @IsBoolean()
+  sendEmail?: boolean = true;
 }

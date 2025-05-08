@@ -12,10 +12,15 @@ import { NotificationsService } from './notifications.service';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { JwtAuthGuard } from 'src/guards/jwt-auth.guard';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
+import { NotificationEmailDto } from './dto/notification-email.dto';
+import { EmailService } from './services/email.service';
 
 @Controller('notifications')
 export class NotificationsController {
-  constructor(private readonly notificationsService: NotificationsService) {}
+  constructor(
+    private readonly notificationsService: NotificationsService,
+    private readonly emailService: EmailService,
+  ) {}
 
   @Post()
   async create(@Body() createNotificationDto: CreateNotificationDto) {
@@ -26,6 +31,37 @@ export class NotificationsController {
       message: `Đã tạo thông báo cho ${notifications.length} người dùng`,
       notifications,
     };
+  }
+
+  /**
+   * Send a direct email notification without creating a notification record
+   */
+  @Post('email')
+  @UseGuards(JwtAuthGuard)
+  async sendEmailNotification(@Body() emailDto: NotificationEmailDto) {
+    try {
+      const emailContent = this.emailService.generateNotificationEmailTemplate(
+        emailDto.title,
+        emailDto.content,
+        emailDto.type,
+      );
+
+      await this.emailService.sendEmail(
+        emailDto.email,
+        emailDto.title,
+        emailContent,
+      );
+
+      return {
+        success: true,
+        message: `Đã gửi email thông báo đến ${emailDto.email}`,
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Không thể gửi email: ${error.message}`,
+      };
+    }
   }
 
   @Get()
