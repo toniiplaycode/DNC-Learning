@@ -69,6 +69,7 @@ import { CourseProgressModule } from './modules/course-progress/course-progress.
 import { RagModule } from './modules/rag/rag.module';
 import { Payment } from './entities/Payment';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { ZalopayModule } from './modules/zalopay/zaloplay.module';
 
 @Module({
   imports: [
@@ -155,6 +156,7 @@ import { PaymentsModule } from './modules/payments/payments.module';
     CourseProgressModule,
     RagModule,
     PaymentsModule,
+    ZalopayModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthMiddleware, InstructorMiddleware],
