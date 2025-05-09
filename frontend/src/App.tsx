@@ -51,6 +51,7 @@ import AdminSchedules from "./pages/admin/AdminSchedules";
 import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { fetchCurrentUser } from "./features/auth/authApiSlice";
+import PaymentResult from "./pages/student/PaymentResult";
 
 const App = () => {
   const navigate = useNavigate();
@@ -111,6 +112,7 @@ const App = () => {
             path="/assessment/assignment/:id"
             element={<AssessmentAssignment />}
           />
+          <Route path="/payments/zalopay/return" element={<PaymentResult />} />
         </Route>
 
         {/* Instructor routes */}

@@ -53,7 +53,7 @@ export class ZalopayService {
       const app_trans_id = `${dateStr}_${Date.now()}`;
 
       // Create ZaloPay order with userId and courseId in redirect URL
-      const redirectUrl = `http://localhost:3000/payments/zalopay/return?userId=${userId}&courseId=${courseId}`;
+      const redirectUrl = `http://localhost:5173/payments/zalopay/return?userId=${userId}&courseId=${courseId}`;
       const embed_data = JSON.stringify({
         preferred_payment_method: [],
         redirecturl: redirectUrl,

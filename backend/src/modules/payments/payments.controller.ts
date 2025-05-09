@@ -9,6 +9,7 @@ import {
   ParseIntPipe,
   Query,
   UseGuards,
+  Redirect,
 } from '@nestjs/common';
 import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
@@ -102,10 +103,12 @@ export class PaymentsController {
     @Body() data: { courseId: number; amount: number; description: string },
     @GetUser() user: User,
   ) {
+    const roundedAmount = Math.round(data.amount);
+
     const zaloPayResult = await this.zalopayService.createOrder(
       user.id,
       data.courseId,
-      data.amount,
+      roundedAmount,
       data.description || `Payment for course #${data.courseId}`,
     );
 

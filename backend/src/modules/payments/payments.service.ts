@@ -17,6 +17,33 @@ export class PaymentsService {
   async create(
     createPaymentDto: CreatePaymentDto,
   ): Promise<PaymentResponseDto> {
+    // Check if a payment with the same transactionId already exists
+    if (createPaymentDto.transactionId) {
+      const existingPayment = await this.paymentsRepository.findOne({
+        where: { transactionId: createPaymentDto.transactionId },
+      });
+
+      if (existingPayment) {
+        // Update the existing payment instead of creating a new one
+        const updatedPayment = {
+          ...existingPayment,
+          ...createPaymentDto,
+          // If the payment is being updated to completed, set payment date
+          paymentDate:
+            createPaymentDto.status === PaymentStatus.COMPLETED &&
+            !existingPayment.paymentDate
+              ? new Date()
+              : existingPayment.paymentDate,
+        };
+
+        const savedPayment = await this.paymentsRepository.save(updatedPayment);
+        return plainToInstance(PaymentResponseDto, savedPayment, {
+          excludeExtraneousValues: true,
+        });
+      }
+    }
+
+    // If no existing payment found or no transactionId provided, create a new one
     const payment = this.paymentsRepository.create(createPaymentDto);
     const savedPayment = await this.paymentsRepository.save(payment);
     return plainToInstance(PaymentResponseDto, savedPayment, {

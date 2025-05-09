@@ -14,6 +14,7 @@ export enum PaymentMethod {
   CREDIT_CARD = 'credit_card',
   BANK_TRANSFER = 'bank_transfer',
   E_WALLET = 'e_wallet',
+  ZALOPAY = 'zalopay',
 }
 
 export enum PaymentStatus {

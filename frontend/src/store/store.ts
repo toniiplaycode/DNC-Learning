@@ -23,6 +23,7 @@ import academicClassCoursesReducer from "../features/academic-class-courses/acad
 import academicClassesReducer from "../features/academic-classes/academicClassesSlice";
 import notificationsReducer from "../features/notifications/notificationsSlice";
 import courseProgressReducer from "../features/course-progress/courseProgressSlice";
+import paymentsReducer from "../features/payments/paymentsSlice";
 // Import các reducer khác nếu có
 
 export const store = configureStore({
@@ -51,6 +52,7 @@ export const store = configureStore({
     academicClasses: academicClassesReducer,
     notifications: notificationsReducer,
     courseProgress: courseProgressReducer,
+    payments: paymentsReducer,
     // Thêm các reducer khác nếu có
   },
   middleware: (getDefaultMiddleware) =>

@@ -12,21 +12,15 @@ import {
   ListItem,
   ListItemIcon,
   ListItemText,
-  Divider,
   Alert,
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
-  Radio,
-  RadioGroup,
-  FormControlLabel,
-  FormControl,
   Avatar,
 } from "@mui/material";
 import {
   CheckCircle,
-  AccessTime,
   Assignment,
   Quiz,
   LibraryBooks,
@@ -43,30 +37,40 @@ import {
 } from "../../features/enrollments/enrollmentsApiSlice";
 import { toast } from "react-toastify";
 import { createNotification } from "../../features/notifications/notificationsSlice";
-
-// Thêm interface cho thông tin ngân hàng
-interface BankInfo {
-  bankName: string;
-  accountNumber: string;
-  accountHolder: string;
-  branch: string;
-  content: string;
-}
+import {
+  createZaloPayOrder,
+  PaymentMethod,
+} from "../../features/payments/paymentsSlice";
+import {
+  selectZaloPayOrder,
+  selectPaymentsStatus,
+  selectPaymentsError,
+} from "../../features/payments/paymentsSelectors";
 
 const PurchaseCourse = () => {
   const { id: courseId } = useParams();
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const [openDialog, setOpenDialog] = useState(false);
-  const [selectedPayment, setSelectedPayment] = useState("");
   const currentCourse = useAppSelector(selectCourseById);
   const currentUser = useAppSelector(selectCurrentUser);
+  const zaloPayOrder = useAppSelector(selectZaloPayOrder);
+  const paymentStatus = useAppSelector(selectPaymentsStatus);
+  const paymentError = useAppSelector(selectPaymentsError);
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
     if (courseId) {
       dispatch(fetchCourseById(Number(courseId)));
     }
   }, [courseId, dispatch]);
+
+  useEffect(() => {
+    if (zaloPayOrder && zaloPayOrder.return_code === 1 && !redirecting) {
+      setRedirecting(true);
+      window.location.href = zaloPayOrder.order_url;
+    }
+  }, [zaloPayOrder, redirecting]);
 
   // Tính tổng số bài học và thời lượng từ dữ liệu thực
   const calculateCourseStats = () => {
@@ -106,11 +110,6 @@ const PurchaseCourse = () => {
       "Hỗ trợ 1-1 với giảng viên",
       "Cập nhật nội dung miễn phí",
     ],
-    paymentMethods: [
-      "Thẻ tín dụng/ghi nợ",
-      "Chuyển khoản ngân hàng",
-      "Ví điện tử",
-    ],
     level: currentCourse?.level || "beginner",
     category: currentCourse?.category?.name || "Khóa học",
     instructor: currentCourse?.instructor?.fullName || "Giảng viên",
@@ -120,79 +119,39 @@ const PurchaseCourse = () => {
     learned: currentCourse?.learned || "Những gì bạn sẽ học được",
   };
 
-  const paymentMethods = [
-    {
-      id: "momo",
-      name: "Ví MoMo",
-      logo: "/src/assets/payments/momo.png",
-      description: "Thanh toán qua ví điện tử MoMo",
-    },
-    {
-      id: "zalopay",
-      name: "ZaloPay",
-      logo: "/src/assets/payments/zalopay.png",
-      description: "Thanh toán qua ví điện tử ZaloPay",
-    },
-    {
-      id: "bank",
-      name: "Chuyển khoản ngân hàng",
-      logo: "/src/assets/payments/bank.png",
-      description: "Chuyển khoản trực tiếp qua ngân hàng",
-    },
-    {
-      id: "credit",
-      name: "Thẻ tín dụng/ghi nợ",
-      logo: "/src/assets/payments/credit.png",
-      description: "Thanh toán qua thẻ Visa, Mastercard, JCB",
-    },
-  ];
-
-  // Thêm thông tin ngân hàng
-  const bankInfo: BankInfo = {
-    bankName: "Ngân hàng TMCP Ngoại thương Việt Nam (Vietcombank)",
-    accountNumber: "1234567890",
-    accountHolder: "CONG TY TNHH EDUCATION",
-    branch: "Chi nhánh Hà Nội",
-    content: `EDU.${courseId}.${Date.now()}`, // Mã giao dịch unique
-  };
-
   const handlePurchase = () => {
-    if (currentUser?.role == "student") {
-      // Xử lý mua khóa học
-      setOpenDialog(true);
-    } else {
-      navigate(`/login`);
+    if (!currentUser) {
+      navigate("/login");
+      return;
     }
+
+    if (!courseId || !currentCourse) return;
+
+    setOpenDialog(true);
   };
 
   const handleConfirmPurchase = () => {
-    // Xử lý xác nhận mua
     dispatch(
-      enrollInCourse({
-        userId: Number(currentUser?.id),
+      createZaloPayOrder({
         courseId: Number(courseId),
+        amount: currentCourse?.price || 0,
+        description: `Payment for course #${courseId}`,
       })
-    ).then(() => {
-      try {
-        const notificationData = {
-          userIds: [currentCourse?.instructor?.user?.id],
-          title: "Tham gia khóa học",
-          content: `${currentUser?.username} đã tham gia khóa học "${courseData.title}"`,
-          type: "course",
-        };
-
-        dispatch(createNotification(notificationData));
-      } catch (error) {
-        console.error("Error sending notification:", error);
-        // Don't show error to user as this is not critical
-      }
-
-      dispatch(fetchUserEnrollments(Number(currentUser?.id)));
-      navigate(`/course/${courseId}/learn`);
-    });
+    );
+    setOpenDialog(false);
   };
 
-  console.log(currentCourse);
+  const renderPaymentStatus = () => {
+    if (paymentStatus === "loading") {
+      return <Alert severity="info">Đang xử lý thanh toán...</Alert>;
+    }
+
+    if (paymentError) {
+      return <Alert severity="error">Lỗi: {paymentError}</Alert>;
+    }
+
+    return null;
+  };
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -291,172 +250,47 @@ const PurchaseCourse = () => {
               </Box>
 
               <Typography variant="subtitle1" gutterBottom>
-                Chọn phương thức thanh toán:
+                Phương thức thanh toán:
               </Typography>
-              <FormControl component="fieldset" sx={{ width: "100%" }}>
-                <RadioGroup
-                  value={selectedPayment}
-                  onChange={(e) => setSelectedPayment(e.target.value)}
-                >
-                  {paymentMethods.map((method) => (
-                    <Card
-                      key={method.id}
-                      variant="outlined"
-                      sx={{
-                        mb: 1,
-                        border: selectedPayment === method.id ? 2 : 1,
-                        borderColor:
-                          selectedPayment === method.id
-                            ? "primary.main"
-                            : "divider",
-                      }}
-                    >
-                      <FormControlLabel
-                        value={method.id}
-                        control={<Radio />}
-                        sx={{ m: 0, width: "100%" }}
-                        label={
-                          <Box sx={{ p: 1, width: "100%" }}>
-                            <Stack
-                              direction="row"
-                              spacing={2}
-                              alignItems="center"
-                            >
-                              <Avatar
-                                src={method.logo}
-                                variant="square"
-                                sx={{ width: 40, height: 40 }}
-                              />
-                              <Box>
-                                <Typography variant="subtitle2">
-                                  {method.name}
-                                </Typography>
-                                <Typography
-                                  variant="body2"
-                                  color="text.secondary"
-                                >
-                                  {method.description}
-                                </Typography>
-                              </Box>
-                            </Stack>
-                          </Box>
-                        }
-                      />
-                    </Card>
-                  ))}
-                </RadioGroup>
-              </FormControl>
-
-              {selectedPayment === "bank" && (
-                <Card variant="outlined" sx={{ mt: 2, p: 2 }}>
-                  <Stack spacing={2}>
-                    <Typography variant="subtitle2" color="primary">
-                      Thông tin chuyển khoản:
+              <Card
+                variant="outlined"
+                sx={{
+                  mb: 3,
+                  p: 2,
+                  border: 2,
+                  borderColor: "primary.main",
+                }}
+              >
+                <Stack direction="row" spacing={2} alignItems="center">
+                  <Avatar
+                    src="/src/assets/payments/zalopay.png"
+                    variant="square"
+                    sx={{ width: 40, height: 40 }}
+                  />
+                  <Box>
+                    <Typography variant="subtitle2">ZaloPay</Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      Thanh toán qua ví điện tử ZaloPay
                     </Typography>
+                  </Box>
+                </Stack>
+              </Card>
 
-                    <Box sx={{ textAlign: "center", mb: 2 }}>
-                      <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=transfer:${bankInfo.accountNumber}:${bankInfo.content}`}
-                        alt="QR Code"
-                        style={{ width: 200, height: 200 }}
-                      />
-                    </Box>
-
-                    <Stack spacing={1}>
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          Ngân hàng:
-                        </Typography>
-                        <Typography variant="body1">
-                          {bankInfo.bankName}
-                        </Typography>
-                      </Box>
-
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          Số tài khoản:
-                        </Typography>
-                        <Typography variant="body1" sx={{ fontWeight: "bold" }}>
-                          {bankInfo.accountNumber}
-                          <Button
-                            size="small"
-                            sx={{ ml: 1 }}
-                            onClick={() => {
-                              navigator.clipboard.writeText(
-                                bankInfo.accountNumber
-                              );
-                            }}
-                          >
-                            Sao chép
-                          </Button>
-                        </Typography>
-                      </Box>
-
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          Chủ tài khoản:
-                        </Typography>
-                        <Typography variant="body1">
-                          {bankInfo.accountHolder}
-                        </Typography>
-                      </Box>
-
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          Chi nhánh:
-                        </Typography>
-                        <Typography variant="body1">
-                          {bankInfo.branch}
-                        </Typography>
-                      </Box>
-
-                      <Box>
-                        <Typography variant="body2" color="text.secondary">
-                          Nội dung chuyển khoản:
-                        </Typography>
-                        <Typography variant="body1" sx={{ fontWeight: "bold" }}>
-                          {bankInfo.content}
-                          <Button
-                            size="small"
-                            sx={{ ml: 1 }}
-                            onClick={() => {
-                              navigator.clipboard.writeText(bankInfo.content);
-                            }}
-                          >
-                            Sao chép
-                          </Button>
-                        </Typography>
-                      </Box>
-                    </Stack>
-
-                    <Alert severity="warning" sx={{ mt: 2 }}>
-                      <Typography variant="body2">
-                        Lưu ý:
-                        <br />• Vui lòng chuyển khoản đúng số tiền và nội dung
-                        để được kích hoạt khóa học tự động
-                        <br />• Thời gian xử lý từ 5-15 phút sau khi chuyển
-                        khoản thành công
-                      </Typography>
-                    </Alert>
-                  </Stack>
-                </Card>
-              )}
+              {renderPaymentStatus()}
 
               <Button
                 variant="contained"
                 size="large"
                 fullWidth
                 onClick={handlePurchase}
-                disabled={!selectedPayment}
+                disabled={paymentStatus === "loading" || redirecting}
                 sx={{ mt: 3 }}
               >
-                {selectedPayment === "bank"
-                  ? "Tôi đã chuyển khoản"
-                  : "Thanh toán ngay"}
+                {redirecting ? "Đang chuyển hướng..." : "Thanh toán ngay"}
               </Button>
 
               <Alert severity="info" sx={{ mt: 2 }}>
-                Bạn sẽ được chuyển đến trang thanh toán an toàn
+                Bạn sẽ được chuyển đến trang thanh toán ZaloPay
               </Alert>
             </CardContent>
           </Card>
@@ -472,8 +306,8 @@ const PurchaseCourse = () => {
             {new Intl.NumberFormat("vi-VN", {
               style: "currency",
               currency: "VND",
-            }).format(courseData.price)}
-            ?
+            }).format(courseData.price)}{" "}
+            qua ZaloPay?
           </Typography>
         </DialogContent>
         <DialogActions>
