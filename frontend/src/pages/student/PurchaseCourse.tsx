@@ -135,7 +135,9 @@ const PurchaseCourse = () => {
       createZaloPayOrder({
         courseId: Number(courseId),
         amount: currentCourse?.price || 0,
-        description: `Payment for course #${courseId}`,
+        description: `Thanh toán khóa học: ${
+          currentCourse?.title || `#${courseId}`
+        }`,
       })
     );
     setOpenDialog(false);

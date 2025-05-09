@@ -52,8 +52,7 @@ const COLLAPSED_DRAWER_WIDTH = 70;
 const TRANSITION_DURATION = "0.3s";
 
 const menuItems = [
-  { text: "Tổng quan", icon: <Dashboard />, path: "/instructor" },
-  { text: "Khóa học", icon: <LibraryBooks />, path: "/instructor/courses" },
+  { text: "Khóa học", icon: <LibraryBooks />, path: "/instructor" },
   {
     text: "Học viên/sinh viên",
     icon: <People />,
@@ -71,11 +70,6 @@ const menuItems = [
     text: "Lịch trình",
     icon: <CalendarMonth />,
     path: "/instructor/schedules",
-  },
-  {
-    text: "Công việc",
-    icon: <Assignment />,
-    path: "/instructor/tasks",
   },
   {
     text: "Diễn đàn",

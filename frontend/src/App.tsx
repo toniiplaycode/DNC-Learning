@@ -14,7 +14,6 @@ import ForumDiscussions from "./pages/student/forum/ForumDiscussions";
 import ForumDiscussionDetail from "./components/common/ForumDiscussionDetail";
 import CourseContent from "./pages/student/course/CourseContent";
 import PurchaseCourse from "./pages/student/PurchaseCourse";
-import InstructorDashboard from "./pages/instructor/InstructorDashboard";
 import InstructorCourses from "./pages/instructor/InstructorCourses";
 import InstructorCourseView from "./pages/instructor/InstructorCourseView";
 import InstructorStudents from "./pages/instructor/InstructorStudents";
@@ -27,11 +26,9 @@ import InstructorSettings from "./pages/instructor/InstructorSettings";
 import MainLayout from "./pages/student/layout/MainLayout";
 import InstructorLayout from "./pages/instructor/layout/InstructorLayout";
 import InstructorQuizs from "./pages/instructor/InstructorQuizs";
-import InstructorTasks from "./pages/instructor/InstructorTasks";
 import InstructorForum from "./pages/instructor/InstructorForum";
 import InstructorReviews from "./pages/instructor/InstructorReviews";
 import AdminLayout from "./pages/admin/layout/AdminLayout";
-import AdminDashboard from "./pages/admin/AdminDashboard";
 import AdminCourses from "./pages/admin/AdminCourses";
 import AdminLogin from "./pages/admin/AdminLogin";
 import InstructorLogin from "./pages/instructor/InstructorLogin";
@@ -117,9 +114,8 @@ const App = () => {
 
         {/* Instructor routes */}
         <Route element={<InstructorLayout />}>
-          <Route path="/instructor" element={<InstructorDashboard />} />
           <Route path="/instructor/login" element={<InstructorLogin />} />
-          <Route path="/instructor/courses" element={<InstructorCourses />} />
+          <Route path="/instructor" element={<InstructorCourses />} />
           <Route
             path="/instructor/courses/:id"
             element={<InstructorCourseView />}
@@ -143,7 +139,6 @@ const App = () => {
             path="/instructor/schedules"
             element={<InstructorSchedules />}
           />
-          <Route path="/instructor/tasks" element={<InstructorTasks />} />
           <Route path="/instructor/forum" element={<InstructorForum />} />
           <Route
             path="/instructor/notifications"
@@ -155,9 +150,8 @@ const App = () => {
 
         {/* Admin routes */}
         <Route element={<AdminLayout />}>
-          <Route path="/admin" element={<AdminDashboard />} />
+          <Route path="/admin" element={<AdminCourses />} />
           <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin/courses" element={<AdminCourses />} />
           <Route path="/admin/instructors" element={<AdminInstructors />} />
           <Route path="/admin/students" element={<AdminStudents />} />
           <Route

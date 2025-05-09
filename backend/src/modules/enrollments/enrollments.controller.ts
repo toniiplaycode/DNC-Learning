@@ -47,6 +47,13 @@ export class EnrollmentsController {
     return this.enrollmentsService.findAll();
   }
 
+  @Get('instructor/:instructorId')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.INSTRUCTOR)
+  findByInstructor(@Param('instructorId', ParseIntPipe) instructorId: number) {
+    return this.enrollmentsService.findByInstructor(instructorId);
+  }
+
   @Get('user/:userId')
   @UseGuards(JwtAuthGuard)
   findByUser(@Param('userId', ParseIntPipe) userId: number, @GetUser() user) {

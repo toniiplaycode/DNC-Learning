@@ -27,6 +27,9 @@ import {
   SelectChangeEvent,
   TextFieldProps,
   Alert,
+  Pagination,
+  FormControlLabel,
+  Switch,
 } from "@mui/material";
 import {
   Email,
@@ -46,6 +49,8 @@ import {
   ContactPhone as ContactPhoneIcon,
   Assessment as AssessmentIcon,
   Favorite,
+  Receipt as ReceiptIcon,
+  AccountBalanceWallet,
 } from "@mui/icons-material";
 import CustomContainer from "../../components/common/CustomContainer";
 import CertificateDetail from "../../components/student/profile/CertificateDetail";
@@ -77,6 +82,8 @@ import { useNavigate } from "react-router-dom";
 import { fetchUserById } from "../../features/users/usersApiSlice";
 import { fetchUserCourseProgress } from "../../features/course-progress/courseProgressSlice";
 import { selectUserCourseProgress } from "../../features/course-progress/courseProgressSelectors";
+import { fetchUserPayments } from "../../features/payments/paymentsSlice";
+import { selectUserPayments } from "../../features/payments/paymentsSelectors";
 
 type Gender = "male" | "female" | "other";
 
@@ -132,10 +139,22 @@ const ProfileAccount: React.FC = () => {
   const userGrades = useAppSelector(selectUserGradesByUser);
   const userProgress = useAppSelector(selectUserProgress);
   const userCourseProgress = useAppSelector(selectUserCourseProgress);
+  const userPayments = useAppSelector(selectUserPayments);
   const [currentTab, setCurrentTab] = useState(0);
   const [loadingGrades, setLoadingGrades] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
+
+  // Add this near the other useState declarations in the component
+  const [paymentFilter, setPaymentFilter] = useState({
+    status: null,
+    method: null,
+    sort: "newest",
+  });
+
+  const [page, setPage] = useState(1);
+  const [itemsPerPage, setItemsPerPage] = useState(5);
+  const [showAllItems, setShowAllItems] = useState(false);
 
   useEffect(() => {
     if (currentUser) {
@@ -147,6 +166,7 @@ const ProfileAccount: React.FC = () => {
       if (currentUser.role == UserRole.STUDENT_ACADEMIC) {
         dispatch(fetchUserCourseProgress());
       }
+      dispatch(fetchUserPayments(Number(currentUser.id)));
     }
   }, [dispatch, currentUser]);
 
@@ -157,6 +177,8 @@ const ProfileAccount: React.FC = () => {
       dispatch(fetchUserCertificates({ userId: Number(currentUser.id) }));
     }
   }, [dispatch, currentUser?.id]);
+
+  console.log(userPayments);
 
   // Thêm state cho modal đổi mật khẩu
   const [changePasswordOpen, setChangePasswordOpen] = useState(false);
@@ -331,6 +353,77 @@ const ProfileAccount: React.FC = () => {
     }
   };
 
+  // Filter and sort payments
+  const filteredPayments = React.useMemo(() => {
+    if (!Array.isArray(userPayments)) return [];
+
+    // Apply filters
+    let result = [...userPayments];
+
+    if (paymentFilter.status) {
+      result = result.filter(
+        (payment) => payment.status === paymentFilter.status
+      );
+    }
+
+    if (paymentFilter.method) {
+      result = result.filter(
+        (payment) => payment.paymentMethod === paymentFilter.method
+      );
+    }
+
+    // Apply sorting
+    switch (paymentFilter.sort) {
+      case "newest":
+        result.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+        break;
+      case "oldest":
+        result.sort(
+          (a, b) =>
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+        );
+        break;
+      case "amount_high":
+        result.sort((a, b) => parseFloat(b.amount) - parseFloat(a.amount));
+        break;
+      case "amount_low":
+        result.sort((a, b) => parseFloat(a.amount) - parseFloat(b.amount));
+        break;
+      default:
+        result.sort(
+          (a, b) =>
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+        );
+    }
+
+    return result;
+  }, [userPayments, paymentFilter]);
+
+  const paginatedPayments = React.useMemo(() => {
+    if (showAllItems) return filteredPayments;
+
+    const startIndex = (page - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+
+    return filteredPayments.slice(startIndex, endIndex);
+  }, [filteredPayments, page, itemsPerPage, showAllItems]);
+
+  const handlePageChange = (
+    event: React.ChangeEvent<unknown>,
+    value: number
+  ) => {
+    setPage(value);
+    // Scroll to top of payment list
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    setPage(1);
+  }, [paymentFilter]);
+
   return (
     <CustomContainer>
       <Box>
@@ -470,7 +563,7 @@ const ProfileAccount: React.FC = () => {
                   <Tab
                     icon={<PersonIcon />}
                     iconPosition="start"
-                    label="Thông tin cá nhân"
+                    label="Cá nhân"
                     sx={{
                       minHeight: 48,
                       "& .MuiTab-iconWrapper": {
@@ -495,6 +588,18 @@ const ProfileAccount: React.FC = () => {
                     icon={<AssessmentIcon />}
                     iconPosition="start"
                     label="Bảng điểm"
+                    sx={{
+                      minHeight: 48,
+                      "& .MuiTab-iconWrapper": {
+                        marginRight: 1,
+                        marginBottom: "0 !important",
+                      },
+                    }}
+                  />
+                  <Tab
+                    icon={<ReceiptIcon />}
+                    iconPosition="start"
+                    label="Thanh toán"
                     sx={{
                       minHeight: 48,
                       "& .MuiTab-iconWrapper": {
@@ -1706,6 +1811,365 @@ const ProfileAccount: React.FC = () => {
                         py={3}
                       >
                         Chưa có thông tin điểm
+                      </Typography>
+                    )}
+                  </Box>
+                </Stack>
+              </TabPanel>
+
+              {/* Tab Lịch sử thanh toán */}
+              <TabPanel value={currentTab} index={3}>
+                <Stack spacing={3} px={2}>
+                  <Box>
+                    <Typography variant="h6" gutterBottom>
+                      Lịch sử thanh toán
+                    </Typography>
+
+                    {Array.isArray(userPayments) && userPayments.length > 0 ? (
+                      <Box>
+                        {/* Add filtering options */}
+                        <Card sx={{ mb: 2, p: 2 }}>
+                          <Grid container spacing={2} alignItems="center">
+                            <Grid item xs={12} sm={3}>
+                              <FormControl fullWidth size="small">
+                                <InputLabel>Trạng thái</InputLabel>
+                                <Select
+                                  value={paymentFilter.status || "all"}
+                                  label="Trạng thái"
+                                  onChange={(e) =>
+                                    setPaymentFilter({
+                                      ...paymentFilter,
+                                      status:
+                                        e.target.value !== "all"
+                                          ? e.target.value
+                                          : null,
+                                    })
+                                  }
+                                >
+                                  <MenuItem value="all">Tất cả</MenuItem>
+                                  <MenuItem value="completed">
+                                    Hoàn tất
+                                  </MenuItem>
+                                  <MenuItem value="pending">
+                                    Đang xử lý
+                                  </MenuItem>
+                                  <MenuItem value="failed">Thất bại</MenuItem>
+                                  <MenuItem value="cancelled">Đã hủy</MenuItem>
+                                </Select>
+                              </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={3}>
+                              <FormControl fullWidth size="small">
+                                <InputLabel>Phương thức</InputLabel>
+                                <Select
+                                  value={paymentFilter.method || "all"}
+                                  label="Phương thức"
+                                  onChange={(e) =>
+                                    setPaymentFilter({
+                                      ...paymentFilter,
+                                      method:
+                                        e.target.value !== "all"
+                                          ? e.target.value
+                                          : null,
+                                    })
+                                  }
+                                >
+                                  <MenuItem value="all">Tất cả</MenuItem>
+                                  <MenuItem value="zalopay">ZaloPay</MenuItem>
+                                  <MenuItem value="e_wallet">
+                                    Ví điện tử
+                                  </MenuItem>
+                                  <MenuItem value="bank_transfer">
+                                    Chuyển khoản
+                                  </MenuItem>
+                                  <MenuItem value="credit_card">
+                                    Thẻ tín dụng
+                                  </MenuItem>
+                                </Select>
+                              </FormControl>
+                            </Grid>
+
+                            <Grid item xs={12} sm={3}>
+                              <FormControl fullWidth size="small">
+                                <InputLabel>Sắp xếp</InputLabel>
+                                <Select
+                                  value={paymentFilter.sort}
+                                  label="Sắp xếp"
+                                  onChange={(e) =>
+                                    setPaymentFilter({
+                                      ...paymentFilter,
+                                      sort: e.target.value,
+                                    })
+                                  }
+                                >
+                                  <MenuItem value="newest">
+                                    Mới nhất trước
+                                  </MenuItem>
+                                  <MenuItem value="oldest">
+                                    Cũ nhất trước
+                                  </MenuItem>
+                                  <MenuItem value="amount_high">
+                                    Giá trị cao nhất
+                                  </MenuItem>
+                                  <MenuItem value="amount_low">
+                                    Giá trị thấp nhất
+                                  </MenuItem>
+                                </Select>
+                              </FormControl>
+                            </Grid>
+
+                            <Grid
+                              item
+                              xs={12}
+                              sm={3}
+                              container
+                              justifyContent="flex-end"
+                            >
+                              <Button
+                                variant="outlined"
+                                startIcon={<CloseIcon />}
+                                onClick={() =>
+                                  setPaymentFilter({
+                                    status: null,
+                                    method: null,
+                                    sort: "newest",
+                                  })
+                                }
+                              >
+                                Xóa bộ lọc
+                              </Button>
+                            </Grid>
+                          </Grid>
+                        </Card>
+
+                        {/* Items per page selector */}
+                        {!showAllItems && (
+                          <Box
+                            sx={{
+                              mt: 1,
+                              mb: 2,
+                              display: "flex",
+                              justifyContent: "flex-end",
+                              alignItems: "center",
+                            }}
+                          >
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ mr: 2 }}
+                            >
+                              Hiển thị mỗi trang:
+                            </Typography>
+                            <FormControl size="small" sx={{ width: 80 }}>
+                              <Select
+                                value={itemsPerPage}
+                                onChange={(e) => {
+                                  setItemsPerPage(Number(e.target.value));
+                                  setPage(1);
+                                }}
+                                displayEmpty
+                              >
+                                <MenuItem value={5}>5</MenuItem>
+                                <MenuItem value={10}>10</MenuItem>
+                                <MenuItem value={20}>20</MenuItem>
+                                <MenuItem value={50}>50</MenuItem>
+                              </Select>
+                            </FormControl>
+                          </Box>
+                        )}
+
+                        <Card variant="outlined">
+                          <List>
+                            {paginatedPayments.map((payment) => (
+                              <ListItem
+                                key={payment.id}
+                                sx={{
+                                  borderBottom: "1px solid #e0e0e0",
+                                  "&:last-child": { borderBottom: "none" },
+                                  py: 2,
+                                }}
+                              >
+                                <Grid container spacing={2} alignItems="center">
+                                  <Grid item xs={12} sm={1.5}>
+                                    <Avatar
+                                      variant="rounded"
+                                      src={payment.course?.thumbnailUrl}
+                                      alt={payment.course?.title}
+                                      sx={{ width: 60, height: 60 }}
+                                    >
+                                      <AccountBalanceWallet />
+                                    </Avatar>
+                                  </Grid>
+
+                                  <Grid item xs={12} sm={6.5}>
+                                    <Typography
+                                      variant="subtitle1"
+                                      fontWeight="medium"
+                                    >
+                                      {payment.course?.title}
+                                    </Typography>
+                                    <Typography
+                                      variant="body2"
+                                      color="text.secondary"
+                                    >
+                                      Mã giao dịch:{" "}
+                                      {payment.transactionId || "Chưa có"}
+                                    </Typography>
+                                    <Typography
+                                      variant="body2"
+                                      color="text.secondary"
+                                    >
+                                      Ngày tạo:{" "}
+                                      {new Date(
+                                        payment.createdAt
+                                      ).toLocaleDateString("vi-VN", {
+                                        year: "numeric",
+                                        month: "2-digit",
+                                        day: "2-digit",
+                                        hour: "2-digit",
+                                        minute: "2-digit",
+                                      })}
+                                    </Typography>
+                                  </Grid>
+
+                                  <Grid item xs={12} sm={2.5}>
+                                    <Typography
+                                      variant="body1"
+                                      fontWeight="medium"
+                                    >
+                                      {new Intl.NumberFormat("vi-VN", {
+                                        style: "currency",
+                                        currency: "VND",
+                                      }).format(parseFloat(payment.amount))}
+                                    </Typography>
+                                    <Typography
+                                      variant="body2"
+                                      color="text.secondary"
+                                    >
+                                      {payment.paymentMethod === "zalopay"
+                                        ? "ZaloPay"
+                                        : payment.paymentMethod === "e_wallet"
+                                        ? "Ví điện tử"
+                                        : payment.paymentMethod ===
+                                          "bank_transfer"
+                                        ? "Chuyển khoản"
+                                        : "Thẻ tín dụng"}
+                                    </Typography>
+                                  </Grid>
+
+                                  <Grid item xs={12} sm={1.5} textAlign="right">
+                                    <Chip
+                                      label={
+                                        payment.status === "completed"
+                                          ? "Hoàn tất"
+                                          : payment.status === "pending"
+                                          ? "Đang xử lý"
+                                          : payment.status === "failed"
+                                          ? "Thất bại"
+                                          : "Đã hủy"
+                                      }
+                                      color={
+                                        payment.status === "completed"
+                                          ? "success"
+                                          : payment.status === "pending"
+                                          ? "warning"
+                                          : "error"
+                                      }
+                                      size="small"
+                                    />
+                                    {payment.paymentDate && (
+                                      <Typography
+                                        variant="caption"
+                                        display="block"
+                                        sx={{ mt: 1 }}
+                                      >
+                                        Thanh toán:{" "}
+                                        {new Date(
+                                          payment.paymentDate
+                                        ).toLocaleDateString("vi-VN")}
+                                      </Typography>
+                                    )}
+                                  </Grid>
+                                </Grid>
+                              </ListItem>
+                            ))}
+                          </List>
+                        </Card>
+
+                        {/* Pagination control */}
+                        {!showAllItems &&
+                          filteredPayments.length > itemsPerPage && (
+                            <Box
+                              sx={{
+                                display: "flex",
+                                justifyContent: "center",
+                                mt: 2,
+                                mb: 2,
+                              }}
+                            >
+                              <Pagination
+                                count={Math.ceil(
+                                  filteredPayments.length / itemsPerPage
+                                )}
+                                page={page}
+                                onChange={handlePageChange}
+                                color="primary"
+                                showFirstButton
+                                showLastButton
+                              />
+                            </Box>
+                          )}
+
+                        {/* Statistics with toggle for showing all items */}
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                            mt: 2,
+                          }}
+                        >
+                          <FormControlLabel
+                            control={
+                              <Switch
+                                checked={showAllItems}
+                                onChange={(e) =>
+                                  setShowAllItems(e.target.checked)
+                                }
+                                color="primary"
+                              />
+                            }
+                            label="Hiển thị tất cả"
+                          />
+
+                          <Box>
+                            <Typography variant="body2" color="text.secondary">
+                              Hiển thị:{" "}
+                              {showAllItems
+                                ? filteredPayments.length
+                                : paginatedPayments.length}{" "}
+                              / {userPayments.length} giao dịch
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              Giao dịch thành công:{" "}
+                              {
+                                filteredPayments.filter(
+                                  (p) => p.status === "completed"
+                                ).length
+                              }
+                            </Typography>
+                          </Box>
+                        </Box>
+                      </Box>
+                    ) : (
+                      <Typography
+                        variant="body1"
+                        textAlign="center"
+                        color="text.secondary"
+                        py={3}
+                      >
+                        Bạn chưa có giao dịch thanh toán nào
                       </Typography>
                     )}
                   </Box>

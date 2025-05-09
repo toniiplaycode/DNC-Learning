@@ -159,10 +159,26 @@ export const fetchCourseProgress = createAsyncThunk(
   }
 );
 
+export const fetchInstructorEnrollments = createAsyncThunk(
+  "enrollments/fetchInstructorEnrollments",
+  async (instructorId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/enrollments/instructor/${instructorId}`);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          "Failed to fetch instructor enrollments"
+      );
+    }
+  }
+);
+
 interface EnrollmentsState {
   enrollments: Enrollment[];
   userEnrollments: Enrollment[];
   courseEnrollments: Enrollment[];
+  instructorEnrollments: any;
   stats: EnrollmentStats | null;
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
@@ -175,6 +191,7 @@ const initialState: EnrollmentsState = {
   enrollments: [],
   userEnrollments: [],
   courseEnrollments: [],
+  instructorEnrollments: null,
   stats: null,
   status: "idle",
   error: null,
@@ -404,6 +421,20 @@ const enrollmentsSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchCourseProgress.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
+
+      // Handle fetchInstructorEnrollments
+      .addCase(fetchInstructorEnrollments.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchInstructorEnrollments.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.instructorEnrollments = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchInstructorEnrollments.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
       });

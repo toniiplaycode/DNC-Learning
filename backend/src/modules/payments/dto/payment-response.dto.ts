@@ -12,6 +12,19 @@ export class UserDto {
   email: string;
 }
 
+export class InstructorDto {
+  @Expose()
+  id: number;
+
+  @Expose()
+  username: string;
+
+  @Expose()
+  email: string;
+
+  @Expose()
+  avatarUrl?: string;
+}
 export class CourseDto {
   @Expose()
   id: number;
@@ -20,10 +33,14 @@ export class CourseDto {
   title: string;
 
   @Expose()
-  price: number;
+  price: string;
 
   @Expose()
   thumbnailUrl: string;
+
+  @Expose()
+  @Type(() => InstructorDto)
+  instructor: InstructorDto;
 }
 
 export class PaymentResponseDto {

@@ -129,9 +129,39 @@ export const getPaymentStatus = createAsyncThunk(
   }
 );
 
+export const fetchInstructorPayments = createAsyncThunk(
+  "payments/fetchInstructorPayments",
+  async (instructorId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/payments/instructor/${instructorId}`);
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          "Không thể lấy danh sách thanh toán của giảng viên"
+      );
+    }
+  }
+);
+
+export const fetchAllPayments = createAsyncThunk(
+  "payments/fetchAllPayments",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get("/payments");
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Không thể lấy danh sách thanh toán"
+      );
+    }
+  }
+);
+
 interface PaymentsState {
   payments: PaymentResponse[];
   userPayments: PaymentResponse[];
+  instructorPayments: PaymentResponse[];
   currentPayment: PaymentResponse | null;
   zaloPayOrder: ZaloPayResponse | null;
   status: "idle" | "loading" | "succeeded" | "failed";
@@ -141,6 +171,7 @@ interface PaymentsState {
 const initialState: PaymentsState = {
   payments: [],
   userPayments: [],
+  instructorPayments: [],
   currentPayment: null,
   zaloPayOrder: null,
   status: "idle",
@@ -238,6 +269,41 @@ const paymentsSlice = createSlice({
         state.error =
           (action.payload as string) ||
           "Không thể kiểm tra trạng thái thanh toán";
+      })
+
+      // Fetch instructor payments
+      .addCase(fetchInstructorPayments.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(
+        fetchInstructorPayments.fulfilled,
+        (state, action: PayloadAction<PaymentResponse[]>) => {
+          state.status = "succeeded";
+          state.instructorPayments = action.payload;
+        }
+      )
+      .addCase(fetchInstructorPayments.rejected, (state, action) => {
+        state.status = "failed";
+        state.error =
+          (action.payload as string) ||
+          "Không thể lấy danh sách thanh toán của giảng viên";
+      })
+
+      // Fetch all payments
+      .addCase(fetchAllPayments.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(
+        fetchAllPayments.fulfilled,
+        (state, action: PayloadAction<PaymentResponse[]>) => {
+          state.status = "succeeded";
+          state.payments = action.payload;
+        }
+      )
+      .addCase(fetchAllPayments.rejected, (state, action) => {
+        state.status = "failed";
+        state.error =
+          (action.payload as string) || "Không thể lấy danh sách thanh toán";
       });
   },
 });

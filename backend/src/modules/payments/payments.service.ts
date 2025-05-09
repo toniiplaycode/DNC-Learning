@@ -51,10 +51,15 @@ export class PaymentsService {
     });
   }
 
-  async findAll(): Promise<PaymentResponseDto[]> {
-    const payments = await this.paymentsRepository.find({
-      relations: ['user', 'course'],
-    });
+  async findAll(): Promise<any[]> {
+    const payments = await this.paymentsRepository
+      .createQueryBuilder('payment')
+      .leftJoinAndSelect('payment.course', 'course')
+      .leftJoinAndSelect('course.instructor', 'instructor')
+      .leftJoinAndSelect('payment.user', 'user')
+      .orderBy('payment.createdAt', 'DESC')
+      .getMany();
+
     return plainToInstance(PaymentResponseDto, payments, {
       excludeExtraneousValues: true,
     });
@@ -110,6 +115,21 @@ export class PaymentsService {
       where: { userId },
       relations: ['course'],
     });
+    return plainToInstance(PaymentResponseDto, payments, {
+      excludeExtraneousValues: true,
+    });
+  }
+
+  async findByInstructor(instructorId: number): Promise<PaymentResponseDto[]> {
+    // Use a query builder to join with the course table and filter by instructor
+    const payments = await this.paymentsRepository
+      .createQueryBuilder('payment')
+      .leftJoinAndSelect('payment.course', 'course')
+      .leftJoinAndSelect('payment.user', 'user')
+      .where('course.instructorId = :instructorId', { instructorId })
+      .orderBy('payment.createdAt', 'DESC')
+      .getMany();
+
     return plainToInstance(PaymentResponseDto, payments, {
       excludeExtraneousValues: true,
     });

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import {
   Box,
   Typography,
@@ -24,7 +24,6 @@ import {
   Dialog,
   DialogTitle,
   DialogContent,
-  DialogContentText,
   DialogActions,
   FormControl,
   InputLabel,
@@ -35,6 +34,7 @@ import {
   Divider,
   Stack,
   Tooltip,
+  Avatar,
 } from "@mui/material";
 import {
   Search,
@@ -50,12 +50,19 @@ import {
   LocalAtm,
   AccountBalance,
   CreditCard,
-  Event,
   Clear,
   ContentCopy,
 } from "@mui/icons-material";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import { fetchAllPayments } from "../../features/payments/paymentsSlice";
+import { selectAllPayments } from "../../features/payments/paymentsSelectors";
+import * as XLSX from "xlsx";
+import { selectAllInstructors } from "../../features/user_instructors/instructorsSelectors";
+import { fetchInstructors } from "../../features/user_instructors/instructorsApiSlice";
+import { fetchAllInstructors } from "../../features/instructors/instructorsSlice";
+import { selectAllInstructors as selectAllInstructorsFromInstructors } from "../../features/instructors/instructorsSelectors";
 
-// Enum cho trạng thái thanh toán
+// Enum for payment status and methods (kept for consistency with API values)
 enum PaymentStatus {
   PENDING = "pending",
   COMPLETED = "completed",
@@ -63,80 +70,18 @@ enum PaymentStatus {
   REFUNDED = "refunded",
 }
 
-// Enum cho phương thức thanh toán
 enum PaymentMethod {
   CREDIT_CARD = "credit_card",
   BANK_TRANSFER = "bank_transfer",
   E_WALLET = "e_wallet",
-  CASH = "cash",
+  ZALOPAY = "zalopay",
 }
-
-// Interface cho dữ liệu thanh toán
-interface Payment {
-  id: string;
-  userId: number;
-  userName: string;
-  email: string;
-  amount: number;
-  status: PaymentStatus;
-  method: PaymentMethod;
-  date: string;
-  courseId?: number;
-  courseName?: string;
-  transactionId: string;
-  invoice?: string;
-  description?: string;
-}
-
-// Mock data cho thanh toán
-const mockPayments: Payment[] = Array(20)
-  .fill(null)
-  .map((_, index) => {
-    const methods = [
-      PaymentMethod.CREDIT_CARD,
-      PaymentMethod.BANK_TRANSFER,
-      PaymentMethod.E_WALLET,
-      PaymentMethod.CASH,
-    ];
-    const statuses = [
-      PaymentStatus.PENDING,
-      PaymentStatus.COMPLETED,
-      PaymentStatus.FAILED,
-      PaymentStatus.REFUNDED,
-    ];
-    const courseNames = [
-      "React & TypeScript Masterclass",
-      "Node.js Advanced",
-      "Full-stack Web Development",
-      "Mobile App Development",
-      "UI/UX Design Fundamentals",
-    ];
-
-    return {
-      id: `P${String(index + 1).padStart(4, "0")}`,
-      userId: Math.floor(Math.random() * 1000) + 1,
-      userName: `Học viên ${index + 1}`,
-      email: `student${index + 1}@example.com`,
-      amount: Math.floor(Math.random() * 5 + 1) * 500000,
-      status: statuses[Math.floor(Math.random() * statuses.length)],
-      method: methods[Math.floor(Math.random() * methods.length)],
-      date: new Date(
-        Date.now() - Math.floor(Math.random() * 30) * 24 * 60 * 60 * 1000
-      ).toISOString(),
-      courseId: Math.floor(Math.random() * 100) + 1,
-      courseName: courseNames[Math.floor(Math.random() * courseNames.length)],
-      transactionId: `TXN${Math.random()
-        .toString(36)
-        .substring(2, 10)
-        .toUpperCase()}`,
-      invoice: Math.random() > 0.3 ? `INV-${index + 1}` : undefined,
-      description: Math.random() > 0.5 ? "Thanh toán khóa học" : undefined,
-    };
-  });
 
 const AdminPayments = () => {
-  const [payments, setPayments] = useState<Payment[]>(mockPayments);
-  const [filteredPayments, setFilteredPayments] = useState<Payment[]>(payments);
+  const dispatch = useAppDispatch();
+  const payments = useAppSelector(selectAllPayments);
+  const instructors = useAppSelector(selectAllInstructors);
+  const [filteredPayments, setFilteredPayments] = useState([]);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [methodFilter, setMethodFilter] = useState("all");
@@ -144,14 +89,23 @@ const AdminPayments = () => {
   const [page, setPage] = useState(1);
   const [rowsPerPage] = useState(10);
   const [tabValue, setTabValue] = useState(0);
-  const [selectedPayment, setSelectedPayment] = useState<Payment | null>(null);
+  const [selectedPayment, setSelectedPayment] = useState(null);
   const [detailDialogOpen, setDetailDialogOpen] = useState(false);
-  const [actionMenu, setActionMenu] = useState<null | HTMLElement>(null);
+  const [actionMenu, setActionMenu] = useState(null);
+  const [courseIdFilter, setCourseIdFilter] = useState("all");
+  const [instructorIdFilter, setInstructorIdFilter] = useState("all");
+  const [yearFilter, setYearFilter] = useState("all");
+  const [monthFilter, setMonthFilter] = useState("all");
 
-  // Tổng doanh thu
+  useEffect(() => {
+    dispatch(fetchAllPayments());
+    dispatch(fetchInstructors());
+  }, [dispatch]);
+
+  // Tổng doanh thu từ các thanh toán hoàn thành
   const totalRevenue = payments
     .filter((p) => p.status === PaymentStatus.COMPLETED)
-    .reduce((sum, p) => sum + p.amount, 0);
+    .reduce((sum, p) => sum + parseFloat(p.amount), 0);
 
   // Tổng số giao dịch
   const totalTransactions = payments.length;
@@ -162,8 +116,13 @@ const AdminPayments = () => {
   ).length;
 
   // Lọc thanh toán theo các bộ lọc
-  React.useEffect(() => {
-    let result = payments;
+  useEffect(() => {
+    if (!payments) {
+      setFilteredPayments([]);
+      return;
+    }
+
+    let result = [...payments];
 
     // Lọc theo tab
     if (tabValue === 1) {
@@ -185,21 +144,52 @@ const AdminPayments = () => {
 
     // Lọc theo phương thức thanh toán
     if (methodFilter !== "all") {
-      result = result.filter((p) => p.method === methodFilter);
+      result = result.filter((p) => p.paymentMethod === methodFilter);
     }
 
     // Lọc theo ngày
     if (dateFilter === "today") {
       const today = new Date().toDateString();
-      result = result.filter((p) => new Date(p.date).toDateString() === today);
+      result = result.filter(
+        (p) => new Date(p.createdAt).toDateString() === today
+      );
     } else if (dateFilter === "week") {
       const lastWeek = new Date();
       lastWeek.setDate(lastWeek.getDate() - 7);
-      result = result.filter((p) => new Date(p.date) >= lastWeek);
+      result = result.filter((p) => new Date(p.createdAt) >= lastWeek);
     } else if (dateFilter === "month") {
       const lastMonth = new Date();
       lastMonth.setMonth(lastMonth.getMonth() - 1);
-      result = result.filter((p) => new Date(p.date) >= lastMonth);
+      result = result.filter((p) => new Date(p.createdAt) >= lastMonth);
+    }
+
+    // Filter by course
+    if (courseIdFilter !== "all") {
+      result = result.filter((p) => p.courseId.toString() === courseIdFilter);
+    }
+
+    // Filter by instructor
+    if (instructorIdFilter !== "all") {
+      result = result.filter(
+        (p) =>
+          p.course?.instructor?.id?.toString() === instructorIdFilter ||
+          p.course?.instructorId?.toString() === instructorIdFilter
+      );
+    }
+
+    // Filter by year
+    if (yearFilter !== "all") {
+      result = result.filter(
+        (p) => new Date(p.createdAt).getFullYear().toString() === yearFilter
+      );
+    }
+
+    // Filter by month (only if year is selected)
+    if (yearFilter !== "all" && monthFilter !== "all") {
+      result = result.filter((p) => {
+        const paymentDate = new Date(p.createdAt);
+        return paymentDate.getMonth() + 1 === parseInt(monthFilter);
+      });
     }
 
     // Tìm kiếm
@@ -207,16 +197,27 @@ const AdminPayments = () => {
       const query = searchQuery.toLowerCase();
       result = result.filter(
         (p) =>
-          p.id.toLowerCase().includes(query) ||
-          p.userName.toLowerCase().includes(query) ||
-          p.email.toLowerCase().includes(query) ||
-          p.transactionId.toLowerCase().includes(query) ||
-          (p.courseName && p.courseName.toLowerCase().includes(query))
+          p.id.toString().includes(query) ||
+          (p.user?.username && p.user.username.toLowerCase().includes(query)) ||
+          (p.user?.email && p.user.email.toLowerCase().includes(query)) ||
+          (p.transactionId && p.transactionId.toLowerCase().includes(query)) ||
+          (p.course?.title && p.course.title.toLowerCase().includes(query))
       );
     }
 
     setFilteredPayments(result);
-  }, [payments, searchQuery, statusFilter, methodFilter, dateFilter, tabValue]);
+  }, [
+    payments,
+    searchQuery,
+    statusFilter,
+    methodFilter,
+    dateFilter,
+    tabValue,
+    courseIdFilter,
+    instructorIdFilter,
+    yearFilter,
+    monthFilter,
+  ]);
 
   // Tính toán phân trang
   const pageCount = Math.ceil(filteredPayments.length / rowsPerPage);
@@ -228,7 +229,7 @@ const AdminPayments = () => {
   // Xử lý click vào menu
   const handleMenuClick = (
     event: React.MouseEvent<HTMLButtonElement>,
-    payment: Payment
+    payment
   ) => {
     setSelectedPayment(payment);
     setActionMenu(event.currentTarget);
@@ -248,13 +249,9 @@ const AdminPayments = () => {
   // Xử lý phê duyệt thanh toán
   const handleApprovePayment = () => {
     if (selectedPayment) {
-      setPayments(
-        payments.map((p) =>
-          p.id === selectedPayment.id
-            ? { ...p, status: PaymentStatus.COMPLETED }
-            : p
-        )
-      );
+      // Would call API to update payment status
+      // For now, just update the local state
+      console.log("Approve payment:", selectedPayment.id);
       setActionMenu(null);
     }
   };
@@ -262,13 +259,8 @@ const AdminPayments = () => {
   // Xử lý từ chối thanh toán
   const handleRejectPayment = () => {
     if (selectedPayment) {
-      setPayments(
-        payments.map((p) =>
-          p.id === selectedPayment.id
-            ? { ...p, status: PaymentStatus.FAILED }
-            : p
-        )
-      );
+      // Would call API to update payment status
+      console.log("Reject payment:", selectedPayment.id);
       setActionMenu(null);
     }
   };
@@ -276,27 +268,22 @@ const AdminPayments = () => {
   // Xử lý hoàn tiền
   const handleRefundPayment = () => {
     if (selectedPayment) {
-      setPayments(
-        payments.map((p) =>
-          p.id === selectedPayment.id
-            ? { ...p, status: PaymentStatus.REFUNDED }
-            : p
-        )
-      );
+      // Would call API to update payment status
+      console.log("Refund payment:", selectedPayment.id);
       setActionMenu(null);
     }
   };
 
   // Format tiền
-  const formatCurrency = (amount: number) => {
+  const formatCurrency = (amount) => {
     return new Intl.NumberFormat("vi-VN", {
       style: "currency",
       currency: "VND",
-    }).format(amount);
+    }).format(parseFloat(amount));
   };
 
   // Format ngày
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString) => {
     return new Date(dateString).toLocaleDateString("vi-VN", {
       year: "numeric",
       month: "2-digit",
@@ -307,7 +294,7 @@ const AdminPayments = () => {
   };
 
   // Chuyển đổi trạng thái thành văn bản và màu sắc
-  const getStatusInfo = (status: PaymentStatus) => {
+  const getStatusInfo = (status) => {
     switch (status) {
       case PaymentStatus.PENDING:
         return { text: "Đang xử lý", color: "warning" };
@@ -323,7 +310,7 @@ const AdminPayments = () => {
   };
 
   // Chuyển đổi phương thức thanh toán thành văn bản
-  const getMethodText = (method: PaymentMethod) => {
+  const getMethodText = (method) => {
     switch (method) {
       case PaymentMethod.CREDIT_CARD:
         return "Thẻ tín dụng";
@@ -331,15 +318,15 @@ const AdminPayments = () => {
         return "Chuyển khoản";
       case PaymentMethod.E_WALLET:
         return "Ví điện tử";
-      case PaymentMethod.CASH:
-        return "Tiền mặt";
+      case PaymentMethod.ZALOPAY:
+        return "ZaloPay";
       default:
         return "Không xác định";
     }
   };
 
   // Lấy biểu tượng phương thức thanh toán
-  const getMethodIcon = (method: PaymentMethod) => {
+  const getMethodIcon = (method) => {
     switch (method) {
       case PaymentMethod.CREDIT_CARD:
         return <CreditCard fontSize="small" />;
@@ -347,16 +334,349 @@ const AdminPayments = () => {
         return <AccountBalance fontSize="small" />;
       case PaymentMethod.E_WALLET:
         return <AccountBalance fontSize="small" />;
-      case PaymentMethod.CASH:
-        return <LocalAtm fontSize="small" />;
+      case PaymentMethod.ZALOPAY:
+        return <AccountBalance fontSize="small" />;
       default:
         return <AttachMoney fontSize="small" />;
     }
   };
 
+  // Export data to Excel
+  const exportToExcel = () => {
+    if (!filteredPayments.length) return;
+
+    // Create workbook
+    const workbook = XLSX.utils.book_new();
+
+    // 1. Summary sheet with filtered data
+    const filteredCompleted = filteredPayments.filter(
+      (p) => p.status === PaymentStatus.COMPLETED
+    );
+    const filteredPending = filteredPayments.filter(
+      (p) => p.status === PaymentStatus.PENDING
+    );
+    const filteredRevenue = filteredCompleted.reduce(
+      (sum, p) => sum + parseFloat(p.amount),
+      0
+    );
+    const pendingRevenue = filteredPending.reduce(
+      (sum, p) => sum + parseFloat(p.amount),
+      0
+    );
+
+    const summaryData = [
+      ["BÁO CÁO DOANH THU", ""],
+      ["Tổng giao dịch:", filteredPayments.length.toString()],
+      ["Giao dịch thành công:", filteredCompleted.length.toString()],
+      ["Giao dịch đang xử lý:", filteredPending.length.toString()],
+      ["Doanh thu thực thu:", formatCurrency(filteredRevenue)],
+      ["Doanh thu chờ xử lý:", formatCurrency(pendingRevenue)],
+      ["Ngày xuất báo cáo:", new Date().toLocaleString("vi-VN")],
+      ["", ""],
+      ["BỘ LỌC ĐANG ÁP DỤNG", ""],
+    ];
+
+    // Add active filters
+    if (tabValue === 1) summaryData.push(["Tab:", "Đang xử lý"]);
+    else if (tabValue === 2) summaryData.push(["Tab:", "Thành công"]);
+    else if (tabValue === 3) summaryData.push(["Tab:", "Thất bại / Hoàn tiền"]);
+
+    if (statusFilter !== "all")
+      summaryData.push(["Trạng thái:", getStatusInfo(statusFilter).text]);
+    if (methodFilter !== "all")
+      summaryData.push(["Phương thức:", getMethodText(methodFilter)]);
+    if (courseIdFilter !== "all") {
+      const course = courseOptions.find(
+        (c) => c.id.toString() === courseIdFilter
+      );
+      summaryData.push(["Khóa học:", course ? course.title : courseIdFilter]);
+    }
+    if (instructorIdFilter !== "all") {
+      const instructor = instructorIdOptions.find(
+        (i) => i.id.toString() === instructorIdFilter
+      );
+      summaryData.push([
+        "Giảng viên:",
+        instructor
+          ? instructor.fullName || instructor.user?.username
+          : instructorIdFilter,
+      ]);
+    }
+    if (yearFilter !== "all") {
+      let timeFilter = `Năm ${yearFilter}`;
+      if (monthFilter !== "all") timeFilter += `, Tháng ${monthFilter}`;
+      summaryData.push(["Thời gian:", timeFilter]);
+    } else if (dateFilter !== "all") {
+      summaryData.push([
+        "Thời gian:",
+        dateFilter === "today"
+          ? "Hôm nay"
+          : dateFilter === "week"
+          ? "7 ngày qua"
+          : "30 ngày qua",
+      ]);
+    }
+    if (searchQuery) summaryData.push(["Tìm kiếm:", searchQuery]);
+
+    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+
+    // 2. Revenue by payment method
+    const methodStats = [];
+    const methodGroups = new Map();
+
+    filteredPayments.forEach((payment) => {
+      const method = payment.paymentMethod;
+      if (!methodGroups.has(method)) {
+        methodGroups.set(method, {
+          method: getMethodText(method),
+          count: 0,
+          totalAmount: 0,
+          completedAmount: 0,
+          pendingAmount: 0,
+        });
+      }
+
+      const data = methodGroups.get(method);
+      data.count++;
+      const amount = parseFloat(payment.amount);
+      data.totalAmount += amount;
+
+      if (payment.status === PaymentStatus.COMPLETED) {
+        data.completedAmount += amount;
+      } else if (payment.status === PaymentStatus.PENDING) {
+        data.pendingAmount += amount;
+      }
+    });
+
+    // Convert map to array for the sheet
+    methodGroups.forEach((data) => {
+      methodStats.push([
+        data.method,
+        data.count,
+        formatCurrency(data.totalAmount),
+        formatCurrency(data.completedAmount),
+        formatCurrency(data.pendingAmount),
+        ((data.completedAmount / filteredRevenue) * 100).toFixed(2) + "%",
+      ]);
+    });
+
+    // Method stats sheet
+    const methodStatsData = [
+      ["PHÂN TÍCH THEO PHƯƠNG THỨC THANH TOÁN", "", "", "", ""],
+      [
+        "Phương thức",
+        "Số giao dịch",
+        "Tổng tiền",
+        "Đã thanh toán",
+        "Đang xử lý",
+        "Tỷ lệ (%)",
+      ],
+      ...methodStats,
+    ];
+
+    const methodStatsSheet = XLSX.utils.aoa_to_sheet(methodStatsData);
+
+    // 3. Revenue by course (if multiple courses)
+    const courseStats = [];
+    const courseGroups = new Map();
+
+    filteredPayments.forEach((payment) => {
+      const courseId = payment.courseId;
+      const courseTitle = payment.course?.title || `Course ID: ${courseId}`;
+
+      if (!courseGroups.has(courseId)) {
+        // Debug the instructor data structure
+        console.log("Course data:", payment.course);
+
+        // Try multiple paths to get instructor name
+        let instructorName = "N/A";
+        if (payment.course?.instructor?.fullName) {
+          instructorName = payment.course.instructor.fullName;
+        } else if (payment.course?.instructor?.user?.username) {
+          instructorName = payment.course.instructor.user.username;
+        }
+
+        courseGroups.set(courseId, {
+          title: courseTitle,
+          count: 0,
+          totalAmount: 0,
+          completedAmount: 0,
+          pendingAmount: 0,
+          instructorName: instructorName,
+        });
+      }
+
+      const data = courseGroups.get(courseId);
+      data.count++;
+      const amount = parseFloat(payment.amount);
+      data.totalAmount += amount;
+
+      if (payment.status === PaymentStatus.COMPLETED) {
+        data.completedAmount += amount;
+      } else if (payment.status === PaymentStatus.PENDING) {
+        data.pendingAmount += amount;
+      }
+    });
+
+    // Convert map to array for the sheet
+    courseGroups.forEach((data) => {
+      courseStats.push([
+        data.title,
+        data.count,
+        formatCurrency(data.totalAmount),
+        formatCurrency(data.completedAmount),
+        formatCurrency(data.pendingAmount),
+      ]);
+    });
+
+    // Course stats sheet
+    const courseStatsData = [
+      ["PHÂN TÍCH THEO KHÓA HỌC", "", "", "", ""],
+      ["Khóa học", "Số giao dịch", "Tổng tiền", "Đã thanh toán", "Đang xử lý"],
+      ...courseStats,
+    ];
+
+    const courseStatsSheet = XLSX.utils.aoa_to_sheet(courseStatsData);
+
+    // 4. Time-based analysis for monthly trends
+    const timeStats = [];
+    const monthlyData = new Map();
+
+    // Group by year-month
+    filteredPayments.forEach((payment) => {
+      const date = new Date(payment.createdAt);
+      const yearMonth = `${date.getFullYear()}-${String(
+        date.getMonth() + 1
+      ).padStart(2, "0")}`;
+
+      if (!monthlyData.has(yearMonth)) {
+        monthlyData.set(yearMonth, {
+          yearMonth,
+          count: 0,
+          totalAmount: 0,
+          completedAmount: 0,
+          pendingAmount: 0,
+        });
+      }
+
+      const data = monthlyData.get(yearMonth);
+      data.count++;
+      const amount = parseFloat(payment.amount);
+      data.totalAmount += amount;
+
+      if (payment.status === PaymentStatus.COMPLETED) {
+        data.completedAmount += amount;
+      } else if (payment.status === PaymentStatus.PENDING) {
+        data.pendingAmount += amount;
+      }
+    });
+
+    // Sort by year-month
+    const sortedMonths = [...monthlyData.keys()].sort();
+
+    // Convert to array for the sheet
+    sortedMonths.forEach((month) => {
+      const data = monthlyData.get(month);
+      const [year, monthNum] = month.split("-");
+      timeStats.push([
+        `${monthNum}/${year}`,
+        data.count,
+        formatCurrency(data.totalAmount),
+        formatCurrency(data.completedAmount),
+        formatCurrency(data.pendingAmount),
+      ]);
+    });
+
+    // Time stats sheet
+    const timeStatsData = [
+      ["PHÂN TÍCH THEO THỜI GIAN", "", "", "", ""],
+      ["Tháng/Năm", "Số giao dịch", "Tổng tiền", "Đã thanh toán", "Đang xử lý"],
+      ...timeStats,
+    ];
+
+    const timeStatsSheet = XLSX.utils.aoa_to_sheet(timeStatsData);
+
+    // 5. Detailed payment list
+    const paymentListData = filteredPayments.map((payment) => ({
+      ID: payment.id,
+      "Học viên": payment.user?.username || "N/A",
+      Email: payment.user?.email || "N/A",
+      "Khóa học": payment.course?.title || "N/A",
+      "Giảng viên":
+        payment.course?.instructor?.fullName ||
+        payment.course?.instructor?.user?.username ||
+        "N/A",
+      "Số tiền": formatCurrency(payment.amount).replace("₫", "").trim(),
+      "Phương thức": getMethodText(payment.paymentMethod),
+      "Trạng thái": getStatusInfo(payment.status).text,
+      "Mã giao dịch": payment.transactionId || "N/A",
+      "Ngày tạo": formatDate(payment.createdAt),
+      "Ngày thanh toán": payment.paymentDate
+        ? formatDate(payment.paymentDate)
+        : "N/A",
+    }));
+
+    const paymentListSheet = XLSX.utils.json_to_sheet(paymentListData);
+
+    // Set column widths for the payment list
+    const cols = [
+      { wch: 5 }, // ID
+      { wch: 20 }, // Học viên
+      { wch: 25 }, // Email
+      { wch: 30 }, // Khóa học
+      { wch: 20 }, // Giảng viên
+      { wch: 15 }, // Số tiền
+      { wch: 15 }, // Phương thức
+      { wch: 12 }, // Trạng thái
+      { wch: 20 }, // Mã giao dịch
+      { wch: 20 }, // Ngày tạo
+      { wch: 20 }, // Ngày thanh toán
+    ];
+
+    paymentListSheet["!cols"] = cols;
+
+    // Add all sheets to workbook
+    XLSX.utils.book_append_sheet(workbook, summarySheet, "Tổng quan");
+    XLSX.utils.book_append_sheet(
+      workbook,
+      methodStatsSheet,
+      "Theo phương thức"
+    );
+    XLSX.utils.book_append_sheet(workbook, courseStatsSheet, "Theo khóa học");
+    XLSX.utils.book_append_sheet(workbook, timeStatsSheet, "Theo thời gian");
+    XLSX.utils.book_append_sheet(
+      workbook,
+      paymentListSheet,
+      "Danh sách chi tiết"
+    );
+
+    // Generate file name
+    const today = new Date().toISOString().slice(0, 10);
+    const fileName = `bao-cao-doanh-thu_${today}.xlsx`;
+
+    // Write and download
+    XLSX.writeFile(workbook, fileName);
+  };
+
+  // Add this computed value to extract unique courses and instructors (after useEffect)
+  const courseOptions = useMemo(() => {
+    if (!payments) return [];
+    const uniqueCourses = new Map();
+    payments.forEach((payment) => {
+      if (payment.course) {
+        uniqueCourses.set(payment.course.id, payment.course);
+      }
+    });
+    return Array.from(uniqueCourses.values());
+  }, [payments]);
+
+  const instructorIdOptions = useMemo(() => {
+    return instructors || [];
+  }, [instructors]);
+
   return (
     <Box>
-      <Typography variant="h4" sx={{ mb: 3 }}>
+      <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>
         Quản lý thanh toán
       </Typography>
 
@@ -422,12 +742,14 @@ const AdminPayments = () => {
             <CardContent>
               <Box sx={{ display: "flex", justifyContent: "center" }}>
                 <Button
-                  variant="outlined"
+                  variant="contained"
                   startIcon={<Download />}
                   fullWidth
-                  sx={{ mr: 1 }}
+                  color="primary"
+                  onClick={exportToExcel}
+                  disabled={filteredPayments.length === 0}
                 >
-                  Xuất báo cáo
+                  Xuất báo cáo doanh thu ({filteredPayments.length} giao dịch)
                 </Button>
               </Box>
             </CardContent>
@@ -529,28 +851,105 @@ const AdminPayments = () => {
                     Chuyển khoản
                   </MenuItem>
                   <MenuItem value={PaymentMethod.E_WALLET}>Ví điện tử</MenuItem>
-                  <MenuItem value={PaymentMethod.CASH}>Tiền mặt</MenuItem>
+                  <MenuItem value={PaymentMethod.ZALOPAY}>ZaloPay</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} sm={4} md={2}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Khóa học</InputLabel>
+                <Select
+                  value={courseIdFilter}
+                  label="Khóa học"
+                  onChange={(e) => {
+                    setCourseIdFilter(e.target.value);
+                    setPage(1);
+                  }}
+                >
+                  <MenuItem value="all">Tất cả</MenuItem>
+                  {courseOptions.map((course) => (
+                    <MenuItem key={course.id} value={course.id.toString()}>
+                      {course.title}
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
             </Grid>
             <Grid item xs={12} sm={4} md={2}>
               <FormControl fullWidth size="small">
-                <InputLabel>Thời gian</InputLabel>
+                <InputLabel>Giảng viên</InputLabel>
                 <Select
-                  value={dateFilter}
-                  label="Thời gian"
+                  value={instructorIdFilter}
+                  label="Giảng viên"
                   onChange={(e) => {
-                    setDateFilter(e.target.value);
+                    setInstructorIdFilter(e.target.value);
                     setPage(1);
                   }}
                 >
                   <MenuItem value="all">Tất cả</MenuItem>
-                  <MenuItem value="today">Hôm nay</MenuItem>
-                  <MenuItem value="week">7 ngày qua</MenuItem>
-                  <MenuItem value="month">30 ngày qua</MenuItem>
+                  {instructorIdOptions.map((instructor) => (
+                    <MenuItem
+                      key={instructor.id}
+                      value={instructor.id.toString()}
+                    >
+                      {instructor.fullName ||
+                        instructor.user?.username ||
+                        `ID: ${instructor.id}`}
+                    </MenuItem>
+                  ))}
                 </Select>
               </FormControl>
             </Grid>
+            <Grid item xs={12} sm={4} md={2}>
+              <FormControl fullWidth size="small">
+                <InputLabel>Năm</InputLabel>
+                <Select
+                  value={yearFilter}
+                  label="Năm"
+                  onChange={(e) => {
+                    setYearFilter(e.target.value);
+                    // Reset month when year changes
+                    if (e.target.value === "all") {
+                      setMonthFilter("all");
+                    }
+                    setPage(1);
+                  }}
+                >
+                  <MenuItem value="all">Tất cả</MenuItem>
+                  {["2024", "2025"].map((year) => (
+                    <MenuItem key={year} value={year}>
+                      {year}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid item xs={12} sm={4} md={2}>
+              <FormControl
+                fullWidth
+                size="small"
+                disabled={yearFilter === "all"}
+              >
+                <InputLabel>Tháng</InputLabel>
+                <Select
+                  value={monthFilter}
+                  label="Tháng"
+                  onChange={(e) => {
+                    setMonthFilter(e.target.value);
+                    setPage(1);
+                  }}
+                >
+                  <MenuItem value="all">Tất cả</MenuItem>
+                  {Array.from({ length: 12 }, (_, i) => i + 1).map((month) => (
+                    <MenuItem key={month} value={month.toString()}>
+                      Tháng {month}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
             <Grid item xs={12} md={2} textAlign="right">
               <Button
                 startIcon={<FilterList />}
@@ -558,6 +957,10 @@ const AdminPayments = () => {
                   setStatusFilter("all");
                   setMethodFilter("all");
                   setDateFilter("all");
+                  setCourseIdFilter("all");
+                  setInstructorIdFilter("all");
+                  setYearFilter("all");
+                  setMonthFilter("all");
                   setSearchQuery("");
                   setPage(1);
                 }}
@@ -585,77 +988,99 @@ const AdminPayments = () => {
             </TableRow>
           </TableHead>
           <TableBody>
-            {paginatedPayments.map((payment) => {
-              const statusInfo = getStatusInfo(payment.status);
-              return (
-                <TableRow key={payment.id}>
-                  <TableCell>
-                    <Box sx={{ display: "flex", alignItems: "center" }}>
-                      <Typography variant="body2" fontWeight="medium">
-                        {payment.id}
+            {paginatedPayments.length > 0 ? (
+              paginatedPayments.map((payment) => {
+                const statusInfo = getStatusInfo(payment.status);
+                return (
+                  <TableRow key={payment.id}>
+                    <TableCell>
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        <Typography variant="body2" fontWeight="medium">
+                          #{payment.id}
+                        </Typography>
+                        {payment.transactionId && (
+                          <Tooltip title="Sao chép">
+                            <IconButton
+                              size="small"
+                              sx={{ ml: 0.5 }}
+                              onClick={() => {
+                                navigator.clipboard.writeText(
+                                  payment.transactionId
+                                );
+                              }}
+                            >
+                              <ContentCopy fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </Box>
+                      <Typography variant="caption" color="text.secondary">
+                        {payment.transactionId || "Chưa có"}
                       </Typography>
-                      <Tooltip title="Sao chép">
-                        <IconButton size="small" sx={{ ml: 0.5 }}>
-                          <ContentCopy fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    </Box>
-                    <Typography variant="caption" color="text.secondary">
-                      {payment.transactionId}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {formatDate(payment.date)}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">{payment.userName}</Typography>
-                    <Typography variant="caption" color="text.secondary">
-                      {payment.email}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {payment.courseName || "-"}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Box sx={{ display: "flex", alignItems: "center" }}>
-                      {getMethodIcon(payment.method)}
-                      <Typography variant="body2" sx={{ ml: 1 }}>
-                        {getMethodText(payment.method)}
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {formatDate(payment.createdAt)}
                       </Typography>
-                    </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Typography
-                      variant="body2"
-                      fontWeight="bold"
-                      color="primary"
-                    >
-                      {formatCurrency(payment.amount)}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Chip
-                      label={statusInfo.text}
-                      color={statusInfo.color as any}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell align="center">
-                    <IconButton
-                      size="small"
-                      onClick={(e) => handleMenuClick(e, payment)}
-                    >
-                      <MoreVert />
-                    </IconButton>
-                  </TableCell>
-                </TableRow>
-              );
-            })}
-            {paginatedPayments.length === 0 && (
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {payment.user?.username}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {payment.user?.email}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        {payment.course?.thumbnailUrl && (
+                          <Avatar
+                            src={payment.course.thumbnailUrl}
+                            variant="rounded"
+                            sx={{ width: 30, height: 30, mr: 1 }}
+                          />
+                        )}
+                        <Typography variant="body2">
+                          {payment.course?.title || "-"}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Box sx={{ display: "flex", alignItems: "center" }}>
+                        {getMethodIcon(payment.paymentMethod)}
+                        <Typography variant="body2" sx={{ ml: 1 }}>
+                          {getMethodText(payment.paymentMethod)}
+                        </Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Typography
+                        variant="body2"
+                        fontWeight="bold"
+                        color="primary"
+                      >
+                        {formatCurrency(payment.amount)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Chip
+                        label={statusInfo.text}
+                        color={statusInfo.color as any}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell align="center">
+                      <IconButton
+                        size="small"
+                        onClick={(e) => handleMenuClick(e, payment)}
+                      >
+                        <MoreVert />
+                      </IconButton>
+                    </TableCell>
+                  </TableRow>
+                );
+              })
+            ) : (
               <TableRow>
                 <TableCell colSpan={8} align="center" sx={{ py: 3 }}>
                   <Typography color="text.secondary">
@@ -734,28 +1159,29 @@ const AdminPayments = () => {
                   Mã giao dịch
                 </Typography>
                 <Typography variant="body1" gutterBottom>
-                  {selectedPayment.id}
+                  #{selectedPayment.id}
                 </Typography>
 
                 <Typography variant="subtitle2" color="text.secondary">
                   Người dùng
                 </Typography>
                 <Typography variant="body1" gutterBottom>
-                  {selectedPayment.userName} ({selectedPayment.email})
+                  {selectedPayment.user?.username} (
+                  {selectedPayment.user?.email})
                 </Typography>
 
                 <Typography variant="subtitle2" color="text.secondary">
-                  Ngày giao dịch
+                  Ngày tạo
                 </Typography>
                 <Typography variant="body1" gutterBottom>
-                  {formatDate(selectedPayment.date)}
+                  {formatDate(selectedPayment.createdAt)}
                 </Typography>
 
                 <Typography variant="subtitle2" color="text.secondary">
                   Phương thức thanh toán
                 </Typography>
                 <Typography variant="body1" gutterBottom>
-                  {getMethodText(selectedPayment.method)}
+                  {getMethodText(selectedPayment.paymentMethod)}
                 </Typography>
               </Grid>
               <Grid item xs={12} sm={6}>
@@ -785,26 +1211,16 @@ const AdminPayments = () => {
                   Khóa học
                 </Typography>
                 <Typography variant="body1" gutterBottom>
-                  {selectedPayment.courseName || "Không có"}
+                  {selectedPayment.course?.title || "Không có"}
                 </Typography>
 
                 <Typography variant="subtitle2" color="text.secondary">
                   Mã giao dịch bên ngoài
                 </Typography>
                 <Typography variant="body1" gutterBottom>
-                  {selectedPayment.transactionId}
+                  {selectedPayment.transactionId || "Chưa có"}
                 </Typography>
               </Grid>
-              <Grid item xs={12}>
-                <Divider sx={{ my: 2 }} />
-                <Typography variant="subtitle2" color="text.secondary">
-                  Ghi chú
-                </Typography>
-                <Typography variant="body1" gutterBottom>
-                  {selectedPayment.description || "Không có"}
-                </Typography>
-              </Grid>
-
               {selectedPayment.status === PaymentStatus.PENDING && (
                 <Grid item xs={12}>
                   <Box

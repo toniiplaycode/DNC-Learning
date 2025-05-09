@@ -184,8 +184,7 @@ const AdminLayout = () => {
   };
 
   const menuItems = [
-    { text: "Bảng điều khiển", icon: <Dashboard />, path: "/admin" },
-    { text: "Khóa học", icon: <School />, path: "/admin/courses" },
+    { text: "Khóa học", icon: <School />, path: "/admin" },
     { text: "Giảng viên", icon: <People />, path: "/admin/instructors" },
     { text: "Học viên/sinh viên", icon: <People />, path: "/admin/students" },
     {

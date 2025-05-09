@@ -45,7 +45,7 @@ export class PaymentsController {
 
   @Get()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(UserRole.ADMIN, UserRole.INSTRUCTOR)
+  @Roles(UserRole.ADMIN)
   findAll(): Promise<PaymentResponseDto[]> {
     return this.paymentsService.findAll();
   }
@@ -78,6 +78,14 @@ export class PaymentsController {
     @Param('userId', ParseIntPipe) userId: number,
   ): Promise<PaymentResponseDto[]> {
     return this.paymentsService.findByUser(userId);
+  }
+
+  @Get('instructor/:instructorId')
+  @UseGuards(JwtAuthGuard)
+  findByInstructor(
+    @Param('instructorId', ParseIntPipe) instructorId: number,
+  ): Promise<PaymentResponseDto[]> {
+    return this.paymentsService.findByInstructor(instructorId);
   }
 
   @Get('course/:courseId')

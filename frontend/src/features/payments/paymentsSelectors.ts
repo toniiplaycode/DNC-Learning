@@ -9,3 +9,5 @@ export const selectZaloPayOrder = (state: RootState) =>
   state.payments.zaloPayOrder;
 export const selectPaymentsStatus = (state: RootState) => state.payments.status;
 export const selectPaymentsError = (state: RootState) => state.payments.error;
+export const selectInstructorPayments = (state: RootState) =>
+  state.payments.instructorPayments;

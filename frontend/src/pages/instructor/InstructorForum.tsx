@@ -32,6 +32,7 @@ import {
   ListItemText,
   CircularProgress,
   FormHelperText,
+  Avatar,
 } from "@mui/material";
 import {
   Search,
@@ -91,7 +92,6 @@ const InstructorForum = () => {
 
   // State cho các tabs, filter, search
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterCategory, setFilterCategory] = useState("all");
   const [filterCourse, setFilterCourse] = useState("all");
   const [filterStatus, setFilterStatus] = useState("all");
   const [sortBy, setSortBy] = useState("updatedAt");
@@ -317,8 +317,6 @@ const InstructorForum = () => {
         courseId: Number(formValues.courseId), // Convert to number
         userId: currentUser?.id,
       };
-
-      console.log("forumData", forumData);
 
       if (editingPost) {
         await dispatch(
@@ -663,12 +661,13 @@ const InstructorForum = () => {
                   filteredForums.map((forum) => (
                     <TableRow key={forum.id}>
                       <TableCell>
-                        <Stack direction="row" spacing={1} alignItems="center">
-                          {forum.isPinned && (
-                            <Tooltip title="Đã ghim">
-                              <PushPin fontSize="small" color="warning" />
-                            </Tooltip>
-                          )}
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          <Avatar
+                            src={forum.thumbnailUrl || "/src/assets/logo.png"}
+                            variant="rounded"
+                            sx={{ width: 60, height: 60, mr: 2 }}
+                            alt={forum.title}
+                          />
                           <Box>
                             <Typography variant="body1">
                               {forum.title}
@@ -685,7 +684,7 @@ const InstructorForum = () => {
                               </Tooltip>
                             </Stack>
                           </Box>
-                        </Stack>
+                        </Box>
                       </TableCell>
                       <TableCell>
                         <Typography variant="body2">

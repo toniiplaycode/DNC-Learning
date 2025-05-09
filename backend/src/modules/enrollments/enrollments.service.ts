@@ -5,7 +5,7 @@ import {
   ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, getManager } from 'typeorm';
+import { In, Repository, getManager } from 'typeorm';
 import { Enrollment, EnrollmentStatus } from '../../entities/Enrollment';
 import { Course } from '../../entities/Course';
 import { User } from '../../entities/User';
@@ -89,6 +89,121 @@ export class EnrollmentsService {
     });
 
     return this.enrollmentsRepository.save(enrollment);
+  }
+
+  // Add this method to the EnrollmentsService class
+  async findByInstructor(instructorId: number): Promise<any[]> {
+    try {
+      // 1. Get all courses taught by the instructor
+      const courses = await this.coursesRepository.find({
+        where: { instructorId },
+        select: ['id', 'title', 'thumbnailUrl', 'price'],
+      });
+
+      if (!courses.length) {
+        return [];
+      }
+
+      const courseIds = courses.map((course) => course.id);
+
+      // 2. Get all enrollments for these courses
+      const enrollments = await this.enrollmentsRepository.find({
+        where: { courseId: In(courseIds) },
+        relations: ['user', 'course'],
+        order: { enrollmentDate: 'DESC' },
+      });
+
+      // 3. Get progress data for analytics
+      const enrollmentStats = await Promise.all(
+        courseIds.map(async (courseId) => {
+          const courseEnrollments = enrollments.filter(
+            (e) => e.courseId === courseId,
+          );
+
+          // Get course-specific stats
+          const totalStudents = courseEnrollments.length;
+          const completedCount = courseEnrollments.filter(
+            (e) => e.status === EnrollmentStatus.COMPLETED,
+          ).length;
+          const activeCount = courseEnrollments.filter(
+            (e) => e.status === EnrollmentStatus.ACTIVE,
+          ).length;
+          const droppedCount = courseEnrollments.filter(
+            (e) => e.status === EnrollmentStatus.DROPPED,
+          ).length;
+
+          // Calculate completion rate
+          const completionRate =
+            totalStudents > 0
+              ? Math.round((completedCount / totalStudents) * 100)
+              : 0;
+
+          return {
+            courseId,
+            courseTitle: courses.find((c) => c.id === courseId)?.title,
+            thumbnailUrl: courses.find((c) => c.id === courseId)?.thumbnailUrl,
+            price: courses.find((c) => c.id === courseId)?.price,
+            totalStudents,
+            completedCount,
+            activeCount,
+            droppedCount,
+            completionRate,
+          };
+        }),
+      );
+
+      // 4. Add monthly enrollment data for charts
+      const monthlyData = this.calculateMonthlyEnrollments(enrollments);
+      return [
+        ...enrollments,
+        {
+          courseStats: enrollmentStats,
+          monthlyData,
+        },
+      ];
+    } catch (error) {
+      console.error('Error finding enrollments by instructor:', error);
+      throw new Error('Could not retrieve instructor enrollment data');
+    }
+  }
+
+  // Helper method to calculate monthly enrollments
+  private calculateMonthlyEnrollments(enrollments: Enrollment[]): any[] {
+    const monthlyMap = new Map();
+
+    // Define last 6 months
+    const today = new Date();
+    for (let i = 5; i >= 0; i--) {
+      const date = new Date(today);
+      date.setMonth(date.getMonth() - i);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+      monthlyMap.set(monthKey, {
+        month: `T${date.getMonth() + 1}`,
+        year: date.getFullYear(),
+        count: 0,
+        students: new Set(),
+      });
+    }
+
+    // Fill data
+    enrollments.forEach((enrollment) => {
+      const date = new Date(enrollment.enrollmentDate);
+      const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
+
+      if (monthlyMap.has(monthKey)) {
+        const monthData = monthlyMap.get(monthKey);
+        monthData.count++;
+        monthData.students.add(enrollment.userId);
+      }
+    });
+
+    // Convert to array for easier consumption
+    return Array.from(monthlyMap.entries()).map(([key, data]) => ({
+      month: data.month,
+      year: data.year,
+      count: data.count,
+      uniqueStudents: data.students.size,
+    }));
   }
 
   async findAll(): Promise<Enrollment[]> {
