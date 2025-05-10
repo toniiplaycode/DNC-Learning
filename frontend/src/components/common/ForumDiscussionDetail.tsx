@@ -21,6 +21,8 @@ import {
   DialogContent,
   DialogContentText,
   DialogTitle,
+  InputAdornment,
+  Grid,
 } from "@mui/material";
 import {
   ThumbUp,
@@ -340,421 +342,481 @@ const ForumDiscussionDetail = ({
     setReplyToDelete(null);
   };
 
-  // Render một reply và các phản hồi con của nó
-  const renderReply = (reply: ForumReply) => {
-    const childReplies = getChildReplies(reply.id);
-
-    return (
-      <Box key={reply.id} sx={{ mb: 3 }}>
-        <Card variant="outlined">
-          <CardContent>
-            <Stack direction="row" spacing={2}>
-              <Avatar
-                src={
-                  reply.user?.avatarUrl
-                    ? reply.user?.avatarUrl
-                    : "/src/assets/logo.png"
-                }
-                alt={reply.user?.username || "User"}
-              />
-              <Box sx={{ flex: 1 }}>
-                <Stack
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  sx={{ mb: 1 }}
-                >
-                  <Box mt={-0.8}>
-                    <Typography variant="subtitle1" fontWeight={600}>
-                      {reply.user?.username || "Người dùng"}
-                    </Typography>
-                    <Typography variant="subtitle2" color="primary.main">
-                      {reply.user?.role == "student" ? "Học viên" : "Sinh viên"}
-                    </Typography>
-                  </Box>
-                  <Typography variant="caption" color="text.secondary">
-                    {formatDate(reply.createdAt)}
-                  </Typography>
-                </Stack>
-
-                <Typography variant="body1" sx={{ mb: 2 }}>
-                  {reply.content}
-                </Typography>
-
-                <Stack direction="row" spacing={1}>
-                  <IconButton
-                    size="small"
-                    onClick={() => handleReplyClick(Number(reply.id))}
-                  >
-                    <Reply fontSize="small" />
-                  </IconButton>
-
-                  {/* Thêm nút xóa chỉ khi bình luận là của người dùng hiện tại */}
-                  {isCurrentUserReply(reply) && (
-                    <IconButton
-                      size="small"
-                      onClick={() => handleOpenDeleteDialog(Number(reply.id))}
-                      color="error"
-                    >
-                      <DeleteOutline fontSize="small" />
-                    </IconButton>
-                  )}
-                </Stack>
-              </Box>
-            </Stack>
-          </CardContent>
-        </Card>
-
-        {/* Hiển thị các phản hồi con */}
-        {childReplies.length > 0 && (
-          <Box sx={{ pl: 6, mt: 1 }}>
-            {childReplies.map((childReply) => renderReply(childReply))}
-          </Box>
-        )}
-      </Box>
-    );
-  };
-
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
+    <Container maxWidth="lg" sx={{ py: 2, mt: 2 }}>
       <ScrollOnTop />
 
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
+      {/* Main post card styled like social media */}
+      <Card
+        sx={{
+          my: 2,
+          px: 2,
+          borderRadius: 2,
+          boxShadow: "none",
+          border: "1px solid",
+          borderColor: "divider",
+        }}
+      >
+        {/* User header like social media */}
+        <CardContent sx={{ pb: 1 }}>
           <Stack
             direction="row"
-            alignItems="flex-start"
-            justifyContent="space-between"
-            sx={{ mb: 2 }}
+            spacing={1.5}
+            alignItems="center"
+            sx={{ mb: 1.5 }}
           >
-            <Stack direction="row" spacing={2} alignItems="center">
-              <Avatar
-                src={
-                  discussion.user?.avatarUrl
-                    ? discussion.user?.avatarUrl
-                    : "/src/assets/logo.png"
-                }
-                alt={discussion.user?.username || "User"}
-                sx={{ width: 56, height: 56 }}
-              />
-              <Box>
-                <Stack>
-                  <Box>
-                    <Typography variant="subtitle1">
-                      {discussion.user?.username || "Người dùng"}
-                    </Typography>
-                  </Box>
-                  <Typography variant="caption" color="text.secondary">
-                    {formatDate(discussion.createdAt)}
-                  </Typography>
-                </Stack>
-              </Box>
-            </Stack>
-
-            <Stack direction="row" spacing={1}>
-              <IconButton>
-                <Share />
-              </IconButton>
-            </Stack>
+            <Avatar
+              src={discussion.user?.avatarUrl || "/src/assets/logo.png"}
+              alt={discussion.user?.username || "User"}
+              sx={{ width: 40, height: 40 }}
+            />
+            <Box sx={{ flex: 1 }}>
+              <Typography variant="subtitle1" fontWeight={500}>
+                {discussion.user?.username || "Người dùng"}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {formatDate(discussion.createdAt)}
+              </Typography>
+            </Box>
+            <IconButton size="small">
+              <Share fontSize="small" />
+            </IconButton>
           </Stack>
 
-          <Divider sx={{ my: 2 }} />
+          {/* Post title like a status update */}
+          <Typography variant="body1" sx={{ mb: 1.5, fontWeight: 400 }}>
+            {discussion.title}
+          </Typography>
+        </CardContent>
 
-          <Box sx={{ mb: 2, display: "flex", justifyContent: "center" }}>
+        {/* Media content takes full width - no padding */}
+        {discussion.thumbnailUrl && (
+          <Box
+            sx={{
+              width: "100%",
+              maxHeight: "500px",
+              overflow: "hidden",
+              display: "flex",
+              justifyContent: "center",
+            }}
+          >
             <img
-              src={
-                discussion.thumbnailUrl
-                  ? discussion.thumbnailUrl
-                  : "/src/assets/logo.png"
-              }
+              src={discussion.thumbnailUrl || "/src/assets/logo.png"}
               alt={discussion.title}
               style={{
-                width: "50%",
-                height: "50%",
-                borderRadius: "8px",
+                minWidth: "80%",
+                maxWidth: "80%",
                 objectFit: "cover",
+                borderRadius: "10px",
               }}
             />
           </Box>
+        )}
 
-          <Box sx={{ mb: 2 }}>
-            <Typography variant="h5" fontWeight={600} gutterBottom>
-              {discussion.title}
-            </Typography>
-          </Box>
-
-          {/* Hiển thị description với HTML */}
+        {/* Post content */}
+        <CardContent sx={{ pt: 2 }}>
           <Box
             sx={{
-              mt: 2,
-              mb: 3,
-              // Heading styles
               "& h1, & h2, & h3, & h4, & h5, & h6": {
-                fontSize: (theme) => ({
-                  h1: "2rem",
-                  h2: "1.5rem",
-                  h3: "1.3rem",
-                  h4: "1.1rem",
-                  h5: "1rem",
-                  h6: "0.9rem",
-                }),
-                fontWeight: 600,
-                mb: 2,
-                color: "primary.main",
-              },
-              // Paragraph and text styles
-              "& p, & div": {
-                mb: 2,
-                lineHeight: 1.6,
-              },
-              // List styles
-              "& ul, & ol": {
-                pl: 3,
-                mb: 2,
-              },
-              "& li": {
-                mb: 1,
-              },
-              // Table styles
-              "& table": {
-                width: "100%",
-                borderCollapse: "collapse",
-                mb: 2,
-              },
-              "& th, & td": {
-                border: "1px solid",
-                borderColor: "divider",
-                p: 1,
-              },
-              // Link styles
-              "& a": {
-                color: "primary.main",
-                textDecoration: "none",
-                "&:hover": {
-                  textDecoration: "underline",
+                fontSize: {
+                  h1: "1.5rem",
+                  h2: "1.3rem",
+                  h3: "1.15rem",
+                  h4: "1rem",
+                  h5: "0.9rem",
+                  h6: "0.85rem",
                 },
+                fontWeight: 500,
+                mb: 1.5,
               },
-              // Blockquote styles
-              "& blockquote": {
-                borderLeft: "4px solid",
-                borderColor: "primary.main",
-                pl: 2,
-                py: 1,
-                my: 2,
-                bgcolor: "action.hover",
+              "& p, & div": {
+                mb: 1.5,
+                lineHeight: 1.5,
+                fontSize: "0.95rem",
               },
-              // Code styles
-              "& code, & pre": {
-                fontFamily: "monospace",
-                bgcolor: "action.hover",
-                p: 1,
-                borderRadius: 1,
-              },
-              // Image styles
               "& img": {
                 maxWidth: "100%",
-                height: "auto",
+                borderRadius: 1,
+                mb: 1.5,
               },
             }}
             dangerouslySetInnerHTML={{ __html: discussion.description }}
           />
 
-          <Stack direction="row" spacing={2} sx={{ mt: 3 }}>
-            {discussion.course && (
-              <Chip
-                label={discussion.course.title}
-                variant="outlined"
-                color="primary"
-                size="small"
-                sx={{ mr: 1 }}
-              />
-            )}
-            <Box
+          {/* Course tag */}
+          {discussion.course && (
+            <Chip
+              label={discussion.course.title}
+              size="small"
               sx={{
-                display: "flex",
-                alignItems: "center",
-                gap: 2,
-                ml: "auto", // Đẩy về bên phải
+                mt: 1,
+                mr: 1,
+                fontSize: "0.75rem",
+                borderRadius: "4px",
+                bgcolor: "action.hover",
+                color: "text.primary",
               }}
-            >
-              <Box
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 0.5,
-                  color: "text.secondary",
-                  "&:hover": {
-                    color: "text.primary",
-                  },
-                }}
-              >
-                <Comment fontSize="small" />
-                <Typography variant="body2">
-                  {discussion.replyCount || 0}
-                </Typography>
-              </Box>
+            />
+          )}
+        </CardContent>
 
-              <Box
-                onClick={handleLikeClick}
-                sx={{
-                  display: "flex",
-                  alignItems: "center",
-                  gap: 0.5,
-                  cursor: "pointer",
-                  color: isLiked ? "primary.main" : "text.secondary",
-                  "&:hover": {
-                    color: isLiked ? "primary.dark" : "text.primary",
-                  },
-                  transition: "color 0.2s ease",
-                }}
-              >
-                {isLiked ? (
-                  <ThumbUp fontSize="small" />
+        {/* Social interaction buttons */}
+        <Box
+          sx={{ px: 2, py: 1, borderTop: "1px solid", borderColor: "divider" }}
+        >
+          <Stack direction="row" justifyContent="space-between">
+            <Button
+              startIcon={
+                isLiked ? (
+                  <ThumbUp fontSize="small" color="primary" />
                 ) : (
                   <ThumbUpOutlined fontSize="small" />
-                )}
-                <Typography variant="body2">{likeCount}</Typography>
-              </Box>
-            </Box>
+                )
+              }
+              onClick={handleLikeClick}
+              sx={{
+                color: isLiked ? "primary.main" : "text.secondary",
+                textTransform: "none",
+                "&:hover": {
+                  bgcolor: "transparent",
+                  color: isLiked ? "primary.dark" : "text.primary",
+                },
+              }}
+            >
+              {likeCount > 0 ? `Thích (${likeCount})` : "Thích"}
+            </Button>
+
+            <Button
+              startIcon={<Comment fontSize="small" />}
+              onClick={() => {
+                setShowComments(!showComments);
+                if (!showComments) {
+                  setTimeout(() => {
+                    document
+                      .getElementById("comments-section")
+                      ?.scrollIntoView({ behavior: "smooth" });
+                  }, 100);
+                }
+              }}
+              sx={{
+                color: "text.secondary",
+                textTransform: "none",
+                "&:hover": { bgcolor: "transparent", color: "text.primary" },
+              }}
+            >
+              {discussion.replyCount > 0
+                ? `Bình luận (${discussion.replyCount})`
+                : "Bình luận"}
+            </Button>
           </Stack>
-        </CardContent>
+        </Box>
       </Card>
 
-      <Box id="comments-section">
-        <Stack
-          direction="row"
-          alignItems="center"
-          justifyContent="space-between"
-          sx={{ mb: 2 }}
+      {/* Comments section like social media */}
+      <Collapse in={showComments}>
+        <Card
+          id="comments-section"
+          sx={{
+            borderRadius: 2,
+            border: "1px solid",
+            borderColor: "divider",
+            mb: 2,
+            boxShadow: "none",
+          }}
         >
-          <Stack
-            direction="row"
-            alignItems="center"
-            spacing={1}
-            onClick={() => setShowComments(!showComments)}
-            sx={{
-              cursor: "pointer",
-              "&:hover": { opacity: 0.8 },
-            }}
-          >
-            <Typography variant="h6">
-              Bình luận ({discussion.replyCount || 0})
-            </Typography>
-            <IconButton size="small">
-              {showComments ? <ExpandLess /> : <ExpandMore />}
-            </IconButton>
-          </Stack>
-
-          <ToggleButtonGroup
-            value={sortOrder}
-            exclusive
-            onChange={handleSortChange}
-            size="small"
-            aria-label="comment sort order"
-          >
-            <ToggleButton
-              value="newest"
-              aria-label="sort by newest"
-              sx={{
-                px: 2,
-                "&.Mui-selected": {
-                  backgroundColor: "primary.main",
-                  color: "white",
-                  "&:hover": {
-                    backgroundColor: "primary.dark",
-                  },
-                },
-              }}
-            >
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Sort sx={{ transform: "scaleY(-1)" }} />
-                <Typography variant="body2">Mới nhất</Typography>
-              </Stack>
-            </ToggleButton>
-            <ToggleButton
-              value="oldest"
-              aria-label="sort by oldest"
-              sx={{
-                px: 2,
-                "&.Mui-selected": {
-                  backgroundColor: "primary.main",
-                  color: "white",
-                  "&:hover": {
-                    backgroundColor: "primary.dark",
-                  },
-                },
-              }}
-            >
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Sort />
-                <Typography variant="body2">Cũ nhất</Typography>
-              </Stack>
-            </ToggleButton>
-          </ToggleButtonGroup>
-        </Stack>
-
-        <Collapse in={showComments}>
-          <Card sx={{ mb: 3 }} ref={commentFormRef}>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
-                {replyingTo ? "Trả lời bình luận" : "Thêm bình luận"}
-              </Typography>
-              {replyingTo && (
-                <Box sx={{ mb: 2 }}>
+          {/* Comment form */}
+          <CardContent sx={{ pb: 1 }} ref={commentFormRef}>
+            <Stack direction="row" spacing={1.5} alignItems="flex-start">
+              <Avatar
+                src={currentUser?.avatarUrl || "/src/assets/logo.png"}
+                alt={currentUser?.username || "User"}
+                sx={{ width: 36, height: 36 }}
+              />
+              <Box sx={{ flex: 1 }}>
+                {replyingTo && (
                   <Chip
                     label="Đang trả lời bình luận"
                     onDelete={() => setReplyingTo(null)}
-                    color="primary"
-                    variant="outlined"
+                    size="small"
+                    sx={{ mb: 1, fontSize: "0.75rem" }}
                   />
-                </Box>
-              )}
-              <TextField
-                fullWidth
-                multiline
-                rows={3}
-                placeholder="Viết bình luận của bạn..."
-                value={comment}
-                onChange={(e) => setComment(e.target.value)}
-                sx={{ mb: 2 }}
-              />
-              <Button
-                variant="contained"
-                endIcon={<Send />}
-                onClick={handleSubmitComment}
-                disabled={!comment.trim()}
-              >
-                Gửi bình luận
-              </Button>
-            </CardContent>
-          </Card>
+                )}
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={2}
+                  placeholder="Viết bình luận của bạn..."
+                  value={comment}
+                  onChange={(e) => setComment(e.target.value)}
+                  variant="outlined"
+                  size="small"
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          onClick={handleSubmitComment}
+                          disabled={!comment.trim()}
+                          color="primary"
+                          size="small"
+                        >
+                          <Send fontSize="small" />
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                    sx: {
+                      borderRadius: 4,
+                      bgcolor: "action.hover",
+                      "& fieldset": { border: "none" },
+                    },
+                  }}
+                />
+              </Box>
+            </Stack>
+          </CardContent>
 
-          <Stack spacing={2}>
-            {currentComments.map((reply) => renderReply(reply))}
-          </Stack>
+          <Divider />
 
-          {totalPages > 1 && (
-            <Box
-              sx={{
-                display: "flex",
-                justifyContent: "center",
-                mt: 3,
-                mb: 2,
-              }}
+          {/* Comment sorting options */}
+          <Box sx={{ px: 2, py: 1 }}>
+            <Stack
+              direction="row"
+              justifyContent="space-between"
+              alignItems="center"
             >
+              <Typography variant="body2" color="text.secondary">
+                {discussion.replyCount || 0} bình luận
+              </Typography>
+              <ToggleButtonGroup
+                value={sortOrder}
+                exclusive
+                onChange={handleSortChange}
+                size="small"
+              >
+                <ToggleButton
+                  value="newest"
+                  sx={{
+                    px: 1.5,
+                    py: 0.5,
+                    fontSize: "0.75rem",
+                    textTransform: "none",
+                    borderRadius: "4px",
+                  }}
+                >
+                  Mới nhất
+                </ToggleButton>
+                <ToggleButton
+                  value="oldest"
+                  sx={{
+                    px: 1.5,
+                    py: 0.5,
+                    fontSize: "0.75rem",
+                    textTransform: "none",
+                    borderRadius: "4px",
+                  }}
+                >
+                  Cũ nhất
+                </ToggleButton>
+              </ToggleButtonGroup>
+            </Stack>
+          </Box>
+
+          <Divider />
+
+          {/* Comments list styled like social media */}
+          <Box sx={{ maxHeight: "600px", overflow: "auto" }}>
+            {currentComments.length > 0 ? (
+              currentComments.map((reply) => (
+                <Box
+                  key={reply.id}
+                  sx={{
+                    px: 2,
+                    py: 1,
+                    borderBottom: "1px solid",
+                    borderColor: "divider",
+                  }}
+                >
+                  <Stack direction="row" spacing={1.5}>
+                    <Avatar
+                      src={reply.user?.avatarUrl || "/src/assets/logo.png"}
+                      alt={reply.user?.username || "User"}
+                      sx={{ width: 32, height: 32 }}
+                    />
+                    <Box sx={{ flex: 1 }}>
+                      <Box
+                        sx={{
+                          bgcolor: "action.hover",
+                          p: 1.5,
+                          borderRadius: "12px",
+                          mb: 0.5,
+                        }}
+                      >
+                        <Typography
+                          variant="subtitle2"
+                          fontWeight={500}
+                          display="inline"
+                        >
+                          {reply.user?.username || "Người dùng"}
+                        </Typography>
+                        <Typography variant="body2" sx={{ mt: 0.5 }}>
+                          {reply.content}
+                        </Typography>
+                      </Box>
+
+                      <Stack direction="row" spacing={2} sx={{ ml: 1 }}>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{
+                            cursor: "pointer",
+                            "&:hover": { textDecoration: "underline" },
+                          }}
+                        >
+                          {formatDate(reply.createdAt)}
+                        </Typography>
+                        <Typography
+                          variant="caption"
+                          color="text.secondary"
+                          sx={{
+                            cursor: "pointer",
+                            "&:hover": { textDecoration: "underline" },
+                          }}
+                          onClick={() => handleReplyClick(Number(reply.id))}
+                        >
+                          Trả lời
+                        </Typography>
+                        {isCurrentUserReply(reply) && (
+                          <Typography
+                            variant="caption"
+                            color="error"
+                            sx={{
+                              cursor: "pointer",
+                              "&:hover": { textDecoration: "underline" },
+                            }}
+                            onClick={() =>
+                              handleOpenDeleteDialog(Number(reply.id))
+                            }
+                          >
+                            Xóa
+                          </Typography>
+                        )}
+                      </Stack>
+                    </Box>
+                  </Stack>
+
+                  {/* Child replies */}
+                  {getChildReplies(reply.id).length > 0 && (
+                    <Box sx={{ pl: 6, mt: 1 }}>
+                      {getChildReplies(reply.id).map((childReply) => (
+                        <Box key={childReply.id} sx={{ mb: 1 }}>
+                          <Stack direction="row" spacing={1.5}>
+                            <Avatar
+                              src={
+                                childReply.user?.avatarUrl ||
+                                "/src/assets/logo.png"
+                              }
+                              alt={childReply.user?.username || "User"}
+                              sx={{ width: 24, height: 24 }}
+                            />
+                            <Box sx={{ flex: 1 }}>
+                              <Box
+                                sx={{
+                                  bgcolor: "action.hover",
+                                  p: 1,
+                                  borderRadius: "12px",
+                                  mb: 0.5,
+                                }}
+                              >
+                                <Typography
+                                  variant="subtitle2"
+                                  fontWeight={500}
+                                  display="inline"
+                                  fontSize="0.85rem"
+                                >
+                                  {childReply.user?.username || "Người dùng"}
+                                </Typography>
+                                <Typography
+                                  variant="body2"
+                                  fontSize="0.85rem"
+                                  sx={{ mt: 0.5 }}
+                                >
+                                  {childReply.content}
+                                </Typography>
+                              </Box>
+
+                              <Stack direction="row" spacing={2} sx={{ ml: 1 }}>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  fontSize="0.7rem"
+                                >
+                                  {formatDate(childReply.createdAt)}
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                  fontSize="0.7rem"
+                                  sx={{
+                                    cursor: "pointer",
+                                    "&:hover": { textDecoration: "underline" },
+                                  }}
+                                  onClick={() =>
+                                    handleReplyClick(Number(childReply.id))
+                                  }
+                                >
+                                  Trả lời
+                                </Typography>
+                                {isCurrentUserReply(childReply) && (
+                                  <Typography
+                                    variant="caption"
+                                    color="error"
+                                    fontSize="0.7rem"
+                                    sx={{
+                                      cursor: "pointer",
+                                      "&:hover": {
+                                        textDecoration: "underline",
+                                      },
+                                    }}
+                                    onClick={() =>
+                                      handleOpenDeleteDialog(
+                                        Number(childReply.id)
+                                      )
+                                    }
+                                  >
+                                    Xóa
+                                  </Typography>
+                                )}
+                              </Stack>
+                            </Box>
+                          </Stack>
+                        </Box>
+                      ))}
+                    </Box>
+                  )}
+                </Box>
+              ))
+            ) : (
+              <Box sx={{ p: 3, textAlign: "center" }}>
+                <Typography color="text.secondary">
+                  Chưa có bình luận nào. Hãy là người đầu tiên bình luận!
+                </Typography>
+              </Box>
+            )}
+          </Box>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <Box sx={{ p: 2, display: "flex", justifyContent: "center" }}>
               <Pagination
                 count={totalPages}
                 page={page}
                 onChange={handlePageChange}
-                color="primary"
-                size="large"
-                showFirstButton
-                showLastButton
+                size="small"
+                shape="rounded"
               />
             </Box>
           )}
-        </Collapse>
-      </Box>
+        </Card>
+      </Collapse>
 
       {/* Dialog xác nhận xóa bình luận */}
       <Dialog open={deleteDialogOpen} onClose={handleCloseDeleteDialog}>

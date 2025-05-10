@@ -1,39 +1,11 @@
-Hệ thống hỗ trợ học tập elearning trên nền tảng web, tập trung vào việc cung cấp các khóa học trực tuyến dựa trên chương trình đào tạo của trường đại học của bạn. Tuy nhiên, thay vì phục vụ sinh viên trong trường (vốn đã được học trực tiếp theo chương trình chính quy), nền tảng này hướng đến những người học bên ngoài – đặc biệt là những người đang đi làm, cần bổ sung kiến thức và có nhu cầu lấy chứng chỉ để phục vụ công việc hoặc phát triển sự nghiệp.
-
-Hệ thống sẽ hoạt động như một cầu nối giữa kiến thức hàn lâm và thực tiễn, giúp người học tiếp cận nội dung giảng dạy chính thống từ trường đại học mà không cần phải theo học chính quy. Các khóa học có thể bao gồm video bài giảng, tài liệu tham khảo, bài tập thực hành, kiểm tra đánh giá,... và cấp chứng chỉ sau khi hoàn thành.
-
-Vì nếu tạo nền tảng mà không dựa vào danh tiếng của một tổ chức hoặc trường đại học nào đó thì chứng chỉ sau khi nhận được sẽ không mang được nhiều giá trị
-
-Ngoài ra, bạn có thể tích hợp các tính năng như:
-
-Lộ trình học tập linh hoạt: Người học có thể học bất cứ khi nào, ở bất cứ đâu, phù hợp với lịch trình bận rộn.
-Chứng chỉ uy tín: Chứng chỉ hoàn thành khóa học do trường cấp sẽ có giá trị trong thị trường lao động.
-Tương tác với giảng viên: Hỗ trợ học tập qua diễn đàn, Q&A, hoặc các buổi học trực tuyến định kỳ.
-Hệ thống đánh giá và phản hồi: Giúp người học theo dõi tiến độ và cải thiện chất lượng học tập.
-Với mô hình này, hệ thống không chỉ giúp trường đại học mở rộng ảnh hưởng của mình mà còn tạo điều kiện cho nhiều người có cơ hội tiếp cận giáo dục chất lượng.
-
-
-Không cần thêm các tính năng phức tạp của LMS như:
-❌ Quản lý chương trình đào tạo
-❌ Quản lý tín chỉ
-❌ Đăng ký học phần
-❌ Quản lý thời khóa biểu
-❌ Quản lý điểm rèn luyện
-❌ Quản lý học phí
-❌ Quản lý văn bằng
-CSDL hiện tại đã phù hợp với mục tiêu:
-✅ Tập trung vào course marketplace
-✅ Hỗ trợ cơ bản cho sinh viên trường
-✅ Tận dụng các chức năng sẵn có
-✅ Không phức tạp hóa hệ thống
-
-Mô hình Hybrid giữa LMS và Market Course có thể được thiết kế như sau:
+Mô hình Hybrid giữa LMS và Market Course có thể được thiết kế như sau với đề tài: Hệ thống hỗ trợ học tập eLearning trên nền tảng web
 
 1. Tổng quan về mô hình Hybrid
-- LMS (Learning Management System): Hệ thống quản lý học tập, nơi giảng viên có thể tạo nội dung khóa học, giao bài tập, chấm điểm và theo dõi tiến độ học viên.
-- Market Course: Một nền tảng nơi giảng viên có thể bán khóa học, học viên có thể mua và học theo tiến độ tự do.
+- LMS (Learning Management System): Có lớp học thuật, các sinh viên được thêm vào sẽ được học học các khóa học mà giảng viên phụ trách, giảng viên có thể tạo bài trắc nghiệm và bài tập dành riêng cho lớp đó để lấy điểm (giữa kì, cuối kì, đánh giá năng lực, ...)
+- Market Course: Một nền tảng nơi giảng viên có thể bán khóa học, học viên bên ngoài có thể mua và học theo tiến độ tự do. hoàn thành khóa học có thể nhận được chứng chỉ
 - Hybrid Model: Kết hợp cả hai mô hình, đảm bảo khóa học có tính linh hoạt nhưng vẫn duy trì chất lượng học tập.
 2. Chất lượng khóa học thông qua bài kiểm tra
-- Mỗi khóa học sẽ có các bài kiểm tra ở từng phần, yêu cầu học viên hoàn thành trước khi tiếp tục.
+- Mỗi khóa học sẽ có các bài kiểm tra ở từng phần, yêu cầu học viên/sinh viên hoàn thành trước khi tiếp tục.
 - Nội dung bài kiểm tra được lấy từ tài liệu như video, PDF, DOCX,...
-- Điểm số phản ánh mức độ tiếp thu của học viên.
+- Điểm số phản ánh mức độ tiếp thu của học viên/sinh viên.
+

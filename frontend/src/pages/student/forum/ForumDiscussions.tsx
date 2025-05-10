@@ -15,6 +15,7 @@ import {
   Tabs,
   Tab,
   CardMedia,
+  Button,
 } from "@mui/material";
 import { Search, ThumbUp, Comment } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
@@ -24,6 +25,7 @@ import {
   selectAllForums,
   selectForumsStatus,
 } from "../../../features/forums/forumsSelectors";
+import { selectIsAuthenticated } from "../../../features/auth/authSelectors";
 import CustomContainer from "../../../components/common/CustomContainer";
 import logo from "../../../assets/logo.png";
 
@@ -32,6 +34,7 @@ const ForumDiscussions = () => {
   const dispatch = useAppDispatch();
   const forums = useAppSelector(selectAllForums);
   const status = useAppSelector(selectForumsStatus);
+  const isAuthenticated = useAppSelector(selectIsAuthenticated);
 
   const [tabValue, setTabValue] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
@@ -41,10 +44,10 @@ const ForumDiscussions = () => {
   const itemsPerPage = 6;
 
   useEffect(() => {
-    if (status === "idle") {
+    if (status === "idle" && isAuthenticated) {
       dispatch(fetchForums());
     }
-  }, [dispatch, status, navigate]);
+  }, [dispatch, status, navigate, isAuthenticated]);
 
   useEffect(() => {
     // Reset về trang 1 khi thay đổi bộ lọc hoặc tìm kiếm
@@ -87,6 +90,40 @@ const ForumDiscussions = () => {
     startIndex,
     startIndex + itemsPerPage
   );
+
+  // Hiển thị thông báo đăng nhập nếu chưa xác thực
+  if (!isAuthenticated) {
+    return (
+      <CustomContainer>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            justifyContent: "center",
+            py: 8,
+          }}
+        >
+          <Typography
+            variant="h5"
+            textAlign="center"
+            color="text.secondary"
+            gutterBottom
+          >
+            Vui lòng đăng nhập để xem các diễn đàn thảo luận
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            sx={{ mt: 3 }}
+            onClick={() => navigate("/login")}
+          >
+            Đăng nhập
+          </Button>
+        </Box>
+      </CustomContainer>
+    );
+  }
 
   return (
     <CustomContainer>
