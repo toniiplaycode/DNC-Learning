@@ -1,0 +1,58 @@
+# Cấu trúc phân chia ERD hệ thống E-Learning (35 bảng)
+
+## 1. Module Quản lý người dùng
+- users
+- user_students
+- user_instructors
+- user_students_academic
+
+## 2. Module Quản lý khóa học
+- courses
+- course_sections
+- course_lessons
+- course_progress
+- course_lesson_discussions
+- categories
+- forums
+- forum_replies
+- forum_likes
+
+## 3. Module Đánh giá và kiểm tra
+- assignments
+- assignment_submissions
+- quizzes
+- quiz_options
+- quiz_attempts
+- quiz_responses
+- reviews
+
+## 4. Module Quản lý lớp học
+- academic_classes
+- academic_class_courses
+- academic_class_instructors
+- class_schedules
+- instructor_availability
+- enrollments
+
+## 5. Module Tài liệu và chứng chỉ
+- documents
+- certificates
+
+## 6. Module Giao tiếp và thông báo
+- messages
+- notifications
+- chatbot_response
+
+## 7. Module Thanh toán
+- payments
+
+## Mối quan hệ chính
+1. users -> user_students/user_instructors (1:1)
+2. courses -> course_sections -> course_lessons (1:n)
+3. users -> enrollments -> courses (n:m)
+4. courses -> assignments/quizzes (1:n)
+5. users -> assignment_submissions/quiz_attempts (1:n)
+6. academic_classes -> enrollments (1:n)
+7. users -> messages (n:m)
+8. users -> certificates (1:n)
+9. users -> payments (1:n) 
