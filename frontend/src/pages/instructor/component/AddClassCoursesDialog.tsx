@@ -209,22 +209,39 @@ export const AddClassCoursesDialog = ({
                     />
                   }
                   label={
-                    <Box>
-                      <Typography variant="subtitle1">
-                        {course.title}
-                      </Typography>
-                      <Stack direction="row" spacing={1} alignItems="center">
-                        <Typography variant="body2" color="text.secondary">
-                          {course.category?.name}
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                      <Box
+                        component="img"
+                        src={
+                          course.thumbnailUrl || "/default-course-thumbnail.png"
+                        }
+                        alt={course.title}
+                        sx={{
+                          width: 60,
+                          height: 60,
+                          objectFit: "cover",
+                          borderRadius: 1,
+                          border: "1px solid",
+                          borderColor: "divider",
+                        }}
+                      />
+                      <Box>
+                        <Typography variant="subtitle1">
+                          {course.title}
                         </Typography>
-                        {initialExistingCourses.includes(course.id) && (
-                          <Chip
-                            size="small"
-                            label="Đã thêm vào lớp"
-                            color="success"
-                          />
-                        )}
-                      </Stack>
+                        <Stack direction="row" spacing={1} alignItems="center">
+                          <Typography variant="body2" color="text.secondary">
+                            {course.category?.name}
+                          </Typography>
+                          {initialExistingCourses.includes(course.id) && (
+                            <Chip
+                              size="small"
+                              label="Đã thêm vào lớp"
+                              color="success"
+                            />
+                          )}
+                        </Stack>
+                      </Box>
                     </Box>
                   }
                 />

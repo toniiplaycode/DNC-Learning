@@ -190,6 +190,8 @@ const InstructorQuizs = () => {
   // Add new state for answer filter
   const [answerFilter, setAnswerFilter] = useState("all"); // 'all' | 'correct' | 'incorrect'
   const [quizToEdit, setQuizToEdit] = useState<Quiz | null>(null);
+  // Thêm state cho sắp xếp
+  const [sortBy, setSortBy] = useState("newest"); // newest, oldest, highest, lowest
 
   useEffect(() => {
     // Fetch both quizzes and attempts
@@ -268,8 +270,8 @@ const InstructorQuizs = () => {
     setOpenAttemptDetails(true);
   };
 
-  // Lọc danh sách học viên theo tìm kiếm và bộ lọc
-  const getFilteredAttempts = () => {
+  // Xóa hàm getFilteredAttempts cũ và gộp logic vào useMemo
+  const filteredAttempts = useMemo(() => {
     if (!quizAttempts) return [];
 
     // Group attempts by user
@@ -283,15 +285,15 @@ const InstructorQuizs = () => {
     }, {} as { [key: string]: typeof quizAttempts });
 
     // Get latest attempt for each user
-    const latestAttempts = Object.values(attemptsByUser).map((userAttempts) => {
+    let filtered = Object.values(attemptsByUser).map((userAttempts) => {
       // Sort by endTime descending to get the most recent attempt
       return userAttempts.sort(
         (a, b) => new Date(b.endTime).getTime() - new Date(a.endTime).getTime()
       )[0];
     });
 
-    // Apply filters
-    return latestAttempts.filter((attempt) => {
+    // Apply search and status filters
+    filtered = filtered.filter((attempt) => {
       const matchesSearch = (
         attempt.user?.userStudent?.fullName ||
         attempt.user?.userStudentAcademic?.fullName ||
@@ -304,16 +306,45 @@ const InstructorQuizs = () => {
       const matchesStatus =
         filterStatus === "all" ||
         (filterStatus === "passed" &&
-          attempt.score >= selectedQuiz.passingScore) ||
+          Number(attempt.score) >= (selectedQuiz?.passingScore || 0)) ||
         (filterStatus === "failed" &&
-          attempt.score < selectedQuiz.passingScore);
+          Number(attempt.score) < (selectedQuiz?.passingScore || 0));
 
       return matchesSearch && matchesStatus;
     });
-  };
 
-  // Update the component to use filtered quiz attempts
-  const filteredAttempts = getFilteredAttempts();
+    // Apply sorting
+    switch (sortBy) {
+      case "newest":
+        filtered.sort(
+          (a, b) =>
+            new Date(b.endTime).getTime() - new Date(a.endTime).getTime()
+        );
+        break;
+      case "oldest":
+        filtered.sort(
+          (a, b) =>
+            new Date(a.endTime).getTime() - new Date(b.endTime).getTime()
+        );
+        break;
+      case "highest":
+        filtered.sort((a, b) => Number(b.score) - Number(a.score));
+        break;
+      case "lowest":
+        filtered.sort((a, b) => Number(a.score) - Number(b.score));
+        break;
+      default:
+        break;
+    }
+
+    return filtered;
+  }, [
+    quizAttempts,
+    searchQuery,
+    filterStatus,
+    sortBy,
+    selectedQuiz?.passingScore,
+  ]);
 
   // Update QuizStatistics component to use real data
   const getLatestAttempts = (attempts: any[]) => {
@@ -752,7 +783,7 @@ const InstructorQuizs = () => {
               label={
                 <Box sx={{ display: "flex", alignItems: "center" }}>
                   <Person sx={{ mr: 1 }} />
-                  Danh sách học viên
+                  Danh sách bài làm
                 </Box>
               }
             />
@@ -766,7 +797,7 @@ const InstructorQuizs = () => {
             />
           </Tabs>
 
-          {/* Tab 1: Danh sách học viên */}
+          {/* Tab 1: Danh sách bài làm */}
           {tabValue === 0 && (
             <Box>
               <Stack
@@ -800,7 +831,21 @@ const InstructorQuizs = () => {
                   </Select>
                 </FormControl>
 
-                {/* Thêm nút xuất Excel sau QuizStatistics */}
+                {/* Thêm Select cho sắp xếp */}
+                <FormControl size="small" sx={{ minWidth: 200 }}>
+                  <InputLabel>Sắp xếp theo</InputLabel>
+                  <Select
+                    value={sortBy}
+                    label="Sắp xếp theo"
+                    onChange={(e) => setSortBy(e.target.value)}
+                  >
+                    <MenuItem value="newest">Thời gian nộp (mới nhất)</MenuItem>
+                    <MenuItem value="oldest">Thời gian nộp (cũ nhất)</MenuItem>
+                    <MenuItem value="highest">Kết quả (cao nhất)</MenuItem>
+                    <MenuItem value="lowest">Kết quả (thấp nhất)</MenuItem>
+                  </Select>
+                </FormControl>
+
                 <Button
                   variant="contained"
                   color="success"

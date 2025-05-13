@@ -83,6 +83,8 @@ const QuizContent: React.FC<QuizContentProps> = ({
   const [score, setScore] = useState(0);
   const [activeShowExplanations, setActiveShowExplanations] = useState(false);
   const [isAssessmentQuiz, setIsAssessmentQuiz] = useState(false);
+  // Thêm state mới để lưu thứ tự hiển thị ngẫu nhiên của câu hỏi
+  const [randomQuestionOrder, setRandomQuestionOrder] = useState<number[]>([]);
   // Tạo state cho lần thử gần nhất
   const [latestAttempt, setLatestAttempt] = useState(null);
   const [quizSubmitted, setQuizSubmitted] = useState<boolean>(() => {
@@ -318,6 +320,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
     setQuizStarted(false);
     setScore(0);
     setTimeRemaining(null);
+    setRandomQuestionOrder([]); // Reset random order
   };
 
   const formatTime = (seconds: number) => {
@@ -400,6 +403,27 @@ const QuizContent: React.FC<QuizContentProps> = ({
       return `${seconds} giây`;
     }
   };
+
+  // Thêm useEffect để tạo thứ tự ngẫu nhiên khi quiz bắt đầu
+  useEffect(() => {
+    if (activeQuiz?.questions && quizStarted) {
+      if (activeQuiz.random === 1) {
+        // Tạo mảng index từ 0 đến length-1
+        const indices = Array.from(
+          { length: activeQuiz.questions.length },
+          (_, i) => i
+        );
+        // Shuffle mảng indices
+        const shuffled = [...indices].sort(() => Math.random() - 0.5);
+        setRandomQuestionOrder(shuffled);
+      } else {
+        // Nếu không random, sử dụng thứ tự tuần tự
+        setRandomQuestionOrder(
+          Array.from({ length: activeQuiz.questions.length }, (_, i) => i)
+        );
+      }
+    }
+  }, [activeQuiz?.questions, quizStarted, activeQuiz?.random]);
 
   // Replace the existing empty state
   if (!activeQuiz) {
@@ -970,51 +994,62 @@ const QuizContent: React.FC<QuizContentProps> = ({
                 Câu hỏi:
               </Typography>
               <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                {activeQuiz?.questions?.map((_, index) => {
-                  const isAnswered =
-                    currentAnswers.answers[index] !== undefined;
-                  return (
-                    <Box
-                      key={index}
-                      sx={{
-                        width: 28,
-                        height: 28,
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        borderRadius: "50%",
-                        bgcolor: isAnswered ? "primary.main" : "grey.200",
-                        color: isAnswered ? "white" : "text.secondary",
-                        fontWeight: isAnswered ? "bold" : "normal",
-                        fontSize: "0.75rem",
-                        cursor: "pointer",
-                        transition: "all 0.2s",
-                        "&:hover": {
-                          bgcolor: isAnswered ? "primary.dark" : "grey.300",
-                        },
-                      }}
-                      onClick={() => {
-                        // Scroll to the question with 20px top margin
-                        const questionElement = document.getElementById(
-                          `question-${index}`
-                        );
-                        if (questionElement) {
-                          const rect = questionElement.getBoundingClientRect();
-                          const scrollTop =
-                            window.pageYOffset ||
-                            document.documentElement.scrollTop;
-                          const targetPosition = scrollTop + rect.top - 120;
-                          window.scrollTo({
-                            top: targetPosition,
-                            behavior: "smooth",
-                          });
-                        }
-                      }}
-                    >
-                      {index + 1}
-                    </Box>
-                  );
-                })}
+                {activeQuiz?.questions &&
+                  randomQuestionOrder.length > 0 &&
+                  activeQuiz.questions.map((_, originalIndex) => {
+                    // Lấy index từ randomQuestionOrder hoặc sử dụng originalIndex nếu không random
+                    const displayIndex =
+                      activeQuiz.random === 1
+                        ? randomQuestionOrder[originalIndex]
+                        : originalIndex;
+                    const question = activeQuiz.questions[displayIndex];
+
+                    if (!question) return null;
+
+                    const isAnswered =
+                      currentAnswers.answers[displayIndex] !== undefined;
+                    return (
+                      <Box
+                        key={displayIndex}
+                        sx={{
+                          width: 28,
+                          height: 28,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          borderRadius: "50%",
+                          bgcolor: isAnswered ? "primary.main" : "grey.200",
+                          color: isAnswered ? "white" : "text.secondary",
+                          fontWeight: isAnswered ? "bold" : "normal",
+                          fontSize: "0.75rem",
+                          cursor: "pointer",
+                          transition: "all 0.2s",
+                          "&:hover": {
+                            bgcolor: isAnswered ? "primary.dark" : "grey.300",
+                          },
+                        }}
+                        onClick={() => {
+                          const questionElement = document.getElementById(
+                            `question-${displayIndex}`
+                          );
+                          if (questionElement) {
+                            const rect =
+                              questionElement.getBoundingClientRect();
+                            const scrollTop =
+                              window.pageYOffset ||
+                              document.documentElement.scrollTop;
+                            const targetPosition = scrollTop + rect.top - 120;
+                            window.scrollTo({
+                              top: targetPosition,
+                              behavior: "smooth",
+                            });
+                          }
+                        }}
+                      >
+                        {originalIndex + 1}
+                      </Box>
+                    );
+                  })}
               </Box>
             </Box>
 
@@ -1057,60 +1092,77 @@ const QuizContent: React.FC<QuizContentProps> = ({
       >
         <CardContent>
           {/* All quiz questions */}
-          {activeQuiz?.questions?.map((question, index) => (
-            <Box key={question.id} sx={{ mb: 4 }} id={`question-${index}`}>
-              <Typography
-                variant="h6"
-                gutterBottom
-                sx={{ display: "flex", alignItems: "center" }}
-              >
+          {activeQuiz?.questions &&
+            randomQuestionOrder.length > 0 &&
+            activeQuiz.questions.map((_, originalIndex) => {
+              // Lấy index từ randomQuestionOrder hoặc sử dụng originalIndex nếu không random
+              const displayIndex =
+                activeQuiz.random === 1
+                  ? randomQuestionOrder[originalIndex]
+                  : originalIndex;
+              const question = activeQuiz.questions[displayIndex];
+
+              if (!question) return null;
+
+              return (
                 <Box
-                  sx={{
-                    width: 32,
-                    height: 32,
-                    borderRadius: "50%",
-                    bgcolor: "primary.main",
-                    color: "white",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    mr: 1,
-                  }}
+                  key={question.id}
+                  sx={{ mb: 4 }}
+                  id={`question-${displayIndex}`}
                 >
-                  {index + 1}
+                  <Typography
+                    variant="h6"
+                    gutterBottom
+                    sx={{ display: "flex", alignItems: "center" }}
+                  >
+                    <Box
+                      sx={{
+                        width: 32,
+                        height: 32,
+                        borderRadius: "50%",
+                        bgcolor: "primary.main",
+                        color: "white",
+                        display: "flex",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        mr: 1,
+                      }}
+                    >
+                      {originalIndex + 1}
+                    </Box>
+                    {question.questionText}
+                  </Typography>
+
+                  <RadioGroup
+                    name={`question-${question.id}`}
+                    value={
+                      currentAnswers.answers[displayIndex] !== undefined
+                        ? currentAnswers.answers[displayIndex]
+                        : ""
+                    }
+                    onChange={(e) =>
+                      handleAnswerChange(displayIndex, parseInt(e.target.value))
+                    }
+                    sx={{ ml: 4 }}
+                  >
+                    {question?.options?.map((option, optionIndex) => (
+                      <FormControlLabel
+                        key={option.id}
+                        value={option.id}
+                        control={<Radio />}
+                        label={`${String.fromCharCode(65 + optionIndex)}. ${
+                          option.optionText
+                        }`}
+                      />
+                    ))}
+                  </RadioGroup>
+
+                  {originalIndex < activeQuiz.questions.length - 1 && (
+                    <Divider sx={{ my: 2 }} />
+                  )}
                 </Box>
-                {question.questionText}
-              </Typography>
-
-              <RadioGroup
-                name={`question-${question.id}`}
-                value={
-                  currentAnswers.answers[index] !== undefined
-                    ? currentAnswers.answers[index]
-                    : ""
-                }
-                onChange={(e) =>
-                  handleAnswerChange(index, parseInt(e.target.value))
-                }
-                sx={{ ml: 4 }}
-              >
-                {question?.options?.map((option, optionIndex) => (
-                  <FormControlLabel
-                    key={option.id}
-                    value={option.id}
-                    control={<Radio />}
-                    label={`${String.fromCharCode(65 + optionIndex)}. ${
-                      option.optionText
-                    }`}
-                  />
-                ))}
-              </RadioGroup>
-
-              {index < activeQuiz?.questions?.length - 1 && (
-                <Divider sx={{ my: 2 }} />
-              )}
-            </Box>
-          ))}
+              );
+            })}
         </CardContent>
       </Card>
     </Box>

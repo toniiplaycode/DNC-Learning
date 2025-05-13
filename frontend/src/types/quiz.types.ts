@@ -31,6 +31,8 @@ export interface Quiz {
   attemptsAllowed?: number;
   quizType: QuizType;
   isActive: boolean;
+  showExplanation: number;
+  random: number;
   startTime?: string;
   endTime?: string;
   createdAt: string;

@@ -28,6 +28,8 @@ import {
   CheckCircle,
   Info,
   Check,
+  Shuffle,
+  HelpOutline,
 } from "@mui/icons-material";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { selectAllQuizzes } from "../../../features/quizzes/quizzesSelectors";
@@ -244,6 +246,24 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
                         <CheckCircle fontSize="small" color="action" />
                         <Typography variant="body2">
                           Điểm đạt: {quiz.passingScore}%
+                        </Typography>
+                      </Stack>
+
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <Shuffle fontSize="small" color="action" />
+                        <Typography variant="body2">
+                          {quiz.random === 1
+                            ? "Hiển thị ngẫu nhiên"
+                            : "Hiển thị tuần tự"}
+                        </Typography>
+                      </Stack>
+
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <HelpOutline fontSize="small" color="action" />
+                        <Typography variant="body2">
+                          {quiz.showExplanation === 1
+                            ? "Hiển thị giải thích"
+                            : "Không hiển thị giải thích"}
                         </Typography>
                       </Stack>
 

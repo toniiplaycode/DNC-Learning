@@ -51,6 +51,9 @@ import {
   Favorite,
   Receipt as ReceiptIcon,
   AccountBalanceWallet,
+  Payment,
+  ReceiptLong,
+  Info,
 } from "@mui/icons-material";
 import CustomContainer from "../../components/common/CustomContainer";
 import CertificateDetail from "../../components/student/profile/CertificateDetail";
@@ -778,14 +781,6 @@ const ProfileAccount: React.FC = () => {
                               }
                               disabled
                             />
-                            <StyledTextField
-                              label="Học kỳ"
-                              value={
-                                currentUser?.userStudentAcademic?.academicClass
-                                  ?.semester || ""
-                              }
-                              disabled
-                            />
                           </>
                         )}
                       </Stack>
@@ -976,18 +971,6 @@ const ProfileAccount: React.FC = () => {
                                 secondary={
                                   currentUser?.userStudentAcademic
                                     ?.academicClass?.classCode
-                                }
-                              />
-                            </ListItem>
-                            <ListItem>
-                              <ListItemIcon>
-                                <School />
-                              </ListItemIcon>
-                              <ListItemText
-                                primary="Học kỳ"
-                                secondary={
-                                  currentUser?.userStudentAcademic
-                                    ?.academicClass?.semester
                                 }
                               />
                             </ListItem>
@@ -1205,13 +1188,6 @@ const ProfileAccount: React.FC = () => {
                                       >
                                         Lớp:{" "}
                                         {enrollment.academicClass.classCode}
-                                      </Typography>
-                                      <Typography
-                                        variant="caption"
-                                        color="text.secondary"
-                                      >
-                                        • Học kỳ:{" "}
-                                        {enrollment.academicClass.semester}
                                       </Typography>
                                     </Stack>
                                     <Typography
@@ -2163,14 +2139,94 @@ const ProfileAccount: React.FC = () => {
                         </Box>
                       </Box>
                     ) : (
-                      <Typography
-                        variant="body1"
-                        textAlign="center"
-                        color="text.secondary"
-                        py={3}
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexDirection: "column",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          py: 6,
+                          px: 3,
+                          bgcolor: "background.paper",
+                          borderRadius: 2,
+                          border: "1px dashed",
+                          borderColor: "divider",
+                          maxWidth: 400,
+                          mx: "auto",
+                          my: 2,
+                        }}
                       >
-                        Bạn chưa có giao dịch thanh toán nào
-                      </Typography>
+                        {/* Icon lớn với animation */}
+                        <Box
+                          sx={{
+                            position: "relative",
+                            mb: 3,
+                            "&::after": {
+                              content: '""',
+                              position: "absolute",
+                              top: "50%",
+                              left: "50%",
+                              transform: "translate(-50%, -50%)",
+                              width: 80,
+                              height: 80,
+                              borderRadius: "50%",
+                              bgcolor: "primary.light",
+                              opacity: 0.1,
+                              animation: "pulse 2s infinite",
+                            },
+                            "@keyframes pulse": {
+                              "0%": {
+                                transform: "translate(-50%, -50%) scale(1)",
+                                opacity: 0.1,
+                              },
+                              "50%": {
+                                transform: "translate(-50%, -50%) scale(1.2)",
+                                opacity: 0.2,
+                              },
+                              "100%": {
+                                transform: "translate(-50%, -50%) scale(1)",
+                                opacity: 0.1,
+                              },
+                            },
+                          }}
+                        >
+                          <ReceiptLong
+                            sx={{
+                              fontSize: 60,
+                              color: "primary.main",
+                              opacity: 0.8,
+                            }}
+                          />
+                        </Box>
+
+                        {/* Tiêu đề */}
+                        <Typography
+                          variant="h6"
+                          color="text.primary"
+                          gutterBottom
+                          sx={{
+                            fontWeight: 500,
+                            textAlign: "center",
+                          }}
+                        >
+                          Chưa có giao dịch thanh toán
+                        </Typography>
+
+                        {/* Mô tả */}
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          textAlign="center"
+                          sx={{
+                            maxWidth: 300,
+                            mb: 3,
+                          }}
+                        >
+                          Bạn chưa thực hiện bất kỳ giao dịch thanh toán nào.
+                          Các giao dịch sẽ xuất hiện ở đây sau khi bạn thanh
+                          toán khóa học.
+                        </Typography>
+                      </Box>
                     )}
                   </Box>
                 </Stack>

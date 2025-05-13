@@ -81,6 +81,13 @@ export class Quiz {
   showExplanation: number;
 
   @Column({
+    name: 'random',
+    type: 'tinyint',
+    default: 1,
+  })
+  random: number;
+
+  @Column({
     name: 'start_time',
     type: 'datetime',
     nullable: true,

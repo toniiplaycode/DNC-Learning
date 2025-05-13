@@ -50,6 +50,11 @@ export class CreateQuizDto {
   @IsOptional()
   quizType?: QuizType;
 
+  @IsInt()
+  @IsOptional()
+  @Type(() => Number)
+  random?: number;
+
   @IsDate()
   @IsOptional()
   @Type(() => Date)

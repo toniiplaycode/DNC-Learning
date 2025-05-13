@@ -911,7 +911,6 @@ export class QuizzesService {
   }
 
   async createQuizWithQuestionsAndOptions(createQuizDto: any): Promise<Quiz> {
-    // Start a transaction
     const queryRunner =
       this.quizzesRepository.manager.connection.createQueryRunner();
     await queryRunner.connect();
@@ -929,6 +928,7 @@ export class QuizzesService {
         attemptsAllowed: createQuizDto.attemptsAllowed,
         quizType: createQuizDto.quizType,
         showExplanation: createQuizDto.showExplanation,
+        random: createQuizDto.random,
       });
 
       const savedQuiz = await queryRunner.manager.save(Quiz, quiz);
@@ -1010,6 +1010,7 @@ export class QuizzesService {
         attemptsAllowed: updateQuizDto.attemptsAllowed,
         quizType: updateQuizDto.quizType,
         showExplanation: updateQuizDto.showExplanation,
+        random: updateQuizDto.random,
       });
 
       await queryRunner.manager.save(Quiz, quiz);

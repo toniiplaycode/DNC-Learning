@@ -37,7 +37,7 @@
     "dayjs": "^1.11.13",
     "docx": "^8.5.0",
     "file-saver": "^2.0.5",
-    "framer-motion": "^12.4.2",
+    "framer-motion": "^12.11.0",
     "fs": "^0.0.1-security",
     "googleapis": "^144.0.0",
     "html-react-parser": "^5.2.3",

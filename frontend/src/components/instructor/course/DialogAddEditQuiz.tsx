@@ -94,7 +94,7 @@ interface QuizQuestion {
 // Định nghĩa kiểu Quiz
 interface Quiz {
   id?: number;
-  lessonId?: number | null; // Changed to allow null
+  lessonId?: number | null;
   academicClassId?: number | null;
   title: string;
   description?: string;
@@ -103,6 +103,7 @@ interface Quiz {
   attemptsAllowed: number;
   quizType: QuizType;
   showExplanation: boolean;
+  random: number;
   startTime?: Date;
   endTime?: Date;
   questions?: QuizQuestion[];
@@ -168,6 +169,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
     attemptsAllowed: 1,
     quizType: QuizType.PRACTICE,
     showExplanation: true,
+    random: 1,
   });
 
   useEffect(() => {
@@ -212,6 +214,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
         setQuizForm({
           ...quizToEdit,
           showExplanation: Boolean(quizToEdit.showExplanation),
+          random: quizToEdit.random,
         });
 
         // Load câu hỏi từ quiz đang edit
@@ -231,6 +234,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
           attemptsAllowed: 1,
           quizType: QuizType.PRACTICE,
           showExplanation: true,
+          random: 1,
         });
 
         // Tự động tải câu hỏi từ quiz mẫu
@@ -480,6 +484,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
         attemptsAllowed: quizForm.attemptsAllowed || 1,
         quizType: quizForm.quizType || QuizType.PRACTICE,
         showExplanation: quizForm.showExplanation || true,
+        random: quizForm.random,
       }));
 
       // Add parsed questions with proper type casting
@@ -790,6 +795,22 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                   )}
                 </Box>
               }
+            />
+
+            <FormControlLabel
+              control={
+                <Switch
+                  checked={quizForm.random === 1}
+                  onChange={(e) => {
+                    const newValue = e.target.checked ? 1 : 0;
+                    setQuizForm((prev) => ({
+                      ...prev,
+                      random: newValue,
+                    }));
+                  }}
+                />
+              }
+              label="Hiển thị câu hỏi ngẫu nhiên"
             />
           </Box>
           <Divider sx={{ my: 2 }} />

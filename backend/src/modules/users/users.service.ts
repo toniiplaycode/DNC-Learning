@@ -338,7 +338,9 @@ export class UsersService {
       where: { email },
       relations: {
         userStudent: true,
-        userStudentAcademic: true,
+        userStudentAcademic: {
+          academicClass: true,
+        },
         userInstructor: true,
       },
     });
