@@ -9,6 +9,7 @@ import { RagService } from '../rag/rag.service';
 export class ChatbotService {
   private readonly logger = new Logger(ChatbotService.name);
   private readonly CHATBOT_USER_ID = -1; // Special ID for chatbot
+  private isRagAvailable: boolean = true; // Add this flag
 
   constructor(
     @InjectRepository(ChatbotResponse)
@@ -16,7 +17,24 @@ export class ChatbotService {
     @InjectRepository(Message)
     private messageRepo: Repository<Message>,
     private ragService: RagService,
-  ) {}
+  ) {
+    // Check RAG availability on startup
+    this.checkRagAvailability();
+  }
+
+  private async checkRagAvailability() {
+    try {
+      // Try to initialize RAG service
+      await this.ragService.testRag('test');
+      this.isRagAvailable = true;
+      this.logger.log('RAG service is available');
+    } catch (error) {
+      this.isRagAvailable = false;
+      this.logger.warn(
+        'RAG service is not available, falling back to traditional responses',
+      );
+    }
+  }
 
   async processMessage(message: Message): Promise<Message | null> {
     this.logger.debug(`Processing message: "${message.messageText}"`);
@@ -27,64 +45,68 @@ export class ChatbotService {
     }
 
     try {
-      // Sử dụng pipeline keyword search mới
+      // Try RAG first
       const ragResult = await this.ragService.testRag(message.messageText);
-      const response = ragResult.response;
 
-      // Check if the query is related to courses
-      const courseKeywords = [
-        'khóa học',
-        'khoá học',
-        'bài học',
-        'course',
-        'courses',
-      ];
-      const queryLower = message.messageText.toLowerCase();
-      const isCourseQuery = courseKeywords.some((keyword) =>
-        queryLower.includes(keyword),
-      );
+      // If RAG is available and successful
+      if (ragResult.success) {
+        const response = ragResult.response;
 
-      // Enhanced URL extraction from RAG results
-      let referenceLink: string | undefined = undefined;
+        // Check if the query is related to courses
+        const courseKeywords = [
+          'khóa học',
+          'khoá học',
+          'bài học',
+          'course',
+          'courses',
+        ];
+        const queryLower = message.messageText.toLowerCase();
+        const isCourseQuery = courseKeywords.some((keyword) =>
+          queryLower.includes(keyword),
+        );
 
-      // Only extract and use referenceLink if the query is about courses
-      if (
-        isCourseQuery &&
-        ragResult.searchResults &&
-        ragResult.searchResults.length > 0
-      ) {
-        // First try to find URL line in the context
-        for (const result of ragResult.searchResults) {
-          // Look for URL field
-          const urlLineMatch = result.match(/URL: (https?:\/\/[^\s\n]+)/);
-          if (urlLineMatch && urlLineMatch[1]) {
-            referenceLink = urlLineMatch[1];
-            this.logger.debug(`Found URL from field: ${referenceLink}`);
-            break;
-          }
+        // Enhanced URL extraction from RAG results
+        let referenceLink: string | undefined = undefined;
 
-          // Standard URL regex fallback
-          const urlRegex = /(https?:\/\/[^\s\n]+)/g;
-          const matches = result.match(urlRegex);
-          if (matches && matches.length > 0) {
-            // Use the first URL found as reference
-            referenceLink = matches[0];
-            this.logger.debug(`Found URL from regex: ${referenceLink}`);
-            break;
+        // Only extract and use referenceLink if the query is about courses
+        if (
+          isCourseQuery &&
+          ragResult.searchResults &&
+          ragResult.searchResults.length > 0
+        ) {
+          // First try to find URL line in the context
+          for (const result of ragResult.searchResults) {
+            // Look for URL field
+            const urlLineMatch = result.match(/URL: (https?:\/\/[^\s\n]+)/);
+            if (urlLineMatch && urlLineMatch[1]) {
+              referenceLink = urlLineMatch[1];
+              this.logger.debug(`Found URL from field: ${referenceLink}`);
+              break;
+            }
+
+            // Standard URL regex fallback
+            const urlRegex = /(https?:\/\/[^\s\n]+)/g;
+            const matches = result.match(urlRegex);
+            if (matches && matches.length > 0) {
+              // Use the first URL found as reference
+              referenceLink = matches[0];
+              this.logger.debug(`Found URL from regex: ${referenceLink}`);
+              break;
+            }
           }
         }
+
+        if (!response) {
+          throw new Error('Failed to generate response');
+        }
+
+        return this.createBotMessage(message.senderId, response, referenceLink);
       }
 
-      if (!response) {
-        throw new Error('Failed to generate response');
-      }
-
-      return this.createBotMessage(message.senderId, response, referenceLink);
-    } catch (error) {
-      this.logger.error('Error processing message with RAG:', error);
-
-      // Fallback to traditional response if RAG fails
+      // If RAG is not available or failed, use traditional response
+      this.logger.debug('Falling back to traditional response');
       const fallbackResponse = await this.findBestResponse(message.messageText);
+
       if (!fallbackResponse) {
         return this.createBotMessage(
           message.senderId,
@@ -115,6 +137,12 @@ export class ChatbotService {
         message.senderId,
         fallbackResponse.response,
         referenceUrl,
+      );
+    } catch (error) {
+      this.logger.error('Error in processMessage:', error);
+      return this.createBotMessage(
+        message.senderId,
+        'Xin lỗi, đã có lỗi xảy ra. Vui lòng thử lại sau.',
       );
     }
   }

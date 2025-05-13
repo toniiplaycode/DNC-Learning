@@ -11,56 +11,78 @@ import * as removeAccents from 'remove-accents';
 @Injectable()
 export class RagService {
   private readonly logger = new Logger(RagService.name);
-  private readonly qdrantClient: QdrantClient;
+  private qdrantClient: QdrantClient | null = null;
   private readonly embeddings: OpenAIEmbeddings;
-  private readonly vectorStore: QdrantVectorStore;
+  private vectorStore: QdrantVectorStore | null = null;
   private readonly collectionName = 'chatbot_documents';
+  private isInitialized = false;
 
   constructor(
     private configService: ConfigService,
     private openaiService: OpenAIService,
   ) {
-    // Initialize Qdrant client
-    const qdrantUrl = this.configService.get<string>(
-      'QDRANT_URL',
-      'http://localhost:6333',
-    );
-    const qdrantApiKey = this.configService.get<string>('QDRANT_API_KEY');
-
-    // Only use HTTPS if not localhost
-    const secureUrl = qdrantUrl.includes('localhost')
-      ? qdrantUrl
-      : qdrantUrl.replace('http://', 'https://');
-
-    this.qdrantClient = new QdrantClient({
-      url: secureUrl,
-      apiKey: qdrantApiKey,
-    });
-
-    // Initialize embeddings
+    // Initialize embeddings (this doesn't require Qdrant)
     this.embeddings = new OpenAIEmbeddings(this.openaiService);
 
-    // Initialize vector store
-    this.vectorStore = new QdrantVectorStore(this.embeddings, {
-      client: this.qdrantClient,
-      collectionName: this.collectionName,
+    // Try to initialize Qdrant, but don't throw if it fails
+    this.initializeQdrant().catch((error) => {
+      this.logger.warn(
+        'Failed to initialize Qdrant, will use fallback mode:',
+        error,
+      );
     });
+  }
 
-    // Initialize collection with correct vector size
-    this.initializeCollection();
+  private async initializeQdrant() {
+    try {
+      const qdrantUrl = this.configService.get<string>(
+        'QDRANT_URL',
+        'http://localhost:6333',
+      );
+      const qdrantApiKey = this.configService.get<string>('QDRANT_API_KEY');
+
+      const secureUrl = qdrantUrl.includes('localhost')
+        ? qdrantUrl
+        : qdrantUrl.replace('http://', 'https://');
+
+      this.qdrantClient = new QdrantClient({
+        url: secureUrl,
+        apiKey: qdrantApiKey,
+      });
+
+      // Test connection
+      await this.qdrantClient.getCollections();
+
+      // Initialize vector store only if Qdrant is available
+      this.vectorStore = new QdrantVectorStore(this.embeddings, {
+        client: this.qdrantClient,
+        collectionName: this.collectionName,
+      });
+
+      // Initialize collection
+      await this.initializeCollection();
+
+      this.isInitialized = true;
+      this.logger.log('Qdrant initialized successfully');
+    } catch (error) {
+      this.logger.warn('Failed to initialize Qdrant:', error);
+      this.qdrantClient = null;
+      this.vectorStore = null;
+      this.isInitialized = false;
+    }
   }
 
   private async initializeCollection() {
     try {
       // Check if collection exists
-      const collections = await this.qdrantClient.getCollections();
-      const exists = collections.collections.some(
+      const collections = await this.qdrantClient?.getCollections();
+      const exists = collections?.collections.some(
         (c) => c.name === this.collectionName,
       );
 
       if (!exists) {
         // Chỉ tạo mới nếu chưa có
-        await this.qdrantClient.createCollection(this.collectionName, {
+        await this.qdrantClient?.createCollection(this.collectionName, {
           vectors: {
             size: 1536,
             distance: 'Cosine',
@@ -79,6 +101,9 @@ export class RagService {
   }
 
   async addDocuments(documents: string[]): Promise<void> {
+    if (!this.isInitialized || !this.qdrantClient) {
+      throw new Error('Qdrant service is not available');
+    }
     try {
       this.logger.log(`Bắt đầu thêm ${documents.length} tài liệu vào RAG`);
 
@@ -136,36 +161,42 @@ export class RagService {
   }
 
   async keywordSearch(query: string): Promise<string[]> {
+    if (!this.isInitialized || !this.qdrantClient) {
+      return [];
+    }
+
     try {
       const result = await this.qdrantClient.scroll(this.collectionName, {
         limit: 1000,
         with_payload: true,
         with_vector: false,
       });
+
       // Chuẩn hóa query
       const normalize = (str: string) =>
         removeAccents(str.toLowerCase().replace(/[^a-zA-Z0-9 ]/g, ' '));
       const queryWords = normalize(query).split(' ').filter(Boolean);
 
-      const matched = result.points.filter((point) => {
-        if (!point.payload || typeof point.payload.text !== 'string')
-          return false;
-        const textNorm = normalize(point.payload.text);
-        const isMatch = queryWords.every((word) => textNorm.includes(word));
-        this.logger.debug(
-          `[KeywordSearch] QueryWords: ${JSON.stringify(queryWords)} | TextNorm: "${textNorm}" | isMatch: ${isMatch}`,
-        );
-        // Tất cả từ trong query đều xuất hiện trong text
-        return isMatch;
-      });
-      this.logger.debug(`Keyword search found ${matched.length} results`);
-      return matched
+      const matched = result.points
+        .filter((point) => {
+          if (!point.payload || typeof point.payload.text !== 'string')
+            return false;
+          const textNorm = normalize(point.payload.text);
+          const isMatch = queryWords.every((word) => textNorm.includes(word));
+          this.logger.debug(
+            `[KeywordSearch] QueryWords: ${JSON.stringify(queryWords)} | TextNorm: "${textNorm}" | isMatch: ${isMatch}`,
+          );
+          return isMatch;
+        })
         .map((point) =>
           point.payload && typeof point.payload.text === 'string'
             ? point.payload.text
             : '',
         )
         .filter(Boolean);
+
+      this.logger.debug(`Keyword search found ${matched.length} results`);
+      return matched;
     } catch (error) {
       this.logger.error('Error in keyword search:', error);
       return [];
@@ -226,6 +257,17 @@ export class RagService {
   }
 
   async testRag(query: string) {
+    if (!this.isInitialized || !this.qdrantClient) {
+      this.logger.debug('Qdrant not available, returning fallback response');
+      return {
+        success: false,
+        error: 'Qdrant service is not available',
+        response:
+          'Xin lỗi, tính năng tìm kiếm nâng cao hiện không khả dụng. Vui lòng thử lại sau.',
+        searchResults: [],
+      };
+    }
+
     try {
       this.logger.debug(`[RAG] User question: "${query}"`);
 
@@ -362,11 +404,24 @@ export class RagService {
       return { success: true, searchResults: [], response };
     } catch (error) {
       this.logger.error('Error in testRag:', error);
-      return { success: false, error: error.message };
+      return {
+        success: false,
+        error: error.message,
+        response: 'Xin lỗi, đã có lỗi xảy ra khi xử lý câu hỏi của bạn.',
+        searchResults: [],
+      };
     }
   }
 
   async listVectors() {
+    if (!this.isInitialized || !this.qdrantClient) {
+      return {
+        success: false,
+        error: 'Qdrant service is not available',
+        total: 0,
+        vectors: [],
+      };
+    }
     try {
       const result = await this.qdrantClient.scroll(this.collectionName, {
         limit: 100,
@@ -389,6 +444,9 @@ export class RagService {
   }
 
   async clearAllVectors() {
+    if (!this.isInitialized || !this.qdrantClient) {
+      throw new Error('Qdrant service is not available');
+    }
     await this.qdrantClient.deleteCollection(this.collectionName);
     await this.qdrantClient.createCollection(this.collectionName, {
       vectors: {

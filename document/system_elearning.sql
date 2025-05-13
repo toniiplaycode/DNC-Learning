@@ -39,7 +39,6 @@ CREATE TABLE `academic_class_courses` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `academic_class_courses`
 --
 
 --
@@ -64,7 +63,6 @@ CREATE TABLE `academic_class_instructors` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `academic_class_instructors`
 --
 
 
@@ -90,7 +88,6 @@ CREATE TABLE `academic_classes` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `academic_classes`
 --
 
 
@@ -120,7 +117,6 @@ CREATE TABLE `assignment_submissions` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `assignment_submissions`
 --
 
 
@@ -154,7 +150,6 @@ CREATE TABLE `assignments` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `assignments`
 --
 
 
@@ -177,7 +172,6 @@ CREATE TABLE `categories` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `categories`
 --
 
 
@@ -209,7 +203,6 @@ CREATE TABLE `certificates` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `certificates`
 --
 
 
@@ -231,7 +224,6 @@ CREATE TABLE `chatbot_response` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `chatbot_response`
 --
 --
 -- Table structure for table `class_schedules`
@@ -274,7 +266,6 @@ CREATE TABLE `class_schedules` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `class_schedules`
 --
 
 LOCK TABLES `class_schedules` WRITE;
@@ -309,7 +300,6 @@ CREATE TABLE `course_lesson_discussions` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `course_lesson_discussions`
 --
 
 
@@ -339,7 +329,6 @@ CREATE TABLE `course_lessons` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `course_lessons`
 --
 --
 -- Table structure for table `course_progress`
@@ -363,7 +352,6 @@ CREATE TABLE `course_progress` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `course_progress`
 --
 
 --
@@ -388,7 +376,6 @@ CREATE TABLE `course_sections` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `course_sections`
 --
 
 --
@@ -423,7 +410,6 @@ CREATE TABLE `courses` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `courses`
 --
 
 --
@@ -455,7 +441,6 @@ CREATE TABLE `documents` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `documents`
 --
 -- Table structure for table `enrollments`
 --
@@ -481,7 +466,6 @@ CREATE TABLE `enrollments` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `enrollments`
 --
 
 
@@ -506,8 +490,7 @@ CREATE TABLE `forum_likes` (
 ) ENGINE=InnoDB AUTO_INCREMENT=52 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Dumping data for table `forum_likes`
+--`
 
 --
 -- Table structure for table `forum_replies`
@@ -536,7 +519,6 @@ CREATE TABLE `forum_replies` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `forum_replies`
 --
 
 
@@ -566,7 +548,6 @@ CREATE TABLE `forums` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `forums`
 --
 
 
@@ -596,7 +577,6 @@ CREATE TABLE `instructor_availability` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `instructor_availability`
 --
 
 LOCK TABLES `instructor_availability` WRITE;
@@ -629,7 +609,6 @@ CREATE TABLE `messages` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `messages`
 --
 
 --
@@ -659,7 +638,6 @@ CREATE TABLE `notifications` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `notifications`
 --
 
 
@@ -690,7 +668,6 @@ CREATE TABLE `payments` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `payments`
 --
 --
 -- Table structure for table `quiz_attempts`
@@ -717,8 +694,7 @@ CREATE TABLE `quiz_attempts` (
 ) ENGINE=InnoDB AUTO_INCREMENT=131 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Dumping data for table `quiz_attempts`
+--`
 
 --
 -- Table structure for table `quiz_options`
@@ -790,7 +766,6 @@ CREATE TABLE `quiz_responses` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `quiz_responses`
 -
 --
 -- Table structure for table `quizzes`
@@ -823,7 +798,6 @@ CREATE TABLE `quizzes` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `quizzes`
 --
 
 --
@@ -852,7 +826,6 @@ CREATE TABLE `reviews` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `reviews`
 --
 --
 -- Table structure for table `user_admins`
@@ -880,7 +853,6 @@ CREATE TABLE `user_admins` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `user_admins`
 --
 
 LOCK TABLES `user_admins` WRITE;
@@ -928,8 +900,7 @@ CREATE TABLE `user_grades` (
 ) ENGINE=InnoDB AUTO_INCREMENT=63 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Dumping data for table `user_grades`
+--`
 
 --
 -- Table structure for table `user_instructors`
@@ -962,8 +933,7 @@ CREATE TABLE `user_instructors` (
 ) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Dumping data for table `user_instructors`
+--`
 
 
 --
@@ -1000,8 +970,7 @@ CREATE TABLE `user_students` (
 ) ENGINE=InnoDB AUTO_INCREMENT=16 DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 /*!40101 SET character_set_client = @saved_cs_client */;
 
---
--- Dumping data for table `user_students`
+--`
 
 --
 -- Table structure for table `user_students_academic`
@@ -1030,7 +999,6 @@ CREATE TABLE `user_students_academic` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `user_students_academic`
 --
 
 --
@@ -1062,5 +1030,4 @@ CREATE TABLE `users` (
 /*!40101 SET character_set_client = @saved_cs_client */;
 
 --
--- Dumping data for table `users`
 -
