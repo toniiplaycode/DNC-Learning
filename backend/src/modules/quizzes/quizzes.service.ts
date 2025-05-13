@@ -1074,4 +1074,49 @@ export class QuizzesService {
       await queryRunner.release();
     }
   }
+
+  async updateShowExplanation(
+    quizId: number,
+    { showExplanation }: any,
+  ): Promise<Quiz> {
+    const queryRunner =
+      this.quizzesRepository.manager.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Tìm quiz cần cập nhật
+      const quiz = await queryRunner.manager.findOne(Quiz, {
+        where: { id: quizId },
+      });
+
+      if (!quiz) {
+        throw new NotFoundException(
+          `Không tìm thấy bài kiểm tra với ID ${quizId}`,
+        );
+      }
+
+      // Cập nhật showExplanation
+      quiz.showExplanation = showExplanation;
+      const updatedQuiz = await queryRunner.manager.save(Quiz, quiz);
+
+      // Commit transaction
+      await queryRunner.commitTransaction();
+
+      return updatedQuiz;
+    } catch (error) {
+      // Rollback transaction nếu có lỗi
+      await queryRunner.rollbackTransaction();
+
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new BadRequestException(
+        'Lỗi khi cập nhật trạng thái hiển thị giải thích: ' + error.message,
+      );
+    } finally {
+      // Giải phóng queryRunner
+      await queryRunner.release();
+    }
+  }
 }

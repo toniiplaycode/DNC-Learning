@@ -49,13 +49,18 @@ import { toast } from "react-toastify";
 import { generateDocxFromTemplate } from "../../../utils/browserDocGenerator";
 import { fetchCourseQuizzes } from "../../../features/course-lessons/courseLessonsApiSlice";
 import { selectAlCourseLessonlQuizzes } from "../../../features/course-lessons/courseLessonsSelector";
-import { selectAllQuizzes } from "../../../features/quizzes/quizzesSelectors";
+import {
+  selectAllQuizzes,
+  selectShowExplanationError,
+  selectShowExplanationStatus,
+} from "../../../features/quizzes/quizzesSelectors";
 import {
   createQuiz,
   fetchInstructorAttempts,
   fetchQuizzesByCourse,
   fetchQuizzesByInstructor,
   updateQuiz,
+  updateShowExplanation,
 } from "../../../features/quizzes/quizzesSlice";
 import { fetchCourseById } from "../../../features/courses/coursesApiSlice";
 import { selectCurrentUser } from "../../../features/auth/authSelectors";
@@ -143,6 +148,10 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
   const quizzesData = useAppSelector(selectAllQuizzes);
   const currentClassInstructor = useAppSelector(selectCurrentClassInstructor);
   const academicClassStudents = useAppSelector(selectAcademicClassStudents);
+
+  // Thêm state để theo dõi trạng thái cập nhật showExplanation
+  const showExplanationStatus = useAppSelector(selectShowExplanationStatus);
+  const showExplanationError = useAppSelector(selectShowExplanationError);
 
   useEffect(() => {
     dispatch(fetchClassInstructorById(Number(currentUser?.userInstructor?.id)));
@@ -502,6 +511,51 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
     }
   };
 
+  // Sửa đổi phần FormControlLabel cho Switch showExplanation
+  const handleShowExplanationChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const newValue = event.target.checked;
+
+    // Cập nhật state local trước
+    setQuizForm({
+      ...quizForm,
+      showExplanation: newValue,
+    });
+
+    // Nếu đang ở chế độ edit, gọi API cập nhật
+    if (editMode && quizToEdit?.id) {
+      try {
+        // Sửa lại cách gọi dispatch
+        await dispatch(
+          updateShowExplanation({
+            quizId: quizToEdit.id,
+            showExplanation: newValue ? 1 : 0,
+          })
+        ).unwrap();
+
+        // Refresh data sau khi cập nhật thành công
+        if (id) {
+          await dispatch(fetchCourseQuizzes(Number(id)));
+          await dispatch(fetchCourseById(Number(id)));
+          await dispatch(fetchQuizzesByCourse(Number(id)));
+        }
+        await dispatch(
+          fetchQuizzesByInstructor(Number(currentUser.userInstructor.id))
+        );
+
+        onClose();
+      } catch (error) {
+        // Nếu có lỗi, revert lại state local
+        setQuizForm({
+          ...quizForm,
+          showExplanation: !newValue,
+        });
+        console.error("Failed to update show explanation:", error);
+      }
+    }
+  };
+
   return (
     <Dialog
       open={open}
@@ -719,15 +773,23 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
               control={
                 <Switch
                   checked={quizForm.showExplanation}
-                  onChange={(e) =>
-                    setQuizForm({
-                      ...quizForm,
-                      showExplanation: e.target.checked,
-                    })
-                  }
+                  onChange={handleShowExplanationChange}
+                  disabled={showExplanationStatus === "loading"}
                 />
               }
-              label="Hiện giải thích sau khi nộp bài"
+              label={
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  Hiện giải thích sau khi nộp bài
+                  {showExplanationStatus === "loading" && (
+                    <Typography
+                      variant="caption"
+                      sx={{ ml: 1, color: "text.secondary" }}
+                    >
+                      (Đang cập nhật...)
+                    </Typography>
+                  )}
+                </Box>
+              }
             />
           </Box>
           <Divider sx={{ my: 2 }} />

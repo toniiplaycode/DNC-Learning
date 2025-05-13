@@ -12,9 +12,18 @@ import {
   Paper,
   useTheme,
   useMediaQuery,
+  Tooltip,
 } from "@mui/material";
 import { Quiz as QuizIcon } from "@mui/icons-material";
-import { Timer, CheckCircle, Cancel, PlayArrow } from "@mui/icons-material";
+import {
+  Timer,
+  CheckCircle,
+  Cancel,
+  PlayArrow,
+  Info,
+  Visibility,
+  VisibilityOff,
+} from "@mui/icons-material";
 import {
   createAttempt,
   fetchAttemptByUserIdAndQuizId,
@@ -361,6 +370,37 @@ const QuizContent: React.FC<QuizContentProps> = ({
     }
   }, [latestAttempt, activeQuiz, isAssessmentQuiz]);
 
+  // Thêm hàm helper để format thời gian
+  const formatDateTime = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleString("vi-VN", {
+      year: "numeric",
+      month: "2-digit",
+      day: "2-digit",
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
+  };
+
+  const calculateDuration = (startTime: string, endTime: string) => {
+    const start = new Date(startTime);
+    const end = new Date(endTime);
+    const diffInSeconds = Math.floor((end.getTime() - start.getTime()) / 1000);
+
+    const hours = Math.floor(diffInSeconds / 3600);
+    const minutes = Math.floor((diffInSeconds % 3600) / 60);
+    const seconds = diffInSeconds % 60;
+
+    if (hours > 0) {
+      return `${hours} giờ ${minutes} phút ${seconds} giây`;
+    } else if (minutes > 0) {
+      return `${minutes} phút ${seconds} giây`;
+    } else {
+      return `${seconds} giây`;
+    }
+  };
+
   // Replace the existing empty state
   if (!activeQuiz) {
     return (
@@ -449,30 +489,173 @@ const QuizContent: React.FC<QuizContentProps> = ({
                 /{activeQuiz.questions?.length} câu
               </Typography>
               {latestAttempt && latestAttempt.score !== undefined ? (
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    gap: 1,
-                  }}
-                >
-                  {latestAttempt.score >= (activeQuiz.passingScore || 50) ? (
-                    <>
-                      <Typography variant="subtitle1" color="success.main">
-                        Đạt
+                <>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 1,
+                      mb: 2,
+                    }}
+                  >
+                    {latestAttempt.score >= (activeQuiz.passingScore || 50) ? (
+                      <>
+                        <Typography variant="subtitle1" color="success.main">
+                          Đạt
+                        </Typography>
+                        <CheckCircle color="success" />
+                      </>
+                    ) : (
+                      <>
+                        <Typography variant="subtitle1" color="error.main">
+                          Chưa đạt
+                        </Typography>
+                        <Cancel color="error" />
+                      </>
+                    )}
+                  </Box>
+
+                  {/* Hiển thị thông tin thời gian */}
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      gap: 1,
+                      bgcolor: "background.paper",
+                      p: 2,
+                      borderRadius: 1,
+                      border: "1px solid",
+                      borderColor: "divider",
+                      width: "100%",
+                      maxWidth: 400,
+                      mb: 2,
+                    }}
+                  >
+                    <Typography variant="subtitle2" color="text.secondary">
+                      Thời gian làm bài
+                    </Typography>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: 0.5,
+                        width: "100%",
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <Typography variant="body2" color="text.secondary">
+                          Bắt đầu:
+                        </Typography>
+                        <Typography variant="body2">
+                          {formatDateTime(latestAttempt.startTime)}
+                        </Typography>
+                      </Box>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <Typography variant="body2" color="text.secondary">
+                          Kết thúc:
+                        </Typography>
+                        <Typography variant="body2">
+                          {formatDateTime(latestAttempt.endTime)}
+                        </Typography>
+                      </Box>
+                      <Divider sx={{ my: 1 }} />
+                      <Box
+                        sx={{
+                          display: "flex",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <Typography variant="body2" color="text.secondary">
+                          Tổng thời gian:
+                        </Typography>
+                        <Typography variant="body2" fontWeight="medium">
+                          {calculateDuration(
+                            latestAttempt.startTime,
+                            latestAttempt.endTime
+                          )}
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Box>
+
+                  {/* Thêm phần hiển thị trạng thái giải thích */}
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      bgcolor: activeQuiz.showExplanation
+                        ? "success.light"
+                        : "warning.light",
+                      color: activeQuiz.showExplanation
+                        ? "success.dark"
+                        : "warning.dark",
+                      px: 2,
+                      py: 1,
+                      borderRadius: 1,
+                      border: "1px solid",
+                      borderColor: activeQuiz.showExplanation
+                        ? "success.main"
+                        : "warning.main",
+                    }}
+                  >
+                    {activeQuiz.showExplanation ? (
+                      <>
+                        <Visibility fontSize="small" />
+                        <Typography variant="body2" fontWeight="medium">
+                          Giải thích đáp án sẽ được hiển thị sau khi nộp bài
+                        </Typography>
+                      </>
+                    ) : (
+                      <>
+                        <VisibilityOff fontSize="small" />
+                        <Typography variant="body2" fontWeight="medium">
+                          Giải thích đáp án đã bị ẩn
+                        </Typography>
+                      </>
+                    )}
+                  </Box>
+
+                  {/* Thêm tooltip giải thích chi tiết */}
+                  <Tooltip
+                    title={
+                      activeQuiz.showExplanation
+                        ? "Học viên sẽ thấy giải thích cho mỗi câu hỏi sau khi nộp bài"
+                        : "Giảng viên đã tắt hiển thị giải thích cho bài quiz này"
+                    }
+                    arrow
+                    placement="top"
+                  >
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 0.5,
+                        mt: 1,
+                        cursor: "help",
+                      }}
+                    >
+                      <Info fontSize="small" color="action" />
+                      <Typography variant="caption" color="text.secondary">
+                        {activeQuiz.showExplanation
+                          ? "Giải thích sẽ hiển thị cho tất cả câu hỏi"
+                          : "Giải thích sẽ không được hiển thị"}
                       </Typography>
-                      <CheckCircle color="success" />
-                    </>
-                  ) : (
-                    <>
-                      <Typography variant="subtitle1" color="error.main">
-                        Chưa đạt
-                      </Typography>
-                      <Cancel color="error" />
-                    </>
-                  )}
-                </Box>
+                    </Box>
+                  </Tooltip>
+                </>
               ) : (
                 ""
               )}

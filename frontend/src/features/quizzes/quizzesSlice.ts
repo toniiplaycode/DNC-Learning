@@ -9,6 +9,7 @@ import {
   AttemptStatus,
 } from "../../types/quiz.types";
 import { api } from "../../services/api";
+import { toast } from "react-toastify";
 
 // Async thunks
 export const fetchQuizzes = createAsyncThunk(
@@ -304,6 +305,28 @@ export const fetchAttemptsByQuizId = createAsyncThunk(
   }
 );
 
+// Thêm thunk mới sau các thunk khác
+export const updateShowExplanation = createAsyncThunk(
+  "quizzes/updateShowExplanation",
+  async (
+    { quizId, showExplanation }: { quizId: number; showExplanation: number },
+    { rejectWithValue }
+  ) => {
+    try {
+      console.log(quizId, showExplanation);
+      const response = await api.patch(`/quizzes/show-explanation/${quizId}`, {
+        showExplanation,
+      });
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          "Không thể cập nhật trạng thái hiển thị giải thích"
+      );
+    }
+  }
+);
+
 // Add to interface QuizzesState
 interface QuizzesState {
   quizzes: any[];
@@ -323,6 +346,8 @@ interface QuizzesState {
   quizAttempts: any[];
   quizAttemptsStatus: "idle" | "loading" | "succeeded" | "failed";
   quizAttemptsError: string | null;
+  showExplanationStatus: "idle" | "loading" | "succeeded" | "failed";
+  showExplanationError: string | null;
 }
 
 // Update initial state
@@ -344,6 +369,8 @@ const initialState: QuizzesState = {
   quizAttempts: [],
   quizAttemptsStatus: "idle",
   quizAttemptsError: null,
+  showExplanationStatus: "idle",
+  showExplanationError: null,
 };
 
 // Add to reducers
@@ -372,6 +399,10 @@ const quizzesSlice = createSlice({
       state.quizAttempts = [];
       state.quizAttemptsStatus = "idle";
       state.quizAttemptsError = null;
+    },
+    resetShowExplanationStatus: (state) => {
+      state.showExplanationStatus = "idle";
+      state.showExplanationError = null;
     },
   },
   extraReducers: (builder) => {
@@ -682,6 +713,37 @@ const quizzesSlice = createSlice({
       .addCase(fetchAttemptsByQuizId.rejected, (state, action) => {
         state.quizAttemptsStatus = "failed";
         state.quizAttemptsError = action.payload as string;
+      })
+
+      // Update show explanation
+      .addCase(updateShowExplanation.pending, (state) => {
+        state.showExplanationStatus = "loading";
+        state.showExplanationError = null;
+      })
+      .addCase(updateShowExplanation.fulfilled, (state, action) => {
+        state.showExplanationStatus = "succeeded";
+        // Cập nhật showExplanation trong currentQuiz nếu đang xem quiz đó
+        if (state.currentQuiz && state.currentQuiz.id === action.payload.id) {
+          state.currentQuiz.showExplanation = action.payload.showExplanation;
+        }
+        // Cập nhật trong danh sách quizzes nếu có
+        state.quizzes = state.quizzes.map((quiz) =>
+          quiz.id === action.payload.id
+            ? { ...quiz, showExplanation: action.payload.showExplanation }
+            : quiz
+        );
+        // Cập nhật trong instructorQuizzes nếu có
+        state.instructorQuizzes = state.instructorQuizzes.map((quiz) =>
+          quiz.id === action.payload.id
+            ? { ...quiz, showExplanation: action.payload.showExplanation }
+            : quiz
+        );
+
+        toast.success("Cập nhật trạng thái hiển thị giải thích thành công");
+      })
+      .addCase(updateShowExplanation.rejected, (state, action) => {
+        state.showExplanationStatus = "failed";
+        state.showExplanationError = action.payload as string;
       });
   },
 });
@@ -693,6 +755,7 @@ export const {
   clearQuizResult,
   resetInstructorAttempts,
   resetQuizAttempts,
+  resetShowExplanationStatus,
 } = quizzesSlice.actions;
 
 export default quizzesSlice.reducer;

@@ -218,4 +218,15 @@ export class QuizzesController {
   findAttemptsByUser(@Param('userId') userId: number) {
     return this.quizzesAttemptsService.findAllByUserId(userId);
   }
+
+  @Patch('show-explanation/:id')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.INSTRUCTOR)
+  updateShowExplanation(
+    @Param('id', ParseIntPipe) id: number,
+    @Body() updateQuizDto: any,
+  ) {
+    console.log(id, updateQuizDto);
+    return this.quizzesService.updateShowExplanation(id, updateQuizDto);
+  }
 }
