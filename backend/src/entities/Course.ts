@@ -38,6 +38,14 @@ export class Course {
 
   @Column({
     type: 'enum',
+    enum: ['student', 'student_academic', 'both'],
+    nullable: true,
+    default: 'both',
+  })
+  for: 'student' | 'student_academic' | 'both';
+
+  @Column({
+    type: 'enum',
     enum: ['beginner', 'intermediate', 'advanced'],
     nullable: true,
     default: 'beginner',

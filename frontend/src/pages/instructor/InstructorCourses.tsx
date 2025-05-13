@@ -27,6 +27,8 @@ import {
   Visibility,
   Delete,
   Edit,
+  School,
+  Psychology,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
@@ -53,6 +55,7 @@ const InstructorCourses = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [studentsFilter, setStudentsFilter] = useState("all");
   const [ratingFilter, setRatingFilter] = useState("all");
+  const [audienceFilter, setAudienceFilter] = useState("all");
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedCourse, setSelectedCourse] = useState<string | null>(null);
   const [openAddDialog, setOpenAddDialog] = useState(false);
@@ -113,9 +116,18 @@ const InstructorCourses = () => {
 
   // Filter and sort courses based on search query, students, and rating
   const filteredCourses = courses
-    .filter((course) =>
-      course.title.toLowerCase().includes(searchQuery.toLowerCase())
-    )
+    .filter((course) => {
+      // Lọc theo từ khóa tìm kiếm
+      const searchMatch = course.title
+        .toLowerCase()
+        .includes(searchQuery.toLowerCase());
+
+      // Lọc theo đối tượng học viên
+      const audienceMatch =
+        audienceFilter === "all" || course.for === audienceFilter;
+
+      return searchMatch && audienceMatch;
+    })
     .sort((a, b) => {
       if (studentsFilter === "mostStudents") {
         return b.enrollments.length - a.enrollments.length;
@@ -165,7 +177,7 @@ const InstructorCourses = () => {
         sx={{ mb: 3 }}
       >
         <Typography variant="h5" fontWeight="bold">
-          Khóa Học Của Tôi
+          Quản lý khóa học
         </Typography>
         <Button
           variant="contained"
@@ -192,7 +204,7 @@ const InstructorCourses = () => {
       >
         <CardContent sx={{ p: 2 }}>
           <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={3}>
               <TextField
                 fullWidth
                 placeholder="Tìm kiếm khóa học..."
@@ -241,142 +253,492 @@ const InstructorCourses = () => {
                 </Select>
               </FormControl>
             </Grid>
+            <Grid item xs={12} md={3}>
+              <FormControl fullWidth sx={{ minWidth: 120 }}>
+                <InputLabel>Đối tượng</InputLabel>
+                <Select
+                  value={audienceFilter}
+                  onChange={(e) => setAudienceFilter(e.target.value)}
+                  label="Đối tượng"
+                  sx={{ borderRadius: 2, bgcolor: "grey.50" }}
+                >
+                  <MenuItem value="all">Tất cả đối tượng</MenuItem>
+                  <MenuItem value="both">
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <People fontSize="small" sx={{ color: "info.main" }} />
+                      <Typography>Tất cả người học</Typography>
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="student">
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <School fontSize="small" sx={{ color: "primary.main" }} />
+                      <Typography>Học viên thông thường</Typography>
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="student_academic">
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Psychology
+                        fontSize="small"
+                        sx={{ color: "warning.main" }}
+                      />
+                      <Typography>Sinh viên học thuật</Typography>
+                    </Box>
+                  </MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
           </Grid>
         </CardContent>
       </Card>
 
-      {/* Course List */}
-      <Grid container spacing={3}>
-        {filteredCourses.length === 0 ? (
-          <Box sx={{ width: "100%", textAlign: "center", py: 4 }}>
-            <Typography color="text.secondary">
-              Không tìm thấy khóa học nào.
-            </Typography>
-          </Box>
-        ) : (
-          filteredCourses.map((course) => (
-            <Grid item xs={12} sm={6} lg={4} key={course.id}>
-              <Card
-                sx={{
-                  borderRadius: 3,
-                  boxShadow: "0 4px 15px rgba(0, 0, 0, 0.1)",
-                  transition: "transform 0.3s, box-shadow 0.3s",
-                  "&:hover": {
-                    transform: "translateY(-4px)",
-                    boxShadow: "0 8px 25px rgba(0, 0, 0, 0.15)",
-                  },
-                  bgcolor: "white",
-                }}
-              >
-                <CardContent sx={{ p: 3 }}>
-                  <Stack spacing={2}>
-                    {/* Course Header */}
-                    <Box
-                      sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}
+      {/* Course List with grouping by audience type */}
+      {filteredCourses.length === 0 ? (
+        <Box sx={{ width: "100%", textAlign: "center", py: 4 }}>
+          <Typography color="text.secondary">
+            Không tìm thấy khóa học nào.
+          </Typography>
+        </Box>
+      ) : (
+        <>
+          {audienceFilter !== "all" ? (
+            // Nếu đã lọc theo đối tượng, hiển thị không phân nhóm
+            <Box sx={{ mb: 4 }}>
+              <Grid container spacing={3}>
+                {filteredCourses.map((course) => (
+                  <Grid item xs={12} sm={6} lg={4} key={course.id}>
+                    <Card
+                      sx={{
+                        borderRadius: 3,
+                        boxShadow: "0 4px 15px rgba(0, 0, 0, 0.1)",
+                        transition: "transform 0.3s, box-shadow 0.3s",
+                        "&:hover": {
+                          transform: "translateY(-4px)",
+                          boxShadow: "0 8px 25px rgba(0, 0, 0, 0.15)",
+                        },
+                        bgcolor: "white",
+                      }}
                     >
-                      <Avatar
-                        variant="rounded"
-                        src={course.thumbnailUrl}
-                        sx={{
-                          width: 80,
-                          height: 80,
-                          borderRadius: 2,
-                          bgcolor: "grey.200",
-                        }}
-                      />
-                      <Box sx={{ flex: 1 }}>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "flex-start",
-                          }}
-                        >
-                          <Typography
-                            variant="subtitle1"
-                            fontWeight="bold"
+                      <CardContent sx={{ p: 3 }}>
+                        <Stack spacing={2}>
+                          {/* Course Header */}
+                          <Box
                             sx={{
-                              fontSize: { xs: "1rem", md: "1.1rem" },
-                              lineHeight: 1.4,
+                              display: "flex",
+                              alignItems: "flex-start",
+                              gap: 2,
                             }}
                           >
-                            {course.title}
-                          </Typography>
-                          <IconButton
-                            size="small"
-                            onClick={(e) => handleMenuOpen(e, course.id)}
+                            <Avatar
+                              variant="rounded"
+                              src={course.thumbnailUrl}
+                              sx={{
+                                width: 80,
+                                height: 80,
+                                borderRadius: 2,
+                                bgcolor: "grey.200",
+                              }}
+                            />
+                            <Box sx={{ flex: 1 }}>
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                  alignItems: "flex-start",
+                                }}
+                              >
+                                <Typography
+                                  variant="subtitle1"
+                                  fontWeight="bold"
+                                  sx={{
+                                    fontSize: { xs: "1rem", md: "1.1rem" },
+                                    lineHeight: 1.4,
+                                  }}
+                                >
+                                  {course.title}
+                                </Typography>
+                                <IconButton
+                                  size="small"
+                                  onClick={(e) => handleMenuOpen(e, course.id)}
+                                >
+                                  <MoreVert sx={{ color: "text.secondary" }} />
+                                </IconButton>
+                              </Box>
+                              <Box>
+                                <Chip
+                                  label={
+                                    course.status === "published"
+                                      ? "Đã Xuất Bản"
+                                      : "Bản Nháp"
+                                  }
+                                  size="small"
+                                  color={
+                                    course.status === "published"
+                                      ? "success"
+                                      : "default"
+                                  }
+                                  sx={{ mt: 1, mr: 1 }}
+                                />
+
+                                {course.for && (
+                                  <Chip
+                                    icon={
+                                      course.for === "both" ? (
+                                        <People fontSize="small" />
+                                      ) : course.for === "student" ? (
+                                        <School fontSize="small" />
+                                      ) : (
+                                        <Psychology fontSize="small" />
+                                      )
+                                    }
+                                    label={
+                                      course.for === "both"
+                                        ? "Tất cả người học"
+                                        : course.for === "student"
+                                        ? "Học viên thông thường"
+                                        : "Sinh viên học thuật"
+                                    }
+                                    size="small"
+                                    color={
+                                      course.for === "both"
+                                        ? "info"
+                                        : course.for === "student"
+                                        ? "primary"
+                                        : "warning"
+                                    }
+                                    sx={{ mt: 1 }}
+                                  />
+                                )}
+                              </Box>
+                            </Box>
+                          </Box>
+
+                          {/* Course Stats */}
+                          <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 0.5,
+                              }}
+                            >
+                              <People fontSize="small" color="action" />
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                {course.enrollments.length} học viên
+                              </Typography>
+                            </Box>
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 0.5,
+                              }}
+                            >
+                              <Star
+                                fontSize="small"
+                                sx={{ color: "#f5c518" }}
+                              />
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                {course.reviews.length > 0
+                                  ? (
+                                      course.reviews.reduce(
+                                        (sum, r) => sum + r.rating,
+                                        0
+                                      ) / course.reviews.length
+                                    ).toFixed(1)
+                                  : "Chưa có đánh giá"}{" "}
+                                ({course.reviews.length})
+                              </Typography>
+                            </Box>
+                          </Stack>
+
+                          {/* Price and Last Updated */}
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                            }}
                           >
-                            <MoreVert sx={{ color: "text.secondary" }} />
-                          </IconButton>
-                        </Box>
-                        <Chip
-                          label={
-                            course.status === "published"
-                              ? "Đã Xuất Bản"
-                              : "Bản Nháp"
-                          }
-                          size="small"
-                          color={
-                            course.status === "published"
-                              ? "success"
-                              : "default"
-                          }
-                          sx={{ mt: 1 }}
-                        />
-                      </Box>
-                    </Box>
+                            <Typography
+                              variant="body2"
+                              fontWeight="medium"
+                              color="primary.main"
+                            >
+                              {parseFloat(course.price).toLocaleString("vi-VN")}{" "}
+                              VNĐ
+                            </Typography>
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                            >
+                              Cập nhật:{" "}
+                              {new Date(course.updatedAt).toLocaleDateString(
+                                "vi-VN"
+                              )}
+                            </Typography>
+                          </Box>
+                        </Stack>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                ))}
+              </Grid>
+            </Box>
+          ) : (
+            // Nếu không lọc, giữ nguyên cách hiển thị theo nhóm
+            ["both", "student", "student_academic"].map((audienceType) => {
+              const coursesInGroup = filteredCourses.filter(
+                (course) => course.for === audienceType
+              );
 
-                    {/* Course Stats */}
-                    <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
-                      >
-                        <People fontSize="small" color="action" />
-                        <Typography variant="body2" color="text.secondary">
-                          {course.enrollments.length} học viên
-                        </Typography>
-                      </Box>
-                      <Box
-                        sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
-                      >
-                        <Star fontSize="small" sx={{ color: "#f5c518" }} />
-                        <Typography variant="body2" color="text.secondary">
-                          {course.reviews.length > 0
-                            ? (
-                                course.reviews.reduce(
-                                  (sum, r) => sum + r.rating,
-                                  0
-                                ) / course.reviews.length
-                              ).toFixed(1)
-                            : "Chưa có đánh giá"}{" "}
-                          ({course.reviews.length})
-                        </Typography>
-                      </Box>
-                    </Stack>
+              if (coursesInGroup.length === 0) return null;
 
-                    {/* Price and Last Updated */}
-                    <Box
-                      sx={{ display: "flex", justifyContent: "space-between" }}
+              return (
+                <Box key={audienceType} sx={{ mb: 4 }}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      mb: 2,
+                      pb: 1,
+                      borderBottom: "1px solid",
+                      borderColor: "divider",
+                    }}
+                  >
+                    {audienceType === "both" ? (
+                      <People
+                        fontSize="small"
+                        sx={{ mr: 1, color: "info.main" }}
+                      />
+                    ) : audienceType === "student" ? (
+                      <School
+                        fontSize="small"
+                        sx={{ mr: 1, color: "primary.main" }}
+                      />
+                    ) : (
+                      <Psychology
+                        fontSize="small"
+                        sx={{ mr: 1, color: "warning.main" }}
+                      />
+                    )}
+                    <Typography variant="h6" fontWeight="medium">
+                      {audienceType === "both"
+                        ? "Khóa học cho tất cả người học"
+                        : audienceType === "student"
+                        ? "Khóa học cho học viên thông thường"
+                        : "Khóa học cho sinh viên học thuật"}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ ml: 2 }}
                     >
-                      <Typography
-                        variant="body2"
-                        fontWeight="medium"
-                        color="primary.main"
-                      >
-                        {parseFloat(course.price).toLocaleString("vi-VN")} VNĐ
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Cập nhật:{" "}
-                        {new Date(course.updatedAt).toLocaleDateString("vi-VN")}
-                      </Typography>
-                    </Box>
-                  </Stack>
-                </CardContent>
-              </Card>
-            </Grid>
-          ))
-        )}
-      </Grid>
+                      ({coursesInGroup.length} khóa học)
+                    </Typography>
+                  </Box>
+
+                  <Grid container spacing={3}>
+                    {coursesInGroup.map((course) => (
+                      <Grid item xs={12} sm={6} lg={4} key={course.id}>
+                        <Card
+                          sx={{
+                            borderRadius: 3,
+                            boxShadow: "0 4px 15px rgba(0, 0, 0, 0.1)",
+                            transition: "transform 0.3s, box-shadow 0.3s",
+                            "&:hover": {
+                              transform: "translateY(-4px)",
+                              boxShadow: "0 8px 25px rgba(0, 0, 0, 0.15)",
+                            },
+                            bgcolor: "white",
+                          }}
+                        >
+                          <CardContent sx={{ p: 3 }}>
+                            <Stack spacing={2}>
+                              {/* Course Header */}
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "flex-start",
+                                  gap: 2,
+                                }}
+                              >
+                                <Avatar
+                                  variant="rounded"
+                                  src={course.thumbnailUrl}
+                                  sx={{
+                                    width: 80,
+                                    height: 80,
+                                    borderRadius: 2,
+                                    bgcolor: "grey.200",
+                                  }}
+                                />
+                                <Box sx={{ flex: 1 }}>
+                                  <Box
+                                    sx={{
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      alignItems: "flex-start",
+                                    }}
+                                  >
+                                    <Typography
+                                      variant="subtitle1"
+                                      fontWeight="bold"
+                                      sx={{
+                                        fontSize: { xs: "1rem", md: "1.1rem" },
+                                        lineHeight: 1.4,
+                                      }}
+                                    >
+                                      {course.title}
+                                    </Typography>
+                                    <IconButton
+                                      size="small"
+                                      onClick={(e) =>
+                                        handleMenuOpen(e, course.id)
+                                      }
+                                    >
+                                      <MoreVert
+                                        sx={{ color: "text.secondary" }}
+                                      />
+                                    </IconButton>
+                                  </Box>
+                                  <Box>
+                                    <Chip
+                                      label={
+                                        course.status === "published"
+                                          ? "Đã Xuất Bản"
+                                          : "Bản Nháp"
+                                      }
+                                      size="small"
+                                      color={
+                                        course.status === "published"
+                                          ? "success"
+                                          : "default"
+                                      }
+                                      sx={{ mt: 1, mr: 1 }}
+                                    />
+
+                                    {course.for && (
+                                      <Chip
+                                        icon={
+                                          course.for === "both" ? (
+                                            <People fontSize="small" />
+                                          ) : course.for === "student" ? (
+                                            <School fontSize="small" />
+                                          ) : (
+                                            <Psychology fontSize="small" />
+                                          )
+                                        }
+                                        label={
+                                          course.for === "both"
+                                            ? "Tất cả người học"
+                                            : course.for === "student"
+                                            ? "Học viên thông thường"
+                                            : "Sinh viên học thuật"
+                                        }
+                                        size="small"
+                                        color={
+                                          course.for === "both"
+                                            ? "info"
+                                            : course.for === "student"
+                                            ? "primary"
+                                            : "warning"
+                                        }
+                                        sx={{ mt: 1 }}
+                                      />
+                                    )}
+                                  </Box>
+                                </Box>
+                              </Box>
+
+                              {/* Course Stats */}
+                              <Stack direction="row" spacing={2} sx={{ mt: 1 }}>
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 0.5,
+                                  }}
+                                >
+                                  <People fontSize="small" color="action" />
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                  >
+                                    {course.enrollments.length} học viên
+                                  </Typography>
+                                </Box>
+                                <Box
+                                  sx={{
+                                    display: "flex",
+                                    alignItems: "center",
+                                    gap: 0.5,
+                                  }}
+                                >
+                                  <Star
+                                    fontSize="small"
+                                    sx={{ color: "#f5c518" }}
+                                  />
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                  >
+                                    {course.reviews.length > 0
+                                      ? (
+                                          course.reviews.reduce(
+                                            (sum, r) => sum + r.rating,
+                                            0
+                                          ) / course.reviews.length
+                                        ).toFixed(1)
+                                      : "Chưa có đánh giá"}{" "}
+                                    ({course.reviews.length})
+                                  </Typography>
+                                </Box>
+                              </Stack>
+
+                              {/* Price and Last Updated */}
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                }}
+                              >
+                                <Typography
+                                  variant="body2"
+                                  fontWeight="medium"
+                                  color="primary.main"
+                                >
+                                  {parseFloat(course.price).toLocaleString(
+                                    "vi-VN"
+                                  )}{" "}
+                                  VNĐ
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                >
+                                  Cập nhật:{" "}
+                                  {new Date(
+                                    course.updatedAt
+                                  ).toLocaleDateString("vi-VN")}
+                                </Typography>
+                              </Box>
+                            </Stack>
+                          </CardContent>
+                        </Card>
+                      </Grid>
+                    ))}
+                  </Grid>
+                </Box>
+              );
+            })
+          )}
+        </>
+      )}
 
       {/* Course Menu */}
       <Menu

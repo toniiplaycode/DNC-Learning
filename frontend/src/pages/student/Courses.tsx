@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, ReactNode } from "react";
 import {
   Box,
   Container,
@@ -18,6 +18,7 @@ import {
   Alert,
   Skeleton,
   Button,
+  SelectChangeEvent,
 } from "@mui/material";
 import { Search, SortByAlpha, FilterList } from "@mui/icons-material";
 import CardCourse from "../../components/common/CardCourse";
@@ -27,12 +28,15 @@ import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { fetchCourses } from "../../features/courses/coursesApiSlice";
 import { selectActiveCategories } from "../../features/categories/categoriesSelectors";
 import { fetchCategories } from "../../features/categories/categoriesApiSlice";
+import { selectCurrentUser } from "../../features/auth/authSelectors";
+import { UserRole } from "../../types/user.types";
 
 const Courses = () => {
   const dispatch = useAppDispatch();
   const { courses, status, error } = useAppSelector((state) => state.courses);
   const categories = useAppSelector(selectActiveCategories);
   const [searchParams, setSearchParams] = useSearchParams();
+  const currentUser = useAppSelector(selectCurrentUser);
 
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
@@ -93,7 +97,7 @@ const Courses = () => {
     id: course.id,
     title: course.title,
     instructor: {
-      name: course?.instructor?.fullName || "Giảng viên",
+      fullName: course?.instructor?.fullName || "Giảng viên",
       avatar: course?.instructor?.user?.avatarUrl,
     },
     rating: calculateAverageRating(course.reviews),
@@ -103,6 +107,7 @@ const Courses = () => {
     price: parseFloat(course.price) || 0,
     image: course.thumbnailUrl || "/src/assets/logo.png",
     category: course.category?.name || "Không phân loại",
+    for: course.for,
   });
 
   // Filter courses
@@ -126,7 +131,18 @@ const Courses = () => {
     const priceMatch =
       course.price >= priceRange[0] && course.price <= priceRange[1];
 
-    return searchMatch && categoryMatch && levelMatch && priceMatch;
+    // Lọc theo đối tượng người dùng
+    const userRole = currentUser?.role as string;
+    const userTypeMatch =
+      !course.for || // Nếu không có trường for
+      course.for === "both" || // Hoặc for = 'both'
+      (userRole === "student" && course.for === "student") || // Người dùng là student và khóa học cho student
+      (userRole === "student_academic" && course.for === "student_academic") || // Người dùng là student_academic và khóa học cho student_academic
+      (!currentUser && (course.for === "student" || course.for === "both")); // Người dùng chưa đăng nhập xem được khóa học cho student và both
+
+    return (
+      searchMatch && categoryMatch && levelMatch && priceMatch && userTypeMatch
+    );
   });
 
   // Sort courses
@@ -174,8 +190,8 @@ const Courses = () => {
     }).format(value);
   };
 
-  const handleCategoryChange = (e: React.ChangeEvent<{ value: unknown }>) => {
-    const value = e.target.value as string;
+  const handleCategoryChange = (event: SelectChangeEvent<string>) => {
+    const value = event.target.value;
     setSelectedCategory(value);
     setSearchParams({ category: value });
   };

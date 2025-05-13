@@ -81,6 +81,23 @@ export class EnrollmentsService {
       );
     }
 
+    // Check if course is for the correct user type
+    if (course.for !== 'both') {
+      if (
+        course.for === 'student_academic' &&
+        user.role !== 'student_academic'
+      ) {
+        throw new BadRequestException(
+          'This course is only available for academic students',
+        );
+      }
+      if (course.for === 'student' && user.role !== 'student') {
+        throw new BadRequestException(
+          'This course is only available for regular students',
+        );
+      }
+    }
+
     // Create new enrollment
     const enrollment = this.enrollmentsRepository.create({
       ...createEnrollmentDto,

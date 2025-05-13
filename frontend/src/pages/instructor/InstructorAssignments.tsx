@@ -104,6 +104,9 @@ const InstructorAssignments = () => {
   // Thêm state cho bộ lọc bài tập
   const [assignmentFilter, setAssignmentFilter] = useState("all");
 
+  // Add new state for date sorting
+  const [dateSort, setDateSort] = useState("newest"); // "newest" or "oldest"
+
   console.log(instructorGrades);
 
   // Thêm state và các hàm xử lý để mở dialog tạo bài tập
@@ -347,7 +350,7 @@ const InstructorAssignments = () => {
 
   // Lọc submissions dựa trên các filter
   const getFilteredSubmissions = () => {
-    return instructorSubmissions.filter((submission) => {
+    const filtered = instructorSubmissions.filter((submission) => {
       const isStudentAcademic = submission.user.role === "student_academic";
 
       // Lọc theo loại học viên
@@ -400,6 +403,13 @@ const InstructorAssignments = () => {
       }
 
       return true;
+    });
+
+    // Apply date sorting
+    return filtered.sort((a, b) => {
+      const dateA = new Date(a.submittedAt).getTime();
+      const dateB = new Date(b.submittedAt).getTime();
+      return dateSort === "newest" ? dateB - dateA : dateA - dateB;
     });
   };
 
@@ -752,6 +762,19 @@ const InstructorAssignments = () => {
                     </Select>
                   </FormControl>
                 )}
+
+                {/* Add the date sort filter UI in the filters area */}
+                <FormControl size="small" sx={{ minWidth: 150 }}>
+                  <InputLabel>Thời gian nộp</InputLabel>
+                  <Select
+                    value={dateSort}
+                    onChange={(e) => setDateSort(e.target.value)}
+                    label="Thời gian nộp"
+                  >
+                    <MenuItem value="newest">Mới nhất trước</MenuItem>
+                    <MenuItem value="oldest">Cũ nhất trước</MenuItem>
+                  </Select>
+                </FormControl>
 
                 {/* Only show Create New Assignment button on academic tab */}
                 {tabValue === 2 && (

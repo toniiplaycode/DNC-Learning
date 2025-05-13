@@ -31,4 +31,10 @@ export default class CreateCoursesDto {
 
   @IsNumber()
   price: number;
+
+  @IsString()
+  @IsIn(['student', 'student_academic', 'both'], {
+    message: 'For must be one of: student, student_academic, or both',
+  })
+  for?: 'student' | 'student_academic' | 'both' = 'both';
 }

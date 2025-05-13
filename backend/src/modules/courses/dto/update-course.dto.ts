@@ -1,5 +1,7 @@
 import {
+  IsIn,
   IsNumber,
+  IsOptional,
   IsString,
   Length,
   Validate,
@@ -19,4 +21,11 @@ export default class UpdateCourseDto {
   @IsString()
   @Length(5, 255, { message: 'Title must be between 5 and 255 characters' })
   title: string;
+
+  @IsOptional()
+  @IsString()
+  @IsIn(['student', 'student_academic', 'both'], {
+    message: 'For must be one of: student, student_academic, or both',
+  })
+  for?: 'student' | 'student_academic' | 'both';
 }

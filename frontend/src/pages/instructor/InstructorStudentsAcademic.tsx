@@ -697,19 +697,19 @@ const InstructorStudentsAcademic = () => {
       >
         <MenuItemMUI onClick={() => setOpenAddCourses(true)}>
           <ListItemIcon>
-            <AddBox fontSize="small" />
+            <AddBox fontSize="small" sx={{ color: "primary.main" }} />
           </ListItemIcon>
           Thêm khóa học cho lớp
         </MenuItemMUI>
         <MenuItemMUI onClick={handleViewStudents}>
           <ListItemIcon>
-            <PeopleIcon fontSize="small" />
+            <PeopleIcon fontSize="small" sx={{ color: "info.main" }} />
           </ListItemIcon>
           Xem danh sách sinh viên
         </MenuItemMUI>
         <MenuItemMUI onClick={() => setOpenAddStudents(true)}>
           <ListItemIcon>
-            <Add fontSize="small" />
+            <Add fontSize="small" sx={{ color: "success.main" }} />
           </ListItemIcon>
           Thêm sinh viên
         </MenuItemMUI>
@@ -720,13 +720,13 @@ const InstructorStudentsAcademic = () => {
           }}
         >
           <ListItemIcon>
-            <EditIcon fontSize="small" />
+            <EditIcon fontSize="small" sx={{ color: "warning.main" }} />
           </ListItemIcon>
           Chỉnh sửa
         </MenuItemMUI>
         <MenuItemMUI onClick={() => setOpenDeleteClassDialog(true)}>
           <ListItemIcon>
-            <DeleteIcon fontSize="small" />
+            <DeleteIcon fontSize="small" sx={{ color: "error.main" }} />
           </ListItemIcon>
           Xóa
         </MenuItemMUI>

@@ -1,6 +1,5 @@
 import { createAsyncThunk } from "@reduxjs/toolkit";
 import { api } from "../../services/api";
-import { Response } from "express";
 
 export interface Course {
   id: number;
@@ -19,6 +18,7 @@ export interface Course {
   enrollmentLimit?: number;
   createdAt: string;
   updatedAt: string;
+  for?: "student" | "student_academic" | "both";
   category?: {
     id: number;
     name: string;

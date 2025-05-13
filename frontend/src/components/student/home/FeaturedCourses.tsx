@@ -4,11 +4,14 @@ import CardCourse from "../../../components/common/CardCourse";
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { fetchCourses } from "../../../features/courses/coursesApiSlice";
+import { selectCurrentUser } from "../../../features/auth/authSelectors";
+import { UserRole } from "../../../types/user.types";
 
 const FeaturedCourses: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { courses, status, error } = useAppSelector((state) => state.courses);
+  const currentUser = useAppSelector(selectCurrentUser);
 
   useEffect(() => {
     if (status === "idle") {
@@ -16,13 +19,24 @@ const FeaturedCourses: React.FC = () => {
     }
   }, [status, dispatch]);
 
-  // Chỉ lấy khóa học có trạng thái published
-  const publishedCourses = courses.filter(
-    (course) => course.status === "published"
-  );
+  // Chỉ lấy khóa học có trạng thái published và phù hợp với vai trò người dùng
+  const filteredCourses = courses.filter((course) => {
+    const publishedMatch = course.status === "published";
+
+    // Lọc theo đối tượng người dùng
+    const userRole = currentUser?.role as string;
+    const userTypeMatch =
+      !course.for || // Nếu không có trường for
+      course.for === "both" || // Hoặc for = 'both'
+      (userRole === "student" && course.for === "student") || // Người dùng là student và khóa học cho student
+      (userRole === "student_academic" && course.for === "student_academic") || // Người dùng là student_academic và khóa học cho student_academic
+      (!currentUser && (course.for === "student" || course.for === "both")); // Người dùng chưa đăng nhập xem được khóa học cho student và both
+
+    return publishedMatch && userTypeMatch;
+  });
 
   // Giới hạn hiển thị tối đa 4 khóa học nổi bật
-  const featuredCourses = publishedCourses.slice(0, 4);
+  const featuredCourses = filteredCourses.slice(0, 4);
 
   const calculateTotalLessons = (course: any) => {
     if (!course.sections) return 0;
@@ -54,6 +68,7 @@ const FeaturedCourses: React.FC = () => {
     price: parseFloat(course.price) || 0,
     image: course.thumbnailUrl || "/src/assets/logo.png",
     category: course.category?.name || "Không phân loại",
+    for: course.for,
   });
 
   return (

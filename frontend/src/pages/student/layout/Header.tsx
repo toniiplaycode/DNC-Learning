@@ -178,6 +178,8 @@ const Header = () => {
             id: course.id,
             title: course.title,
             image: course.thumbnailUrl,
+            instructor: course.instructor?.fullName || "Không xác định",
+            for: course.for || "both",
           })),
 
         // Search instructors
@@ -860,6 +862,26 @@ const Header = () => {
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
                         Khóa học • {result.instructor}
+                        {result.for && (
+                          <Chip
+                            size="small"
+                            label={
+                              result.for === "student"
+                                ? "Học viên"
+                                : result.for === "student_academic"
+                                ? "Sinh viên"
+                                : "Tất cả"
+                            }
+                            color={
+                              result.for === "student"
+                                ? "error"
+                                : result.for === "student_academic"
+                                ? "primary"
+                                : "info"
+                            }
+                            sx={{ ml: 1, height: 18, fontSize: "0.6rem" }}
+                          />
+                        )}
                       </Typography>
                     </Box>
                   </Stack>

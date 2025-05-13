@@ -28,6 +28,7 @@ import {
 } from "../../../utils/uploadImage";
 import { selectCurrentUser } from "../../../features/auth/authSelectors";
 import {
+  Course,
   createCourse,
   fetchCourses,
   fetchCoursesByInstructor,
@@ -36,7 +37,6 @@ import {
 import { fetchCategories } from "../../../features/categories/categoriesApiSlice";
 import { selectAllCategories } from "../../../features/categories/categoriesSelectors";
 import { toast } from "react-toastify";
-import { Course } from "../../../features/courses/coursesSlice";
 import { fetchInstructors } from "../../../features/user_instructors/instructorsApiSlice";
 import { selectAllInstructors } from "../../../features/user_instructors/instructorsSelectors";
 import { fetchAllDocuments } from "../../../features/documents/documentsSlice";
@@ -61,6 +61,7 @@ interface CourseFormData {
   thumbnailUrl: string;
   required: string;
   learned: string;
+  for: "student" | "student_academic" | "both";
 }
 
 const DialogAddEditCourse: React.FC<DialogAddEditCourseProps> = ({
@@ -91,6 +92,7 @@ const DialogAddEditCourse: React.FC<DialogAddEditCourseProps> = ({
     thumbnailUrl: "",
     required: "",
     learned: "",
+    for: "both",
   });
 
   const [uploading, setUploading] = useState(false);
@@ -130,6 +132,7 @@ const DialogAddEditCourse: React.FC<DialogAddEditCourseProps> = ({
         thumbnailUrl: courseToEdit.thumbnailUrl || "",
         required: courseToEdit.required || "",
         learned: courseToEdit.learned || "",
+        for: courseToEdit.for || "both",
       });
       setPreviewUrl(courseToEdit.thumbnailUrl || "");
     }
@@ -175,6 +178,7 @@ const DialogAddEditCourse: React.FC<DialogAddEditCourseProps> = ({
       thumbnailUrl: "",
       required: "",
       learned: "",
+      for: "both",
     });
     setPreviewUrl("");
     onClose();
@@ -265,6 +269,27 @@ const DialogAddEditCourse: React.FC<DialogAddEditCourseProps> = ({
                   {category.name}
                 </MenuItem>
               ))}
+            </Select>
+          </FormControl>
+
+          {/* Target Student Type */}
+          <FormControl fullWidth>
+            <InputLabel>Đối tượng người học</InputLabel>
+            <Select
+              value={formData.for}
+              label="Đối tượng người học"
+              onChange={(e) =>
+                setFormData({
+                  ...formData,
+                  for: e.target.value as CourseFormData["for"],
+                })
+              }
+            >
+              <MenuItem value="both">Tất cả học viên</MenuItem>
+              <MenuItem value="student">Chỉ học viên thông thường</MenuItem>
+              <MenuItem value="student_academic">
+                Chỉ sinh viên học thuật
+              </MenuItem>
             </Select>
           </FormControl>
 

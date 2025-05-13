@@ -114,6 +114,7 @@ const EnrolledCourses: React.FC = () => {
                   progress: courseProgress?.completionPercentage,
                   isEnrolled: true,
                   category: course.course?.category?.name,
+                  for: course.course?.for,
                 };
 
                 return (

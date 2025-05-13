@@ -85,7 +85,7 @@ const MainLayout = () => {
             variant="contained"
             autoFocus
           >
-            Đăng nhập lại
+            Đăng nhập tài khoản khác
           </Button>
         </DialogActions>
       </Dialog>

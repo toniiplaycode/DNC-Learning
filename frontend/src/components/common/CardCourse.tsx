@@ -33,6 +33,7 @@ interface CardCourseProps {
   isAcademic?: boolean;
   startDate?: string;
   endDate?: string;
+  for: string;
 }
 
 const CardCourse: React.FC<CardCourseProps> = ({
@@ -54,6 +55,7 @@ const CardCourse: React.FC<CardCourseProps> = ({
     progress = 0,
     isEnrolled = false,
     category,
+    for: audienceType,
   } = props;
 
   const navigate = useNavigate();
@@ -185,7 +187,11 @@ const CardCourse: React.FC<CardCourseProps> = ({
                 color="primary"
                 sx={{ mt: "auto", fontWeight: "bold" }}
               >
-                {formatPrice(price)}
+                {audienceType === "student_academic"
+                  ? "Dành cho sinh viên"
+                  : price === 0
+                  ? "Miễn phí"
+                  : formatPrice(price)}
               </Typography>
             )}
           </>

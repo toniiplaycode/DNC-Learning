@@ -199,6 +199,25 @@ const CourseDetail: React.FC = () => {
     </Box>
   );
 
+  // Add this function to check if user can enroll
+  const canEnroll = () => {
+    // If already enrolled, always allow access
+    if (isEnrolled) return true;
+
+    // If course is for both types, allow anyone
+    if (!currentCourse?.for || currentCourse.for === "both") return true;
+
+    // If no user, allow view but will redirect to login
+    if (!currentUser) return true;
+
+    // Check role-specific access
+    return (
+      (currentCourse.for === "student" && currentUser.role === "student") ||
+      (currentCourse.for === "student_academic" &&
+        currentUser.role === "student_academic")
+    );
+  };
+
   return (
     <CustomContainer>
       <Grid container spacing={4}>
@@ -239,6 +258,17 @@ const CourseDetail: React.FC = () => {
               variant="outlined"
             />
             <Chip icon={<Star />} label={averageRating} variant="outlined" />
+            {currentCourse?.for && currentCourse.for !== "both" && (
+              <Chip
+                color={currentCourse.for === "student" ? "info" : "primary"}
+                label={
+                  currentCourse.for === "student"
+                    ? "Dành cho học viên"
+                    : "Dành cho sinh viên"
+                }
+                variant="outlined"
+              />
+            )}
           </Box>
 
           <Box>
@@ -600,8 +630,15 @@ const CourseDetail: React.FC = () => {
                 }}
               />
               <Box sx={{ mb: 3 }}>
-                <Box sx={{ display: "flex", alignItems: "baseline", mb: 1 }}>
-                  <Typography variant="h4" fontWeight="bold" sx={{ mt: 2 }}>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "center",
+                    alignItems: "baseline",
+                    mb: 1,
+                  }}
+                >
+                  <Typography variant="h3" fontWeight="bold" sx={{ mt: 2 }}>
                     {isEnrolled ? (
                       <Typography
                         variant="h5"
@@ -610,8 +647,23 @@ const CourseDetail: React.FC = () => {
                       >
                         Đã tham gia
                       </Typography>
+                    ) : currentCourse?.for === "student_academic" ? (
+                      <Typography
+                        variant="h5"
+                        fontWeight="bold"
+                        color="primary"
+                      >
+                        Dành cho sinh viên trường
+                      </Typography>
                     ) : (
-                      formatPrice(currentCourse?.price || 0)
+                      <Typography
+                        variant="h4"
+                        fontWeight="bold"
+                        color="primary"
+                        textAlign="center"
+                      >
+                        {formatPrice(currentCourse?.price || 0)}
+                      </Typography>
                     )}
                   </Typography>
                 </Box>
@@ -657,9 +709,27 @@ const CourseDetail: React.FC = () => {
                     ? navigate(`/course/${id}/learn`)
                     : navigate(`/purchase/${id}`);
                 }}
+                disabled={!canEnroll()}
               >
-                {isEnrolled ? "Tiếp tục học" : "Đăng ký ngay"}
+                {isEnrolled
+                  ? "Tiếp tục học"
+                  : canEnroll()
+                  ? "Đăng ký ngay"
+                  : "Không có quyền đăng ký"}
               </Button>
+
+              {!canEnroll() && (
+                <Typography
+                  color="error"
+                  variant="caption"
+                  sx={{ display: "block", mb: 2, textAlign: "center" }}
+                >
+                  Khóa học này chỉ dành cho{" "}
+                  {currentCourse?.for === "student"
+                    ? "học viên"
+                    : "sinh viên trường"}
+                </Typography>
+              )}
 
               <Divider sx={{ mb: 3 }} />
 

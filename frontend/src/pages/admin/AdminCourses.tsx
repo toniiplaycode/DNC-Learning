@@ -43,6 +43,9 @@ import {
   MoreVert,
   LockOpen,
   Lock,
+  People,
+  School,
+  Psychology,
 } from "@mui/icons-material";
 import DialogDetailCourse from "../../components/admin/course/DialogDetailCourse";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
@@ -114,7 +117,8 @@ const AdminCourses = () => {
   const [openAddDialog, setOpenAddDialog] = useState(false);
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [courseToEdit, setCourseToEdit] = useState<Course | null>(null);
-  const rowsPerPage = 10;
+  const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [audienceFilter, setAudienceFilter] = useState("all");
 
   useEffect(() => {
     dispatch(fetchCategories());
@@ -204,9 +208,15 @@ const AdminCourses = () => {
         const matchesInstructor =
           instructorFilter === "all" ||
           course.instructorId === instructorFilter;
+        const matchesAudience =
+          audienceFilter === "all" || course.for === audienceFilter;
 
         return (
-          matchesSearch && matchesCategory && matchesStatus && matchesInstructor
+          matchesSearch &&
+          matchesCategory &&
+          matchesStatus &&
+          matchesInstructor &&
+          matchesAudience
         );
       })
       .sort((a, b) => {
@@ -350,6 +360,44 @@ const AdminCourses = () => {
 
             <Grid item xs={12} md={2}>
               <FormControl fullWidth size="small">
+                <InputLabel>Đối tượng</InputLabel>
+                <Select
+                  value={audienceFilter}
+                  label="Đối tượng"
+                  onChange={(e) => setAudienceFilter(e.target.value)}
+                >
+                  <MenuItem value="all">Tất cả đối tượng</MenuItem>
+                  <MenuItem value="both">
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <People fontSize="small" sx={{ color: "info.main" }} />
+                      <Typography variant="body2">Tất cả học viên</Typography>
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="student">
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <School fontSize="small" sx={{ color: "primary.main" }} />
+                      <Typography variant="body2">
+                        Học viên thông thường
+                      </Typography>
+                    </Box>
+                  </MenuItem>
+                  <MenuItem value="student_academic">
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      <Psychology
+                        fontSize="small"
+                        sx={{ color: "warning.main" }}
+                      />
+                      <Typography variant="body2">
+                        Sinh viên học thuật
+                      </Typography>
+                    </Box>
+                  </MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+
+            <Grid item xs={12} md={2}>
+              <FormControl fullWidth size="small">
                 <InputLabel>Sắp xếp</InputLabel>
                 <Select
                   value={dateSort}
@@ -384,6 +432,7 @@ const AdminCourses = () => {
             <TableRow>
               <TableCell>Khóa học</TableCell>
               <TableCell>Danh mục</TableCell>
+              <TableCell>Đối tượng</TableCell>
               <TableCell>Giảng viên</TableCell>
               <TableCell align="center">Học viên</TableCell>
               <TableCell align="right">Giá</TableCell>
@@ -437,6 +486,44 @@ const AdminCourses = () => {
                   />
                 </TableCell>
                 <TableCell>
+                  {course.for ? (
+                    <Chip
+                      icon={
+                        course.for === "both" ? (
+                          <People fontSize="small" />
+                        ) : course.for === "student" ? (
+                          <School fontSize="small" />
+                        ) : (
+                          <Psychology fontSize="small" />
+                        )
+                      }
+                      label={
+                        course.for === "both"
+                          ? "Tất cả học viên"
+                          : course.for === "student"
+                          ? "Học viên thông thường"
+                          : "Sinh viên học thuật"
+                      }
+                      size="small"
+                      color={
+                        course.for === "both"
+                          ? "info"
+                          : course.for === "student"
+                          ? "primary"
+                          : "warning"
+                      }
+                      sx={{ fontSize: "0.75rem" }}
+                    />
+                  ) : (
+                    <Chip
+                      label="Tất cả học viên"
+                      size="small"
+                      color="secondary"
+                      icon={<People fontSize="small" />}
+                    />
+                  )}
+                </TableCell>
+                <TableCell>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <Avatar
                       src={course.instructor?.user?.avatarUrl}
@@ -451,7 +538,11 @@ const AdminCourses = () => {
                   {getStudentCount(course.enrollments || [])}
                 </TableCell>
                 <TableCell align="right">
-                  {formatPrice(course.price)} đ
+                  {course.for === "student_academic"
+                    ? "Dành cho sinh viên"
+                    : course.price === 0
+                    ? "Miễn phí"
+                    : formatPrice(course.price)}
                 </TableCell>
                 <TableCell align="center">
                   {getStatusChip(course.status)}
