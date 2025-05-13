@@ -30,6 +30,7 @@ import {
   OutlinedInput,
   Avatar,
   TablePagination,
+  Stack,
 } from "@mui/material";
 import {
   Add,
@@ -98,6 +99,12 @@ interface StudentData {
   };
 }
 
+// Thêm interface cho học kỳ
+interface Semester {
+  value: string; // Format: "YYYYT" (ví dụ: "20251" cho học kỳ 1 năm 2025)
+  label: string; // Format: "Học kỳ T YYYY" (ví dụ: "Học kỳ 1 2025")
+}
+
 const AdminAcademicClasses: React.FC = () => {
   const dispatch = useAppDispatch();
   const academicClasses = useAppSelector(selectAllAcademicClasses);
@@ -149,10 +156,64 @@ const AdminAcademicClasses: React.FC = () => {
   const [studentSort, setStudentSort] = useState<"az" | "za" | "none">("none");
   const [studentYearFilter, setStudentYearFilter] = useState<string>("all");
 
+  // Thêm state mới cho năm học và học kỳ
+  const [academicYearFilter, setAcademicYearFilter] = useState("all");
+  const [termFilter, setTermFilter] = useState("all");
+
+  // Thêm state cho danh sách học kỳ
+  const [semesters, setSemesters] = useState<Semester[]>([]);
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+
   useEffect(() => {
     dispatch(fetchAcademicClasses());
     dispatch(fetchInstructors());
   }, [dispatch]);
+
+  // Hàm tạo danh sách học kỳ
+  const generateSemesters = (startYear: number, endYear: number) => {
+    const newSemesters: Semester[] = [];
+    for (let year = startYear; year <= endYear; year++) {
+      // Thêm học kỳ 1
+      newSemesters.push({
+        value: `${year}1`,
+        label: `Học kỳ 1 ${year}`,
+      });
+      // Thêm học kỳ 2
+      newSemesters.push({
+        value: `${year}2`,
+        label: `Học kỳ 2 ${year}`,
+      });
+    }
+    return newSemesters;
+  };
+
+  // Hàm lấy học kỳ từ dữ liệu hiện có
+  const getExistingSemesters = () => {
+    const existingSemesters = new Set(
+      academicClasses?.map((ac) => ac.semester) || []
+    );
+    return Array.from(existingSemesters).map((semester) => ({
+      value: semester,
+      label: `Học kỳ ${semester.slice(-1)} ${semester.slice(0, 4)}`,
+    }));
+  };
+
+  // Khởi tạo danh sách học kỳ khi component mount
+  useEffect(() => {
+    // Lấy học kỳ từ dữ liệu hiện có
+    const existingSemesters = getExistingSemesters();
+
+    // Tạo thêm học kỳ cho 2 năm tiếp theo
+    const nextTwoYears = generateSemesters(currentYear, currentYear + 2);
+
+    // Kết hợp và loại bỏ trùng lặp
+    const allSemesters = [...existingSemesters, ...nextTwoYears];
+    const uniqueSemesters = Array.from(
+      new Map(allSemesters.map((item) => [item.value, item])).values()
+    ).sort((a, b) => b.value.localeCompare(a.value)); // Sắp xếp giảm dần
+
+    setSemesters(uniqueSemesters);
+  }, [academicClasses, currentYear]);
 
   const handleEdit = (classId: number) => {
     const academicClass = academicClasses.find((c) => c.id === classId);
@@ -243,12 +304,21 @@ const AdminAcademicClasses: React.FC = () => {
     setSelectedClassForStudents(null);
   };
 
+  // Cập nhật hàm filter
   const filteredClasses = academicClasses.filter((academicClass) => {
     const matchesSearch =
       academicClass.className
         .toLowerCase()
         .includes(searchTerm.toLowerCase()) ||
       academicClass.classCode.toLowerCase().includes(searchTerm.toLowerCase());
+
+    const semester = academicClass.semester;
+    const year = semester.substring(0, 4);
+    const term = semester.substring(4);
+
+    const matchesYear =
+      academicYearFilter === "all" || year === academicYearFilter;
+    const matchesTerm = termFilter === "all" || term === termFilter;
 
     const matchesStatus =
       statusFilter === "all" || academicClass.status === statusFilter;
@@ -260,7 +330,13 @@ const AdminAcademicClasses: React.FC = () => {
           instructorAssignment?.instructor?.id === instructorFilter
       );
 
-    return matchesSearch && matchesStatus && matchesInstructor;
+    return (
+      matchesSearch &&
+      matchesYear &&
+      matchesTerm &&
+      matchesStatus &&
+      matchesInstructor
+    );
   });
 
   // Pagination calculation
@@ -509,54 +585,175 @@ const AdminAcademicClasses: React.FC = () => {
 
       <Paper sx={{ p: 2, mb: 3 }}>
         <Grid container spacing={2}>
-          <Grid item xs={12} sm={6} md={4}>
+          <Grid item xs={12} sm={6} md={3}>
             <TextField
               fullWidth
               label="Tìm kiếm"
               variant="outlined"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <Search />
+                  </InputAdornment>
+                ),
+              }}
             />
           </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-            <TextField
-              fullWidth
-              select
-              label="Trạng thái"
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-            >
-              <MenuItem value="all">Tất cả trạng thái</MenuItem>
-              <MenuItem value={AcademicClassStatus.ACTIVE}>
-                Đang hoạt động
-              </MenuItem>
-              <MenuItem value={AcademicClassStatus.COMPLETED}>
-                Đã hoàn thành
-              </MenuItem>
-              <MenuItem value={AcademicClassStatus.CANCELLED}>Đã hủy</MenuItem>
-            </TextField>
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth>
+              <InputLabel>Năm học</InputLabel>
+              <Select
+                value={academicYearFilter}
+                label="Năm học"
+                onChange={(e) => {
+                  setAcademicYearFilter(e.target.value);
+                  setTermFilter("all");
+                }}
+              >
+                <MenuItem value="all">Tất cả năm học</MenuItem>
+                {Array.from(new Set(semesters.map((s) => s.value.slice(0, 4))))
+                  .sort((a, b) => b.localeCompare(a))
+                  .map((year) => (
+                    <MenuItem key={year} value={year}>
+                      {year}
+                    </MenuItem>
+                  ))}
+              </Select>
+            </FormControl>
           </Grid>
-          <Grid item xs={12} sm={6} md={4}>
-            <TextField
-              fullWidth
-              select
-              label="Giảng viên"
-              value={instructorFilter}
-              onChange={(e) =>
-                setInstructorFilter(
-                  e.target.value === "all" ? "all" : Number(e.target.value)
-                )
-              }
-            >
-              <MenuItem value="all">Tất cả giảng viên</MenuItem>
-              {instructors.map((instructor) => (
-                <MenuItem key={instructor.id} value={instructor.id}>
-                  {instructor.fullName} - {instructor.professionalTitle}
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth>
+              <InputLabel>Học kỳ</InputLabel>
+              <Select
+                value={termFilter}
+                label="Học kỳ"
+                onChange={(e) => setTermFilter(e.target.value)}
+                disabled={academicYearFilter === "all"}
+              >
+                <MenuItem value="all">Tất cả học kỳ</MenuItem>
+                {semesters
+                  .filter((s) => s.value.startsWith(academicYearFilter))
+                  .map((semester) => (
+                    <MenuItem
+                      key={semester.value}
+                      value={semester.value.slice(-1)}
+                    >
+                      {semester.label}
+                    </MenuItem>
+                  ))}
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth>
+              <InputLabel>Trạng thái</InputLabel>
+              <Select
+                value={statusFilter}
+                label="Trạng thái"
+                onChange={(e) => setStatusFilter(e.target.value)}
+              >
+                <MenuItem value="all">Tất cả trạng thái</MenuItem>
+                <MenuItem value={AcademicClassStatus.ACTIVE}>
+                  Đang hoạt động
                 </MenuItem>
-              ))}
-            </TextField>
+                <MenuItem value={AcademicClassStatus.COMPLETED}>
+                  Đã hoàn thành
+                </MenuItem>
+                <MenuItem value={AcademicClassStatus.CANCELLED}>
+                  Đã hủy
+                </MenuItem>
+              </Select>
+            </FormControl>
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth>
+              <InputLabel>Giảng viên</InputLabel>
+              <Select
+                value={instructorFilter}
+                label="Giảng viên"
+                onChange={(e) =>
+                  setInstructorFilter(
+                    e.target.value === "all" ? "all" : Number(e.target.value)
+                  )
+                }
+              >
+                <MenuItem value="all">Tất cả giảng viên</MenuItem>
+                {instructors.map((instructor) => (
+                  <MenuItem key={instructor.id} value={instructor.id}>
+                    {instructor.fullName} - {instructor.professionalTitle}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Grid>
         </Grid>
+
+        {/* Hiển thị các filter đang áp dụng */}
+        <Box
+          sx={{
+            mt: 2,
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+          }}
+        >
+          <Typography variant="body2" color="text.secondary">
+            Tìm thấy {filteredClasses.length} lớp học
+          </Typography>
+
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
+            {searchTerm && (
+              <Chip
+                label={`Tìm kiếm: ${searchTerm}`}
+                onDelete={() => setSearchTerm("")}
+                size="small"
+              />
+            )}
+            {academicYearFilter !== "all" && (
+              <Chip
+                label={`Năm học: ${academicYearFilter}`}
+                onDelete={() => {
+                  setAcademicYearFilter("all");
+                  setTermFilter("all");
+                }}
+                size="small"
+              />
+            )}
+            {termFilter !== "all" && (
+              <Chip
+                label={`Học kỳ: ${
+                  termFilter === "1" ? "Học kỳ 1" : "Học kỳ 2"
+                }`}
+                onDelete={() => setTermFilter("all")}
+                size="small"
+              />
+            )}
+            {statusFilter !== "all" && (
+              <Chip
+                label={`Trạng thái: ${
+                  statusFilter === AcademicClassStatus.ACTIVE
+                    ? "Đang hoạt động"
+                    : statusFilter === AcademicClassStatus.COMPLETED
+                    ? "Đã hoàn thành"
+                    : "Đã hủy"
+                }`}
+                onDelete={() => setStatusFilter("all")}
+                size="small"
+              />
+            )}
+            {instructorFilter !== "all" && (
+              <Chip
+                label={`Giảng viên: ${
+                  instructors.find((i) => i.id === instructorFilter)?.fullName
+                }`}
+                onDelete={() => setInstructorFilter("all")}
+                size="small"
+              />
+            )}
+          </Stack>
+        </Box>
       </Paper>
 
       {error && (
@@ -741,8 +938,11 @@ const AdminAcademicClasses: React.FC = () => {
                   setFormData({ ...formData, semester: e.target.value })
                 }
               >
-                <MenuItem value="20251">Học kỳ 1 2025</MenuItem>
-                <MenuItem value="20252">Học kỳ 2 2025</MenuItem>
+                {semesters.map((semester) => (
+                  <MenuItem key={semester.value} value={semester.value}>
+                    {semester.label}
+                  </MenuItem>
+                ))}
               </Select>
             </FormControl>
             <FormControl fullWidth required>

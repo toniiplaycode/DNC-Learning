@@ -157,16 +157,38 @@ const InstructorLogin = () => {
         minHeight: "100vh",
         display: "flex",
         alignItems: "center",
-        background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
+        backgroundImage: "url('/src/assets/banner.png')",
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+        position: "relative",
+        "&::before": {
+          content: '""',
+          position: "absolute",
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          backgroundColor: "rgba(0, 0, 0, 0.5)",
+          zIndex: 1,
+        },
         py: 4,
       }}
     >
-      <CustomContainer maxWidth="sm">
+      <CustomContainer
+        maxWidth="sm"
+        sx={{
+          position: "relative",
+          zIndex: 2,
+        }}
+      >
         <Card
           sx={{
             boxShadow: "0 8px 40px rgba(0, 0, 0, 0.12)",
             borderRadius: 2,
             overflow: "hidden",
+            backgroundColor: "rgba(255, 255, 255, 0.95)",
+            backdropFilter: "blur(10px)",
           }}
         >
           <Box

@@ -17,6 +17,12 @@ import { School } from "@mui/icons-material";
 import { useState, useEffect } from "react";
 import { AcademicClassStatus } from "../../../types/academic-class.types";
 
+// Thêm interface cho học kỳ
+interface Semester {
+  value: string; // Format: "YYYYT" (ví dụ: "20251" cho học kỳ 1 năm 2025)
+  label: string; // Format: "Học kỳ T YYYY" (ví dụ: "Học kỳ 1 2025")
+}
+
 interface AddEditClassAcademicDialogProps {
   open: boolean;
   onClose: () => void;
@@ -34,6 +40,7 @@ interface AddEditClassAcademicDialogProps {
     semester: string;
     status: AcademicClassStatus;
   }) => void;
+  existingSemesters?: string[]; // Thêm prop để nhận danh sách học kỳ hiện có
 }
 
 export const AddEditClassAcademicDialog = ({
@@ -41,6 +48,7 @@ export const AddEditClassAcademicDialog = ({
   onClose,
   initialData,
   onSubmit,
+  existingSemesters = [], // Mặc định là mảng rỗng
 }: AddEditClassAcademicDialogProps) => {
   const [formData, setFormData] = useState({
     id: initialData?.id || 0,
@@ -50,6 +58,48 @@ export const AddEditClassAcademicDialog = ({
     status: initialData?.status || AcademicClassStatus.ACTIVE,
   });
 
+  // State cho danh sách học kỳ
+  const [semesters, setSemesters] = useState<Semester[]>([]);
+  const [currentYear] = useState(new Date().getFullYear());
+
+  // Hàm tạo danh sách học kỳ
+  const generateSemesters = (startYear: number, endYear: number) => {
+    const newSemesters: Semester[] = [];
+    for (let year = startYear; year <= endYear; year++) {
+      newSemesters.push({
+        value: `${year}1`,
+        label: `Học kỳ 1 ${year}`,
+      });
+      newSemesters.push({
+        value: `${year}2`,
+        label: `Học kỳ 2 ${year}`,
+      });
+    }
+    return newSemesters;
+  };
+
+  // Hàm lấy học kỳ từ dữ liệu hiện có
+  const getExistingSemesters = () => {
+    return existingSemesters.map((semester) => ({
+      value: semester,
+      label: `Học kỳ ${semester.slice(-1)} ${semester.slice(0, 4)}`,
+    }));
+  };
+
+  // Khởi tạo danh sách học kỳ
+  useEffect(() => {
+    const existingSemesterList = getExistingSemesters();
+    const nextTwoYears = generateSemesters(currentYear, currentYear + 2);
+
+    const allSemesters = [...existingSemesterList, ...nextTwoYears];
+    const uniqueSemesters = Array.from(
+      new Map(allSemesters.map((item) => [item.value, item])).values()
+    ).sort((a, b) => b.value.localeCompare(a.value));
+
+    setSemesters(uniqueSemesters);
+  }, [existingSemesters, currentYear]);
+
+  // Reset form khi dialog mở/đóng hoặc initialData thay đổi
   useEffect(() => {
     if (initialData) {
       setFormData({
@@ -98,7 +148,7 @@ export const AddEditClassAcademicDialog = ({
               setFormData({ ...formData, classCode: e.target.value })
             }
             required
-            disabled={isEditing} // Không cho phép sửa mã lớp
+            disabled={isEditing}
           />
           <TextField
             label="Tên lớp"
@@ -118,8 +168,11 @@ export const AddEditClassAcademicDialog = ({
                 setFormData({ ...formData, semester: e.target.value })
               }
             >
-              <MenuItem value="20251">Học kỳ 1 2025</MenuItem>
-              <MenuItem value="20252">Học kỳ 2 2025</MenuItem>
+              {semesters.map((semester) => (
+                <MenuItem key={semester.value} value={semester.value}>
+                  {semester.label}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
           <FormControl fullWidth required>

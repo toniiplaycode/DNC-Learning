@@ -61,6 +61,12 @@ import {
 } from "../../features/academic-classes/academicClassesSlice";
 import * as XLSX from "xlsx";
 
+// Thêm interface cho học kỳ
+interface Semester {
+  value: string; // Format: "YYYYT" (ví dụ: "20251" cho học kỳ 1 năm 2025)
+  label: string; // Format: "Học kỳ T YYYY" (ví dụ: "Học kỳ 1 2025")
+}
+
 const InstructorStudentsAcademic = () => {
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector(selectCurrentUser);
@@ -86,11 +92,55 @@ const InstructorStudentsAcademic = () => {
   const [selectedEditClass, setSelectedEditClass] = useState(null);
   const [studentSort, setStudentSort] = useState<"az" | "za" | "none">("none");
   const [studentYearFilter, setStudentYearFilter] = useState<string>("all");
+  const [semesters, setSemesters] = useState<Semester[]>([]);
+  const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
+  const [academicYearFilter, setAcademicYearFilter] = useState("all");
+  const [termFilter, setTermFilter] = useState("all");
 
   useEffect(() => {
     dispatch(fetchClassInstructorById(Number(currentUser?.userInstructor?.id)));
     dispatch(fetchClassCourses());
   }, [dispatch, currentUser]);
+
+  // Hàm tạo danh sách học kỳ
+  const generateSemesters = (startYear: number, endYear: number) => {
+    const newSemesters: Semester[] = [];
+    for (let year = startYear; year <= endYear; year++) {
+      newSemesters.push({
+        value: `${year}1`,
+        label: `Học kỳ 1 ${year}`,
+      });
+      newSemesters.push({
+        value: `${year}2`,
+        label: `Học kỳ 2 ${year}`,
+      });
+    }
+    return newSemesters;
+  };
+
+  // Hàm lấy học kỳ từ dữ liệu hiện có
+  const getExistingSemesters = () => {
+    const existingSemesters = new Set(
+      currentClassInstructor?.map((ci) => ci.academicClass.semester) || []
+    );
+    return Array.from(existingSemesters).map((semester) => ({
+      value: semester,
+      label: `Học kỳ ${semester.slice(-1)} ${semester.slice(0, 4)}`,
+    }));
+  };
+
+  // Khởi tạo danh sách học kỳ
+  useEffect(() => {
+    const existingSemesters = getExistingSemesters();
+    const nextTwoYears = generateSemesters(currentYear, currentYear + 2);
+
+    const allSemesters = [...existingSemesters, ...nextTwoYears];
+    const uniqueSemesters = Array.from(
+      new Map(allSemesters.map((item) => [item.value, item])).values()
+    ).sort((a, b) => b.value.localeCompare(a.value));
+
+    setSemesters(uniqueSemesters);
+  }, [currentClassInstructor, currentYear]);
 
   const handleOpenMenu = (event, classData) => {
     setAnchorEl(event.currentTarget);
@@ -277,6 +327,7 @@ const InstructorStudentsAcademic = () => {
     }
   };
 
+  // Cập nhật hàm filter
   const filteredClasses = currentClassInstructor?.filter((classInstructor) => {
     const matchesSearch =
       classInstructor.academicClass.className
@@ -285,6 +336,14 @@ const InstructorStudentsAcademic = () => {
       classInstructor.academicClass.classCode
         .toLowerCase()
         .includes(searchTerm.toLowerCase());
+
+    const semester = classInstructor.academicClass.semester;
+    const year = semester.substring(0, 4);
+    const term = semester.substring(4);
+
+    const matchesYear =
+      academicYearFilter === "all" || year === academicYearFilter;
+    const matchesTerm = termFilter === "all" || term === termFilter;
 
     const matchesSemester =
       semesterFilter === "all" ||
@@ -308,7 +367,12 @@ const InstructorStudentsAcademic = () => {
       (studentCountFilter === "20+" && studentCount > 20);
 
     return (
-      matchesSearch && matchesSemester && matchesStatus && matchesStudentCount
+      matchesSearch &&
+      matchesYear &&
+      matchesTerm &&
+      matchesSemester &&
+      matchesStatus &&
+      matchesStudentCount
     );
   });
 
@@ -380,7 +444,13 @@ const InstructorStudentsAcademic = () => {
       </Box>
       {/* Filters Section */}
       <Paper sx={{ p: 2, mb: 3 }}>
-        <Stack direction="row" spacing={2} alignItems="center">
+        <Stack
+          direction="row"
+          spacing={2}
+          alignItems="center"
+          flexWrap="wrap"
+          useFlexGap
+        >
           <TextField
             placeholder="Tìm kiếm theo tên lớp, mã lớp..."
             variant="outlined"
@@ -397,16 +467,49 @@ const InstructorStudentsAcademic = () => {
             }}
           />
 
-          <FormControl size="small" sx={{ minWidth: 200 }}>
-            <InputLabel>Học Kỳ</InputLabel>
+          <FormControl size="small" sx={{ minWidth: 150 }}>
+            <InputLabel>Năm học</InputLabel>
             <Select
-              value={semesterFilter}
-              onChange={(e) => setSemesterFilter(e.target.value)}
-              label="Học Kỳ"
+              value={academicYearFilter}
+              label="Năm học"
+              onChange={(e) => {
+                setAcademicYearFilter(e.target.value);
+                setTermFilter("all");
+              }}
+            >
+              <MenuItem value="all">Tất cả năm học</MenuItem>
+              {Array.from(new Set(semesters.map((s) => s.value.slice(0, 4))))
+                .sort((a, b) => b.localeCompare(a))
+                .map((year) => (
+                  <MenuItem key={year} value={year}>
+                    {year}
+                  </MenuItem>
+                ))}
+            </Select>
+          </FormControl>
+
+          <FormControl
+            size="small"
+            sx={{ minWidth: 150 }}
+            disabled={academicYearFilter === "all"}
+          >
+            <InputLabel>Học kỳ</InputLabel>
+            <Select
+              value={termFilter}
+              label="Học kỳ"
+              onChange={(e) => setTermFilter(e.target.value)}
             >
               <MenuItem value="all">Tất cả học kỳ</MenuItem>
-              <MenuItem value="20251">Học kỳ 1 2025</MenuItem>
-              <MenuItem value="20252">Học kỳ 2 2025</MenuItem>
+              {semesters
+                .filter((s) => s.value.startsWith(academicYearFilter))
+                .map((semester) => (
+                  <MenuItem
+                    key={semester.value}
+                    value={semester.value.slice(-1)}
+                  >
+                    {semester.label}
+                  </MenuItem>
+                ))}
             </Select>
           </FormControl>
 
@@ -454,7 +557,7 @@ const InstructorStudentsAcademic = () => {
           </Typography>
 
           {/* Hiển thị các filter đang áp dụng */}
-          <Stack direction="row" spacing={1}>
+          <Stack direction="row" spacing={1} flexWrap="wrap" useFlexGap>
             {searchTerm && (
               <Chip
                 label={`Tìm kiếm: ${searchTerm}`}
@@ -462,10 +565,22 @@ const InstructorStudentsAcademic = () => {
                 size="small"
               />
             )}
-            {semesterFilter !== "all" && (
+            {academicYearFilter !== "all" && (
               <Chip
-                label={`Học kỳ: ${semesterFilter}`}
-                onDelete={() => setSemesterFilter("all")}
+                label={`Năm học: ${academicYearFilter}`}
+                onDelete={() => {
+                  setAcademicYearFilter("all");
+                  setTermFilter("all");
+                }}
+                size="small"
+              />
+            )}
+            {termFilter !== "all" && (
+              <Chip
+                label={`Học kỳ: ${
+                  termFilter === "1" ? "Học kỳ 1" : "Học kỳ 2"
+                }`}
+                onDelete={() => setTermFilter("all")}
                 size="small"
               />
             )}
@@ -860,6 +975,9 @@ const InstructorStudentsAcademic = () => {
           setSelectedEditClass(null);
         }}
         initialData={selectedEditClass}
+        existingSemesters={
+          currentClassInstructor?.map((ci) => ci.academicClass.semester) || []
+        }
         onSubmit={(classData) => {
           if (selectedEditClass) {
             handleEditClass(classData);
