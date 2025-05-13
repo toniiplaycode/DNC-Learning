@@ -69,6 +69,7 @@ import React from "react";
 import { fetchCoursesByInstructor } from "../../features/courses/coursesApiSlice";
 import { selectCoursesByInstructor } from "../../features/courses/coursesSelector";
 import * as XLSX from "xlsx";
+import EditStudentStatusDialog from "./component/EditStudentStatusDialog";
 
 const TabPanel = (props: TabPanelProps) => {
   const { children, value, index, ...other } = props;
@@ -108,6 +109,7 @@ const InstructorStudents = () => {
   const [suspendDialogOpen, setSuspendDialogOpen] = useState(false);
   const [sortBy, setSortBy] = useState("name");
   const [filterClassId, setFilterClassId] = useState<string>("Tất cả");
+  const [statusDialogOpen, setStatusDialogOpen] = useState(false);
 
   // Add new state for dialog tabs
   const [dialogTabValue, setDialogTabValue] = useState(0);
@@ -400,6 +402,26 @@ const InstructorStudents = () => {
     );
   };
 
+  // Add handler for status update
+  const handleStatusUpdate = (student: any) => {
+    setSelectedStudent(student);
+    setStatusDialogOpen(true);
+    setAnchorEl(null);
+  };
+
+  // Add handler for status update success
+  const handleStatusUpdateSuccess = () => {
+    if (!currentUser?.userInstructor?.id || !selectedStudent) return;
+
+    if (selectedStudent.role === "student_academic") {
+      dispatch(
+        fetchAcademicStudentsByInstructor(currentUser.userInstructor.id)
+      );
+    } else {
+      dispatch(fetchStudentsByInstructor(currentUser.userInstructor.id));
+    }
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h5" gutterBottom fontWeight="bold">
@@ -525,7 +547,7 @@ const InstructorStudents = () => {
                       ? "Khóa học đã đăng ký"
                       : "Khóa học tham gia"}
                   </TableCell>
-                  <TableCell align="right">Thao tác</TableCell>
+                  <TableCell>Thao tác</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -540,9 +562,11 @@ const InstructorStudents = () => {
 
                   // Đếm số khóa học đã đăng ký
                   const totalEnrolled =
-                    student.enrollments?.length ||
-                    student.userStudentAcademic.academicClass.classCourses
-                      .length;
+                    Array.isArray(student.enrollments) &&
+                    student.enrollments.length > 0
+                      ? student.enrollments.length
+                      : student.userStudentAcademic?.academicClass?.classCourses
+                          ?.length ?? 0;
 
                   // Thông tin bổ sung cho sinh viên học thuật
                   const academicInfo =
@@ -593,7 +617,7 @@ const InstructorStudents = () => {
                         )}
                       </TableCell>
                       <TableCell>{totalEnrolled}</TableCell>
-                      <TableCell align="right">
+                      <TableCell>
                         <IconButton
                           size="small"
                           onClick={(e) => {
@@ -647,8 +671,12 @@ const InstructorStudents = () => {
         onClose={handleMenuClose}
       >
         <MenuItem onClick={() => handleOpenDialog(selectedStudent)}>
-          <Person sx={{ mr: 1 }} fontSize="small" />
+          <Person sx={{ mr: 1 }} color="primary" fontSize="small" />
           Xem thông tin
+        </MenuItem>
+        <MenuItem onClick={() => handleStatusUpdate(selectedStudent)}>
+          <Info sx={{ mr: 1 }} color="info" fontSize="small" />
+          Cập nhật trạng thái
         </MenuItem>
       </Menu>
 
@@ -1469,6 +1497,19 @@ const InstructorStudents = () => {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Add EditStudentStatusDialog */}
+      {selectedStudent && (
+        <EditStudentStatusDialog
+          open={statusDialogOpen}
+          onClose={() => {
+            setStatusDialogOpen(false);
+            setSelectedStudent(null);
+          }}
+          student={selectedStudent}
+          onSuccess={handleStatusUpdateSuccess}
+        />
+      )}
     </Box>
   );
 };

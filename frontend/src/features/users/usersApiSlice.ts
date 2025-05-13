@@ -1,11 +1,11 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
 import { api } from "../../services/api";
-import { User } from "../../types/user.types";
+import { User, UserStatus } from "../../types/user.types";
 import { AcademicClassCourse } from "../../types/academic-class-course.types";
 import { UpdateInstructorProfileData } from "../../types/user-instructor.types";
 import {
   UpdateStudentData,
-  UpdateUserData,
+  UpdateUserData as UpdateStudentUserData,
 } from "../../types/user-student.types";
 
 export interface UsersState {
@@ -128,20 +128,64 @@ export const fetchUserById = createAsyncThunk(
   }
 );
 
+// Add this interface for update user data
+interface UpdateUserProfileData {
+  username?: string;
+  email?: string;
+  phone?: string;
+  avatarUrl?: string;
+  twoFactorEnabled?: boolean;
+  status?: UserStatus;
+  password?: string;
+  currentPassword?: string;
+}
+
 // Update user
 export const updateUser = createAsyncThunk(
   "users/update",
   async (
-    { userId, userData }: { userId: number; userData: Partial<User> },
+    { userId, userData }: { userId: number; userData: UpdateUserProfileData },
     { rejectWithValue }
   ) => {
     try {
+      // Validate password update
+      if (userData.password && !userData.currentPassword) {
+        return rejectWithValue(
+          "Current password is required to update password"
+        );
+      }
+
+      // If updating password, validate new password
+      if (userData.password) {
+        if (userData.password.length < 6) {
+          return rejectWithValue("Password must be at least 6 characters long");
+        }
+      }
+
       const response = await api.patch(`/users/${userId}`, userData);
       return response.data;
     } catch (error: any) {
-      return rejectWithValue(
-        error.response?.data?.message || "Failed to update user"
-      );
+      // Handle specific error cases
+      if (error.response?.data?.message) {
+        if (
+          error.response.data.message.includes("Current password is incorrect")
+        ) {
+          return rejectWithValue("Mật khẩu hiện tại không đúng");
+        }
+        if (error.response.data.message.includes("Email already exists")) {
+          return rejectWithValue("Email đã tồn tại");
+        }
+        if (error.response.data.message.includes("Username already exists")) {
+          return rejectWithValue("Tên người dùng đã tồn tại");
+        }
+        if (
+          error.response.data.message.includes("Phone number already exists")
+        ) {
+          return rejectWithValue("Số điện thoại đã tồn tại");
+        }
+        return rejectWithValue(error.response.data.message);
+      }
+      return rejectWithValue("Failed to update user");
     }
   }
 );
@@ -264,7 +308,7 @@ export const updateStudentProfile = createAsyncThunk(
     }: {
       userId: number;
       data: {
-        user: UpdateUserData;
+        user: UpdateStudentUserData;
         student: UpdateStudentData;
       };
     },
@@ -413,6 +457,7 @@ const usersSlice = createSlice({
       // Update user
       .addCase(updateUser.pending, (state) => {
         state.status = "loading";
+        state.error = null;
       })
       .addCase(updateUser.fulfilled, (state, action) => {
         state.status = "succeeded";
@@ -432,6 +477,41 @@ const usersSlice = createSlice({
         );
         if (studentIndex !== -1) {
           state.instructorStudents[studentIndex] = action.payload;
+        }
+
+        // Update in regularStudents if present
+        const regularStudentIndex = state.regularStudents.findIndex(
+          (student) => student.id === action.payload.id
+        );
+        if (regularStudentIndex !== -1) {
+          state.regularStudents[regularStudentIndex] = action.payload;
+        }
+
+        // Update in academicStudents if present
+        const academicStudentIndex = state.academicStudents.findIndex(
+          (student) => student.id === action.payload.id
+        );
+        if (academicStudentIndex !== -1) {
+          state.academicStudents[academicStudentIndex] = action.payload;
+        }
+
+        // Update in academicClassStudents if present
+        const academicClassStudentIndex = state.academicClassStudents.findIndex(
+          (student) => student.id === action.payload.id
+        );
+        if (academicClassStudentIndex !== -1) {
+          state.academicClassStudents[academicClassStudentIndex] =
+            action.payload;
+        }
+
+        // Update in instructorAcademicStudents if present
+        const instructorAcademicStudentIndex =
+          state.instructorAcademicStudents.findIndex(
+            (student) => student.id === action.payload.id
+          );
+        if (instructorAcademicStudentIndex !== -1) {
+          state.instructorAcademicStudents[instructorAcademicStudentIndex] =
+            action.payload;
         }
 
         state.error = null;

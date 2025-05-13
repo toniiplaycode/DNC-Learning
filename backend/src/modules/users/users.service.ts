@@ -61,6 +61,7 @@ export class UsersService {
     private notification: Repository<Notification>,
     private dataSource: DataSource,
   ) {}
+
   findAll(): Promise<User[]> {
     return this.userRepository.find({
       relations: [
@@ -950,6 +951,137 @@ export class UsersService {
       throw new Error(
         `Failed to find users by instructor ID: ${error.message}`,
       );
+    }
+  }
+
+  async updateUser(
+    userId: number,
+    updateData: {
+      username?: string;
+      email?: string;
+      phone?: string;
+      avatarUrl?: string;
+      twoFactorEnabled?: boolean;
+      status?: UserStatus;
+      password?: string;
+      currentPassword?: string; // Required when updating password
+    },
+  ): Promise<User> {
+    if (!userId || isNaN(userId)) {
+      throw new BadRequestException('Invalid user ID provided');
+    }
+
+    const queryRunner = this.dataSource.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      // Find user with all necessary relations
+      const user = await this.userRepository.findOne({
+        where: { id: userId },
+        relations: ['userStudent', 'userStudentAcademic', 'userInstructor'],
+      });
+
+      if (!user) {
+        throw new NotFoundException(`User with ID ${userId} not found`);
+      }
+
+      // Handle password update if provided
+      if (updateData.password) {
+        if (!updateData.currentPassword) {
+          throw new BadRequestException(
+            'Current password is required to update password',
+          );
+        }
+
+        // Verify current password
+        const isPasswordValid = await bcrypt.compare(
+          updateData.currentPassword,
+          user.password,
+        );
+
+        if (!isPasswordValid) {
+          throw new UnauthorizedException('Current password is incorrect');
+        }
+
+        // Hash new password
+        const hashedPassword = await bcrypt.hash(updateData.password, 10);
+        user.password = hashedPassword;
+      }
+
+      // Check for duplicate email if email is being updated
+      if (updateData.email && updateData.email !== user.email) {
+        const existingUser = await this.userRepository.findOne({
+          where: { email: updateData.email },
+        });
+        if (existingUser) {
+          throw new BadRequestException('Email already exists');
+        }
+      }
+
+      // Check for duplicate username if username is being updated
+      if (updateData.username && updateData.username !== user.username) {
+        const existingUser = await this.userRepository.findOne({
+          where: { username: updateData.username },
+        });
+        if (existingUser) {
+          throw new BadRequestException('Username already exists');
+        }
+      }
+
+      // Check for duplicate phone if phone is being updated
+      if (updateData.phone && updateData.phone !== user.phone) {
+        const existingUser = await this.userRepository.findOne({
+          where: { phone: updateData.phone },
+        });
+        if (existingUser) {
+          throw new BadRequestException('Phone number already exists');
+        }
+      }
+
+      // Update user fields
+      const allowedFields: (keyof typeof updateData)[] = [
+        'username',
+        'email',
+        'phone',
+        'avatarUrl',
+        'twoFactorEnabled',
+        'status',
+      ];
+
+      allowedFields.forEach((field) => {
+        if (updateData[field] !== undefined) {
+          (user as any)[field] = updateData[field];
+        }
+      });
+
+      // Save updated user
+      const updatedUser = await queryRunner.manager.save(User, user);
+
+      await queryRunner.commitTransaction();
+
+      // Return updated user without sensitive information
+      const {
+        password,
+        refreshToken,
+        twoFactorSecret,
+        ...userWithoutSensitiveData
+      } = updatedUser;
+      return userWithoutSensitiveData as User;
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+
+      if (
+        error instanceof NotFoundException ||
+        error instanceof BadRequestException ||
+        error instanceof UnauthorizedException
+      ) {
+        throw error;
+      }
+
+      throw new Error(`Failed to update user: ${error.message}`);
+    } finally {
+      await queryRunner.release();
     }
   }
 }

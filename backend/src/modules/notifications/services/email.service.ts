@@ -136,23 +136,61 @@ export class EmailService {
           }
           .footer {
             text-align: center;
-            margin-top: 20px;
-            font-size: 12px;
-            color: #777;
+            margin-top: 30px;
+            padding: 25px 20px;
+            background: linear-gradient(to right, #f8f9fa, #ffffff, #f8f9fa);
+            border-top: 1px solid #e9ecef;
           }
-          .icon {
-            font-size: 48px;
-            margin-bottom: 10px;
-          }
-          .intro {
-            font-style: italic;
-            color: #666;
+          .footer-logo {
             margin-bottom: 20px;
           }
-          .type-footer {
-            font-weight: bold;
+          .footer-logo img {
+            width: 150px;
+            height: auto;
+            transition: opacity 0.3s ease;
+          }
+          .footer-contact {
+            margin: 15px 0;
+            padding: 15px;
+            background-color: #ffffff;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+          }
+          .footer-contact p {
+            margin: 8px 0;
+            font-size: 14px;
+            color: #495057;
+          }
+          .footer-contact strong {
+            color: #212529;
+            font-weight: 600;
+          }
+          .footer-copyright {
             margin-top: 20px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+            color: #6c757d;
+            font-size: 13px;
+            line-height: 1.6;
+          }
+          .footer-copyright p {
+            margin: 5px 0;
+          }
+          .footer-copyright a {
             color: ${color};
+            text-decoration: none;
+          }
+          .footer-copyright a:hover {
+            text-decoration: underline;
+          }
+          .divider {
+            display: inline-block;
+            width: 4px;
+            height: 4px;
+            background-color: #dee2e6;
+            border-radius: 50%;
+            margin: 0 10px;
+            vertical-align: middle;
           }
         </style>
       </head>
@@ -169,8 +207,29 @@ export class EmailService {
           <div class="type-footer">${footer}</div>
         </div>
         <div class="footer">
-          <p>© ${new Date().getFullYear()} DNC Learning. All rights reserved.</p>
-          <p>Đây là email tự động, vui lòng không trả lời email này.</p>
+          <div class="footer-logo">
+            <img src="https://res.cloudinary.com/dj8ae1gpq/image/upload/v1747141773/logo_xnxvwh.png" alt="DNC Learning" />
+          </div>
+          
+          <div class="footer-contact">
+            <p>
+              <strong>📞 Hotline:</strong> 1900 1234
+              <span class="divider"></span>
+              <strong>✉️ Email:</strong> support@dnclearning.com
+            </p>
+            <p>
+              <strong>🏢 Địa chỉ:</strong> 123 Đường ABC, Quận XYZ, TP. Hồ Chí Minh
+            </p>
+          </div>
+
+          <div class="footer-copyright">
+            <p>© ${new Date().getFullYear()} DNC Learning. All rights reserved.</p>
+            <p>Đây là email tự động, vui lòng không trả lời email này.</p>
+            <p>Để đảm bảo nhận được email từ chúng tôi, vui lòng thêm địa chỉ 
+              <a href="mailto:noreply@dnclearning.com">noreply@dnclearning.com</a> 
+              vào danh sách địa chỉ an toàn của bạn.
+            </p>
+          </div>
         </div>
       </body>
       </html>

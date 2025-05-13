@@ -39,6 +39,16 @@ export class UsersController {
     return this.usersService.updateStudentAcademic(updateData);
   }
 
+  @Patch(':userId')
+  @UseGuards(JwtAuthGuard)
+  @Roles(UserRole.ADMIN)
+  async updateUser(
+    @Param('userId', ParseIntPipe) userId: number,
+    @Body() updateData: UpdateUserDto,
+  ) {
+    return this.usersService.updateUser(userId, updateData);
+  }
+
   @Delete('student-academic/:userId')
   @UseGuards(JwtAuthGuard)
   @Roles(UserRole.INSTRUCTOR)

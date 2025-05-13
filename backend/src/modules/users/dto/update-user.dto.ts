@@ -1,4 +1,5 @@
 import { IsOptional, IsString, IsBoolean, IsEmail } from 'class-validator';
+import { UserStatus } from 'src/entities/User';
 
 export class UpdateUserDto {
   @IsOptional()
@@ -20,4 +21,16 @@ export class UpdateUserDto {
   @IsOptional()
   @IsBoolean()
   twoFactorEnabled?: boolean;
+
+  @IsOptional()
+  @IsString()
+  status?: UserStatus;
+
+  @IsOptional()
+  @IsString()
+  password?: string;
+
+  @IsOptional()
+  @IsString()
+  currentPassword?: string;
 }
