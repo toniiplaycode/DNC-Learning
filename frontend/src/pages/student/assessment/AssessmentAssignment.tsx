@@ -32,6 +32,7 @@ export const AssessmentAssignment = () => {
           title: currentAssignment?.title || "",
           description: currentAssignment?.description || "",
           dueDate: currentAssignment?.dueDate || "",
+          linkDocumentRequired: currentAssignment?.linkDocumentRequired || "",
           maxFileSize: 10,
           allowedFileTypes: [
             ".pdf",

@@ -288,6 +288,62 @@ const InstructorAssignments = () => {
   };
 
   const renderPreview = (file: any) => {
+    // Check if it's a Google Drive URL
+    const isGoogleDriveUrl = file.url.includes("drive.google.com");
+
+    if (isGoogleDriveUrl) {
+      // Handle Google Drive preview
+      let embedUrl = file.url;
+
+      // Extract file ID from Google Drive URL if needed
+      const getFileIdFromUrl = (url: string) => {
+        const match = url.match(/[-\w]{25,}/);
+        return match ? match[0] : null;
+      };
+
+      const fileId = getFileIdFromUrl(file.url);
+
+      if (fileId) {
+        // For documents, spreadsheets, presentations, etc.
+        if (
+          file.url.includes("/document/d/") ||
+          file.url.includes("docs.google.com/document")
+        ) {
+          embedUrl = `https://docs.google.com/document/d/${fileId}/preview`;
+        }
+        // For spreadsheets
+        else if (
+          file.url.includes("/spreadsheets/d/") ||
+          file.url.includes("docs.google.com/spreadsheets")
+        ) {
+          embedUrl = `https://docs.google.com/spreadsheets/d/${fileId}/preview`;
+        }
+        // For presentations
+        else if (
+          file.url.includes("/presentation/d/") ||
+          file.url.includes("docs.google.com/presentation")
+        ) {
+          embedUrl = `https://docs.google.com/presentation/d/${fileId}/preview`;
+        }
+        // For standard files (PDFs, etc.)
+        else if (file.url.includes("/file/d/")) {
+          embedUrl = `https://drive.google.com/file/d/${fileId}/preview`;
+        }
+      }
+
+      return (
+        <iframe
+          src={embedUrl}
+          width="100%"
+          height="500px"
+          title={file.name}
+          style={{ border: "none" }}
+          allowFullScreen
+        />
+      );
+    }
+
+    // Handle non-Google Drive files
     if (file.type === "pdf") {
       return (
         <iframe

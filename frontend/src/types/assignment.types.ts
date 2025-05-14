@@ -19,6 +19,7 @@ export interface Assignment {
   dueDate: string;
   maxScore: number;
   fileRequirements: string;
+  linkDocumentRequired: string | null;
   assignmentType: AssignmentType;
   isActive: boolean;
   startTime: string | null;
@@ -75,6 +76,7 @@ export interface CreateAssignmentData {
   dueDate?: string;
   maxScore?: number;
   fileRequirements?: string;
+  linkDocumentRequired?: string;
   assignmentType?: AssignmentType;
   startTime?: string;
   endTime?: string;
@@ -87,6 +89,7 @@ export interface UpdateAssignmentData {
   dueDate?: string;
   maxScore?: number;
   fileRequirements?: string;
+  linkDocumentRequired?: string;
   assignmentType?: AssignmentType;
   isActive?: boolean;
   startTime?: string;

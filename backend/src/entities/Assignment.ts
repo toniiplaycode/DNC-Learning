@@ -65,6 +65,13 @@ export class Assignment {
   fileRequirements: string | null;
 
   @Column({
+    name: 'link_document_required',
+    type: 'text',
+    nullable: true,
+  })
+  linkDocumentRequired: string | null;
+
+  @Column({
     name: 'assignment_type',
     type: 'enum',
     enum: AssignmentType,

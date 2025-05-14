@@ -41,7 +41,7 @@ export interface User {
   updatedAt: Date;
   userStudent?: UserStudent;
   userStudentAcademic?: UserStudentAcademic;
-  userInstructor?: UserInstructor;
+  userInstructor: UserInstructor;
   enrollments?: Enrollment[];
 }
 

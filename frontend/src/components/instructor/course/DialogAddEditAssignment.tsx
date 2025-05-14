@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -17,8 +17,14 @@ import {
   FormHelperText,
   InputAdornment,
   LinearProgress,
+  Alert,
 } from "@mui/material";
-import { Close, CloudUpload, CalendarToday } from "@mui/icons-material";
+import {
+  Close,
+  CloudUpload,
+  CalendarToday,
+  Link as LinkIcon,
+} from "@mui/icons-material";
 import { useParams } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { fetchCourseAssignments } from "../../../features/course-lessons/courseLessonsApiSlice";
@@ -37,6 +43,10 @@ import { selectCurrentClassInstructor } from "../../../features/academic-class-i
 import { fetchStudentsByAcademicClass } from "../../../features/users/usersApiSlice";
 import { selectAcademicClassStudents } from "../../../features/users/usersSelectors";
 import { createNotification } from "../../../features/notifications/notificationsSlice";
+import {
+  uploadToDrive,
+  getBestUrlForContent,
+} from "../../../utils/uploadToDrive";
 
 // Định nghĩa kiểu AssignmentItem
 interface AssignmentItem {
@@ -48,7 +58,10 @@ interface AssignmentItem {
   dueDate: Date | null;
   maxScore: number | null;
   fileRequirements: string | null;
+  linkDocumentRequired: string | null;
   assignmentType: "practice" | "homework" | "midterm" | "final" | "project";
+  startTime?: Date | null;
+  endTime?: Date | null;
 }
 
 // Định nghĩa props cho component
@@ -75,8 +88,12 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
   const lessonData = useAppSelector(selectAlCourseLessonlAssignments);
   const assignmentsData = useAppSelector(selectAssignmentsCourse);
   const currentUser = useAppSelector(selectCurrentUser);
-  const currentClassInstructor = useAppSelector(selectCurrentClassInstructor);
+  const currentClassInstructors = useAppSelector(selectCurrentClassInstructor);
   const academicClassStudents = useAppSelector(selectAcademicClassStudents);
+
+  // Extract instructor ID safely with type assertion
+  // @ts-ignore -- Ignoring type error since we know userInstructor exists at runtime
+  const instructorId = currentUser?.userInstructor?.id;
 
   useEffect(() => {
     if (id) {
@@ -86,8 +103,10 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
   }, [dispatch, id]);
 
   useEffect(() => {
-    dispatch(fetchClassInstructorById(Number(currentUser?.userInstructor?.id)));
-  }, [dispatch, currentUser]);
+    if (instructorId) {
+      dispatch(fetchClassInstructorById(Number(instructorId)));
+    }
+  }, [dispatch, instructorId]);
 
   // State cho form assignment
   const [assignmentForm, setAssignmentForm] = useState<AssignmentItem>({
@@ -99,6 +118,7 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
     dueDate: null,
     maxScore: null,
     fileRequirements: null,
+    linkDocumentRequired: null,
     assignmentType: "practice",
   });
 
@@ -115,6 +135,15 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
   const [uploadProgress, setUploadProgress] = useState(0);
   const [fileUploadError, setFileUploadError] = useState<string | null>(null);
 
+  // State for reference document upload
+  const [referenceFile, setReferenceFile] = useState<File | null>(null);
+  const [isUploadingReference, setIsUploadingReference] = useState(false);
+  const [referenceUploadProgress, setReferenceUploadProgress] = useState(0);
+  const [referenceUploadError, setReferenceUploadError] = useState<
+    string | null
+  >(null);
+  const referenceFileInputRef = useRef<HTMLInputElement>(null);
+
   // Cập nhật form khi mở modal và có dữ liệu ban đầu
   useEffect(() => {
     if (open) {
@@ -128,7 +157,10 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
           dueDate: assignmentToEdit.dueDate || null,
           maxScore: assignmentToEdit.maxScore || null,
           fileRequirements: assignmentToEdit.fileRequirements || null,
+          linkDocumentRequired: assignmentToEdit.linkDocumentRequired || null,
           assignmentType: assignmentToEdit.assignmentType || "practice",
+          startTime: assignmentToEdit.startTime || null,
+          endTime: assignmentToEdit.endTime || null,
         });
       } else {
         // Khi thêm mới
@@ -141,7 +173,10 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
           dueDate: null,
           maxScore: null,
           fileRequirements: null,
+          linkDocumentRequired: null,
           assignmentType: "practice",
+          startTime: null,
+          endTime: null,
         });
       }
 
@@ -150,42 +185,129 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
       setFileUploadError(null);
       setUploadProgress(0);
       setIsUploading(false);
+
+      // Reset reference document state
+      setReferenceFile(null);
+      setIsUploadingReference(false);
+      setReferenceUploadProgress(0);
+      setReferenceUploadError(null);
     }
   }, [open, editMode, assignmentToEdit, lessonData]);
 
-  // Xử lý chọn file
-  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const files = event.target.files;
-
-    if (files && files.length > 0) {
-      const newFiles = Array.from(files);
-
-      // Kiểm tra kích thước file (max 10MB mỗi file)
-      const oversizedFiles = newFiles.filter(
-        (file) => file.size > 10 * 1024 * 1024
-      );
-      if (oversizedFiles.length > 0) {
-        setFileUploadError(
-          `${oversizedFiles.length} file vượt quá kích thước cho phép (10MB)`
+  // Handle reference document file selection
+  const handleReferenceFileSelect = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      // Check file size (max 10MB)
+      if (file.size > 10 * 1024 * 1024) {
+        setReferenceUploadError(
+          "File quá lớn. Vui lòng chọn file nhỏ hơn 10MB"
         );
         return;
       }
 
-      setFileUploadError(null);
-      setSelectedFiles((prevFiles) => [...prevFiles, ...newFiles]);
+      // Check file type
+      const allowedTypes = [
+        "application/pdf",
+        "application/msword",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.ms-powerpoint",
+        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "text/plain",
+      ];
+
+      if (!allowedTypes.includes(file.type)) {
+        setReferenceUploadError(
+          "Định dạng file không được hỗ trợ. Chỉ hỗ trợ PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, TXT"
+        );
+        return;
+      }
+
+      setReferenceFile(file);
+      setReferenceUploadError(null);
     }
   };
 
-  // Xóa file đã chọn
-  const handleRemoveFile = (index: number) => {
-    const newFiles = [...selectedFiles];
-    newFiles.splice(index, 1);
-    setSelectedFiles(newFiles);
+  // Upload reference document to Google Drive
+  const handleReferenceUpload = async () => {
+    if (!referenceFile) {
+      setReferenceUploadError("Vui lòng chọn file để tải lên");
+      return null;
+    }
+
+    setIsUploadingReference(true);
+    setReferenceUploadProgress(0);
+
+    try {
+      const response = await uploadToDrive(referenceFile, (progress) => {
+        setReferenceUploadProgress(progress);
+      });
+
+      if (response.success) {
+        // Get the most appropriate URL based on file type
+        const fileType = referenceFile.type.includes("pdf")
+          ? "pdf"
+          : referenceFile.type.includes("word")
+          ? "docx"
+          : referenceFile.type.includes("sheet")
+          ? "xlsx"
+          : referenceFile.type.includes("presentation")
+          ? "slide"
+          : "pdf";
+
+        const bestUrl = getBestUrlForContent(response, fileType);
+
+        // Update form with the URL
+        setAssignmentForm({
+          ...assignmentForm,
+          linkDocumentRequired: bestUrl,
+        });
+
+        toast.success("Tải tài liệu tham khảo lên thành công!");
+        return bestUrl;
+      } else {
+        setReferenceUploadError(response.message || "Tải lên thất bại");
+        toast.error(
+          "Tải tài liệu lên thất bại: " +
+            (response.message || "Lỗi không xác định")
+        );
+        return null;
+      }
+    } catch (error) {
+      console.error("Lỗi tải file:", error);
+      setReferenceUploadError("Không thể tải file lên. Vui lòng thử lại.");
+      toast.error(
+        "Lỗi khi tải file: " +
+          (error instanceof Error ? error.message : "Lỗi không xác định")
+      );
+      return null;
+    } finally {
+      setIsUploadingReference(false);
+    }
   };
 
   // Gửi form
-  const handleSubmit = () => {
-    // Tạo FormData để upload files (nếu có)
+  const handleSubmit = async () => {
+    // Only upload the reference file if it hasn't been uploaded already
+    if (
+      referenceFile &&
+      !isUploadingReference &&
+      !assignmentForm.linkDocumentRequired
+    ) {
+      const uploadedUrl = await handleReferenceUpload();
+      if (!uploadedUrl) {
+        // If upload failed and no URL provided, show warning but continue
+        toast.warning(
+          "Tải tài liệu tham khảo không thành công, tiếp tục thêm bài tập không có tài liệu"
+        );
+      }
+    }
+
+    // Continue with the existing submission logic
     const formData = new FormData();
     selectedFiles.forEach((file, index) => {
       formData.append(`file-${index}`, file);
@@ -223,31 +345,59 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
 
   // Xử lý submit form
   const submitForm = async (fileUrls: string[]) => {
-    if (!editMode) {
-      await dispatch(createAssignment(assignmentForm));
+    // Transform the form data to match API types
+    const apiData: any = {
+      title: assignmentForm.title,
+      description: assignmentForm.description || undefined,
+      fileRequirements: assignmentForm.fileRequirements || undefined,
+      linkDocumentRequired: assignmentForm.linkDocumentRequired || undefined,
+      assignmentType: assignmentForm.assignmentType,
+    };
 
-      if (academicClassStudents.length > 0) {
+    // Only add non-null properties
+    if (assignmentForm.lessonId) apiData.lessonId = assignmentForm.lessonId;
+    if (assignmentForm.academicClassId)
+      apiData.academicClassId = assignmentForm.academicClassId;
+    if (assignmentForm.dueDate)
+      apiData.dueDate = new Date(assignmentForm.dueDate).toISOString();
+    if (assignmentForm.maxScore) apiData.maxScore = assignmentForm.maxScore;
+    if (assignmentForm.startTime)
+      apiData.startTime = new Date(assignmentForm.startTime).toISOString();
+    if (assignmentForm.endTime)
+      apiData.endTime = new Date(assignmentForm.endTime).toISOString();
+
+    if (editMode) {
+      apiData.id = assignmentForm.id;
+    }
+
+    if (!editMode) {
+      await dispatch(createAssignment(apiData));
+
+      // @ts-ignore -- Using type assertion for userInstructor access
+      const instructorName = currentUser?.userInstructor?.fullName;
+      if (academicClassStudents.length > 0 && instructorName) {
         const notificationData = {
-          userIds: academicClassStudents.map((user) => user.userId),
-          title: `Giảng viên "${currentUser.userInstructor.fullName}" vừa thêm bài tập mới`,
+          userIds: academicClassStudents.map((user) => user.id),
+          title: `Giảng viên "${instructorName}" vừa thêm bài tập mới`,
           content: `Giảng viên vừa thêm bài tập "${assignmentForm.title}".`,
           type: "assignment",
         };
         await dispatch(createNotification(notificationData));
       }
     } else if (editMode) {
-      await dispatch(updateAssignment(assignmentForm));
+      await dispatch(updateAssignment(apiData));
     }
 
     await dispatch(fetchAssignmentByCourse(Number(id)));
-    await dispatch(
-      fetchInstructorAcademicClassAssignments(currentUser.userInstructor.id)
-    );
+    if (instructorId) {
+      await dispatch(fetchInstructorAcademicClassAssignments(instructorId));
+    }
+
     toast.success(
       editMode ? "Cập nhật bài tập thành công!" : "Thêm bài tập thành công!"
     );
 
-    console.log("Submitted Data:", assignmentForm);
+    console.log("Submitted Data:", apiData);
     onClose();
   };
 
@@ -300,15 +450,17 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
                 }
               >
                 <MenuItem value={0}>Chọn lớp học</MenuItem>
-                {currentClassInstructor?.map((classInstructor) => (
-                  <MenuItem
-                    key={classInstructor.academicClass.id}
-                    value={classInstructor.academicClass.id}
-                  >
-                    {classInstructor.academicClass.classCode} -{" "}
-                    {classInstructor.academicClass.className}
-                  </MenuItem>
-                ))}
+                {/* @ts-ignore - Using type assertion since we know the structure at runtime */}
+                {Array.isArray(currentClassInstructors) &&
+                  currentClassInstructors.map((classInstructor: any) => (
+                    <MenuItem
+                      key={classInstructor.academicClass.id}
+                      value={classInstructor.academicClass.id}
+                    >
+                      {classInstructor.academicClass.classCode} -{" "}
+                      {classInstructor.academicClass.className}
+                    </MenuItem>
+                  ))}
               </Select>
               <FormHelperText>
                 Chọn lớp học để gán bài tập cho sinh viên
@@ -464,6 +616,125 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
               </FormHelperText>
             </FormControl>
 
+            {/* Link Document Required - Enhanced with direct upload */}
+            <Box>
+              <Box>
+                <TextField
+                  label="URL tài liệu tham khảo"
+                  fullWidth
+                  value={assignmentForm.linkDocumentRequired || ""}
+                  onChange={(e) =>
+                    setAssignmentForm({
+                      ...assignmentForm,
+                      linkDocumentRequired: e.target.value,
+                    })
+                  }
+                  placeholder="https://drive.google.com/file/d/..."
+                  helperText={
+                    referenceFile
+                      ? "File đã chọn, nhấn 'Tải lên' để tải lên Drive"
+                      : "Nhập URL đến tài liệu tham khảo hoặc tải file lên"
+                  }
+                  InputProps={{
+                    startAdornment: (
+                      <InputAdornment position="start">
+                        <CloudUpload color="action" />
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{ mb: 2 }}
+                />
+
+                <Box
+                  sx={{
+                    border: "1px dashed",
+                    borderColor: "divider",
+                    p: 2,
+                    mb: 2,
+                    borderRadius: 1,
+                  }}
+                >
+                  {isUploadingReference ? (
+                    <Box>
+                      <Typography variant="body2" sx={{ mb: 1 }}>
+                        Đang tải lên tài liệu tham khảo...{" "}
+                        {referenceUploadProgress}%
+                      </Typography>
+                      <LinearProgress
+                        variant="determinate"
+                        value={referenceUploadProgress}
+                        sx={{ height: 8, borderRadius: 4 }}
+                      />
+                    </Box>
+                  ) : (
+                    <Box>
+                      <input
+                        type="file"
+                        id="reference-upload"
+                        accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
+                        hidden
+                        ref={referenceFileInputRef}
+                        onChange={handleReferenceFileSelect}
+                      />
+                      <Stack
+                        direction="row"
+                        spacing={2}
+                        justifyContent="center"
+                        alignItems="center"
+                      >
+                        <label htmlFor="reference-upload">
+                          <Button
+                            variant="outlined"
+                            component="span"
+                            startIcon={<CloudUpload />}
+                            onClick={() =>
+                              referenceFileInputRef.current?.click()
+                            }
+                          >
+                            {referenceFile
+                              ? `Đã chọn: ${referenceFile.name}`
+                              : "Chọn file tài liệu"}
+                          </Button>
+                        </label>
+                        {referenceFile && (
+                          <Button
+                            variant="contained"
+                            color="primary"
+                            onClick={handleReferenceUpload}
+                            disabled={isUploadingReference}
+                          >
+                            Tải lên ngay
+                          </Button>
+                        )}
+                      </Stack>
+                      <Typography
+                        variant="caption"
+                        display="block"
+                        color="text.secondary"
+                        sx={{ mt: 1, textAlign: "center" }}
+                      >
+                        Định dạng hỗ trợ: PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX,
+                        TXT (Tối đa 10MB)
+                      </Typography>
+                    </Box>
+                  )}
+                </Box>
+
+                {referenceUploadError && (
+                  <Alert severity="error" sx={{ mb: 2 }}>
+                    {referenceUploadError}
+                  </Alert>
+                )}
+
+                {assignmentForm.linkDocumentRequired &&
+                  !isUploadingReference && (
+                    <Alert severity="success" sx={{ mb: 2 }}>
+                      Tài liệu tham khảo đã sẵn sàng!
+                    </Alert>
+                  )}
+              </Box>
+            </Box>
+
             {/* File Requirements */}
             <TextField
               label="Yêu cầu về file nộp bài"
@@ -481,110 +752,11 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
               helperText="Mô tả các yêu cầu về định dạng, kích thước, cách đặt tên file nộp bài"
               InputProps={{
                 startAdornment: (
-                  <InputAdornment position="start">
-                    <CloudUpload color="action" />
-                  </InputAdornment>
+                  <InputAdornment position="start"></InputAdornment>
                 ),
               }}
             />
           </Stack>
-
-          {/* Upload tài liệu đính kèm */}
-          <Box>
-            <Typography variant="subtitle1" gutterBottom>
-              Tài liệu đính kèm
-            </Typography>
-
-            <Box
-              sx={{
-                border: "1px dashed",
-                borderColor: "divider",
-                borderRadius: 1,
-                p: 2,
-                textAlign: "center",
-                cursor: "pointer",
-                "&:hover": { bgcolor: "action.hover" },
-                mb: 2,
-              }}
-              onClick={() =>
-                document.getElementById("upload-assignment-files")?.click()
-              }
-            >
-              <input
-                type="file"
-                id="upload-assignment-files"
-                multiple
-                style={{ display: "none" }}
-                onChange={handleFileSelect}
-              />
-              <CloudUpload
-                sx={{ fontSize: 40, color: "primary.main", mb: 1 }}
-              />
-              <Typography variant="body1">
-                Kéo thả file vào đây hoặc click để chọn file
-              </Typography>
-              <Typography variant="caption" color="text.secondary">
-                Hỗ trợ nhiều định dạng file (PDF, Word, Excel, hình ảnh...)
-              </Typography>
-            </Box>
-
-            {/* Hiển thị file đã chọn */}
-            {selectedFiles.length > 0 && (
-              <Box>
-                <Typography variant="subtitle2" gutterBottom>
-                  File đã chọn ({selectedFiles.length}):
-                </Typography>
-                <Stack spacing={1}>
-                  {selectedFiles.map((file, index) => (
-                    <Box
-                      key={index}
-                      sx={{
-                        display: "flex",
-                        justifyContent: "space-between",
-                        alignItems: "center",
-                        p: 1,
-                        border: "1px solid",
-                        borderColor: "divider",
-                        borderRadius: 1,
-                      }}
-                    >
-                      <Typography
-                        variant="body2"
-                        noWrap
-                        sx={{ maxWidth: "70%" }}
-                      >
-                        {file.name} ({(file.size / 1024 / 1024).toFixed(2)} MB)
-                      </Typography>
-                      <IconButton
-                        size="small"
-                        color="error"
-                        onClick={() => handleRemoveFile(index)}
-                      >
-                        <Close />
-                      </IconButton>
-                    </Box>
-                  ))}
-                </Stack>
-              </Box>
-            )}
-
-            {/* Hiển thị lỗi upload */}
-            {fileUploadError && (
-              <Typography color="error" variant="caption" sx={{ mt: 1 }}>
-                {fileUploadError}
-              </Typography>
-            )}
-
-            {/* Hiển thị progress khi đang upload */}
-            {isUploading && (
-              <Box sx={{ mt: 2 }}>
-                <Typography variant="body2" sx={{ mb: 1 }}>
-                  Đang tải lên tài liệu... {uploadProgress}%
-                </Typography>
-                <LinearProgress variant="determinate" value={uploadProgress} />
-              </Box>
-            )}
-          </Box>
         </Stack>
       </DialogContent>
 
@@ -593,9 +765,11 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
         <Button
           variant="contained"
           onClick={handleSubmit}
-          disabled={!assignmentForm.title || isUploading}
+          disabled={
+            !assignmentForm.title || isUploading || isUploadingReference
+          }
         >
-          {isUploading
+          {isUploading || isUploadingReference
             ? "Đang tải lên..."
             : editMode
             ? "Cập nhật bài tập"

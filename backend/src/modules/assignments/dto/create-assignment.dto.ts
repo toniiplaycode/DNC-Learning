@@ -5,6 +5,7 @@ import {
   IsOptional,
   IsString,
   IsDate,
+  IsUrl,
 } from 'class-validator';
 import { AssignmentType } from '../../../entities/Assignment';
 import { Type } from 'class-transformer';
@@ -41,6 +42,14 @@ export class CreateAssignmentDto {
   @IsString()
   @IsOptional()
   fileRequirements?: string;
+
+  @IsString()
+  @IsOptional()
+  @IsUrl(
+    { require_protocol: true },
+    { each: false, message: 'URL tài liệu phải là một đường dẫn hợp lệ' },
+  )
+  linkDocumentRequired?: string;
 
   @IsEnum(AssignmentType)
   @IsOptional()
