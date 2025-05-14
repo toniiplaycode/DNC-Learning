@@ -29,6 +29,10 @@ import {
   updateDocument,
 } from "../../../features/documents/documentsSlice";
 import { toast } from "react-toastify";
+import {
+  uploadToDrive,
+  getBestUrlForContent,
+} from "../../../utils/uploadToDrive";
 
 // First define the document type enum to match backend
 export enum DocumentType {
@@ -62,15 +66,27 @@ interface DocumentFormData {
 
 // Định nghĩa kiểu DocumentItem
 interface DocumentItem {
-  id: number;
+  id: string | number;
+  instructorId: string | number;
+  courseSectionId: string | number;
   title: string;
   description?: string;
-  url: string;
-  documentType: "pdf" | "slide" | "code" | "link" | "txt" | "docx" | "xlsx";
-  fileType?: string;
-  sectionId?: number;
-  visibility?: "all" | "enrolled" | "premium";
-  isDownloadable?: boolean;
+  fileUrl: string;
+  fileType: string;
+  uploadDate?: string;
+  downloadCount?: number;
+  status?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  courseSection?: {
+    id: string | number;
+    courseId: string | number;
+    title: string;
+    description: string;
+    orderNumber: number;
+    createdAt: string;
+    updatedAt: string;
+  };
 }
 
 // Định nghĩa props cho component
@@ -126,6 +142,7 @@ const DialogAddEditDocument: React.FC<DialogAddEditDocumentProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [fileUploadError, setFileUploadError] = useState<string | null>(null);
+  const [uploadedFileUrl, setUploadedFileUrl] = useState<string>("");
 
   // Cập nhật form khi mở modal và có dữ liệu ban đầu
   useEffect(() => {
@@ -161,6 +178,7 @@ const DialogAddEditDocument: React.FC<DialogAddEditDocumentProps> = ({
       setIsUploading(false);
       setUploadProgress(0);
       setFileUploadError(null);
+      setUploadedFileUrl("");
     }
   }, [open, editMode, documentToEdit, initialSectionId, currentUser]);
 
@@ -181,11 +199,14 @@ const DialogAddEditDocument: React.FC<DialogAddEditDocumentProps> = ({
         "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
         "application/vnd.ms-powerpoint",
         "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+        "application/vnd.ms-excel",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "text/plain",
       ];
 
       if (!allowedTypes.includes(file.type)) {
         setFileUploadError(
-          "Định dạng file không được hỗ trợ. Chỉ hỗ trợ PDF, DOC, DOCX, PPT, PPTX"
+          "Định dạng file không được hỗ trợ. Chỉ hỗ trợ PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, TXT"
         );
         return;
       }
@@ -195,32 +216,71 @@ const DialogAddEditDocument: React.FC<DialogAddEditDocumentProps> = ({
     }
   };
 
-  // Giả lập việc upload file và trả về URL
-  const simulateFileUpload = () => {
-    return new Promise<string>((resolve) => {
-      setIsUploading(true);
-      setUploadProgress(0);
+  // Tải file lên Google Drive
+  const handleFileUpload = async () => {
+    if (!selectedFile) {
+      setFileUploadError("Vui lòng chọn file để tải lên");
+      return null;
+    }
 
-      const interval = setInterval(() => {
-        setUploadProgress((prev) => {
-          const newProgress = prev + 10;
-          if (newProgress >= 100) {
-            clearInterval(interval);
-            setTimeout(() => {
-              setIsUploading(false);
-              resolve(`https://example.com/uploads/${selectedFile?.name}`);
-            }, 500);
-          }
-          return newProgress;
+    setIsUploading(true);
+    setUploadProgress(0);
+    console.log("Bắt đầu tải file lên Drive:", selectedFile.name);
+
+    try {
+      console.log("Đang tải lên file:", selectedFile.name);
+      const response = await uploadToDrive(selectedFile, (progress) => {
+        setUploadProgress(progress);
+        console.log(`Tiến độ tải lên: ${progress}%`);
+      });
+
+      console.log("Kết quả tải lên:", response);
+
+      if (response.success) {
+        // Lấy URL phù hợp nhất cho loại tài liệu
+        const bestUrl = getBestUrlForContent(response, documentForm.fileType);
+        console.log("Tải lên thành công, URL phù hợp:", bestUrl);
+        console.log("Thông tin đầy đủ:", {
+          fileUrl: response.fileUrl,
+          directLink: response.directLink,
+          embedUrl: response.embedUrl,
+          fileType: documentForm.fileType,
         });
-      }, 300);
-    });
+
+        setUploadedFileUrl(bestUrl);
+        // Cập nhật fileUrl trong form
+        setDocumentForm((prev) => ({
+          ...prev,
+          fileUrl: bestUrl,
+        }));
+        toast.success("Tải file lên thành công!");
+        return bestUrl;
+      } else {
+        console.error("Lỗi tải lên:", response.message);
+        setFileUploadError(response.message || "Tải lên thất bại");
+        toast.error(
+          "Tải file lên thất bại: " + (response.message || "Lỗi không xác định")
+        );
+        return null;
+      }
+    } catch (error) {
+      console.error("Lỗi tải file:", error);
+      setFileUploadError("Không thể tải file lên. Vui lòng thử lại.");
+      toast.error(
+        "Lỗi khi tải file: " +
+          (error instanceof Error ? error.message : "Lỗi không xác định")
+      );
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   // Xử lý submit form
   const handleSubmit = async () => {
     try {
-      let fileUrl = documentForm.fileUrl;
+      // Sử dụng uploadedFileUrl nếu đã tải lên, hoặc dùng fileUrl có sẵn
+      let fileUrl = uploadedFileUrl || documentForm.fileUrl;
       const courseId = Number(id);
 
       if (isNaN(courseId)) {
@@ -233,10 +293,20 @@ const DialogAddEditDocument: React.FC<DialogAddEditDocumentProps> = ({
         return;
       }
 
-      // If there's a file selected, upload it first
-      if (selectedFile) {
-        fileUrl = await simulateFileUpload();
+      // Nếu có file được chọn nhưng chưa tải lên, thực hiện tải lên trước
+      if (selectedFile && !uploadedFileUrl) {
+        console.log("Có file chưa tải lên, tiến hành tải lên trước khi submit");
+        const uploadedUrl = await handleFileUpload();
+        if (uploadedUrl) {
+          fileUrl = uploadedUrl;
+        } else if (!documentForm.fileUrl) {
+          // If upload failed and no URL provided, show error
+          toast.error("Vui lòng cung cấp file hợp lệ hoặc URL");
+          return;
+        }
       }
+
+      console.log("Đang submit form với URL file:", fileUrl);
 
       const submittedData = {
         ...(editMode ? { id: documentForm.id } : {}),
@@ -255,7 +325,7 @@ const DialogAddEditDocument: React.FC<DialogAddEditDocumentProps> = ({
           : {}),
       };
 
-      console.log(submittedData);
+      console.log("Dữ liệu submit:", submittedData);
 
       if (editMode) {
         await dispatch(updateDocument(submittedData));
@@ -401,30 +471,52 @@ const DialogAddEditDocument: React.FC<DialogAddEditDocumentProps> = ({
               ) : (
                 <Box>
                   <input
-                    accept=".pdf,.doc,.docx,.ppt,.pptx"
+                    accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,.txt"
                     id="document-upload"
                     type="file"
                     hidden
                     onChange={handleFileSelect}
                   />
-                  <label htmlFor="document-upload">
-                    <Button
-                      variant="outlined"
-                      component="span"
-                      startIcon={<CloudUpload />}
+                  <Stack direction="row" spacing={2} justifyContent="center">
+                    <label htmlFor="document-upload">
+                      <Button
+                        variant="outlined"
+                        component="span"
+                        startIcon={<CloudUpload />}
+                      >
+                        {selectedFile
+                          ? `Đã chọn: ${selectedFile.name}`
+                          : "Chọn file tài liệu"}
+                      </Button>
+                    </label>
+                    {selectedFile && !isUploading && !uploadedFileUrl && (
+                      <Button
+                        variant="contained"
+                        color="primary"
+                        onClick={handleFileUpload}
+                        disabled={isUploading}
+                      >
+                        Tải lên ngay
+                      </Button>
+                    )}
+                  </Stack>
+                  {uploadedFileUrl && (
+                    <Typography
+                      variant="subtitle2"
+                      color="success.main"
+                      sx={{ mt: 1 }}
                     >
-                      {selectedFile
-                        ? `Đã chọn: ${selectedFile.name}`
-                        : "Chọn file tài liệu"}
-                    </Button>
-                  </label>
+                      File đã tải lên thành công! URL:{" "}
+                      {uploadedFileUrl.substring(0, 50)}...
+                    </Typography>
+                  )}
                   <Typography
                     variant="caption"
                     display="block"
                     color="text.secondary"
                     sx={{ mt: 1 }}
                   >
-                    Định dạng hỗ trợ: PDF, DOC, DOCX, PPT, PPTX
+                    Định dạng hỗ trợ: PDF, DOC, DOCX, PPT, PPTX, XLS, XLSX, TXT
                   </Typography>
                   {fileUploadError && (
                     <Typography
@@ -450,8 +542,12 @@ const DialogAddEditDocument: React.FC<DialogAddEditDocumentProps> = ({
               setDocumentForm({ ...documentForm, fileUrl: e.target.value })
             }
             placeholder="https://example.com/document.pdf"
-            helperText="Có thể để trống nếu bạn tải file lên trực tiếp"
-            required={!selectedFile}
+            helperText={
+              uploadedFileUrl
+                ? "Đã tải file lên thành công"
+                : "Có thể để trống nếu bạn tải file lên trực tiếp"
+            }
+            required={!selectedFile && !uploadedFileUrl}
           />
 
           {/* Chế độ hiển thị */}
@@ -501,7 +597,6 @@ const DialogAddEditDocument: React.FC<DialogAddEditDocumentProps> = ({
           variant="contained"
           onClick={handleSubmit}
           disabled={
-            !documentForm.courseSectionId ||
             !documentForm.title ||
             (!documentForm.fileUrl && !selectedFile) ||
             isUploading

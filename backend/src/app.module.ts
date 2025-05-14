@@ -70,6 +70,7 @@ import { RagModule } from './modules/rag/rag.module';
 import { Payment } from './entities/Payment';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ZalopayModule } from './modules/zalopay/zaloplay.module';
+import { FilesModule } from './modules/files/files.module';
 
 @Module({
   imports: [
@@ -157,6 +158,7 @@ import { ZalopayModule } from './modules/zalopay/zaloplay.module';
     RagModule,
     PaymentsModule,
     ZalopayModule,
+    FilesModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthMiddleware, InstructorMiddleware],

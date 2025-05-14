@@ -30,6 +30,10 @@ import { fetchQuizzesByCourse } from "../../../features/quizzes/quizzesSlice";
 import { fetchCourseUsersEnrollments } from "../../../features/enrollments/enrollmentsApiSlice";
 import { selectCourseUsers } from "../../../features/enrollments/enrollmentsSelectors";
 import { createNotification } from "../../../features/notifications/notificationsSlice";
+import {
+  uploadToDrive,
+  getBestUrlForContent,
+} from "../../../utils/uploadToDrive";
 
 // Định nghĩa kiểu ContentItem cho rõ ràng
 interface ContentItem {
@@ -96,9 +100,12 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [fileUploadError, setFileUploadError] = useState<string | null>(null);
+  const [uploadedFileUrl, setUploadedFileUrl] = useState<string>("");
 
   useEffect(() => {
-    dispatch(fetchCourseUsersEnrollments(id));
+    if (id) {
+      dispatch(fetchCourseUsersEnrollments(Number(id)));
+    }
   }, [dispatch, id]);
 
   // Cập nhật form khi có dữ liệu ban đầu
@@ -141,6 +148,14 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
     }
   }, [open, editMode, contentToEdit, initialSectionId, sections]);
 
+  const resetFileUpload = () => {
+    setSelectedFile(null);
+    setIsUploading(false);
+    setUploadProgress(0);
+    setFileUploadError(null);
+    setUploadedFileUrl("");
+  };
+
   // Xử lý file upload
   const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
     const files = event.target.files;
@@ -157,43 +172,84 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
     }
   };
 
-  const resetFileUpload = () => {
-    setSelectedFile(null);
-    setIsUploading(false);
-    setUploadProgress(0);
-    setFileUploadError(null);
-  };
-
-  const simulateFileUpload = async () => {
-    if (!selectedFile) return null;
+  const handleFileUpload = async () => {
+    if (!selectedFile) {
+      setFileUploadError("Vui lòng chọn file để tải lên");
+      return null;
+    }
 
     setIsUploading(true);
     setUploadProgress(0);
+    console.log("Bắt đầu tải file:", selectedFile.name);
 
-    return new Promise<string>((resolve) => {
-      const interval = setInterval(() => {
-        setUploadProgress((prevProgress) => {
-          const newProgress = prevProgress + 10;
-          if (newProgress >= 100) {
-            clearInterval(interval);
-            setTimeout(() => {
-              setIsUploading(false);
-              resolve(`https://example.com/uploads/${selectedFile.name}`);
-            }, 500);
-          }
-          return newProgress;
+    try {
+      console.log("Đang tải lên file:", selectedFile.name);
+      const response = await uploadToDrive(selectedFile, (progress) => {
+        setUploadProgress(progress);
+        console.log(`Tiến độ tải lên: ${progress}%`);
+      });
+
+      console.log("Kết quả tải lên:", response);
+
+      if (response.success) {
+        // Lấy URL phù hợp nhất cho loại content hiện tại
+        const bestUrl = getBestUrlForContent(response, contentForm.contentType);
+        console.log("Tải lên thành công, URL phù hợp:", bestUrl);
+        console.log("Thông tin đầy đủ:", {
+          fileUrl: response.fileUrl,
+          directLink: response.directLink,
+          embedUrl: response.embedUrl,
+          contentType: contentForm.contentType,
         });
-      }, 300);
-    });
+
+        setUploadedFileUrl(bestUrl);
+        // Cập nhật contentUrl trong form
+        setContentForm((prev) => ({
+          ...prev,
+          contentUrl: bestUrl,
+        }));
+        toast.success("Tải file lên thành công!");
+        return bestUrl;
+      } else {
+        console.error("Lỗi tải lên:", response.message);
+        setFileUploadError(response.message || "Tải lên thất bại");
+        toast.error(
+          "Tải file lên thất bại: " + (response.message || "Lỗi không xác định")
+        );
+        return null;
+      }
+    } catch (error) {
+      console.error("Lỗi tải file:", error);
+      setFileUploadError("Không thể tải file lên. Vui lòng thử lại.");
+      toast.error(
+        "Lỗi khi tải file: " +
+          (error instanceof Error ? error.message : "Lỗi không xác định")
+      );
+      return null;
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   // Xử lý submit form
   const handleSubmit = async () => {
-    let fileUrl = contentForm.contentUrl;
+    // Sử dụng uploadedFileUrl nếu đã tải lên, hoặc dùng contentUrl có sẵn
+    let fileUrl = uploadedFileUrl || contentForm.contentUrl;
 
-    if (selectedFile) {
-      fileUrl = (await simulateFileUpload()) || "";
+    // Nếu có file được chọn nhưng chưa tải lên, thực hiện tải lên trước
+    if (selectedFile && !uploadedFileUrl) {
+      console.log("Có file chưa tải lên, tiến hành tải lên trước khi submit");
+      const uploadedUrl = await handleFileUpload();
+      if (uploadedUrl) {
+        fileUrl = uploadedUrl;
+      } else if (!contentForm.contentUrl) {
+        // If upload failed and no URL provided, show error
+        toast.error("Vui lòng cung cấp file hợp lệ hoặc URL");
+        return;
+      }
     }
+
+    console.log("Đang submit form với URL file:", fileUrl);
 
     const submitData = {
       ...contentForm,
@@ -202,6 +258,8 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
       sectionId: Number(contentForm.sectionId),
       orderNumber: Number(contentForm.orderNumber),
     };
+
+    console.log("Dữ liệu submit:", submitData);
 
     if (!editMode) {
       dispatch(createCourseLesson(submitData))
@@ -255,8 +313,10 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
   };
 
   // Xử lý khi thay đổi section
-  const handleSectionChange = (newSectionId: string) => {
-    const newSection = sections.find((s) => s.id == newSectionId);
+  const handleSectionChange = (newSectionId: string | number) => {
+    const sectionIdNumber =
+      typeof newSectionId === "string" ? parseInt(newSectionId) : newSectionId;
+    const newSection = sections.find((s) => s.id === sectionIdNumber);
     // Always set to last position in the new section
     const lastPosition = newSection?.lessons?.length
       ? newSection.lessons.length + 1
@@ -264,7 +324,7 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
 
     setContentForm({
       ...contentForm,
-      sectionId: newSectionId,
+      sectionId: sectionIdNumber,
       orderNumber: lastPosition, // Automatically set to last position in new section
     });
   };
@@ -273,7 +333,7 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
   useEffect(() => {
     if (contentForm.sectionId) {
       const currentSection = sections.find(
-        (s) => s.id == contentForm.sectionId
+        (s) => s.id === contentForm.sectionId
       );
       const lastPosition = currentSection?.lessons?.length
         ? currentSection.lessons.length + 1
@@ -401,7 +461,6 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
 
           {/* Upload file */}
           {(contentForm.contentType === "video" ||
-            contentForm.contentType === "document" ||
             contentForm.contentType === "slide" ||
             contentForm.contentType === "txt" ||
             contentForm.contentType === "docx" ||
@@ -455,17 +514,39 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
                       hidden
                       onChange={handleFileSelect}
                     />
-                    <label htmlFor="file-upload">
-                      <Button
-                        variant="outlined"
-                        component="span"
-                        startIcon={<CloudUpload />}
+                    <Stack direction="row" spacing={2} justifyContent="center">
+                      <label htmlFor="file-upload">
+                        <Button
+                          variant="outlined"
+                          component="span"
+                          startIcon={<CloudUpload />}
+                        >
+                          {selectedFile
+                            ? `Đã chọn: ${selectedFile.name}`
+                            : "Chọn file"}
+                        </Button>
+                      </label>
+                      {selectedFile && !isUploading && !uploadedFileUrl && (
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          onClick={handleFileUpload}
+                          disabled={isUploading}
+                        >
+                          Tải lên ngay
+                        </Button>
+                      )}
+                    </Stack>
+                    {uploadedFileUrl && (
+                      <Typography
+                        variant="subtitle2"
+                        color="success.main"
+                        sx={{ mt: 1 }}
                       >
-                        {selectedFile
-                          ? `Đã chọn: ${selectedFile.name}`
-                          : "Chọn file"}
-                      </Button>
-                    </label>
+                        File đã tải lên thành công! URL:{" "}
+                        {uploadedFileUrl.substring(0, 50)}...
+                      </Typography>
+                    )}
                     <Typography
                       variant="caption"
                       display="block"
@@ -474,8 +555,6 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
                     >
                       {contentForm.contentType === "video"
                         ? "Định dạng: MP4, WebM, Ogg"
-                        : contentForm.contentType === "document"
-                        ? "Định dạng: PDF, DOC, DOCX"
                         : contentForm.contentType === "slide"
                         ? "Định dạng: PDF, PPT, PPTX"
                         : contentForm.contentType === "txt"
@@ -504,7 +583,11 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
             </Box>
           )}
 
-          <Typography>Hoặc nhập URL (nếu không tải lên file)</Typography>
+          <Typography>
+            {uploadedFileUrl
+              ? "File đã tải lên hoặc nhập URL khác"
+              : "Nhập URL (nếu không tải lên file)"}
+          </Typography>
 
           {/* URL trực tiếp */}
           <TextField
@@ -513,10 +596,18 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
                 ? "video"
                 : contentForm.contentType === "slide"
                 ? "slide"
-                : contentForm.contentType === "document"
-                ? "tài liệu"
-                : contentForm.contentType === "link"
-                ? "đường dẫn"
+                : contentForm.contentType === "txt"
+                ? "văn bản"
+                : contentForm.contentType === "docx"
+                ? "tài liệu Word"
+                : contentForm.contentType === "pdf"
+                ? "tài liệu PDF"
+                : contentForm.contentType === "xlsx"
+                ? "bảng tính Excel"
+                : contentForm.contentType === "quiz"
+                ? "bài trắc nghiệm"
+                : contentForm.contentType === "assignment"
+                ? "bài tập"
                 : "nội dung"
             }`}
             fullWidth
@@ -527,8 +618,11 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
             placeholder="https://example.com/content"
             helperText={
               contentForm.contentType === "video" ||
-              contentForm.contentType === "document" ||
-              contentForm.contentType === "slide"
+              contentForm.contentType === "slide" ||
+              contentForm.contentType === "txt" ||
+              contentForm.contentType === "docx" ||
+              contentForm.contentType === "pdf" ||
+              contentForm.contentType === "xlsx"
                 ? "Có thể để trống nếu bạn tải file lên trực tiếp"
                 : "Nhập URL đến nội dung"
             }
@@ -536,8 +630,11 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
               !selectedFile ||
               !(
                 contentForm.contentType === "video" ||
-                contentForm.contentType === "document" ||
-                contentForm.contentType === "slide"
+                contentForm.contentType === "slide" ||
+                contentForm.contentType === "txt" ||
+                contentForm.contentType === "docx" ||
+                contentForm.contentType === "pdf" ||
+                contentForm.contentType === "xlsx"
               )
             }
           />
