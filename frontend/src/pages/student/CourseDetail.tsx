@@ -705,14 +705,30 @@ const CourseDetail: React.FC = () => {
                 size="large"
                 sx={{ mb: 2 }}
                 onClick={() => {
-                  isEnrolled
-                    ? navigate(`/course/${id}/learn`)
-                    : navigate(`/purchase/${id}`);
+                  if (isEnrolled) {
+                    navigate(`/course/${id}/learn`);
+                  } else if (
+                    currentCourse?.for === "student_academic" &&
+                    currentUser?.role === "student_academic"
+                  ) {
+                    // No navigation for academic students who aren't enrolled - they need to contact instructor
+                  } else {
+                    navigate(`/purchase/${id}`);
+                  }
                 }}
-                disabled={!canEnroll()}
+                disabled={
+                  !canEnroll() ||
+                  (currentCourse?.for === "student_academic" &&
+                    currentUser?.role === "student_academic" &&
+                    !isEnrolled)
+                }
               >
                 {isEnrolled
                   ? "Tiếp tục học"
+                  : currentCourse?.for === "student_academic" &&
+                    currentUser?.role === "student_academic" &&
+                    !isEnrolled
+                  ? "Liên hệ giảng viên phụ trách"
                   : canEnroll()
                   ? "Đăng ký ngay"
                   : "Không có quyền đăng ký"}
@@ -730,6 +746,19 @@ const CourseDetail: React.FC = () => {
                     : "sinh viên trường"}
                 </Typography>
               )}
+
+              {currentCourse?.for === "student_academic" &&
+                currentUser?.role === "student_academic" &&
+                !isEnrolled && (
+                  <Typography
+                    color="info.main"
+                    variant="caption"
+                    sx={{ display: "block", mb: 2, textAlign: "center" }}
+                  >
+                    Vui lòng liên hệ giảng viên phụ trách lớp để được thêm vào
+                    khóa học này.
+                  </Typography>
+                )}
 
               <Divider sx={{ mb: 3 }} />
 

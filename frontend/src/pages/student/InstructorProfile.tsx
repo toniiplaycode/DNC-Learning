@@ -17,6 +17,10 @@ import {
   ListItemText,
   CircularProgress,
   Paper,
+  useTheme,
+  Button,
+  alpha,
+  IconButton,
 } from "@mui/material";
 import {
   School,
@@ -30,13 +34,19 @@ import {
   Phone,
   Work,
   LocationOn,
+  OpenInNew,
+  Favorite,
+  PlayArrow,
+  Grade,
 } from "@mui/icons-material";
 import CardCourse from "../../components/common/CardCourse";
-import { useParams } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { fetchInstructorById } from "../../features/user_instructors/instructorsApiSlice";
 
 const InstructorProfile = () => {
+  const theme = useTheme();
+  const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const { id } = useParams();
   const { currentInstructor, status, error } = useAppSelector(
@@ -98,6 +108,7 @@ const InstructorProfile = () => {
       price: parseFloat(course.price || "0"),
       image: course.thumbnailUrl || "/src/assets/logo.png",
       category: course?.category?.name || "Khóa học",
+      for: course?.for || "both",
     }));
   };
 
@@ -123,291 +134,536 @@ const InstructorProfile = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 8 }}>
-      {/* Profile Header Card */}
-      <Paper
-        elevation={3}
+      {/* Profile Card */}
+      <Card
+        elevation={4}
         sx={{
-          p: 4,
-          mb: 4,
-          borderRadius: 2,
-          background: "linear-gradient(to right, #f5f7fa, #e4e8f0)",
+          borderRadius: 4,
+          my: 6,
+          overflow: "visible",
         }}
       >
-        <Grid container spacing={3}>
-          {/* Avatar */}
-          <Grid item xs={12} md={3} sx={{ textAlign: "center" }}>
-            <Avatar
-              src={
-                currentInstructor.user?.avatarUrl
-                  ? `/src/assets/${currentInstructor.user.avatarUrl}`
-                  : "/src/assets/default-avatar.png"
-              }
-              sx={{
-                width: 180,
-                height: 180,
-                border: 3,
-                borderColor: "primary.main",
-                mx: "auto",
-                boxShadow: 3,
-              }}
-            />
-            <Box sx={{ mt: 2, textAlign: "center" }}>
-              <Rating
-                value={parseFloat(currentInstructor.averageRating || "0")}
-                precision={0.5}
-                readOnly
-                size="large"
-              />
-              <Typography variant="body2">
-                ({currentInstructor.averageRating || "0"}/5 -{" "}
-                {currentInstructor.totalReviews || 0} đánh giá)
-              </Typography>
-            </Box>
-          </Grid>
+        <CardContent sx={{ p: 4 }}>
+          <Grid container spacing={4}>
+            {/* Avatar Column */}
+            <Grid item xs={12} md={3} sx={{ textAlign: "center" }}>
+              <Box sx={{ mt: { xs: 0, md: -12 }, position: "relative" }}>
+                <Avatar
+                  src={
+                    currentInstructor.user?.avatarUrl ||
+                    "/src/assets/default-avatar.png"
+                  }
+                  sx={{
+                    width: 180,
+                    height: 180,
+                    border: 5,
+                    borderColor: "white",
+                    mx: "auto",
+                    boxShadow: 4,
+                    transition: "transform 0.3s",
+                    "&:hover": {
+                      transform: "scale(1.05)",
+                    },
+                  }}
+                />
+                {currentInstructor.verificationStatus === "verified" && (
+                  <Chip
+                    icon={<VerifiedUser />}
+                    label="Đã xác thực"
+                    color="primary"
+                    sx={{
+                      position: "absolute",
+                      bottom: -10,
+                      left: "50%",
+                      transform: "translateX(-50%)",
+                      fontWeight: "bold",
+                      boxShadow: 2,
+                    }}
+                  />
+                )}
+              </Box>
 
-          {/* Basic Info and Contact */}
-          <Grid item xs={12} md={9}>
-            <Box>
-              <Box sx={{ display: "flex", alignItems: "center" }}>
-                <Typography variant="h4" fontWeight="bold">
+              <Box sx={{ mt: 4, textAlign: "center" }}>
+                <Rating
+                  value={parseFloat(currentInstructor.averageRating || "0")}
+                  precision={0.5}
+                  readOnly
+                  size="large"
+                  sx={{
+                    "& .MuiRating-iconFilled": {
+                      color: theme.palette.warning.main,
+                    },
+                  }}
+                />
+                <Typography
+                  variant="body2"
+                  sx={{ fontWeight: "medium", mt: 0.5 }}
+                >
+                  <strong>{currentInstructor.averageRating || "0"}</strong>/5 •{" "}
+                  <strong>{currentInstructor.totalReviews || 0}</strong> đánh
+                  giá
+                </Typography>
+              </Box>
+
+              {/* Stats Cards */}
+              <Stack spacing={2} sx={{ mt: 4 }}>
+                <Card
+                  sx={{
+                    p: 2,
+                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                    boxShadow: "none",
+                    borderRadius: 2,
+                  }}
+                >
+                  <Stack direction="row" alignItems="center" spacing={2}>
+                    <Person
+                      sx={{ color: theme.palette.primary.main, fontSize: 32 }}
+                    />
+                    <Box>
+                      <Typography
+                        variant="h5"
+                        fontWeight="bold"
+                        color="primary.main"
+                      >
+                        {currentInstructor.totalStudents || 0}
+                      </Typography>
+                      <Typography variant="body2">Học viên</Typography>
+                    </Box>
+                  </Stack>
+                </Card>
+
+                <Card
+                  sx={{
+                    p: 2,
+                    bgcolor: alpha(theme.palette.secondary.main, 0.1),
+                    boxShadow: "none",
+                    borderRadius: 2,
+                  }}
+                >
+                  <Stack direction="row" alignItems="center" spacing={2}>
+                    <Assignment
+                      sx={{ color: theme.palette.secondary.dark, fontSize: 32 }}
+                    />
+                    <Box>
+                      <Typography
+                        variant="h5"
+                        fontWeight="bold"
+                        color="secondary.dark"
+                      >
+                        {currentInstructor.totalCourses || 0}
+                      </Typography>
+                      <Typography variant="body2">Khóa học</Typography>
+                    </Box>
+                  </Stack>
+                </Card>
+
+                <Card
+                  sx={{
+                    p: 2,
+                    bgcolor: alpha(theme.palette.warning.main, 0.1),
+                    boxShadow: "none",
+                    borderRadius: 2,
+                  }}
+                >
+                  <Stack direction="row" alignItems="center" spacing={2}>
+                    <Star
+                      sx={{ color: theme.palette.warning.main, fontSize: 32 }}
+                    />
+                    <Box>
+                      <Typography
+                        variant="h5"
+                        fontWeight="bold"
+                        color="warning.main"
+                      >
+                        {currentInstructor.totalReviews || 0}
+                      </Typography>
+                      <Typography variant="body2">Đánh giá</Typography>
+                    </Box>
+                  </Stack>
+                </Card>
+              </Stack>
+            </Grid>
+
+            {/* Info Column */}
+            <Grid item xs={12} md={9}>
+              <Box>
+                <Typography variant="h3" fontWeight="bold" sx={{ mb: 1 }}>
                   {currentInstructor.fullName}
                 </Typography>
-                {currentInstructor.verificationStatus === "verified" && (
-                  <VerifiedUser color="primary" sx={{ fontSize: 24, ml: 1 }} />
-                )}
-              </Box>
 
-              <Typography
-                variant="h6"
-                color="text.secondary"
-                gutterBottom
-                sx={{ mb: 2, mt: 0.5 }}
-              >
-                {currentInstructor.professionalTitle}
-              </Typography>
+                <Typography
+                  variant="h5"
+                  sx={{ mb: 2, color: "text.secondary", fontWeight: "medium" }}
+                >
+                  {currentInstructor.professionalTitle}
+                </Typography>
 
-              <Typography variant="body1" paragraph sx={{ mb: 3 }}>
-                {currentInstructor.specialization}
-              </Typography>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 3,
+                    mb: 4,
+                    bgcolor: alpha(theme.palette.info.main, 0.05),
+                    borderRadius: 3,
+                    borderLeft: `4px solid ${theme.palette.info.main}`,
+                  }}
+                >
+                  <Typography variant="body1" sx={{ lineHeight: 1.8 }}>
+                    {currentInstructor.specialization}
+                  </Typography>
+                </Paper>
 
-              {/* Thông tin liên hệ ở đây */}
-              <Grid container spacing={2} sx={{ mb: 2 }}>
-                <Grid item xs={12} md={6}>
-                  <Stack spacing={1}>
-                    <Box sx={{ display: "flex", alignItems: "center" }}>
-                      <Email color="primary" sx={{ mr: 1 }} />
-                      <Typography variant="body2">
-                        {currentInstructor.user?.email || "Không có thông tin"}
-                      </Typography>
-                    </Box>
-                    <Box sx={{ display: "flex", alignItems: "center" }}>
-                      <Phone color="primary" sx={{ mr: 1 }} />
-                      <Typography variant="body2">
-                        {currentInstructor.user?.phone || "Không có thông tin"}
-                      </Typography>
-                    </Box>
-                  </Stack>
+                {/* Contact & Social Links */}
+                <Grid container spacing={3} sx={{ mb: 4 }}>
+                  <Grid item xs={12} sm={6}>
+                    <Card
+                      sx={{
+                        p: 2,
+                        boxShadow: 1,
+                        borderRadius: 2,
+                        transition: "transform 0.3s",
+                        "&:hover": {
+                          transform: "translateY(-3px)",
+                          boxShadow: 3,
+                        },
+                      }}
+                    >
+                      <Stack spacing={2}>
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          <Email
+                            sx={{ color: theme.palette.primary.main, mr: 1.5 }}
+                          />
+                          <Typography variant="body1" fontWeight="medium">
+                            {currentInstructor.user?.email ||
+                              "Không có thông tin"}
+                          </Typography>
+                        </Box>
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          <Phone
+                            sx={{ color: theme.palette.primary.main, mr: 1.5 }}
+                          />
+                          <Typography variant="body1" fontWeight="medium">
+                            {currentInstructor.user?.phone ||
+                              "Không có thông tin"}
+                          </Typography>
+                        </Box>
+                      </Stack>
+                    </Card>
+                  </Grid>
+
+                  <Grid item xs={12} sm={6}>
+                    <Card
+                      sx={{
+                        p: 2,
+                        boxShadow: 1,
+                        borderRadius: 2,
+                        height: "100%",
+                        transition: "transform 0.3s",
+                        "&:hover": {
+                          transform: "translateY(-3px)",
+                          boxShadow: 3,
+                        },
+                      }}
+                    >
+                      <Stack spacing={2}>
+                        {currentInstructor.linkedinProfile && (
+                          <Box sx={{ display: "flex", alignItems: "center" }}>
+                            <LinkedIn sx={{ color: "#0077B5", mr: 1.5 }} />
+                            <Typography
+                              variant="body1"
+                              component="a"
+                              href={`https://linkedin.com/in/${currentInstructor.linkedinProfile}`}
+                              target="_blank"
+                              sx={{
+                                textDecoration: "none",
+                                color: "text.primary",
+                                fontWeight: "medium",
+                                display: "flex",
+                                alignItems: "center",
+                                "&:hover": { color: "primary.main" },
+                              }}
+                            >
+                              {currentInstructor.linkedinProfile}
+                              <OpenInNew sx={{ ml: 0.5, fontSize: 16 }} />
+                            </Typography>
+                          </Box>
+                        )}
+                        {currentInstructor.website && (
+                          <Box sx={{ display: "flex", alignItems: "center" }}>
+                            <Work
+                              sx={{
+                                color: theme.palette.primary.main,
+                                mr: 1.5,
+                              }}
+                            />
+                            <Typography
+                              variant="body1"
+                              component="a"
+                              href={currentInstructor.website}
+                              target="_blank"
+                              sx={{
+                                textDecoration: "none",
+                                color: "text.primary",
+                                fontWeight: "medium",
+                                display: "flex",
+                                alignItems: "center",
+                                "&:hover": { color: "primary.main" },
+                              }}
+                            >
+                              {currentInstructor.website}
+                              <OpenInNew sx={{ ml: 0.5, fontSize: 16 }} />
+                            </Typography>
+                          </Box>
+                        )}
+                      </Stack>
+                    </Card>
+                  </Grid>
                 </Grid>
-                <Grid item xs={12} md={6}>
-                  <Stack spacing={1}>
-                    {currentInstructor.linkedinProfile && (
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <LinkedIn color="primary" sx={{ mr: 1 }} />
-                        <Typography variant="body2">
-                          {currentInstructor.linkedinProfile}
-                        </Typography>
-                      </Box>
-                    )}
-                    {currentInstructor.website && (
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <WorkOutline color="primary" sx={{ mr: 1 }} />
-                        <Typography variant="body2">
-                          {currentInstructor.website}
-                        </Typography>
-                      </Box>
-                    )}
-                  </Stack>
-                </Grid>
-              </Grid>
 
-              {/* Stats Row */}
-              <Box
-                sx={{
-                  py: 1,
-                  display: "flex",
-                  gap: 2,
-                  flexDirection: "row",
-                }}
-              >
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexDirection: "column",
-                  }}
-                >
-                  <Person color="primary" sx={{ fontSize: 32, mb: 1 }} />
-                  <Typography variant="h6" fontWeight="bold">
-                    {currentInstructor.totalStudents || 0}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Học viên
-                  </Typography>
-                </Box>
-
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexDirection: "column",
-                  }}
-                >
-                  <Assignment color="primary" sx={{ fontSize: 32, mb: 1 }} />
-                  <Typography variant="h6" fontWeight="bold">
-                    {currentInstructor.totalCourses || 0}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Khóa học
-                  </Typography>
-                </Box>
-
-                <Box
-                  sx={{
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    flexDirection: "column",
-                  }}
-                >
-                  <Star color="primary" sx={{ fontSize: 32, mb: 1 }} />
-                  <Typography variant="h6" fontWeight="bold">
-                    {currentInstructor.totalReviews || 0}
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Đánh giá
-                  </Typography>
+                {/* Expertise Areas */}
+                <Typography variant="h5" fontWeight="bold" sx={{ mb: 2 }}>
+                  Chuyên môn
+                </Typography>
+                <Box sx={{ mb: 4 }}>
+                  {parseExpertiseAreas(currentInstructor.expertiseAreas).map(
+                    (area) => (
+                      <Chip
+                        key={area}
+                        label={area}
+                        sx={{
+                          m: 0.5,
+                          px: 1.5,
+                          py: 2.5,
+                          borderRadius: 2,
+                          bgcolor: alpha(theme.palette.primary.main, 0.08),
+                          color: "primary.dark",
+                          fontWeight: "medium",
+                          border: "1px solid",
+                          borderColor: alpha(theme.palette.primary.main, 0.2),
+                        }}
+                      />
+                    )
+                  )}
                 </Box>
               </Box>
-            </Box>
+            </Grid>
           </Grid>
-        </Grid>
-      </Paper>
+        </CardContent>
+      </Card>
 
-      {/* Two-column Content */}
-      <Grid>
-        {/* Left Column - Bio & Expertise */}
-        <Grid item xs={12} md={8}>
-          <Card sx={{ mb: 4, borderRadius: 2, boxShadow: 2 }}>
-            <CardContent>
-              <Typography
-                variant="h5"
-                fontWeight="bold"
-                gutterBottom
-                color="primary.main"
-              >
-                Giới thiệu
-              </Typography>
-              <Typography paragraph variant="body1">
+      {/* Bio, Experience & Certificates Tabs */}
+      <Grid container spacing={4} sx={{ mb: 6 }}>
+        <Grid item xs={12} md={6}>
+          <Card sx={{ borderRadius: 4, boxShadow: 2, height: "100%" }}>
+            <CardContent sx={{ p: 4 }}>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
+                <Box
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: "12px",
+                    bgcolor: alpha(theme.palette.primary.main, 0.1),
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    mr: 2,
+                  }}
+                >
+                  <Person sx={{ color: theme.palette.primary.main }} />
+                </Box>
+                <Typography variant="h5" fontWeight="bold">
+                  Giới thiệu
+                </Typography>
+              </Box>
+
+              <Typography paragraph variant="body1" sx={{ lineHeight: 1.8 }}>
                 {currentInstructor.bio || "Không có thông tin."}
               </Typography>
-
-              <Divider sx={{ my: 3 }} />
-
-              <Typography
-                variant="h5"
-                fontWeight="bold"
-                gutterBottom
-                color="primary.main"
-              >
-                Chuyên môn
-              </Typography>
-              <Stack direction="row" spacing={1} flexWrap="wrap" sx={{ mb: 3 }}>
-                {parseExpertiseAreas(currentInstructor.expertiseAreas).map(
-                  (area) => (
-                    <Chip
-                      key={area}
-                      label={area}
-                      sx={{ m: 0.5, px: 1 }}
-                      variant="outlined"
-                    />
-                  )
-                )}
-              </Stack>
-
-              <Typography
-                variant="h5"
-                fontWeight="bold"
-                gutterBottom
-                color="primary.main"
-              >
-                Chứng chỉ
-              </Typography>
-              <List>
-                {parseCertificates(currentInstructor.certificates).length >
-                0 ? (
-                  parseCertificates(currentInstructor.certificates).map(
-                    (cert) => (
-                      <ListItem key={cert} sx={{ py: 1 }}>
-                        <ListItemIcon>
-                          <School color="primary" />
-                        </ListItemIcon>
-                        <ListItemText primary={cert} />
-                      </ListItem>
-                    )
-                  )
-                ) : (
-                  <Typography variant="body1">
-                    Không có thông tin chứng chỉ.
-                  </Typography>
-                )}
-              </List>
             </CardContent>
           </Card>
+        </Grid>
 
-          <Card sx={{ borderRadius: 2, boxShadow: 2 }}>
-            <CardContent>
+        <Grid item xs={12} md={6}>
+          <Card sx={{ borderRadius: 4, boxShadow: 2, height: "100%" }}>
+            <CardContent sx={{ p: 4 }}>
+              <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
+                <Box
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: "12px",
+                    bgcolor: alpha(theme.palette.secondary.main, 0.15),
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    mr: 2,
+                  }}
+                >
+                  <Work sx={{ color: theme.palette.secondary.dark }} />
+                </Box>
+                <Typography variant="h5" fontWeight="bold">
+                  Kinh nghiệm giảng dạy
+                </Typography>
+              </Box>
+
               <Typography
-                variant="h5"
-                fontWeight="bold"
-                gutterBottom
-                color="primary.main"
+                paragraph
+                variant="body1"
+                sx={{ lineHeight: 1.8, mb: 3 }}
               >
-                Kinh nghiệm giảng dạy
-              </Typography>
-              <Typography paragraph variant="body1">
                 {currentInstructor.teachingExperience || "Không có thông tin."}
               </Typography>
 
               <Divider sx={{ my: 3 }} />
 
-              <Typography
-                variant="h5"
-                fontWeight="bold"
-                gutterBottom
-                color="primary.main"
-              >
-                Học vấn
-              </Typography>
-              <Typography paragraph variant="body1">
+              <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
+                <Box
+                  sx={{
+                    width: 40,
+                    height: 40,
+                    borderRadius: "12px",
+                    bgcolor: alpha(theme.palette.info.main, 0.1),
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    mr: 2,
+                  }}
+                >
+                  <School sx={{ color: theme.palette.info.main }} />
+                </Box>
+                <Typography variant="h5" fontWeight="bold">
+                  Học vấn
+                </Typography>
+              </Box>
+
+              <Typography paragraph variant="body1" sx={{ lineHeight: 1.8 }}>
                 {currentInstructor.educationBackground || "Không có thông tin."}
               </Typography>
             </CardContent>
           </Card>
         </Grid>
-
-        {/* Right Column */}
-        <Grid item xs={12} md={4}>
-          {/* Không còn Card thông tin liên hệ ở đây nữa */}
-        </Grid>
       </Grid>
 
+      {/* Certificates */}
+      <Card sx={{ borderRadius: 4, boxShadow: 2, mb: 6 }}>
+        <CardContent sx={{ p: 4 }}>
+          <Box sx={{ display: "flex", alignItems: "center", mb: 3 }}>
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                borderRadius: "12px",
+                bgcolor: alpha(theme.palette.success.main, 0.1),
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                mr: 2,
+              }}
+            >
+              <Grade sx={{ color: theme.palette.success.main }} />
+            </Box>
+            <Typography variant="h5" fontWeight="bold">
+              Chứng chỉ
+            </Typography>
+          </Box>
+
+          <Grid container spacing={2}>
+            {parseCertificates(currentInstructor.certificates).length > 0 ? (
+              parseCertificates(currentInstructor.certificates).map(
+                (cert, index) => (
+                  <Grid item xs={12} sm={6} md={4} key={index}>
+                    <Card
+                      sx={{
+                        p: 2,
+                        height: "100%",
+                        bgcolor:
+                          index % 2 === 0
+                            ? alpha(theme.palette.primary.light, 0.05)
+                            : alpha(theme.palette.secondary.light, 0.05),
+                        border: "1px solid",
+                        borderColor:
+                          index % 2 === 0
+                            ? alpha(theme.palette.primary.light, 0.3)
+                            : alpha(theme.palette.secondary.light, 0.3),
+                        borderRadius: 2,
+                        boxShadow: "none",
+                        transition: "transform 0.2s",
+                        "&:hover": {
+                          transform: "translateY(-4px)",
+                          boxShadow: 2,
+                        },
+                      }}
+                    >
+                      <Stack
+                        direction="row"
+                        spacing={2}
+                        alignItems="flex-start"
+                      >
+                        <School color="primary" sx={{ mt: 0.5 }} />
+                        <Typography variant="body1" fontWeight="medium">
+                          {cert}
+                        </Typography>
+                      </Stack>
+                    </Card>
+                  </Grid>
+                )
+              )
+            ) : (
+              <Grid item xs={12}>
+                <Typography variant="body1" sx={{ fontStyle: "italic", pl: 2 }}>
+                  Không có thông tin chứng chỉ.
+                </Typography>
+              </Grid>
+            )}
+          </Grid>
+        </CardContent>
+      </Card>
+
       {/* Courses Section */}
-      <Box sx={{ mt: 6 }}>
-        <Typography variant="h4" fontWeight="bold" py={2} color="primary.main">
-          Khóa học đang dạy
-        </Typography>
+      <Box>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            mb: 4,
+          }}
+        >
+          <Box sx={{ display: "flex", alignItems: "center" }}>
+            <Box
+              sx={{
+                width: 40,
+                height: 40,
+                borderRadius: "12px",
+                bgcolor: alpha(theme.palette.warning.main, 0.1),
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "center",
+                mr: 2,
+              }}
+            >
+              <PlayArrow sx={{ color: theme.palette.warning.main }} />
+            </Box>
+            <Typography variant="h4" fontWeight="bold">
+              Khóa học đang dạy
+            </Typography>
+          </Box>
+
+          {mapCoursesToCardFormat().length > 3 && (
+            <Button
+              variant="outlined"
+              endIcon={<OpenInNew />}
+              sx={{
+                borderRadius: 2,
+                fontWeight: "bold",
+                px: 2,
+              }}
+            >
+              Xem tất cả
+            </Button>
+          )}
+        </Box>
+
         <Grid container spacing={3}>
           {mapCoursesToCardFormat().length > 0 ? (
             mapCoursesToCardFormat().map((course) => (
@@ -421,12 +677,17 @@ const InstructorProfile = () => {
                 sx={{
                   p: 4,
                   textAlign: "center",
-                  bgcolor: "background.paper",
-                  borderRadius: 2,
+                  bgcolor: alpha(theme.palette.background.paper, 0.6),
+                  borderRadius: 4,
+                  border: "1px dashed",
+                  borderColor: "divider",
                 }}
               >
-                <Typography variant="body1">
+                <Typography variant="h6" color="text.secondary" sx={{ mb: 1 }}>
                   Giảng viên chưa có khóa học nào.
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Vui lòng quay lại sau để xem các khóa học mới.
                 </Typography>
               </Paper>
             </Grid>
