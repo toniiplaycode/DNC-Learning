@@ -187,6 +187,38 @@ const InstructorSchedules = () => {
     setScheduleToDelete(null);
   };
 
+  // Thêm hàm kiểm tra trùng lịch
+  const checkScheduleConflict = (
+    startTime: string,
+    endTime: string,
+    excludeScheduleId?: number
+  ) => {
+    const newStart = new Date(startTime);
+    const newEnd = new Date(endTime);
+
+    return instructorSchedules.some((schedule) => {
+      // Bỏ qua lịch hiện tại khi đang chỉnh sửa
+      if (excludeScheduleId && schedule.id === excludeScheduleId) {
+        return false;
+      }
+
+      const existingStart = new Date(schedule.startTime);
+      const existingEnd = new Date(schedule.endTime);
+
+      // Kiểm tra các trường hợp trùng lịch:
+      // 1. Thời gian mới nằm trong khoảng thời gian đã có
+      // 2. Thời gian đã có nằm trong khoảng thời gian mới
+      // 3. Thời gian mới bắt đầu trước khi thời gian đã có kết thúc
+      // 4. Thời gian mới kết thúc sau khi thời gian đã có bắt đầu
+      return (
+        (newStart >= existingStart && newStart < existingEnd) ||
+        (newEnd > existingStart && newEnd <= existingEnd) ||
+        (newStart <= existingStart && newEnd >= existingEnd) ||
+        (newStart < existingEnd && newEnd > existingStart)
+      );
+    });
+  };
+
   const handleSaveSchedule = async (event: React.FormEvent) => {
     event.preventDefault();
 
@@ -197,6 +229,18 @@ const InstructorSchedules = () => {
 
       if (endTime <= startTime) {
         toast.error("Thời gian kết thúc phải sau thời gian bắt đầu");
+        return;
+      }
+
+      // Kiểm tra trùng lịch
+      if (
+        checkScheduleConflict(
+          formData.startTime,
+          formData.endTime,
+          editingSchedule?.id
+        )
+      ) {
+        toast.error("Thời gian này đã trùng với một lịch dạy khác");
         return;
       }
     }

@@ -51,6 +51,7 @@ import { fetchCurrentUser } from "./features/auth/authApiSlice";
 import PaymentResult from "./pages/student/PaymentResult";
 import JoinClass from "./pages/student/teaching-schedules/JoinClass";
 import TeachingSchedules from "./pages/student/teaching-schedules/TeachingSchedules";
+import InstructorAttendances from "./pages/instructor/InstructorAttendances";
 
 const App = () => {
   const navigate = useNavigate();
@@ -142,6 +143,10 @@ const App = () => {
           <Route
             path="/instructor/schedules"
             element={<InstructorSchedules />}
+          />
+          <Route
+            path="/instructor/attendances"
+            element={<InstructorAttendances />}
           />
           <Route path="/instructor/forum" element={<InstructorForum />} />
           <Route

@@ -1,4 +1,5 @@
 import { User } from "./user.types";
+import { Attendance } from "./attendance.types";
 
 export enum ScheduleStatus {
   SCHEDULED = "scheduled",
@@ -70,6 +71,7 @@ export interface TeachingSchedule {
   academicClass?: AcademicClass;
   academicClassInstructor?: AcademicClassInstructor;
   academicClassCourse?: AcademicClassCourse;
+  attendances?: Attendance[];
 }
 
 export interface CreateTeachingScheduleData {

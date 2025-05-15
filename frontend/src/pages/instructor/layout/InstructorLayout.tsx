@@ -38,6 +38,7 @@ import {
   Forum,
   Comment,
   PeopleAltTwoTone,
+  CheckCircle,
 } from "@mui/icons-material";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import Logo from "../../../assets/logo.png";
@@ -70,6 +71,11 @@ const menuItems = [
     text: "Lịch dạy trực tuyến",
     icon: <CalendarMonth />,
     path: "/instructor/schedules",
+  },
+  {
+    text: "Điểm danh học trực tuyến",
+    icon: <CheckCircle />,
+    path: "/instructor/attendances",
   },
   {
     text: "Diễn đàn",
