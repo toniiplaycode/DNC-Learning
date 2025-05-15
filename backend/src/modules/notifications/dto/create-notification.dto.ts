@@ -4,6 +4,7 @@ import {
   IsOptional,
   IsArray,
   IsBoolean,
+  IsNumber,
 } from 'class-validator';
 import { NotificationType } from '../../../entities/Notification';
 
@@ -23,6 +24,10 @@ export class CreateNotificationDto {
 
   @IsOptional()
   scheduleId?: number;
+
+  @IsOptional()
+  @IsNumber()
+  teachingScheduleId?: number;
 
   @IsOptional()
   notificationTime?: Date;

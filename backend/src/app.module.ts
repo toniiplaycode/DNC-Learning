@@ -71,6 +71,10 @@ import { Payment } from './entities/Payment';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { ZalopayModule } from './modules/zalopay/zaloplay.module';
 import { FilesModule } from './modules/files/files.module';
+import { TeachingSchedule } from './entities/TeachingSchedule';
+import { SessionAttendance } from './entities/SessionAttendance';
+import { TeachingSchedulesModule } from './modules/teaching-schedules/teaching-schedules.module';
+import { SessionAttendancesModule } from './modules/session-attendances/session-attendances.module';
 
 @Module({
   imports: [
@@ -126,6 +130,8 @@ import { FilesModule } from './modules/files/files.module';
           ChatbotResponse,
           AcademicClassCourse,
           Notification,
+          TeachingSchedule,
+          SessionAttendance,
           Payment,
         ],
       }),
@@ -159,6 +165,8 @@ import { FilesModule } from './modules/files/files.module';
     PaymentsModule,
     ZalopayModule,
     FilesModule,
+    TeachingSchedulesModule,
+    SessionAttendancesModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthMiddleware, InstructorMiddleware],

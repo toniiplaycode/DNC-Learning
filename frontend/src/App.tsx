@@ -49,6 +49,8 @@ import { useEffect } from "react";
 import { useDispatch } from "react-redux";
 import { fetchCurrentUser } from "./features/auth/authApiSlice";
 import PaymentResult from "./pages/student/PaymentResult";
+import JoinClass from "./pages/student/teaching-schedules/JoinClass";
+import TeachingSchedules from "./pages/student/teaching-schedules/TeachingSchedules";
 
 const App = () => {
   const navigate = useNavigate();
@@ -109,6 +111,8 @@ const App = () => {
             path="/assessment/assignment/:id"
             element={<AssessmentAssignment />}
           />
+          <Route path="/teaching-schedules" element={<TeachingSchedules />} />
+          <Route path="/join-class/:id" element={<JoinClass />} />
           <Route path="/payments/zalopay/return" element={<PaymentResult />} />
         </Route>
 

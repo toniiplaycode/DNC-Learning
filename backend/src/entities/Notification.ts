@@ -9,6 +9,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from './User';
+import { TeachingSchedule } from './TeachingSchedule';
 
 export enum NotificationType {
   COURSE = 'course',
@@ -39,8 +40,11 @@ export class Notification {
   })
   type: NotificationType;
 
-  @Column({ name: 'schedule_id', nullable: true })
-  scheduleId: number;
+  @Column({ name: 'teaching_schedule_id', nullable: true })
+  teachingScheduleId: number;
+
+  @Column({ name: 'notification_time', type: 'datetime', nullable: true })
+  notificationTime: Date;
 
   @Column({ name: 'is_read', type: 'boolean', default: false })
   isRead: boolean;
@@ -51,11 +55,12 @@ export class Notification {
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
 
-  @Column({ name: 'notification_time', type: 'timestamp', nullable: true })
-  notificationTime: Date;
-
   // Relations
   @ManyToOne(() => User)
   @JoinColumn({ name: 'user_id' })
   user: User;
+
+  @ManyToOne(() => TeachingSchedule, { nullable: true })
+  @JoinColumn({ name: 'teaching_schedule_id' })
+  teachingSchedule: TeachingSchedule;
 }

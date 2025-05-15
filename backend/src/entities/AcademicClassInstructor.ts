@@ -6,9 +6,11 @@ import {
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToMany,
 } from 'typeorm';
 import { AcademicClass } from './AcademicClass';
 import { UserInstructor } from './UserInstructor';
+import { TeachingSchedule } from './TeachingSchedule';
 
 @Entity('academic_class_instructors')
 export class AcademicClassInstructor {
@@ -38,4 +40,10 @@ export class AcademicClassInstructor {
   )
   @JoinColumn({ name: 'instructor_id' })
   instructor: UserInstructor;
+
+  @OneToMany(
+    () => TeachingSchedule,
+    (teachingSchedule) => teachingSchedule.academicClassInstructor,
+  )
+  teachingSchedules: TeachingSchedule[];
 }

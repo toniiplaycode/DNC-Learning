@@ -22,7 +22,9 @@ import academicClassesReducer from "../features/academic-classes/academicClasses
 import notificationsReducer from "../features/notifications/notificationsSlice";
 import courseProgressReducer from "../features/course-progress/courseProgressSlice";
 import paymentsReducer from "../features/payments/paymentsSlice";
-// Import other reducers...
+import teachingSchedulesReducer from "../features/teaching-schedules/teachingSchedulesSlice";
+import activeClassReducer from "../features/teaching-schedules/activeClassSlice";
+import sessionAttendancesReducer from "../features/session-attendances/sessionAttendancesSlice";
 
 export const store = configureStore({
   reducer: {
@@ -49,7 +51,9 @@ export const store = configureStore({
     notifications: notificationsReducer,
     courseProgress: courseProgressReducer,
     payments: paymentsReducer,
-    // Add other reducers...
+    teachingSchedules: teachingSchedulesReducer,
+    activeClass: activeClassReducer,
+    sessionAttendances: sessionAttendancesReducer,
   },
 });
 

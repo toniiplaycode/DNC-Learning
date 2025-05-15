@@ -16,6 +16,7 @@ import { selectCurrentUser } from "../../../features/auth/authSelectors";
 import BlockIcon from "@mui/icons-material/Block";
 import GavelIcon from "@mui/icons-material/Gavel";
 import { logout } from "../../../features/auth/authApiSlice";
+import ActiveClassDialog from "../teaching-schedules/ActiveClassDialog";
 
 const MainLayout = () => {
   const dispatch = useAppDispatch();
@@ -36,7 +37,7 @@ const MainLayout = () => {
       </Box>
       <Footer />
       <ChatBox />
-
+      <ActiveClassDialog />
       {/* Dialog cảnh báo nếu tài khoản không active */}
       <Dialog
         open={!!currentUser && currentUser.status !== "active"}

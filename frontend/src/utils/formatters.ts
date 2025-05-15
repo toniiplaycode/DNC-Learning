@@ -28,3 +28,25 @@ export const formatDateTime = (dateString: string | null | undefined) => {
     return "Lỗi định dạng";
   }
 };
+
+// Format thời gian (giờ:phút)
+export const formatTime = (dateString: string | null | undefined) => {
+  if (!dateString) return "N/A";
+
+  try {
+    const date = new Date(dateString);
+
+    // Kiểm tra nếu date không hợp lệ
+    if (isNaN(date.getTime())) {
+      return "Không hợp lệ";
+    }
+
+    return new Intl.DateTimeFormat("vi-VN", {
+      hour: "2-digit",
+      minute: "2-digit",
+    }).format(date);
+  } catch (error) {
+    console.error("Lỗi khi định dạng thời gian:", error);
+    return "Lỗi định dạng";
+  }
+};

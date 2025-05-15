@@ -34,41 +34,41 @@ const Footer = () => {
 
   const footerLinks = {
     about: [
-      { text: "Giới thiệu", href: "/about" },
-      { text: "Đội ngũ giảng viên", href: "/instructors" },
-      { text: "Cơ hội nghề nghiệp", href: "/careers" },
-      { text: "Tin tức & Sự kiện", href: "/news" },
-      { text: "Chính sách bảo mật", href: "/privacy" },
+      { text: "Giới thiệu", href: "#" },
+      { text: "Đội ngũ giảng viên", href: "#" },
+      { text: "Cơ hội nghề nghiệp", href: "#" },
+      { text: "Tin tức & Sự kiện", href: "#" },
+      { text: "Chính sách bảo mật", href: "#" },
     ],
     courses: [
-      { text: "Khóa học mới", href: "/courses/new" },
-      { text: "Khóa học phổ biến", href: "/courses/popular" },
-      { text: "Khóa học miễn phí", href: "/courses/free" },
-      { text: "Lộ trình học tập", href: "/learning-paths" },
-      { text: "Chứng chỉ", href: "/certificates" },
+      { text: "Khóa học mới", href: "#" },
+      { text: "Khóa học phổ biến", href: "#" },
+      { text: "Khóa học miễn phí", href: "#" },
+      { text: "Lộ trình học tập", href: "#" },
+      { text: "Chứng chỉ", href: "#" },
     ],
     support: [
-      { text: "Trung tâm trợ giúp", href: "/help" },
-      { text: "FAQ", href: "/faq" },
-      { text: "Liên hệ hỗ trợ", href: "/contact" },
-      { text: "Phản hồi", href: "/feedback" },
-      { text: "Báo lỗi", href: "/report-issue" },
+      { text: "Trung tâm trợ giúp", href: "#" },
+      { text: "FAQ", href: "#" },
+      { text: "Liên hệ hỗ trợ", href: "#" },
+      { text: "Phản hồi", href: "#" },
+      { text: "Báo lỗi", href: "#-issue" },
     ],
     resources: [
-      { text: "Blog", href: "/blog" },
-      { text: "Tài liệu học tập", href: "/resources" },
-      { text: "Cộng đồng", href: "/community" },
-      { text: "Diễn đàn", href: "/forum" },
-      { text: "Sự kiện", href: "/events" },
+      { text: "Blog", href: "#" },
+      { text: "Tài liệu học tập", href: "#" },
+      { text: "Cộng đồng", href: "#" },
+      { text: "Diễn đàn", href: "#" },
+      { text: "Sự kiện", href: "#" },
     ],
   };
 
   const socialLinks = [
-    { icon: <Facebook />, href: "https://facebook.com", label: "Facebook" },
-    { icon: <Twitter />, href: "https://twitter.com", label: "Twitter" },
-    { icon: <LinkedIn />, href: "https://linkedin.com", label: "LinkedIn" },
-    { icon: <YouTube />, href: "https://youtube.com", label: "YouTube" },
-    { icon: <Instagram />, href: "https://instagram.com", label: "Instagram" },
+    { icon: <Facebook />, href: "#", label: "Facebook" },
+    { icon: <Twitter />, href: "#", label: "Twitter" },
+    { icon: <LinkedIn />, href: "#", label: "LinkedIn" },
+    { icon: <YouTube />, href: "#", label: "YouTube" },
+    { icon: <Instagram />, href: "#", label: "Instagram" },
   ];
 
   return (

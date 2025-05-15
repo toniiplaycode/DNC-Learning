@@ -1,12 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Notification } from '../../entities/Notification';
+import { Notification, NotificationType } from '../../entities/Notification';
 import { CreateNotificationDto } from './dto/create-notification.dto';
 import { UpdateNotificationDto } from './dto/update-notification.dto';
 import { EmailService } from './services/email.service';
 import { User } from '../../entities/User';
 import { In } from 'typeorm';
+import { TeachingSchedule } from '../../entities/TeachingSchedule';
 
 @Injectable()
 export class NotificationsService {
@@ -15,6 +16,8 @@ export class NotificationsService {
     private notificationsRepository: Repository<Notification>,
     @InjectRepository(User)
     private usersRepository: Repository<User>,
+    @InjectRepository(TeachingSchedule)
+    private teachingSchedulesRepository: Repository<TeachingSchedule>,
     private emailService: EmailService,
   ) {}
 
@@ -43,13 +46,44 @@ export class NotificationsService {
 
       // Send email notifications if enabled
       if (sendEmail) {
-        this.sendEmailNotifications(savedNotifications, notificationData);
+        await this.sendEmailNotifications(savedNotifications, notificationData);
       }
 
       return savedNotifications;
     } catch (error) {
       throw new Error('Failed to create notifications: ' + error.message);
     }
+  }
+
+  async createTeachingScheduleNotification(
+    teachingScheduleId: number,
+    userIds: string[],
+    title: string,
+    content: string,
+    notificationTime?: Date,
+  ): Promise<Notification[]> {
+    // Verify teaching schedule exists
+    const teachingSchedule = await this.teachingSchedulesRepository.findOne({
+      where: { id: teachingScheduleId },
+    });
+
+    if (!teachingSchedule) {
+      throw new Error(
+        `Teaching schedule with ID ${teachingScheduleId} not found`,
+      );
+    }
+
+    const notificationDto: CreateNotificationDto = {
+      userIds,
+      title,
+      content,
+      type: NotificationType.SCHEDULE,
+      teachingScheduleId,
+      notificationTime,
+      sendEmail: true,
+    };
+
+    return this.create(notificationDto);
   }
 
   /**
