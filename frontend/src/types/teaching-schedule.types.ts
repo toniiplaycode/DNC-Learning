@@ -86,7 +86,6 @@ export interface CreateTeachingScheduleData {
   status?: ScheduleStatus;
   isRecurring?: boolean;
   recurringPattern?: string; // JSON string
-  sendNotification?: boolean;
   notificationTime?: string;
 }
 

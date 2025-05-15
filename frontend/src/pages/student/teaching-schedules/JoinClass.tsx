@@ -691,32 +691,8 @@ const JoinClass = () => {
                   }}
                 />
                 <CardContent sx={{ p: 3, pt: 4 }}>
-                  <Typography variant="h6" fontWeight="bold" gutterBottom>
-                    Trạng thái điểm danh
-                  </Typography>
-
                   <Grid container spacing={2} alignItems="center">
-                    <Grid item xs={12} sm={6}>
-                      <Stack direction="row" spacing={2} alignItems="center">
-                        <Avatar sx={{ bgcolor: theme.palette.success.main }}>
-                          <CheckCircleIcon />
-                        </Avatar>
-                        <Box>
-                          <Typography variant="body2" color="text.secondary">
-                            Trạng thái
-                          </Typography>
-                          <Typography
-                            variant="h6"
-                            fontWeight="bold"
-                            sx={{ color: theme.palette.success.main }}
-                          >
-                            Đã điểm danh
-                          </Typography>
-                        </Box>
-                      </Stack>
-                    </Grid>
-
-                    <Grid item xs={12} sm={6}>
+                    <Grid item>
                       <Stack direction="row" spacing={2} alignItems="center">
                         <Avatar sx={{ bgcolor: theme.palette.primary.main }}>
                           <TimerOutlined />

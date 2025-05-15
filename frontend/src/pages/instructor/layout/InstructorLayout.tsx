@@ -67,7 +67,7 @@ const menuItems = [
   { text: "Trắc nghiệm", icon: <Quiz />, path: "/instructor/quiz" },
   { text: "Tin nhắn", icon: <Message />, path: "/instructor/chats" },
   {
-    text: "Lịch trình",
+    text: "Lịch dạy trực tuyến",
     icon: <CalendarMonth />,
     path: "/instructor/schedules",
   },

@@ -91,6 +91,7 @@ export const createTeachingSchedule = createAsyncThunk(
   async (scheduleData: CreateTeachingScheduleData, { rejectWithValue }) => {
     try {
       const response = await api.post("/teaching-schedules", scheduleData);
+      console.log(response.data);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(

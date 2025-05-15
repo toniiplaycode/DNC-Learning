@@ -17,6 +17,7 @@ export enum ScheduleStatus {
   SCHEDULED = 'scheduled',
   COMPLETED = 'completed',
   CANCELLED = 'cancelled',
+  IN_PROGRESS = 'in-progress',
 }
 
 @Entity('teaching_schedules')

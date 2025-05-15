@@ -71,10 +71,6 @@ export class CreateTeachingScheduleDto {
   recordingUrl?: string;
 
   @IsOptional()
-  @IsBoolean()
-  sendNotification?: boolean = true;
-
-  @IsOptional()
   @IsDateString()
   notificationTime?: string;
 }

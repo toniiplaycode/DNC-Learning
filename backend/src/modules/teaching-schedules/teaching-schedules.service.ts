@@ -54,7 +54,6 @@ export class TeachingSchedulesService {
       academicClassId,
       academicClassInstructorId,
       academicClassCourseId,
-      sendNotification,
       notificationTime,
       ...scheduleData
     } = createTeachingScheduleDto;
@@ -124,20 +123,18 @@ export class TeachingSchedulesService {
       await this.teachingSchedulesRepository.save(newSchedule);
 
     // Create notification if needed
-    if (sendNotification) {
-      // Get all students in the class
-      // For this example, we'll need to implement a method to get student IDs
-      const studentIds = await this.getStudentIdsForClass(academicClassId);
+    // Get all students in the class
+    // For this example, we'll need to implement a method to get student IDs
+    const studentIds = await this.getStudentIdsForClass(academicClassId);
 
-      if (studentIds.length > 0) {
-        await this.notificationsService.createTeachingScheduleNotification(
-          savedSchedule.id,
-          studentIds,
-          `Lịch học mới: ${savedSchedule.title}`,
-          `Bạn có buổi học trực tuyến mới vào lúc ${new Date(savedSchedule.startTime).toLocaleString()}`,
-          notificationTime ? new Date(notificationTime) : undefined,
-        );
-      }
+    if (studentIds.length > 0) {
+      await this.notificationsService.createTeachingScheduleNotification(
+        savedSchedule.id,
+        studentIds,
+        `Lịch học mới: ${savedSchedule.title}`,
+        `Bạn có buổi học trực tuyến mới vào lúc ${new Date(savedSchedule.startTime).toLocaleString()}`,
+        notificationTime ? new Date(notificationTime) : undefined,
+      );
     }
 
     return savedSchedule;

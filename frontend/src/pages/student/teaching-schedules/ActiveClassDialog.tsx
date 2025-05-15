@@ -14,6 +14,7 @@ import {
   Zoom,
   useTheme,
   alpha,
+  Alert,
 } from "@mui/material";
 import {
   Videocam as VideocamIcon,
@@ -35,8 +36,11 @@ import {
   leaveClass,
   updateElapsedTime,
 } from "../../../features/teaching-schedules/activeClassSlice";
+import { markLeave } from "../../../features/session-attendances/sessionAttendancesSlice";
 import { parseISO, format } from "date-fns";
 import { useNavigate } from "react-router-dom";
+import { selectCurrentUser } from "../../../features/auth/authSelectors";
+import { User, UserStudentAcademic } from "../../../types/user.types";
 
 const ActiveClassDialog = () => {
   const theme = useTheme();
@@ -46,9 +50,15 @@ const ActiveClassDialog = () => {
   const isActive = useAppSelector(selectIsClassActive);
   const joinTime = useAppSelector(selectJoinTime);
   const elapsedTime = useAppSelector(selectElapsedTime);
+  const currentUser = useAppSelector(selectCurrentUser) as
+    | (User & {
+        userStudentAcademic?: UserStudentAcademic;
+      })
+    | null;
 
   const [expanded, setExpanded] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     let timer: NodeJS.Timeout;
@@ -75,9 +85,30 @@ const ActiveClassDialog = () => {
     return `${hours > 0 ? `${hours}h ` : ""}${minutes}m ${remainingSeconds}s`;
   };
 
-  const handleLeaveClass = () => {
-    dispatch(leaveClass());
-    setConfirmDialogOpen(false);
+  const handleLeaveClass = async () => {
+    try {
+      setConfirmDialogOpen(false);
+
+      if (!activeClass || !currentUser?.userStudentAcademic?.id) {
+        throw new Error("Missing schedule or student information");
+      }
+
+      // Mark leave using the session-attendances slice
+      await dispatch(
+        markLeave({
+          scheduleId: activeClass.id,
+          studentAcademicId: currentUser.userStudentAcademic.id,
+        })
+      ).unwrap();
+
+      // Dispatch leave class action
+      dispatch(leaveClass());
+
+      navigate("/teaching-schedules");
+    } catch (err) {
+      console.error("Error leaving class:", err);
+      setError("Không thể cập nhật trạng thái tham gia. Vui lòng thử lại sau.");
+    }
   };
 
   const handleOpenMeeting = () => {
@@ -122,6 +153,11 @@ const ActiveClassDialog = () => {
                 overflow: "hidden",
               }}
             >
+              {error && (
+                <Alert severity="error" onClose={() => setError(null)}>
+                  {error}
+                </Alert>
+              )}
               <Box
                 sx={{
                   p: 2,

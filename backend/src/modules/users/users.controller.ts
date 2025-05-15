@@ -20,6 +20,7 @@ import { UpdateInstructorDto } from './dto/update-instructor.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateStudentDto } from './dto/update-student.dto';
 import { CreateInstructorData } from './dto/create-instructor.dto';
+import { UserStudentAcademic } from 'src/entities/UserStudentAcademic';
 
 @Controller('users')
 export class UsersController {
@@ -172,5 +173,14 @@ export class UsersController {
   @Roles(UserRole.ADMIN)
   async getUsersByInstructorId(@Param('id') instructorId: number) {
     return this.usersService.findByInstructorId(instructorId);
+  }
+
+  @Get('academic-class/:classId/students')
+  @UseGuards(JwtAuthGuard)
+  @Roles(UserRole.INSTRUCTOR, UserRole.ADMIN) // Cho phép cả instructor và admin truy cập
+  async getStudentsByAcademicClass(
+    @Param('classId', ParseIntPipe) classId: number,
+  ): Promise<UserStudentAcademic[]> {
+    return this.usersService.findStudentsByAcademicClassId(classId);
   }
 }
