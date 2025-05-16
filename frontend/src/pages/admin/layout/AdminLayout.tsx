@@ -239,9 +239,11 @@ const AdminLayout = () => {
             sx={{
               width: { sm: `calc(100% - ${open ? drawerWidth : 0}px)` },
               ml: { sm: `${open ? drawerWidth : 0}px` },
-              bgcolor: "background.paper",
-              color: "text.primary",
-              boxShadow: 1,
+              background: "#fff",
+              color: "white",
+              boxShadow: "0 2px 12px rgba(0,0,0,0.15)",
+              backdropFilter: "blur(20px)",
+              transition: "all 0.3s ease-in-out",
             }}
           >
             <Toolbar>
@@ -250,7 +252,13 @@ const AdminLayout = () => {
                 aria-label="open drawer"
                 edge="start"
                 onClick={handleDrawerToggle}
-                sx={{ mr: 2, display: { sm: "none" } }}
+                sx={{
+                  mr: 2,
+                  display: { sm: "none" },
+                  "&:hover": {
+                    backgroundColor: "rgba(255,255,255,0.1)",
+                  },
+                }}
               >
                 <MenuIcon />
               </IconButton>
@@ -258,15 +266,33 @@ const AdminLayout = () => {
                 variant="h6"
                 noWrap
                 component="div"
-                sx={{ flexGrow: 1 }}
-              ></Typography>
+                sx={{
+                  flexGrow: 1,
+                  fontWeight: 600,
+                  letterSpacing: "0.5px",
+                  background: "linear-gradient(45deg, #fff 30%, #ffebee 90%)",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                }}
+              >
+                {}
+              </Typography>
 
               <IconButton
                 size="large"
                 aria-label="show new notifications"
                 color="inherit"
+                sx={{
+                  mr: 1,
+                  color: "primary.main",
+                  "&:hover": {
+                    backgroundColor: "rgba(255,255,255,0.1)",
+                  },
+                }}
               >
-                <Notifications />
+                <Badge badgeContent={4} color="error">
+                  <Notifications />
+                </Badge>
               </IconButton>
 
               <IconButton
@@ -276,8 +302,23 @@ const AdminLayout = () => {
                 aria-haspopup="true"
                 onClick={handleProfileMenuOpen}
                 color="inherit"
+                sx={{
+                  border: "2px solid rgba(255,255,255,0.2)",
+                  "&:hover": {
+                    border: "2px solid rgba(255,255,255,0.4)",
+                    backgroundColor: "rgba(255,255,255,0.1)",
+                  },
+                }}
               >
-                <Avatar alt="Admin User" src="/src/assets/avatar.png" />
+                <Avatar
+                  alt="Admin User"
+                  src="/src/assets/avatar.png"
+                  sx={{
+                    width: 35,
+                    height: 35,
+                    boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                  }}
+                />
               </IconButton>
 
               <Menu
@@ -332,6 +373,9 @@ const AdminLayout = () => {
               [`& .MuiDrawer-paper`]: {
                 width: drawerWidth,
                 boxSizing: "border-box",
+                background: "linear-gradient(180deg, #f8f9fa 0%, #ffffff 100%)",
+                borderRight: "1px solid rgba(0,0,0,0.08)",
+                boxShadow: "2px 0 8px rgba(0,0,0,0.05)",
               },
               display: { xs: "none", sm: "block" },
             }}
@@ -342,26 +386,69 @@ const AdminLayout = () => {
                 alignItems: "center",
                 justifyContent: "center",
                 px: [1],
+                background: "linear-gradient(135deg, #d32f2f 0%, #f44336 100%)",
+                minHeight: 70,
               }}
             >
               <Typography
                 variant="h5"
                 component="div"
-                sx={{ fontWeight: "bold", my: 2 }}
+                sx={{
+                  fontWeight: "bold",
+                  my: 2,
+                  color: "white",
+                  letterSpacing: "0.5px",
+                }}
               >
                 DNC LEARNING
               </Typography>
             </Toolbar>
             <Divider />
-            <List>
+            <List sx={{ px: 1.5, py: 1 }}>
               {menuItems.map((item) => (
-                <ListItem key={item.text} disablePadding>
+                <ListItem key={item.text} disablePadding sx={{ mb: 0.5 }}>
                   <ListItemButton
                     onClick={() => navigate(item.path)}
                     selected={location.pathname === item.path}
+                    sx={{
+                      borderRadius: 2,
+                      mb: 0.5,
+                      "&.Mui-selected": {
+                        background:
+                          "linear-gradient(135deg, #d32f2f 0%, #f44336 100%)",
+                        color: "white",
+                        "&:hover": {
+                          background:
+                            "linear-gradient(135deg, #c62828 0%, #e53935 100%)",
+                          opacity: 0.9,
+                        },
+                        "& .MuiListItemIcon-root": {
+                          color: "white",
+                        },
+                      },
+                      "&:hover": {
+                        backgroundColor: "rgba(211, 47, 47, 0.08)",
+                      },
+                    }}
                   >
-                    <ListItemIcon sx={{ mr: -2 }}>{item.icon}</ListItemIcon>
-                    <ListItemText primary={item.text} />
+                    <ListItemIcon
+                      sx={{
+                        minWidth: 40,
+                        color:
+                          location.pathname === item.path
+                            ? "white"
+                            : "primary.main",
+                      }}
+                    >
+                      {item.icon}
+                    </ListItemIcon>
+                    <ListItemText
+                      primary={item.text}
+                      primaryTypographyProps={{
+                        fontWeight: location.pathname === item.path ? 600 : 400,
+                        fontSize: "0.95rem",
+                      }}
+                    />
                   </ListItemButton>
                 </ListItem>
               ))}
@@ -374,28 +461,50 @@ const AdminLayout = () => {
             onClose={() => setProfileDialogOpen(false)}
             maxWidth="sm"
             fullWidth
+            PaperProps={{
+              sx: {
+                borderRadius: 2,
+                boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
+                overflow: "hidden",
+              },
+            }}
           >
             <DialogTitle
               sx={{
                 display: "flex",
                 justifyContent: "space-between",
                 alignItems: "center",
+                background: "linear-gradient(135deg, #d32f2f 0%, #f44336 100%)",
+                color: "white",
+                py: 2.5,
+                px: 3,
               }}
             >
-              Thông tin tài khoản
-              <IconButton onClick={() => setProfileDialogOpen(false)}>
+              <Typography variant="h6" fontWeight="600">
+                Thông tin tài khoản
+              </Typography>
+              <IconButton
+                onClick={() => setProfileDialogOpen(false)}
+                sx={{
+                  color: "white",
+                  "&:hover": {
+                    backgroundColor: "rgba(255,255,255,0.1)",
+                  },
+                }}
+              >
                 <Close />
               </IconButton>
             </DialogTitle>
-            <DialogContent>
+            <DialogContent sx={{ p: 0 }}>
               {currentUser && (
-                <Box sx={{ py: 2 }}>
+                <Box sx={{ py: 3 }}>
                   <Box
                     sx={{
                       display: "flex",
                       flexDirection: "column",
                       alignItems: "center",
-                      mb: 3,
+                      mb: 4,
+                      px: 3,
                     }}
                   >
                     <Avatar
@@ -404,43 +513,88 @@ const AdminLayout = () => {
                           ? `/src/assets/${currentUser.avatarUrl}`
                           : ""
                       }
-                      sx={{ width: 100, height: 100, mb: 2 }}
+                      sx={{
+                        width: 100,
+                        height: 100,
+                        mb: 2,
+                        boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+                        border: "4px solid white",
+                      }}
                     />
-                    <Typography variant="h5" fontWeight="bold">
+                    <Typography variant="h5" fontWeight="bold" gutterBottom>
                       {currentUser.username}
                     </Typography>
-                    <Typography variant="subtitle1" color="primary">
+                    <Typography
+                      variant="subtitle1"
+                      sx={{
+                        color: "error.main",
+                        fontWeight: 500,
+                        px: 2,
+                        py: 0.5,
+                        borderRadius: 1,
+                        bgcolor: "rgba(211, 47, 47, 0.08)",
+                      }}
+                    >
                       {currentUser.role === "admin" ? "Quản trị viên" : ""}
                     </Typography>
                   </Box>
 
-                  <Paper elevation={1} sx={{ p: 3, mb: 3 }}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 3,
+                      mb: 3,
+                      mx: 3,
+                      borderRadius: 2,
+                      border: "1px solid",
+                      borderColor: "divider",
+                      bgcolor: "rgba(248, 249, 250, 0.5)",
+                    }}
+                  >
                     <Typography
                       variant="h6"
                       gutterBottom
                       sx={{
                         borderBottom: "1px solid",
                         borderColor: "divider",
-                        pb: 1,
-                        mb: 2,
+                        pb: 1.5,
+                        mb: 2.5,
+                        color: "primary.dark",
+                        fontWeight: 600,
                       }}
                     >
                       Thông tin cá nhân
                     </Typography>
 
-                    <Grid container spacing={2}>
+                    <Grid container spacing={2.5}>
                       <Grid item xs={12} md={6}>
                         <Box
-                          sx={{ display: "flex", alignItems: "center", mb: 2 }}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            mb: 2.5,
+                            p: 1.5,
+                            borderRadius: 1.5,
+                            bgcolor: "white",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                          }}
                         >
                           <AccountCircle
-                            sx={{ mr: 2, color: "primary.main" }}
+                            sx={{
+                              mr: 2,
+                              color: "primary.main",
+                              fontSize: 28,
+                            }}
                           />
                           <Box>
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              gutterBottom
+                            >
                               Tên đăng nhập
                             </Typography>
-                            <Typography variant="body1">
+                            <Typography variant="body1" fontWeight={500}>
                               {currentUser.username}
                             </Typography>
                           </Box>
@@ -448,14 +602,32 @@ const AdminLayout = () => {
                       </Grid>
                       <Grid item xs={12} md={6}>
                         <Box
-                          sx={{ display: "flex", alignItems: "center", mb: 2 }}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            mb: 2.5,
+                            p: 1.5,
+                            borderRadius: 1.5,
+                            bgcolor: "white",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                          }}
                         >
-                          <Email sx={{ mr: 2, color: "primary.main" }} />
+                          <Email
+                            sx={{
+                              mr: 2,
+                              color: "primary.main",
+                              fontSize: 28,
+                            }}
+                          />
                           <Box>
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              gutterBottom
+                            >
                               Email
                             </Typography>
-                            <Typography variant="body1">
+                            <Typography variant="body1" fontWeight={500}>
                               {currentUser.email}
                             </Typography>
                           </Box>
@@ -467,18 +639,29 @@ const AdminLayout = () => {
                             sx={{
                               display: "flex",
                               alignItems: "center",
-                              mb: 2,
+                              mb: 2.5,
+                              p: 1.5,
+                              borderRadius: 1.5,
+                              bgcolor: "white",
+                              boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
                             }}
                           >
-                            <PhoneIcon sx={{ mr: 2, color: "primary.main" }} />
+                            <PhoneIcon
+                              sx={{
+                                mr: 2,
+                                color: "primary.main",
+                                fontSize: 28,
+                              }}
+                            />
                             <Box>
                               <Typography
                                 variant="body2"
                                 color="text.secondary"
+                                gutterBottom
                               >
                                 Số điện thoại
                               </Typography>
-                              <Typography variant="body1">
+                              <Typography variant="body1" fontWeight={500}>
                                 {currentUser.phone}
                               </Typography>
                             </Box>
@@ -487,16 +670,32 @@ const AdminLayout = () => {
                       )}
                       <Grid item xs={12} md={6}>
                         <Box
-                          sx={{ display: "flex", alignItems: "center", mb: 2 }}
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            mb: 2.5,
+                            p: 1.5,
+                            borderRadius: 1.5,
+                            bgcolor: "white",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                          }}
                         >
                           <CalendarToday
-                            sx={{ mr: 2, color: "primary.main" }}
+                            sx={{
+                              mr: 2,
+                              color: "primary.main",
+                              fontSize: 28,
+                            }}
                           />
                           <Box>
-                            <Typography variant="body2" color="text.secondary">
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              gutterBottom
+                            >
                               Lần đăng nhập cuối
                             </Typography>
-                            <Typography variant="body1">
+                            <Typography variant="body1" fontWeight={500}>
                               {currentUser.lastLogin
                                 ? new Date(
                                     currentUser.lastLogin
@@ -509,24 +708,48 @@ const AdminLayout = () => {
                     </Grid>
                   </Paper>
 
-                  <Paper elevation={1} sx={{ p: 3 }}>
+                  <Paper
+                    elevation={0}
+                    sx={{
+                      p: 3,
+                      mx: 3,
+                      borderRadius: 2,
+                      border: "1px solid",
+                      borderColor: "divider",
+                      bgcolor: "rgba(248, 249, 250, 0.5)",
+                    }}
+                  >
                     <Typography
                       variant="h6"
                       gutterBottom
                       sx={{
                         borderBottom: "1px solid",
                         borderColor: "divider",
-                        pb: 1,
-                        mb: 2,
+                        pb: 1.5,
+                        mb: 2.5,
+                        color: "primary.dark",
+                        fontWeight: 600,
                       }}
                     >
                       Thông tin tài khoản
                     </Typography>
 
-                    <Grid container spacing={2}>
+                    <Grid container spacing={2.5}>
                       <Grid item xs={12} md={6}>
-                        <Box sx={{ mb: 1 }}>
-                          <Typography variant="body2" color="text.secondary">
+                        <Box
+                          sx={{
+                            mb: 2.5,
+                            p: 1.5,
+                            borderRadius: 1.5,
+                            bgcolor: "white",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                          }}
+                        >
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            gutterBottom
+                          >
                             Trạng thái
                           </Typography>
                           <Typography
@@ -536,7 +759,21 @@ const AdminLayout = () => {
                                 currentUser.status === "active"
                                   ? "success.main"
                                   : "error.main",
-                              fontWeight: "medium",
+                              fontWeight: 600,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              "&::before": {
+                                content: '""',
+                                display: "inline-block",
+                                width: 8,
+                                height: 8,
+                                borderRadius: "50%",
+                                bgcolor:
+                                  currentUser.status === "active"
+                                    ? "success.main"
+                                    : "error.main",
+                                mr: 1,
+                              },
                             }}
                           >
                             {currentUser.status === "active"
@@ -546,11 +783,23 @@ const AdminLayout = () => {
                         </Box>
                       </Grid>
                       <Grid item xs={12} md={6}>
-                        <Box sx={{ mb: 1 }}>
-                          <Typography variant="body2" color="text.secondary">
+                        <Box
+                          sx={{
+                            mb: 2.5,
+                            p: 1.5,
+                            borderRadius: 1.5,
+                            bgcolor: "white",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                          }}
+                        >
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            gutterBottom
+                          >
                             Ngày tạo tài khoản
                           </Typography>
-                          <Typography variant="body1">
+                          <Typography variant="body1" fontWeight={500}>
                             {new Date(currentUser.createdAt).toLocaleDateString(
                               "vi-VN"
                             )}
@@ -558,11 +807,23 @@ const AdminLayout = () => {
                         </Box>
                       </Grid>
                       <Grid item xs={12} md={6}>
-                        <Box sx={{ mb: 1 }}>
-                          <Typography variant="body2" color="text.secondary">
+                        <Box
+                          sx={{
+                            mb: 2.5,
+                            p: 1.5,
+                            borderRadius: 1.5,
+                            bgcolor: "white",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                          }}
+                        >
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            gutterBottom
+                          >
                             Cập nhật lần cuối
                           </Typography>
-                          <Typography variant="body1">
+                          <Typography variant="body1" fontWeight={500}>
                             {new Date(currentUser.updatedAt).toLocaleDateString(
                               "vi-VN"
                             )}
@@ -570,8 +831,20 @@ const AdminLayout = () => {
                         </Box>
                       </Grid>
                       <Grid item xs={12} md={6}>
-                        <Box sx={{ mb: 1 }}>
-                          <Typography variant="body2" color="text.secondary">
+                        <Box
+                          sx={{
+                            mb: 2.5,
+                            p: 1.5,
+                            borderRadius: 1.5,
+                            bgcolor: "white",
+                            boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
+                          }}
+                        >
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            gutterBottom
+                          >
                             Xác thực 2 lớp
                           </Typography>
                           <Typography
@@ -580,7 +853,20 @@ const AdminLayout = () => {
                               color: currentUser.twoFactorEnabled
                                 ? "success.main"
                                 : "warning.main",
-                              fontWeight: "medium",
+                              fontWeight: 600,
+                              display: "inline-flex",
+                              alignItems: "center",
+                              "&::before": {
+                                content: '""',
+                                display: "inline-block",
+                                width: 8,
+                                height: 8,
+                                borderRadius: "50%",
+                                bgcolor: currentUser.twoFactorEnabled
+                                  ? "success.main"
+                                  : "warning.main",
+                                mr: 1,
+                              },
                             }}
                           >
                             {currentUser.twoFactorEnabled
@@ -594,13 +880,39 @@ const AdminLayout = () => {
                 </Box>
               )}
             </DialogContent>
-            <DialogActions>
-              <Button onClick={() => setProfileDialogOpen(false)}>Đóng</Button>
+            <DialogActions sx={{ p: 3, pt: 1 }}>
+              <Button
+                onClick={() => setProfileDialogOpen(false)}
+                variant="outlined"
+                sx={{
+                  borderRadius: 1.5,
+                  px: 3,
+                  py: 1,
+                  borderColor: "divider",
+                  "&:hover": {
+                    borderColor: "primary.main",
+                    bgcolor: "rgba(26, 35, 126, 0.04)",
+                  },
+                }}
+              >
+                Đóng
+              </Button>
               <Button
                 variant="contained"
                 onClick={() => {
                   setProfileDialogOpen(false);
                   navigate("/admin/profile");
+                }}
+                sx={{
+                  borderRadius: 1.5,
+                  px: 3,
+                  py: 1,
+                  background:
+                    "linear-gradient(135deg, #d32f2f 0%, #f44336 100%)",
+                  "&:hover": {
+                    background:
+                      "linear-gradient(135deg, #c62828 0%, #e53935 100%)",
+                  },
                 }}
               >
                 Chỉnh sửa

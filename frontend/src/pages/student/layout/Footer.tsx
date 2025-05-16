@@ -79,7 +79,6 @@ const Footer = () => {
         color: "white",
         pt: 6,
         pb: 4,
-        mt: 2,
       }}
     >
       <Container maxWidth="lg">
@@ -209,7 +208,7 @@ const Footer = () => {
         </Box>
 
         {/* Bottom Footer */}
-        <Box sx={{ mt: 4 }}>
+        <Box sx={{ mt: 2 }}>
           <Divider sx={{ borderColor: "rgba(255,255,255,0.1)", mb: 3 }} />
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} md={6}>

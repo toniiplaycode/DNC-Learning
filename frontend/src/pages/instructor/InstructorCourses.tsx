@@ -469,8 +469,13 @@ const InstructorCourses = () => {
                               fontWeight="medium"
                               color="primary.main"
                             >
-                              {parseFloat(course.price).toLocaleString("vi-VN")}{" "}
-                              VNĐ
+                              {course.student_academic
+                                ? "Dành cho sinh viên"
+                                : parseFloat(course.price) === 0
+                                ? "Miễn phí"
+                                : `${parseFloat(course.price).toLocaleString(
+                                    "vi-VN"
+                                  )} VNĐ`}
                             </Typography>
                             <Typography
                               variant="caption"
@@ -712,10 +717,13 @@ const InstructorCourses = () => {
                                   fontWeight="medium"
                                   color="primary.main"
                                 >
-                                  {parseFloat(course.price).toLocaleString(
-                                    "vi-VN"
-                                  )}{" "}
-                                  VNĐ
+                                  {course.for === "student_academic"
+                                    ? "Dành cho sinh viên"
+                                    : parseFloat(course.price) === 0
+                                    ? "Miễn phí"
+                                    : `${parseFloat(
+                                        course.price
+                                      ).toLocaleString("vi-VN")} VNĐ`}
                                 </Typography>
                                 <Typography
                                   variant="caption"

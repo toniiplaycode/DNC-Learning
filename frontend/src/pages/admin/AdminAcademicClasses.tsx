@@ -1040,8 +1040,24 @@ const AdminAcademicClasses: React.FC = () => {
                       return instructor ? (
                         <Chip
                           key={value}
+                          avatar={
+                            <Avatar
+                              src={instructor.avatarUrl}
+                              alt={instructor.fullName}
+                              sx={{ width: 24, height: 24 }}
+                            >
+                              {instructor.fullName[0]}
+                            </Avatar>
+                          }
                           label={instructor.fullName}
                           size="small"
+                          sx={{
+                            "& .MuiChip-avatar": {
+                              width: 24,
+                              height: 24,
+                              fontSize: "0.75rem",
+                            },
+                          }}
                         />
                       ) : null;
                     })}
@@ -1050,7 +1066,23 @@ const AdminAcademicClasses: React.FC = () => {
               >
                 {instructors.map((instructor) => (
                   <MenuItem key={instructor.id} value={instructor.id}>
-                    {instructor.fullName} - {instructor.professionalTitle}
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+                      <Avatar
+                        src={instructor.avatarUrl}
+                        alt={instructor.fullName}
+                        sx={{ width: 32, height: 32 }}
+                      >
+                        {instructor.fullName[0]}
+                      </Avatar>
+                      <Box>
+                        <Typography variant="body1">
+                          {instructor.fullName}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {instructor.professionalTitle}
+                        </Typography>
+                      </Box>
+                    </Box>
                   </MenuItem>
                 ))}
               </Select>

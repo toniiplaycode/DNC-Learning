@@ -274,7 +274,7 @@ const AdminStudents = () => {
   return (
     <Box>
       <Typography variant="h5" fontWeight={"bold"} gutterBottom>
-        Quản lý học viên
+        Quản lý học viên/sinh viên
       </Typography>
 
       {/* Tabs chuyển đổi loại học viên */}
@@ -410,7 +410,7 @@ const AdminStudents = () => {
                       </TableCell>
                     )}
                     <TableCell>{student.email}</TableCell>
-                    <TableCell>{student.phone}</TableCell>
+                    <TableCell>{student.phone ? student.phone : "-"}</TableCell>
                     {tabValue === 0 ? (
                       <>
                         <TableCell>

@@ -20,12 +20,14 @@ import {
   Paper,
   CardContent,
 } from "@mui/material";
-import { Search, Star, Visibility } from "@mui/icons-material";
+import { Search, Star, Visibility, School } from "@mui/icons-material";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { selectInstructorReviews } from "../../features/reviews/reviewsSelectors";
 import { fetchReviewsByInstructor } from "../../features/reviews/reviewsSlice";
 import { selectCurrentUser } from "../../features/auth/authSelectors";
 import { formatDateTime } from "../../utils/formatters";
+import { alpha } from "@mui/material/styles";
+import { useTheme } from "@mui/material/styles";
 
 // Enum cho các tab
 enum TabValue {
@@ -39,6 +41,7 @@ const InstructorReviews = () => {
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector(selectCurrentUser);
   const instructorReviews = useAppSelector(selectInstructorReviews);
+  const theme = useTheme();
 
   // State cho các tabs, filter, search
   const [tabValue, setTabValue] = useState<TabValue>(TabValue.ALL);
@@ -111,6 +114,12 @@ const InstructorReviews = () => {
     ratingCounts[review.rating - 1]++;
   });
 
+  const getRatingColor = (rating: number) => {
+    if (rating >= 4) return "success.main";
+    if (rating === 3) return "warning.main";
+    return "error.main";
+  };
+
   return (
     <Box sx={{ p: 3 }}>
       <Typography variant="h5" gutterBottom fontWeight="bold">
@@ -152,7 +161,7 @@ const InstructorReviews = () => {
                         width: `${
                           (ratingCounts[star - 1] / totalReviews) * 100
                         }%`,
-                        bgcolor: `primary.main`,
+                        bgcolor: getRatingColor(star),
                         height: 8,
                         minWidth: "4px",
                       }}
@@ -259,57 +268,138 @@ const InstructorReviews = () => {
           sx={{
             py: 10,
             textAlign: "center",
+            backgroundColor: alpha(theme.palette.primary.main, 0.05),
+            borderRadius: 2,
           }}
         >
           <Typography variant="h6" color="text.secondary">
             Không tìm thấy đánh giá nào
           </Typography>
+          <Typography color="text.secondary" sx={{ mt: 1 }}>
+            Hãy thử thay đổi bộ lọc của bạn để xem các đánh giá khác
+          </Typography>
         </Box>
       ) : (
-        <Stack spacing={2}>
+        <Grid container spacing={3}>
           {filteredReviews.map((review) => (
-            <Card key={review.id}>
-              <CardContent>
-                <Grid container spacing={2}>
-                  <Grid item xs={12} sm={8}>
-                    <Stack direction="row" spacing={2} alignItems="flex-start">
+            <Grid item xs={12} sm={6} md={4} lg={3} key={review.id}>
+              <Card
+                sx={{
+                  height: "100%",
+                  display: "flex",
+                  flexDirection: "column",
+                  borderRadius: 2,
+                  boxShadow: "0 4px 12px rgba(0,0,0,0.05)",
+                  "&:hover": {
+                    boxShadow: "0 6px 16px rgba(0,0,0,0.1)",
+                    transform: "translateY(-2px)",
+                  },
+                  transition: "all 0.2s ease-in-out",
+                  overflow: "hidden",
+                }}
+              >
+                <Box
+                  sx={{
+                    height: 3,
+                    width: "100%",
+                    bgcolor: getRatingColor(review.rating),
+                  }}
+                />
+                <CardContent
+                  sx={{
+                    p: 3,
+                    flexGrow: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                  }}
+                >
+                  {/* Review Header - Student info and course */}
+                  <Box sx={{ mb: 2 }}>
+                    <Stack direction="row" spacing={2} alignItems="center">
                       <Avatar
                         src={review.student?.user?.avatarUrl}
                         alt={review.student?.fullName}
+                        sx={{
+                          width: 50,
+                          height: 50,
+                          border: `2px solid ${theme.palette.primary.light}`,
+                        }}
                       />
-                      <Box>
-                        <Typography variant="subtitle1">
+                      <Box sx={{ flexGrow: 1 }}>
+                        <Typography variant="h6" fontWeight="medium" noWrap>
                           {review.student?.fullName}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="caption" color="text.secondary">
                           {formatDateTime(review.createdAt)}
                         </Typography>
-                        <Rating
-                          value={review.rating}
-                          readOnly
-                          sx={{ mt: 0.5 }}
-                        />
                       </Box>
                     </Stack>
-                  </Grid>
+                  </Box>
 
-                  <Grid item xs={12} sm={4} sx={{ textAlign: { sm: "right" } }}>
+                  {/* Rating and Course */}
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      mb: 2,
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                      <Rating value={review.rating} readOnly size="small" />
+                      <Typography
+                        variant="body2"
+                        sx={{
+                          ml: 1,
+                          color: getRatingColor(review.rating),
+                          fontWeight: "medium",
+                        }}
+                      >
+                        {review.rating}/5
+                      </Typography>
+                    </Box>
+
                     <Chip
+                      icon={<School />}
                       label={review.course?.title}
                       color="primary"
                       variant="outlined"
                       size="small"
+                      sx={{
+                        borderRadius: 1,
+                        "& .MuiChip-icon": {
+                          color: theme.palette.primary.main,
+                        },
+                      }}
                     />
-                  </Grid>
-                </Grid>
+                  </Box>
 
-                <Divider sx={{ my: 2 }} />
+                  <Divider sx={{ mb: 2 }} />
 
-                <Typography variant="body1">{review.reviewText}</Typography>
-              </CardContent>
-            </Card>
+                  {/* Review Content */}
+                  <Typography
+                    variant="body2"
+                    sx={{
+                      lineHeight: 1.6,
+                      flexGrow: 1,
+                      overflow: "hidden",
+                      display: "-webkit-box",
+                      WebkitLineClamp: 4,
+                      WebkitBoxOrient: "vertical",
+                      fontStyle: review.reviewText ? "normal" : "italic",
+                      color: review.reviewText
+                        ? "text.primary"
+                        : "text.secondary",
+                    }}
+                  >
+                    {review.reviewText ||
+                      "Học viên không để lại nhận xét chi tiết."}
+                  </Typography>
+                </CardContent>
+              </Card>
+            </Grid>
           ))}
-        </Stack>
+        </Grid>
       )}
     </Box>
   );

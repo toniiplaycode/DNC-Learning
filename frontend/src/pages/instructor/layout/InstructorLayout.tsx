@@ -289,10 +289,12 @@ const InstructorLayout = () => {
     <Box
       sx={{
         height: "100%",
-        bgcolor: "primary.main",
-        color: "primary.contrastText",
+        background:
+          "linear-gradient(180deg, #ffa000 0%,rgba(255, 217, 0, 0.68) 100%)",
+        color: "#f1f1f1",
         overflow: "hidden",
         transition: `all ${TRANSITION_DURATION} ease`,
+        boxShadow: "2px 0 8px rgba(0,0,0,0.1)",
       }}
       onMouseEnter={() => !isMobile && setIsExpanded(true)}
       onMouseLeave={() => !isMobile && setIsExpanded(false)}
@@ -304,30 +306,48 @@ const InstructorLayout = () => {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          borderBottom: 1,
-          borderColor: "primary.light",
-          transition: `all ${TRANSITION_DURATION} ease`,
+          position: "relative",
+          "&::after": {
+            content: '""',
+            position: "absolute",
+            bottom: 0,
+            left: "10%",
+            right: "10%",
+            height: "1px",
+            background:
+              "linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent)",
+          },
         }}
       >
         <img
           src={Logo}
           alt="Logo"
           style={{
-            width: 70,
-            height: 70,
+            width: 80,
+            height: 80,
             objectFit: "contain",
             transition: `all ${TRANSITION_DURATION} ease`,
+            filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.15))",
           }}
         />
       </Box>
 
       {/* Menu Items */}
-      <List sx={{ mt: 1 }}>
+      <List sx={{ mt: 1, px: 1.5 }}>
         {menuItemsWithBadges.map((item) => (
-          <ListItem key={item.text} disablePadding>
+          <ListItem key={item.text} disablePadding sx={{ mb: 0.8 }}>
             <Tooltip
               title={!isExpanded && !isMobileDrawer ? item.text : ""}
               placement="right"
+              arrow
+              sx={{
+                "& .MuiTooltip-tooltip": {
+                  bgcolor: "rgba(0,0,0,0.8)",
+                  fontSize: "0.85rem",
+                  padding: "6px 12px",
+                  borderRadius: 1,
+                },
+              }}
             >
               <ListItemButton
                 selected={location.pathname === item.path}
@@ -340,30 +360,52 @@ const InstructorLayout = () => {
                 sx={{
                   py: 1.5,
                   minHeight: 48,
+                  borderRadius: 2,
                   justifyContent:
                     isExpanded || isMobileDrawer ? "initial" : "center",
                   transition: `all ${TRANSITION_DURATION} ease`,
                   "&.Mui-selected": {
-                    bgcolor: "primary.dark",
+                    background:
+                      "linear-gradient(135deg, #ffc107 0%, #ff9800 100%)",
+                    boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
                     "&:hover": {
-                      bgcolor: "primary.dark",
+                      background:
+                        "linear-gradient(135deg, #ffb300 0%, #fb8c00 100%)",
+                      transform: "translateY(-1px)",
+                    },
+                    "& .MuiListItemIcon-root": {
+                      color: "#fff",
+                      transform: "scale(1.1)",
+                    },
+                    "& .MuiTypography-root": {
+                      fontWeight: 600,
+                      letterSpacing: "0.3px",
                     },
                   },
                   "&:hover": {
-                    bgcolor: "rgba(255, 255, 255, 0.08)",
+                    background: "rgba(255,255,255,0.12)",
+                    transform: "translateX(4px)",
+                    "& .MuiListItemIcon-root": {
+                      transform: "scale(1.1)",
+                    },
                   },
                 }}
               >
                 <ListItemIcon
                   sx={{
                     minWidth: 0,
-                    mr: isExpanded || isMobileDrawer ? 2 : "auto",
+                    mr: isExpanded || isMobileDrawer ? 2.5 : "auto",
                     justifyContent: "center",
                     transition: `all ${TRANSITION_DURATION} ease`,
                     color:
                       location.pathname === item.path
                         ? "#fff"
-                        : "rgba(255, 255, 255, 0.7)",
+                        : "rgba(255,255,255,0.85)",
+                    fontSize: "1.4rem",
+                    "& .MuiSvgIcon-root": {
+                      fontSize: "1.4rem",
+                      filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.1))",
+                    },
                   }}
                 >
                   {item.icon}
@@ -381,12 +423,17 @@ const InstructorLayout = () => {
                     transition: `all ${TRANSITION_DURATION} ease`,
                     "& .MuiTypography-root": {
                       fontSize: "0.95rem",
-                      fontWeight: location.pathname === item.path ? 600 : 400,
+                      fontWeight: location.pathname === item.path ? 600 : 500,
                       color:
                         location.pathname === item.path
                           ? "#fff"
-                          : "rgba(255, 255, 255, 0.7)",
+                          : "rgba(255,255,255,0.85)",
                       whiteSpace: "nowrap",
+                      letterSpacing: "0.2px",
+                      textShadow:
+                        location.pathname === item.path
+                          ? "0 1px 2px rgba(0,0,0,0.1)"
+                          : "none",
                     },
                   }}
                 />
@@ -419,7 +466,11 @@ const InstructorLayout = () => {
           position="fixed"
           sx={{
             display: { md: "none" },
-            bgcolor: "primary.main",
+            background: "linear-gradient(135deg, #ffa000 0%, #ffd700 100%)",
+            boxShadow: "0 2px 12px rgba(0,0,0,0.15)",
+            "& .MuiToolbar-root": {
+              minHeight: 70,
+            },
           }}
         >
           <Toolbar sx={{ justifyContent: "space-between" }}>
@@ -427,7 +478,18 @@ const InstructorLayout = () => {
               color="inherit"
               edge="start"
               onClick={handleDrawerToggle}
-              sx={{ mr: 2 }}
+              sx={{
+                mr: 2,
+                "&:hover": {
+                  backgroundColor: "rgba(255,255,255,0.15)",
+                  transform: "scale(1.1)",
+                },
+                transition: "all 0.2s ease",
+                "& .MuiSvgIcon-root": {
+                  fontSize: "1.5rem",
+                  filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.1))",
+                },
+              }}
             >
               <MenuIcon />
             </IconButton>
@@ -446,6 +508,8 @@ const InstructorLayout = () => {
                   width: 80,
                   height: 80,
                   objectFit: "contain",
+                  filter: "drop-shadow(0 2px 8px rgba(0,0,0,0.15))",
+                  transition: "all 0.3s ease",
                 }}
               />
             </Box>
@@ -475,7 +539,8 @@ const InstructorLayout = () => {
               "& .MuiDrawer-paper": {
                 boxSizing: "border-box",
                 width: DRAWER_WIDTH,
-                bgcolor: "primary.main",
+                background: "linear-gradient(180deg, #ffd700 0%, #ffa000 100%)",
+                boxShadow: "2px 0 8px rgba(0,0,0,0.1)",
               },
             }}
           >
@@ -490,9 +555,10 @@ const InstructorLayout = () => {
               "& .MuiDrawer-paper": {
                 boxSizing: "border-box",
                 width: isExpanded ? DRAWER_WIDTH : COLLAPSED_DRAWER_WIDTH,
-                bgcolor: "primary.main",
+                background: "linear-gradient(180deg, #ffd700 0%, #ffa000 100%)",
                 transition: `all ${TRANSITION_DURATION} ease`,
                 overflowX: "hidden",
+                boxShadow: "2px 0 8px rgba(0,0,0,0.1)",
               },
             }}
             open
@@ -514,9 +580,10 @@ const InstructorLayout = () => {
           },
           mt: { xs: 7, md: 0 },
           transition: `all ${TRANSITION_DURATION} ease`,
+          background: "#f8f9fa",
         }}
       >
-        {/* Hiển thị thông báo khi admin đang impersonate */}
+        {/* Alert for admin impersonation */}
         {adminImpersonating && (
           <Alert
             severity="warning"
@@ -525,18 +592,49 @@ const InstructorLayout = () => {
               display: "flex",
               alignItems: "center",
               justifyContent: "space-between",
+              background: "linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%)",
+              color: "#e65100",
+              borderBottom: "1px solid rgba(230, 81, 0, 0.1)",
+              "& .MuiAlert-icon": {
+                color: "#e65100",
+                fontSize: "1.5rem",
+                filter: "drop-shadow(0 1px 2px rgba(0,0,0,0.1))",
+              },
+              "& .MuiAlert-message": {
+                fontSize: "0.95rem",
+                fontWeight: 500,
+                letterSpacing: "0.2px",
+              },
             }}
           >
             <span>
-              <strong>Chế độ xem giảng viên:</strong> Bạn đang xem với tư cách
-              là giảng viên "{impersonatedInstructorName}"
+              <strong style={{ letterSpacing: "0.3px" }}>
+                Chế độ xem giảng viên:
+              </strong>{" "}
+              Bạn đang xem với tư cách là giảng viên "
+              {impersonatedInstructorName}"
             </span>
             <Button
               variant="outlined"
               size="small"
-              color="inherit"
               onClick={handleEndImpersonation}
-              sx={{ ml: 2 }}
+              sx={{
+                ml: 2,
+                borderColor: "#e65100",
+                color: "#e65100",
+                fontWeight: 500,
+                letterSpacing: "0.3px",
+                borderRadius: 1.5,
+                px: 2,
+                py: 0.75,
+                "&:hover": {
+                  borderColor: "#bf360c",
+                  backgroundColor: "rgba(230, 81, 0, 0.04)",
+                  transform: "translateY(-1px)",
+                  boxShadow: "0 2px 8px rgba(230, 81, 0, 0.15)",
+                },
+                transition: "all 0.2s ease",
+              }}
             >
               Quay lại trang quản trị
             </Button>

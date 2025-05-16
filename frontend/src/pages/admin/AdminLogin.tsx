@@ -12,8 +12,6 @@ import {
   Alert,
   Stack,
   Divider,
-  Checkbox,
-  FormControlLabel,
 } from "@mui/material";
 import { useNavigate, Link as RouterLink } from "react-router-dom";
 import {
@@ -36,7 +34,6 @@ const AdminLogin = () => {
   const currentUser = useAppSelector(selectCurrentUser);
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [rememberMe, setRememberMe] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -103,37 +100,58 @@ const AdminLogin = () => {
         minHeight: "100vh",
         display: "flex",
         alignItems: "center",
-        background: "linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%)",
+        justifyContent: "center",
         py: 4,
       }}
     >
       <CustomContainer maxWidth="sm">
         <Card
           sx={{
-            boxShadow: "0 8px 40px rgba(0, 0, 0, 0.12)",
-            borderRadius: 2,
+            boxShadow: "0 10px 40px rgba(0, 0, 0, 0.3)",
+            borderRadius: 3,
             overflow: "hidden",
+            backgroundColor: "rgba(255, 255, 255, 0.97)",
+            backdropFilter: "blur(15px)",
+            maxWidth: 450,
+            width: "100%",
+            mx: "auto",
           }}
         >
           <Box
             sx={{
-              p: 3,
-              backgroundColor: "primary.main",
-              color: "white",
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
+              height: 6,
+              width: "100%",
+              backgroundImage: "linear-gradient(to right, #d32f2f, #f44336)",
             }}
-          >
-            <AdminPanelSettings />
-            <Typography variant="h5" component="h1">
-              Đăng nhập Quản trị viên
-            </Typography>
-          </Box>
+          />
 
           <CardContent sx={{ p: 4 }}>
+            <Box sx={{ textAlign: "center", mb: 4 }}>
+              <AdminPanelSettings
+                color="error"
+                sx={{
+                  fontSize: 64,
+                  p: 1.5,
+                  bgcolor: "rgba(211, 47, 47, 0.08)",
+                  borderRadius: "50%",
+                  mb: 2,
+                }}
+              />
+              <Typography
+                variant="h5"
+                component="h1"
+                fontWeight="bold"
+                sx={{ color: "error.main" }}
+              >
+                Đăng nhập Quản trị viên
+              </Typography>
+              <Typography color="text.secondary" variant="body2" sx={{ mt: 1 }}>
+                Truy cập vào hệ thống quản lý cao cấp
+              </Typography>
+            </Box>
+
             {loginError && (
-              <Alert severity="error" sx={{ mb: 3 }}>
+              <Alert severity="error" sx={{ mb: 3, borderRadius: 1 }}>
                 {loginError}
               </Alert>
             )}
@@ -155,6 +173,11 @@ const AdminLogin = () => {
                         <Email color="action" />
                       </InputAdornment>
                     ),
+                  }}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 1.5,
+                    },
                   }}
                 />
 
@@ -185,29 +208,24 @@ const AdminLogin = () => {
                       </InputAdornment>
                     ),
                   }}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 1.5,
+                    },
+                  }}
                 />
 
                 <Box
                   sx={{
                     display: "flex",
-                    justifyContent: "space-between",
+                    justifyContent: "flex-end",
                     alignItems: "center",
                   }}
                 >
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={rememberMe}
-                        onChange={(e) => setRememberMe(e.target.checked)}
-                        color="primary"
-                      />
-                    }
-                    label="Ghi nhớ đăng nhập"
-                  />
                   <Link
                     component={RouterLink}
                     to="/admin/forgot-password"
-                    color="primary"
+                    color="error"
                   >
                     Quên mật khẩu?
                   </Link>
@@ -219,7 +237,16 @@ const AdminLogin = () => {
                   fullWidth
                   size="large"
                   color="error"
-                  sx={{ py: 1.5 }}
+                  sx={{
+                    py: 1.5,
+                    borderRadius: 1.5,
+                    backgroundImage:
+                      "linear-gradient(to right, #d32f2f, #f44336)",
+                    "&:hover": {
+                      backgroundImage:
+                        "linear-gradient(to right, #c62828, #e53935)",
+                    },
+                  }}
                 >
                   Đăng nhập
                 </Button>
@@ -232,7 +259,12 @@ const AdminLogin = () => {
               </Typography>
             </Divider>
 
-            <Alert severity="info" icon={<Security />} sx={{ mb: 2 }}>
+            <Alert
+              severity="info"
+              icon={<Security />}
+              sx={{ mb: 2, borderRadius: 1.5 }}
+              variant="outlined"
+            >
               <Typography variant="body2">
                 Khu vực này chỉ dành cho quản trị viên. Mọi hành động đều được
                 ghi nhận và theo dõi để đảm bảo an toàn hệ thống.

@@ -49,6 +49,7 @@ import {
   Sort,
   Close,
   CloudUpload,
+  School,
 } from "@mui/icons-material";
 import { format, parseISO } from "date-fns";
 import { vi } from "date-fns/locale";
@@ -548,7 +549,7 @@ const InstructorForum = () => {
           <Stack
             direction={{ xs: "column", sm: "row" }}
             spacing={2}
-            sx={{ mb: 2 }}
+            sx={{ mb: 3 }}
           >
             <TextField
               placeholder="Tìm kiếm bài đăng..."
@@ -632,78 +633,136 @@ const InstructorForum = () => {
             </FormControl>
           </Stack>
 
-          <TableContainer component={Paper}>
-            <Table>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Tiêu đề</TableCell>
-                  <TableCell>Khóa học</TableCell>
-                  <TableCell>Trạng thái</TableCell>
-                  <TableCell align="center">Tương tác</TableCell>
-                  <TableCell>Cập nhật</TableCell>
-                  <TableCell>Thao tác</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {filteredForums.length === 0 ? (
-                  <TableRow>
-                    <TableCell colSpan={7} align="center">
-                      <Typography
-                        variant="body1"
-                        color="text.secondary"
-                        sx={{ py: 2 }}
+          {filteredForums.length === 0 ? (
+            <Box
+              sx={{
+                py: 10,
+                textAlign: "center",
+                backgroundColor: (theme) => theme.palette.grey[100],
+                borderRadius: 2,
+              }}
+            >
+              <Typography variant="h6" color="text.secondary">
+                Không tìm thấy bài đăng nào phù hợp
+              </Typography>
+            </Box>
+          ) : (
+            <Grid container spacing={3}>
+              {filteredForums.map((forum) => (
+                <Grid item xs={12} sm={6} md={4} lg={3} key={forum.id}>
+                  <Card
+                    sx={{
+                      height: "100%",
+                      display: "flex",
+                      flexDirection: "column",
+                      borderRadius: 2,
+                      transition: "all 0.2s ease-in-out",
+                      "&:hover": {
+                        boxShadow: (theme) => theme.shadows[6],
+                        transform: "translateY(-4px)",
+                      },
+                      position: "relative",
+                      overflow: "hidden",
+                    }}
+                  >
+                    {/* Status indicator */}
+                    <Box
+                      sx={{
+                        height: 4,
+                        width: "100%",
+                        backgroundColor: (theme) => {
+                          const status = getStatusInfo(forum.status);
+                          if (status.color === "success")
+                            return theme.palette.success.main;
+                          if (status.color === "warning")
+                            return theme.palette.warning.main;
+                          if (status.color === "error")
+                            return theme.palette.error.main;
+                          return theme.palette.grey[500];
+                        },
+                      }}
+                    />
+
+                    {/* Card Media */}
+                    <Box
+                      sx={{
+                        height: 140,
+                        backgroundImage: `url(${
+                          forum.thumbnailUrl || "/src/assets/logo.png"
+                        })`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        position: "relative",
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          position: "absolute",
+                          top: 8,
+                          right: 8,
+                          display: "flex",
+                          gap: 1,
+                        }}
                       >
-                        Không tìm thấy bài đăng nào phù hợp
-                      </Typography>
-                    </TableCell>
-                  </TableRow>
-                ) : (
-                  filteredForums.map((forum) => (
-                    <TableRow key={forum.id}>
-                      <TableCell>
-                        <Box sx={{ display: "flex", alignItems: "center" }}>
-                          <Avatar
-                            src={forum.thumbnailUrl || "/src/assets/logo.png"}
-                            variant="rounded"
-                            sx={{ width: 60, height: 60, mr: 2 }}
-                            alt={forum.title}
-                          />
-                          <Box>
-                            <Typography variant="body1">
-                              {forum.title}
-                            </Typography>
-                            <Stack
-                              direction="row"
-                              spacing={1}
-                              alignItems="center"
-                            >
-                              <Tooltip
-                                title={getStatusInfo(forum.status).tooltip}
-                              >
-                                {getStatusInfo(forum.status).icon}
-                              </Tooltip>
-                            </Stack>
-                          </Box>
-                        </Box>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
-                          {forum.course?.title}
-                        </Typography>
-                      </TableCell>
-                      <TableCell>
                         <Chip
                           label={getStatusInfo(forum.status).label}
                           color={getStatusInfo(forum.status).color}
                           size="small"
+                          sx={{
+                            fontWeight: "medium",
+                            backgroundColor: (theme) =>
+                              `${
+                                theme.palette[getStatusInfo(forum.status).color]
+                                  .main
+                              }80`,
+                          }}
                         />
-                      </TableCell>
-                      <TableCell>
-                        <Stack
-                          direction="row"
-                          spacing={2}
-                          justifyContent="center"
-                        >
+                      </Box>
+                    </Box>
+
+                    {/* Card Content */}
+                    <Box
+                      sx={{
+                        p: 2,
+                        flexGrow: 1,
+                        display: "flex",
+                        flexDirection: "column",
+                      }}
+                    >
+                      <Typography
+                        variant="h6"
+                        sx={{
+                          mb: 1,
+                          fontWeight: "medium",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                        }}
+                      >
+                        {forum.title}
+                      </Typography>
+
+                      <Box sx={{ mb: 2 }}>
+                        <Chip
+                          label={forum.course?.title}
+                          color="primary"
+                          variant="outlined"
+                          size="small"
+                          icon={<School fontSize="small" />}
+                          sx={{ maxWidth: "100%" }}
+                        />
+                      </Box>
+
+                      {/* Interaction Stats */}
+                      <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        alignItems="center"
+                        sx={{ mt: "auto" }}
+                      >
+                        <Stack direction="row" spacing={2}>
                           <Tooltip title="Bình luận">
                             <Stack
                               direction="row"
@@ -729,26 +788,46 @@ const InstructorForum = () => {
                             </Stack>
                           </Tooltip>
                         </Stack>
-                      </TableCell>
-                      <TableCell>
-                        <Typography variant="body2">
+
+                        <Typography variant="caption" color="text.secondary">
                           {formatDateTime(forum.updatedAt)}
                         </Typography>
-                      </TableCell>
-                      <TableCell>
+                      </Stack>
+                    </Box>
+
+                    {/* Actions */}
+                    <Box
+                      sx={{
+                        borderTop: 1,
+                        borderColor: "divider",
+                        p: 1,
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <Button
+                        size="small"
+                        startIcon={<Visibility />}
+                        onClick={() => handleViewPost(Number(forum.id))}
+                      >
+                        Xem
+                      </Button>
+
+                      <Box>
                         <IconButton
-                          onClick={(e) => handleMenuOpen(e, Number(forum.id))}
                           size="small"
+                          onClick={(e) => handleMenuOpen(e, Number(forum.id))}
                         >
                           <MoreVert />
                         </IconButton>
-                      </TableCell>
-                    </TableRow>
-                  ))
-                )}
-              </TableBody>
-            </Table>
-          </TableContainer>
+                      </Box>
+                    </Box>
+                  </Card>
+                </Grid>
+              ))}
+            </Grid>
+          )}
         </Box>
       </Card>
 

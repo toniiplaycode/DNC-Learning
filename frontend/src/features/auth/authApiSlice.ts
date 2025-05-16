@@ -10,6 +10,12 @@ export interface User {
   role: "student" | "instructor" | "admin";
   fullName?: string;
   avatarUrl?: string;
+  phone?: string;
+  status?: "active" | "inactive";
+  lastLogin?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  twoFactorEnabled?: boolean;
 }
 
 // Interface cho dữ liệu đăng nhập/đăng ký thành công

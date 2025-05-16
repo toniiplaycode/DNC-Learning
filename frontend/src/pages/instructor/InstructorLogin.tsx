@@ -12,9 +12,6 @@ import {
   IconButton,
   Alert,
   Stack,
-  Divider,
-  Checkbox,
-  FormControlLabel,
   CircularProgress,
 } from "@mui/material";
 import { useNavigate, Link as RouterLink } from "react-router-dom";
@@ -24,8 +21,6 @@ import {
   Email,
   Lock,
   School,
-  Google,
-  Facebook,
 } from "@mui/icons-material";
 import CustomContainer from "../../components/common/CustomContainer";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
@@ -39,7 +34,6 @@ const InstructorLogin = () => {
   const navigate = useNavigate();
   const [showPassword, setShowPassword] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const dispatch = useAppDispatch();
   const [formData, setFormData] = useState({
@@ -157,6 +151,7 @@ const InstructorLogin = () => {
         minHeight: "100vh",
         display: "flex",
         alignItems: "center",
+        justifyContent: "center",
         backgroundImage: "url('/src/assets/banner.png')",
         backgroundSize: "cover",
         backgroundPosition: "center",
@@ -169,7 +164,7 @@ const InstructorLogin = () => {
           left: 0,
           right: 0,
           bottom: 0,
-          backgroundColor: "rgba(0, 0, 0, 0.5)",
+          backgroundColor: "rgba(0, 0, 0, 0.6)",
           zIndex: 1,
         },
         py: 4,
@@ -184,32 +179,52 @@ const InstructorLogin = () => {
       >
         <Card
           sx={{
-            boxShadow: "0 8px 40px rgba(0, 0, 0, 0.12)",
-            borderRadius: 2,
+            boxShadow: "0 10px 40px rgba(0, 0, 0, 0.2)",
+            borderRadius: 3,
             overflow: "hidden",
-            backgroundColor: "rgba(255, 255, 255, 0.95)",
-            backdropFilter: "blur(10px)",
+            backgroundColor: "rgba(255, 255, 255, 0.97)",
+            backdropFilter: "blur(15px)",
+            maxWidth: 450,
+            width: "100%",
+            mx: "auto",
           }}
         >
           <Box
             sx={{
-              p: 3,
-              backgroundColor: "primary.main",
-              color: "white",
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
+              height: 6,
+              width: "100%",
+              backgroundImage: (theme) =>
+                `linear-gradient(to right, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
             }}
-          >
-            <School />
-            <Typography variant="h5" component="h1">
-              Đăng nhập dành cho Giảng viên
-            </Typography>
-          </Box>
+          />
 
           <CardContent sx={{ p: 4 }}>
+            <Box sx={{ textAlign: "center", mb: 4 }}>
+              <School
+                color="primary"
+                sx={{
+                  fontSize: 64,
+                  p: 1.5,
+                  bgcolor: "rgba(25, 118, 210, 0.08)",
+                  borderRadius: "50%",
+                  mb: 2,
+                }}
+              />
+              <Typography
+                variant="h5"
+                component="h1"
+                fontWeight="bold"
+                sx={{ color: "primary.main" }}
+              >
+                Đăng nhập dành cho Giảng viên
+              </Typography>
+              <Typography color="text.secondary" variant="body2" sx={{ mt: 1 }}>
+                Truy cập vào hệ thống quản lý của giảng viên
+              </Typography>
+            </Box>
+
             {loginError && (
-              <Alert severity="error" sx={{ mb: 3 }}>
+              <Alert severity="error" sx={{ mb: 3, borderRadius: 1 }}>
                 {loginError}
               </Alert>
             )}
@@ -231,6 +246,11 @@ const InstructorLogin = () => {
                         <Email color="action" />
                       </InputAdornment>
                     ),
+                  }}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 1.5,
+                    },
                   }}
                 />
 
@@ -261,25 +281,20 @@ const InstructorLogin = () => {
                       </InputAdornment>
                     ),
                   }}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 1.5,
+                    },
+                  }}
                 />
 
                 <Box
                   sx={{
                     display: "flex",
-                    justifyContent: "space-between",
+                    justifyContent: "flex-end",
                     alignItems: "center",
                   }}
                 >
-                  <FormControlLabel
-                    control={
-                      <Checkbox
-                        checked={rememberMe}
-                        onChange={(e) => setRememberMe(e.target.checked)}
-                        color="primary"
-                      />
-                    }
-                    label="Ghi nhớ đăng nhập"
-                  />
                   <Link
                     component={RouterLink}
                     to="/instructor/forgot-password"
@@ -294,32 +309,25 @@ const InstructorLogin = () => {
                   variant="contained"
                   fullWidth
                   size="large"
-                  sx={{ py: 1.5 }}
+                  sx={{
+                    py: 1.5,
+                    borderRadius: 1.5,
+                    backgroundImage: (theme) =>
+                      `linear-gradient(to right, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
+                    "&:hover": {
+                      backgroundImage: (theme) =>
+                        `linear-gradient(to right, ${theme.palette.primary.dark}, ${theme.palette.primary.main})`,
+                      opacity: 0.9,
+                    },
+                  }}
                 >
                   Đăng nhập
                 </Button>
               </Stack>
             </form>
 
-            <Divider sx={{ my: 3 }}>
+            <Box sx={{ mt: 4, textAlign: "center" }}>
               <Typography variant="body2" color="text.secondary">
-                HOẶC
-              </Typography>
-            </Divider>
-
-            <Stack spacing={2}>
-              <Button
-                fullWidth
-                variant="outlined"
-                startIcon={<Google />}
-                sx={{ py: 1.5 }}
-              >
-                Đăng nhập với Google
-              </Button>
-            </Stack>
-
-            <Box sx={{ mt: 3, textAlign: "center" }}>
-              <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
                 <Link component={RouterLink} to="/login" color="primary">
                   Đăng nhập với tài khoản học viên
                 </Link>
