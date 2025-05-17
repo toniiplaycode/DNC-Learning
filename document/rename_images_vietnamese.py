@@ -111,9 +111,9 @@ mapping_admin = {
 
 # Gộp 3 mapping
 mapping = {}
-# mapping.update(mapping_hocvien)
+mapping.update(mapping_hocvien)
 mapping.update(mapping_gv)
-# mapping.update(mapping_admin)
+mapping.update(mapping_admin)
 
 folders = [
     'images/hocviensinhvien',
@@ -121,21 +121,47 @@ folders = [
     'images/quantrivien'
 ]
 
+# Bước 1: Đổi tên tạm thời để tránh trùng lặp
+# for folder in folders:
+#     if not os.path.exists(folder):
+#         continue
+#     for filename in os.listdir(folder):
+#         if filename.endswith('.png'):
+#             tmp_name = filename + '.tmp'
+#             old_path = os.path.join(folder, filename)
+#             tmp_path = os.path.join(folder, tmp_name)
+#             os.rename(old_path, tmp_path)
+
+# Bước 2: Đổi tên về chữ thường
+for folder in folders:
+    if not os.path.exists(folder):
+        continue
+    for filename in os.listdir(folder):
+        if filename.endswith('.png.tmp'):
+            new_name = filename[:-4].lower() + '.png'
+            old_path = os.path.join(folder, filename)
+            new_path = os.path.join(folder, new_name)
+            os.rename(old_path, new_path)
+            print(f"Đã đổi tên: {filename} -> {new_name}")
+
+# Đổi tên sang tiếng Việt
 for folder in folders:
     if not os.path.exists(folder):
         continue
     for filename in os.listdir(folder):
         if filename.endswith('.png'):
-            new_name = mapping.get(filename)
+            filename_lower = filename.lower()
+            # Tra cứu mapping bằng tên file chữ thường
+            new_name = mapping.get(filename_lower)
             if not new_name:
-                # Nếu không có trong mapping, chỉ thay _ thành dấu cách và viết hoa chữ cái đầu mỗi từ
                 name_no_ext = os.path.splitext(filename)[0]
                 new_name = name_no_ext.replace('_', ' ').capitalize() + '.png'
             old_path = os.path.join(folder, filename)
             new_path = os.path.join(folder, new_name)
             try:
-                os.rename(old_path, new_path)
-                print(f"Đã đổi tên: {filename} -> {new_name}")
+                if old_path != new_path:
+                    os.rename(old_path, new_path)
+                    print(f"Đã đổi tên: {filename} -> {new_name}")
             except FileNotFoundError:
                 print(f"Không tìm thấy file: {old_path}")
             except Exception as e:
