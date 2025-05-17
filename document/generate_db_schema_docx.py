@@ -1,4 +1,9 @@
 from docx import Document
+from docx.shared import Pt, Inches, RGBColor
+from docx.enum.table import WD_TABLE_ALIGNMENT, WD_ALIGN_VERTICAL
+from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.oxml import OxmlElement
+from docx.oxml.ns import qn
 
 # Dữ liệu chi tiết cho từng bảng (đã cập nhật theo Structure.sql)
 db_schema = [
@@ -530,22 +535,53 @@ db_schema = [
 doc = Document()
 doc.add_heading('Lược Đồ Cơ Sở Dữ Liệu Hệ Thống E-Learning', 0)
 
+# Create custom style 'bang' if not exists
+styles = doc.styles
+if 'bang' not in [s.name for s in styles]:
+    bang_style = styles.add_style('bang', 1)  # 1 = paragraph style
+    bang_style.font.name = 'Times New Roman'
+    bang_style.font.size = Pt(13)
+    bang_style.font.color.rgb = RGBColor(0, 0, 0)
+
+table_counter = 1
+
 for table in db_schema:
-    doc.add_heading(f"Bảng: {table['name']}", level=1)
-    t = doc.add_table(rows=1, cols=4)
-    t.style = 'Light List Accent 1'
+    t = doc.add_table(rows=1, cols=5)
+    t.alignment = WD_TABLE_ALIGNMENT.RIGHT
+    t.style = 'Table Grid'
+    
+    # Set column widths
+    t.columns[0].width = Inches(0.2)  # STT column width
+    t.columns[1].width = Inches(2.0)  # Tên thuộc tính
+    t.columns[2].width = Inches(1.3)  # Kiểu dữ liệu
+    t.columns[3].width = Inches(1.0)  # Khóa
+    t.columns[4].width = Inches(3.0)  # Mô tả
+    
+    # Add right margin to the table
+    paragraph = doc.add_paragraph()
+    paragraph._p.addnext(t._element)
+    doc.paragraphs[-1]._element.getparent().remove(paragraph._element)
+    
     hdr_cells = t.rows[0].cells
-    hdr_cells[0].text = 'Tên thuộc tính'
-    hdr_cells[1].text = 'Kiểu dữ liệu'
-    hdr_cells[2].text = 'Khóa'
-    hdr_cells[3].text = 'Mô tả'
-    for field in table['fields']:
+    hdr_cells[0].text = 'STT'
+    hdr_cells[1].text = 'Tên thuộc tính'
+    hdr_cells[2].text = 'Kiểu dữ liệu'
+    hdr_cells[3].text = 'Khóa'
+    hdr_cells[4].text = 'Mô tả'
+    
+    for idx, field in enumerate(table['fields'], 1):
         row_cells = t.add_row().cells
-        row_cells[0].text = field[0]
-        row_cells[1].text = field[1]
-        row_cells[2].text = field[2]
-        row_cells[3].text = field[3]
-doc.add_paragraph()
+        row_cells[0].text = str(idx)
+        row_cells[1].text = field[0]
+        row_cells[2].text = field[1]
+        row_cells[3].text = field[2]
+        row_cells[4].text = field[3]
+    
+    # Add custom heading 'bang' below the table, centered
+    p = doc.add_paragraph(f"Bảng 4.6.{table_counter} {table['name']}", style='bang')
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    table_counter += 1
+    doc.add_paragraph()
 
 doc.save('database_schema.docx')
 print("Đã tạo file database_schema.docx thành công!")
