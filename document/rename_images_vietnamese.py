@@ -16,7 +16,7 @@ mapping_hocvien = {
     'chitietnoidunghoc(slide).png': 'Chi tiết nội dung học slide.png',
     'chitietnoidunghoc(video).png': 'Chi tiết nội dung học video.png',
     'cackhoahocthamgia.png': 'Các khóa học tham gia.png',
-    'thamgiahoc.png': 'Tham gia học.png',
+    'thamgiahoctructuyen.png': 'Tham gia học trực tuyến.png',
     'caclophoctructuyen.png': 'Các lớp học trực tuyến.png',
     'thongtinchitietgiangvien.png': 'Thông tin chi tiết giảng viên.png',
     'ketquabaitap.png': 'Kết quả bài tập.png',
