@@ -12,8 +12,10 @@ import {
 import { CourseProgressService } from './course-progress.service';
 import { CourseProgress } from '../../entities/CourseProgress';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
-import { User } from 'src/entities/User';
+import { User, UserRole } from 'src/entities/User';
 import { GetUser } from '../auth/decorators/get-user.decorator';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
 @Controller('course-progress')
 @UseGuards(JwtAuthGuard)
@@ -77,5 +79,12 @@ export class CourseProgressController {
       user.id,
       courseId,
     );
+  }
+
+  @Get('all-progress')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN)
+  getAllUsersCourseProgress(): Promise<any[]> {
+    return this.courseProgressService.getAllUsersCourseProgress();
   }
 }

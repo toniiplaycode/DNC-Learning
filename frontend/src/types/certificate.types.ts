@@ -2,9 +2,13 @@ import { Course } from "../../../backend/src/entities/Course";
 import { User } from "../../../backend/src/entities/User";
 
 export enum CertificateStatus {
-  ACTIVE = "active",
-  EXPIRED = "expired",
-  REVOKED = "revoked",
+  ACTIVE = "active", // Còn hiệu lực
+  EXPIRED = "expired", // Hết hạn
+  REVOKED = "revoked", // Đã thu hồi
+  PENDING = "pending", // Đang chờ duyệt
+  REJECTED = "rejected", // Đã từ chối
+  SUSPENDED = "suspended", // Tạm đình chỉ
+  RENEWED = "renewed", // Đã gia hạn
 }
 
 export interface Certificate {
@@ -16,8 +20,8 @@ export interface Certificate {
   issueDate: string;
   expiryDate?: string;
   status: CertificateStatus;
-  user?: Partial<User>;
-  course?: Partial<Course>;
+  user?: any;
+  course?: any;
   createdAt: string;
   updatedAt: string;
 }
@@ -61,4 +65,12 @@ export interface UpdateCertificateData {
 
 export interface VerifyCertificateData {
   certificateNumber: string;
+}
+
+export interface CreateMultipleCertificatesData {
+  userIds: number[];
+  courseId: number;
+  issueDate?: Date;
+  expiryDate?: Date;
+  status?: CertificateStatus;
 }

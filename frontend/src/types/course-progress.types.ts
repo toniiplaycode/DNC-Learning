@@ -65,4 +65,18 @@ export interface CourseProgressState {
   currentProgress: CourseProgress | null;
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
+  allUsersCourseProgress: AllUserCourseProgress[];
+}
+
+export interface AllUserCourseProgress {
+  userId: number;
+  studentId: string | number | null;
+  userName: string;
+  fullName: string;
+  courseId: number;
+  courseTitle: string;
+  totalLessons: number;
+  completedLessons: number;
+  completionPercentage: number;
+  isCompleted: boolean;
 }

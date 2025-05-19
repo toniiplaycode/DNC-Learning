@@ -50,6 +50,8 @@ import CourseRating from "../../components/common/course/CourseRating";
 import { fetchUserEnrollments } from "../../features/enrollments/enrollmentsApiSlice";
 import { selectCurrentUser } from "../../features/auth/authSelectors";
 import { selectUserEnrollments } from "../../features/enrollments/enrollmentsSelectors";
+import { fetchStudentAcademicCourses } from "../../features/users/usersApiSlice";
+import { selectStudentAcademicCourses } from "../../features/users/usersSelectors";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -75,6 +77,7 @@ const CourseDetail: React.FC = () => {
   );
   const currentUser = useAppSelector(selectCurrentUser);
   const userEnrollments = useAppSelector(selectUserEnrollments);
+  const studentAcademicCourses = useAppSelector(selectStudentAcademicCourses);
   const currentInstructor = useAppSelector(selectCurrentInstructor);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [courseProgress, setCourseProgress] = useState(0);
@@ -87,6 +90,7 @@ const CourseDetail: React.FC = () => {
     }
     if (currentUser?.id) {
       dispatch(fetchUserEnrollments(Number(currentUser?.id)));
+      dispatch(fetchStudentAcademicCourses(currentUser.id));
     }
   }, [dispatch, id, currentUser, navigate]);
 
@@ -98,17 +102,26 @@ const CourseDetail: React.FC = () => {
       return;
     }
 
-    // Sau đó mới kiểm tra enrollment nếu người dùng tồn tại
+    // Kiểm tra enrollment thông thường
+    let isEnrolledInCourse = false;
     if (userEnrollments && userEnrollments.length > 0) {
       const currentEnrollment = userEnrollments.find(
         (enrollment) => Number(enrollment?.course?.id) === Number(id)
       );
-      setIsEnrolled(!!currentEnrollment);
+      isEnrolledInCourse = !!currentEnrollment;
       setCourseProgress(currentEnrollment?.progress || 0);
     }
-  }, [id, currentUser, userEnrollments]);
 
-  console.log(currentUser);
+    // Kiểm tra enrollment trong khóa học thuật
+    if (studentAcademicCourses && studentAcademicCourses.length > 0) {
+      const isInAcademicCourse = studentAcademicCourses.some(
+        (academic) => Number(academic.course.id) === Number(id)
+      );
+      isEnrolledInCourse = isEnrolledInCourse || isInAcademicCourse;
+    }
+
+    setIsEnrolled(isEnrolledInCourse);
+  }, [id, currentUser, userEnrollments, studentAcademicCourses]);
 
   useEffect(() => {
     if (currentCourse?.instructor?.id) {

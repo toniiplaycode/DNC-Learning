@@ -55,6 +55,7 @@ import {
   Phone as PhoneIcon,
   CalendarToday,
   AccountCircle,
+  VerifiedUser,
 } from "@mui/icons-material";
 import { fetchMessagesByUser } from "../../../features/messages/messagesSlice";
 import { selectAllMessages } from "../../../features/messages/messagesSelector";
@@ -191,6 +192,11 @@ const AdminLayout = () => {
       text: "Lớp học thuật",
       icon: <PeopleAltTwoTone />,
       path: "/admin/academic-classes",
+    },
+    {
+      text: "Chứng chỉ",
+      icon: <VerifiedUser />,
+      path: "/admin/certificates",
     },
     {
       text: "Tin nhắn",

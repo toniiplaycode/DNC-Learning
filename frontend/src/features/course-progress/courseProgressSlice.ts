@@ -1,5 +1,8 @@
 import { createAsyncThunk, createSlice } from "@reduxjs/toolkit";
-import { CourseProgressState } from "../../types/course-progress.types";
+import {
+  CourseProgressState,
+  AllUserCourseProgress,
+} from "../../types/course-progress.types";
 import { api } from "../../services/api";
 
 // Async thunks
@@ -119,6 +122,21 @@ export const fetchCourseProgressDetail = createAsyncThunk(
   }
 );
 
+export const fetchAllUsersCourseProgress = createAsyncThunk(
+  "courseProgress/fetchAllUsersCourseProgress",
+  async (_, { rejectWithValue }) => {
+    try {
+      const response = await api.get("/course-progress/all-progress");
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          "Không thể tải tiến độ học tập của tất cả học viên"
+      );
+    }
+  }
+);
+
 const initialState: CourseProgressState = {
   progress: [],
   userProgress: [],
@@ -127,6 +145,7 @@ const initialState: CourseProgressState = {
   currentProgress: null,
   status: "idle",
   error: null,
+  allUsersCourseProgress: [],
 };
 
 const courseProgressSlice = createSlice({
@@ -245,6 +264,20 @@ const courseProgressSlice = createSlice({
         state.error = null;
       })
       .addCase(fetchCourseProgressDetail.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
+
+      // Fetch all users course progress
+      .addCase(fetchAllUsersCourseProgress.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchAllUsersCourseProgress.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.allUsersCourseProgress = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchAllUsersCourseProgress.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
       });

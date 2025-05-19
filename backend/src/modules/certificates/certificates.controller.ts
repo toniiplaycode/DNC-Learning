@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { CertificatesService } from './certificates.service';
 import { CreateCertificateDto } from './dto/create-certificate.dto';
+import { CreateMultipleCertificatesDto } from './dto/create-multiple-certificates.dto';
 import { UpdateCertificateDto } from './dto/update-certificate.dto';
 import { JwtAuthGuard } from '../../guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -108,5 +109,16 @@ export class CertificatesController {
   @Roles(UserRole.ADMIN)
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.certificatesService.remove(id);
+  }
+
+  @Post('multiple')
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.ADMIN, UserRole.INSTRUCTOR)
+  createMultiple(
+    @Body() createMultipleCertificatesDto: CreateMultipleCertificatesDto,
+  ) {
+    return this.certificatesService.createMultiple(
+      createMultipleCertificatesDto,
+    );
   }
 }

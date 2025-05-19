@@ -5,6 +5,7 @@ import { CourseProgress } from '../../entities/CourseProgress';
 import { CourseLesson } from '../../entities/CourseLesson';
 import { CourseSection } from '../../entities/CourseSection';
 import { Course } from '../../entities/Course';
+import { User } from '../../entities/User';
 
 interface CourseProgressSummary {
   courseId: number;
@@ -20,6 +21,19 @@ interface CourseProgressSummary {
   lastAccessTime: Date | null;
 }
 
+interface AllUserCourseProgressDto {
+  userId: number;
+  studentId: string | number | null;
+  userName: string;
+  fullName: string;
+  courseId: number;
+  courseTitle: string;
+  totalLessons: number;
+  completedLessons: number;
+  completionPercentage: number;
+  isCompleted: boolean;
+}
+
 @Injectable()
 export class CourseProgressService {
   constructor(
@@ -31,6 +45,8 @@ export class CourseProgressService {
     private courseSectionRepository: Repository<CourseSection>,
     @InjectRepository(Course)
     private courseRepository: Repository<Course>,
+    @InjectRepository(User)
+    private userRepository: Repository<User>,
   ) {}
 
   async create(userId: number, lessonId: number): Promise<CourseProgress> {
@@ -341,5 +357,84 @@ export class CourseProgressService {
       lastAccessTime: lastAccessedProgress?.lastAccessed || null,
       sections: sectionProgress,
     };
+  }
+
+  async getAllUsersCourseProgress(): Promise<AllUserCourseProgressDto[]> {
+    // 1. Lấy tất cả progress (có thể join với user, course)
+    const allProgress = await this.courseProgressRepository.find({
+      relations: [
+        'lesson',
+        'lesson.section',
+        'lesson.section.course',
+        'user',
+        'user.userStudent',
+        'user.userStudentAcademic',
+      ],
+    });
+
+    // 1. Lấy tổng số bài học cho từng course
+    const courseLessonCounts = new Map<number, number>();
+    const allCourses = await this.courseRepository.find();
+    for (const course of allCourses) {
+      const lessonCount = await this.courseLessonRepository
+        .createQueryBuilder('lesson')
+        .innerJoin('lesson.section', 'section')
+        .where('section.courseId = :courseId', { courseId: course.id })
+        .getCount();
+      courseLessonCounts.set(course.id, lessonCount);
+    }
+
+    // 2. Gom nhóm progress theo userId + courseId
+    const progressMap = new Map<
+      string,
+      { user: User; course: Course; completed: number }
+    >();
+
+    for (const p of allProgress) {
+      if (!p.user || !p.lesson?.section?.course) continue;
+      if (p.user.id <= 0) continue; // Bỏ user ảo
+      const key = `${p.user.id}-${p.lesson.section.course.id}`;
+      if (!progressMap.has(key)) {
+        progressMap.set(key, {
+          user: p.user,
+          course: p.lesson.section.course,
+          completed: 0,
+        });
+      }
+      const entry = progressMap.get(key)!;
+      if (p.completedAt) entry.completed += 1;
+    }
+
+    // 3. Tạo kết quả
+    const result: AllUserCourseProgressDto[] = [];
+    for (const [key, value] of progressMap.entries()) {
+      const totalLessons = courseLessonCounts.get(value.course.id) || 0;
+      if (totalLessons === 0) continue;
+      const completionPercentage = Math.round(
+        (value.completed / totalLessons) * 100,
+      );
+      // Lấy studentId và fullName ưu tiên theo thứ tự
+      const studentId =
+        value.user.userStudent?.id ||
+        value.user.userStudentAcademic?.studentCode ||
+        null;
+      const fullName =
+        value.user.userStudent?.fullName ||
+        value.user.userStudentAcademic?.fullName ||
+        value.user.username;
+      result.push({
+        userId: value.user.id,
+        studentId,
+        userName: value.user.username,
+        fullName,
+        courseId: value.course.id,
+        courseTitle: value.course.title,
+        totalLessons,
+        completedLessons: value.completed,
+        completionPercentage,
+        isCompleted: completionPercentage === 100,
+      });
+    }
+    return result;
   }
 }

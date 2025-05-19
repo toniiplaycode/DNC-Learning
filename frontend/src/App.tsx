@@ -52,6 +52,7 @@ import PaymentResult from "./pages/student/PaymentResult";
 import JoinClass from "./pages/student/teaching-schedules/JoinClass";
 import TeachingSchedules from "./pages/student/teaching-schedules/TeachingSchedules";
 import InstructorAttendances from "./pages/instructor/InstructorAttendances";
+import AdminCertificates from "./pages/admin/AdminCertificates";
 
 const App = () => {
   const navigate = useNavigate();
@@ -163,6 +164,7 @@ const App = () => {
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/instructors" element={<AdminInstructors />} />
           <Route path="/admin/students" element={<AdminStudents />} />
+          <Route path="/admin/certificates" element={<AdminCertificates />} />
           <Route
             path="/admin/academic-classes"
             element={<AdminAcademicClasses />}

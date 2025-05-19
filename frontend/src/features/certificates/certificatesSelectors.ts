@@ -82,3 +82,37 @@ export const selectRecentCertificates = createSelector(
       .slice(0, 5); // Get the 5 most recent certificates
   }
 );
+
+// Select certificates for multiple users in a course
+export const selectCertificatesForUsersInCourse = (
+  courseId: number,
+  userIds: number[]
+) =>
+  createSelector([selectAllCertificates], (certificates) =>
+    certificates.filter(
+      (c) => c.courseId === courseId && userIds.includes(c.userId)
+    )
+  );
+
+// Select users who don't have certificates for a course
+export const selectUsersWithoutCertificates = (
+  courseId: number,
+  userIds: number[]
+) =>
+  createSelector([selectAllCertificates], (certificates) => {
+    const usersWithCertificates = certificates
+      .filter((c) => c.courseId === courseId)
+      .map((c) => c.userId);
+    return userIds.filter((userId) => !usersWithCertificates.includes(userId));
+  });
+
+// Select certificates by status for multiple users
+export const selectCertificatesByStatusForUsers = (
+  userIds: number[],
+  status: CertificateStatus
+) =>
+  createSelector([selectAllCertificates], (certificates) =>
+    certificates.filter(
+      (c) => userIds.includes(c.userId) && c.status === status
+    )
+  );

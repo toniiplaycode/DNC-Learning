@@ -3,6 +3,7 @@ import {
   CourseProgress,
   UserCourseProgressSummary,
   CourseProgressDetail,
+  AllUserCourseProgress,
 } from "../../types/course-progress.types";
 
 // Select all progress
@@ -93,3 +94,7 @@ export const selectLastAccessedLesson = (
     },
     undefined as CourseProgress | undefined
   );
+
+export const selectAllUsersCourseProgress = (
+  state: RootState
+): AllUserCourseProgress[] => state.courseProgress.allUsersCourseProgress || [];

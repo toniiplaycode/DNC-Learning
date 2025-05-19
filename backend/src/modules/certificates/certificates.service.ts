@@ -13,6 +13,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { Enrollment, EnrollmentStatus } from '../../entities/Enrollment';
 import { Course } from '../../entities/Course';
 import { User } from '../../entities/User';
+import { CreateMultipleCertificatesDto } from './dto/create-multiple-certificates.dto';
 
 @Injectable()
 export class CertificatesService {
@@ -276,5 +277,71 @@ export class CertificatesService {
     // In a real application, this could generate and store a PDF
     // For now, we'll just return a placeholder URL
     return `/certificates/download/${certificateNumber}`;
+  }
+
+  async createMultiple(
+    createMultipleCertificatesDto: CreateMultipleCertificatesDto,
+  ): Promise<Certificate[]> {
+    const { userIds, courseId, ...certificateData } =
+      createMultipleCertificatesDto;
+
+    // Check if course exists
+    const course = await this.coursesRepository.findOne({
+      where: { id: courseId },
+    });
+    if (!course) {
+      throw new NotFoundException(`Course with ID ${courseId} not found`);
+    }
+
+    // Check if all users exist
+    const users = await this.usersRepository.findByIds(userIds);
+    if (users.length !== userIds.length) {
+      const foundUserIds = users.map((user) => user.id);
+      const notFoundUserIds = userIds.filter(
+        (id) => !foundUserIds.includes(id),
+      );
+      throw new NotFoundException(
+        `Users with IDs ${notFoundUserIds.join(', ')} not found`,
+      );
+    }
+
+    // Check for existing certificates
+    const existingCertificates = await this.certificatesRepository.find({
+      where: userIds.map((userId) => ({
+        userId,
+        courseId,
+      })),
+    });
+
+    if (existingCertificates.length > 0) {
+      const existingUserIds = existingCertificates.map((cert) => cert.userId);
+      throw new ConflictException(
+        `Certificates already exist for users ${existingUserIds.join(', ')} and course ${courseId}`,
+      );
+    }
+
+    // Create certificates for all users
+    const certificates = userIds.map((userId) => {
+      const certificateNumber =
+        certificateData.certificateNumber ||
+        this.generateCertificateNumber(userId, courseId);
+
+      const certificateUrl =
+        certificateData.certificateUrl ||
+        this.generateCertificateUrl(userId, courseId, certificateNumber);
+
+      return this.certificatesRepository.create({
+        userId,
+        courseId,
+        certificateNumber,
+        certificateUrl,
+        issueDate: certificateData.issueDate || new Date(),
+        expiryDate: certificateData.expiryDate,
+        status: certificateData.status || CertificateStatus.ACTIVE,
+      });
+    });
+
+    // Save all certificates
+    return this.certificatesRepository.save(certificates);
   }
 }

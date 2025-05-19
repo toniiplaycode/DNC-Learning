@@ -6,6 +6,7 @@ import {
   UpdateCertificateData,
   VerifyCertificateData,
   VerifyCertificateResult,
+  CreateMultipleCertificatesData,
 } from "../../types/certificate.types";
 import { api } from "../../services/api";
 
@@ -154,6 +155,21 @@ export const deleteCertificate = createAsyncThunk(
     } catch (error) {
       return (
         (error as any).response?.data?.message || "Failed to delete certificate"
+      );
+    }
+  }
+);
+
+export const createMultipleCertificates = createAsyncThunk(
+  "certificates/createMultiple",
+  async (data: CreateMultipleCertificatesData) => {
+    try {
+      const response = await api.post("/certificates/multiple", data);
+      return response.data;
+    } catch (error) {
+      return (
+        (error as any).response?.data?.message ||
+        "Failed to create multiple certificates"
       );
     }
   }
@@ -362,6 +378,20 @@ const certificatesSlice = createSlice({
         state.error = null;
       })
       .addCase(deleteCertificate.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
+
+      // Create multiple certificates
+      .addCase(createMultipleCertificates.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(createMultipleCertificates.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.certificates.push(...action.payload);
+        state.error = null;
+      })
+      .addCase(createMultipleCertificates.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
       });
