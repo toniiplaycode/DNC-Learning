@@ -8,7 +8,7 @@ from docx.oxml.ns import qn
 # Dữ liệu chi tiết cho từng bảng (đã cập nhật theo Structure.sql)
 db_schema = [
     {
-        "name": "academic_class_courses (khóa học lớp học)",
+        "name": "Khóa học lớp học (academic_class_courses)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("class_id", "bigint", "FK", "Tham chiếu academic_classes(id)"),
@@ -18,7 +18,7 @@ db_schema = [
         ]
     },
     {
-        "name": "academic_class_instructors (giảng viên lớp học)",
+        "name": "Giảng viên lớp học (academic_class_instructors)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("class_id", "bigint", "FK", "Tham chiếu academic_classes(id)"),
@@ -28,7 +28,7 @@ db_schema = [
         ]
     },
     {
-        "name": "academic_classes (lớp học chính quy)",
+        "name": "Lớp học chính quy (academic_classes)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("class_code", "varchar(50)", "UNIQUE", "Mã lớp"),
@@ -40,7 +40,7 @@ db_schema = [
         ]
     },
     {
-        "name": "assignment_submissions (bài nộp)",
+        "name": "Bài nộp (assignment_submissions)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("assignment_id", "bigint", "FK", "Tham chiếu assignments(id)"),
@@ -54,7 +54,7 @@ db_schema = [
         ]
     },
     {
-        "name": "assignments (bài tập)",
+        "name": "Bài tập (assignments)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("lesson_id", "bigint", "FK", "Tham chiếu course_lessons(id)"),
@@ -73,7 +73,7 @@ db_schema = [
         ]
     },
     {
-        "name": "categories (danh mục khóa học)",
+        "name": "Danh mục khóa học (categories)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("name", "varchar(100)", "", "Tên danh mục"),
@@ -84,7 +84,7 @@ db_schema = [
         ]
     },
     {
-        "name": "certificates (chứng chỉ)",
+        "name": "Chứng chỉ (certificates)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("user_id", "bigint", "FK", "Tham chiếu users(id)"),
@@ -99,7 +99,7 @@ db_schema = [
         ]
     },
     {
-        "name": "chatbot_response (phản hồi chatbot)",
+        "name": "Phản hồi chatbot (chatbot_response)",
         "fields": [
             ("id", "int", "PK", "ID tự tăng"),
             ("keywords", "json", "", "Từ khóa"),
@@ -109,7 +109,7 @@ db_schema = [
         ]
     },
     {
-        "name": "course_lesson_discussions (thảo luận bài học)",
+        "name": "Thảo luận bài học (course_lesson_discussions)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("lesson_id", "bigint", "FK", "Tham chiếu course_lessons(id)"),
@@ -122,7 +122,7 @@ db_schema = [
         ]
     },
     {
-        "name": "course_lessons (bài học)",
+        "name": "Bài học (course_lessons)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("section_id", "bigint", "FK", "Tham chiếu course_sections(id)"),
@@ -138,7 +138,7 @@ db_schema = [
         ]
     },
     {
-        "name": "course_progress (tiến độ học tập)",
+        "name": "Tiến độ học tập (course_progress)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("user_id", "bigint", "FK", "Tham chiếu users(id)"),
@@ -148,7 +148,7 @@ db_schema = [
         ]
     },
     {
-        "name": "course_sections (phần học)",
+        "name": "Phần học (course_sections)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("course_id", "bigint", "FK", "Tham chiếu courses(id)"),
@@ -160,7 +160,7 @@ db_schema = [
         ]
     },
     {
-        "name": "courses (khóa học)",
+        "name": "Khóa học (courses)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("title", "varchar(255)", "", "Tiêu đề"),
@@ -181,7 +181,7 @@ db_schema = [
         ]
     },
     {
-        "name": "documents (tài liệu)",
+        "name": "Tài liệu (documents)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("instructor_id", "bigint", "FK", "Tham chiếu user_instructors(id)"),
@@ -198,7 +198,7 @@ db_schema = [
         ]
     },
     {
-        "name": "enrollments (đăng ký khóa học)",
+        "name": "Đăng ký khóa học (enrollments)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("user_id", "bigint", "FK", "Tham chiếu users(id)"),
@@ -211,7 +211,7 @@ db_schema = [
         ]
     },
     {
-        "name": "forum_likes (lượt thích diễn đàn)",
+        "name": "Lượt thích diễn đàn (forum_likes)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("forum_id", "bigint", "FK", "Tham chiếu forums(id)"),
@@ -221,7 +221,7 @@ db_schema = [
         ]
     },
     {
-        "name": "forum_replies (phản hồi diễn đàn)",
+        "name": "Phản hồi diễn đàn (forum_replies)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("forum_id", "bigint", "FK", "Tham chiếu forums(id)"),
@@ -234,7 +234,7 @@ db_schema = [
         ]
     },
     {
-        "name": "forums (diễn đàn)",
+        "name": "Diễn đàn (forums)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("course_id", "bigint", "FK", "Tham chiếu courses(id)"),
@@ -248,7 +248,7 @@ db_schema = [
         ]
     },
     {
-        "name": "messages (tin nhắn)",
+        "name": "Tin nhắn (messages)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("sender_id", "bigint", "FK", "Người gửi"),
@@ -261,7 +261,7 @@ db_schema = [
         ]
     },
     {
-        "name": "notifications (thông báo)",
+        "name": "Thông báo (notifications)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("user_id", "bigint", "FK", "Tham chiếu users(id)"),
@@ -276,7 +276,7 @@ db_schema = [
         ]
     },
     {
-        "name": "payments (thanh toán)",
+        "name": "Thanh toán (payments)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("user_id", "bigint", "FK", "Tham chiếu users(id)"),
@@ -291,7 +291,7 @@ db_schema = [
         ]
     },
     {
-        "name": "quiz_attempts (lần làm bài kiểm tra)",
+        "name": "Lần làm bài kiểm tra (quiz_attempts)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("user_id", "bigint", "FK", "Tham chiếu users(id)"),
@@ -305,7 +305,7 @@ db_schema = [
         ]
     },
     {
-        "name": "quiz_options (lựa chọn câu hỏi)",
+        "name": "Lựa chọn câu hỏi (quiz_options)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("question_id", "bigint", "FK", "Tham chiếu quiz_questions(id)"),
@@ -317,7 +317,7 @@ db_schema = [
         ]
     },
     {
-        "name": "quiz_questions (câu hỏi kiểm tra)",
+        "name": "Câu hỏi kiểm tra (quiz_questions)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("quiz_id", "bigint", "FK", "Tham chiếu quizzes(id)"),
@@ -331,7 +331,7 @@ db_schema = [
         ]
     },
     {
-        "name": "quiz_responses (câu trả lời kiểm tra)",
+        "name": "Câu trả lời kiểm tra (quiz_responses)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("attempt_id", "bigint", "FK", "Tham chiếu quiz_attempts(id)"),
@@ -343,7 +343,7 @@ db_schema = [
         ]
     },
     {
-        "name": "quizzes (bài kiểm tra)",
+        "name": "Bài kiểm tra (quizzes)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("lesson_id", "bigint", "FK", "Tham chiếu course_lessons(id)"),
@@ -363,7 +363,7 @@ db_schema = [
         ]
     },
     {
-        "name": "reviews (đánh giá)",
+        "name": "Đánh giá (reviews)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("user_student_id", "bigint", "FK", "Tham chiếu user_students(id)"),
@@ -376,7 +376,7 @@ db_schema = [
         ]
     },
     {
-        "name": "session_attendances (điểm danh buổi học)",
+        "name": "Điểm danh buổi học (session_attendances)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("schedule_id", "bigint", "FK", "Tham chiếu teaching_schedules(id)"),
@@ -391,7 +391,7 @@ db_schema = [
         ]
     },
     {
-        "name": "teaching_schedules (lịch dạy)",
+        "name": "Lịch dạy (teaching_schedules)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("academic_class_id", "bigint", "FK", "Tham chiếu academic_classes(id)"),
@@ -413,7 +413,7 @@ db_schema = [
         ]
     },
     {
-        "name": "user_admins (quản trị viên)",
+        "name": "Quản trị viên (user_admins)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("user_id", "bigint", "FK UNIQUE", "Tham chiếu users(id)"),
@@ -429,7 +429,7 @@ db_schema = [
         ]
     },
     {
-        "name": "user_grades (điểm số)",
+        "name": "Điểm số (user_grades)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("user_id", "bigint", "FK", "Tham chiếu users(id)"),
@@ -449,7 +449,7 @@ db_schema = [
         ]
     },
     {
-        "name": "user_instructors (giảng viên)",
+        "name": "Giảng viên (user_instructors)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("user_id", "bigint", "FK UNIQUE", "Tham chiếu users(id)"),
@@ -471,7 +471,7 @@ db_schema = [
         ]
     },
     {
-        "name": "user_students (học viên)",
+        "name": "Học viên (user_students)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("user_id", "bigint", "FK UNIQUE", "Tham chiếu users(id)"),
@@ -496,7 +496,7 @@ db_schema = [
         ]
     },
     {
-        "name": "user_students_academic (sinh viên chính quy)",
+        "name": "Sinh viên học thuật (user_students_academic)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("user_id", "bigint", "FK UNIQUE", "Tham chiếu users(id)"),
@@ -510,7 +510,7 @@ db_schema = [
         ]
     },
     {
-        "name": "users (người dùng)",
+        "name": "Người dùng (users)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("username", "varchar(50)", "", "Tên đăng nhập"),
