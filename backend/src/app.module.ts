@@ -75,6 +75,7 @@ import { TeachingSchedule } from './entities/TeachingSchedule';
 import { SessionAttendance } from './entities/SessionAttendance';
 import { TeachingSchedulesModule } from './modules/teaching-schedules/teaching-schedules.module';
 import { SessionAttendancesModule } from './modules/session-attendances/session-attendances.module';
+import { OpenAIModule } from './modules/openai/openai.module';
 
 @Module({
   imports: [
@@ -167,6 +168,7 @@ import { SessionAttendancesModule } from './modules/session-attendances/session-
     FilesModule,
     TeachingSchedulesModule,
     SessionAttendancesModule,
+    OpenAIModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthMiddleware, InstructorMiddleware],

@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ConfigModule } from '@nestjs/config';
 import { QuizzesController } from './quizzes.controller';
 import { QuizzesService } from './quizzes.service';
 import { Quiz } from '../../entities/Quiz';
@@ -13,9 +14,12 @@ import { UserGradesModule } from '../user-grades/user-grades.module';
 import { QuizAttemptsService } from './quiz-attempts.service';
 import { QuizResponsesService } from './quiz-responses.service';
 import { Course } from 'src/entities/Course';
+import { OpenAIModule } from '../openai/openai.module';
+import { AutoQuizGeneratorService } from './auto-quiz-generator.service';
 
 @Module({
   imports: [
+    ConfigModule.forRoot(),
     TypeOrmModule.forFeature([
       Quiz,
       QuizQuestion,
@@ -27,9 +31,20 @@ import { Course } from 'src/entities/Course';
       Course,
     ]),
     UserGradesModule,
+    OpenAIModule,
   ],
   controllers: [QuizzesController],
-  providers: [QuizzesService, QuizAttemptsService, QuizResponsesService],
-  exports: [QuizzesService, QuizAttemptsService, QuizResponsesService],
+  providers: [
+    QuizzesService,
+    QuizAttemptsService,
+    QuizResponsesService,
+    AutoQuizGeneratorService,
+  ],
+  exports: [
+    QuizzesService,
+    QuizAttemptsService,
+    QuizResponsesService,
+    AutoQuizGeneratorService,
+  ],
 })
 export class QuizzesModule {}

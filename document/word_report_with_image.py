@@ -2,6 +2,7 @@ import os
 from docx import Document
 from docx.shared import Inches, Pt, RGBColor
 from docx.enum.text import WD_ALIGN_PARAGRAPH
+from docx.enum.style import WD_STYLE_TYPE
 
 # Danh sách các thư mục và tiêu đề
 img_groups = [
@@ -126,6 +127,13 @@ if 'hinh' not in [s.name for s in styles]:
     hinh_style.font.size = Pt(12)
     hinh_style.font.bold = True
     hinh_style.font.color.rgb = RGBColor(0, 0, 0)
+
+# Tạo style 'mota' cho đoạn mô tả
+if 'mota' not in [s.name for s in styles]:
+    mota_style = styles.add_style('mota', WD_STYLE_TYPE.PARAGRAPH)
+    mota_style.base_style = styles['Normal']
+    mota_style.paragraph_format.first_line_indent = Inches(0.5)  # 1.27cm = 0.5 inches
+    mota_style.paragraph_format.space_after = Pt(12)
 
 # Thêm heading chương 5
 doc.add_heading('Chương 5. Giao diện hệ thống', level=0)
@@ -273,7 +281,7 @@ for folder, group_code, group_title in img_groups:
         caption.alignment = WD_ALIGN_PARAGRAPH.CENTER
         # Thêm mô tả chức năng
         description = img_descriptions.get(img_file, 'Chức năng chưa được mô tả.')
-        doc.add_paragraph(description)
+        desc_para = doc.add_paragraph(description, style='mota')
 
 doc.save('bao_cao_chuong5.docx')
 print('Đã tạo file bao_cao_chuong5.docx thành công!')
