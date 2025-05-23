@@ -35,7 +35,6 @@ import { AutoQuizGeneratorService } from './auto-quiz-generator.service';
 import { FileInterceptor } from '@nestjs/platform-express';
 import * as pdf from 'pdf-parse';
 import * as mammoth from 'mammoth';
-import { QuestionType } from 'src/entities/QuizQuestion';
 
 @Controller('quizzes')
 export class QuizzesController {
@@ -253,56 +252,11 @@ export class QuizzesController {
       fileType,
       numQuestions,
     );
-
-    // Tạo quiz mới trước (nếu cần)
-    const quiz = await this.quizzesService.create({
-      title: `Auto-generated Quiz from ${file.originalname}`,
-      description: 'Quiz automatically generated from uploaded content',
-      lessonId,
-    });
-
-    // Lưu từng câu hỏi vào DB
-    for (const [index, q] of questions.questions.entries()) {
-      await this.quizzesService.createQuestion({
-        quizId: quiz.id,
-        questionText: q.question,
-        questionType: QuestionType.MULTIPLE_CHOICE,
-        correctExplanation: q.explanation,
-        orderNumber: index + 1,
-        options: q.options.map((opt: string, idx: number) => ({
-          optionText: opt,
-          isCorrect: opt === q.correctAnswer,
-          orderNumber: idx + 1,
-        })),
-      });
-    }
-
-    // Lấy lại quiz đã có đủ câu hỏi và options
-    const quizWithQuestions = await this.quizzesService.findOne(quiz.id);
-
     return {
       success: true,
-      quiz: quizWithQuestions,
+      questions,
       sourceFile: file.originalname,
       generatedAt: new Date(),
     };
-  }
-
-  async extractTextFromBuffer(
-    fileBuffer: Buffer,
-    fileType: string,
-  ): Promise<string> {
-    switch (fileType.toLowerCase()) {
-      case 'pdf':
-        const pdfData = await pdf(fileBuffer);
-        return pdfData.text;
-      case 'docx':
-        const docxResult = await mammoth.extractRawText({ buffer: fileBuffer });
-        return docxResult.value;
-      case 'txt':
-        return fileBuffer.toString('utf-8');
-      default:
-        throw new Error(`Unsupported file type: ${fileType}`);
-    }
   }
 }

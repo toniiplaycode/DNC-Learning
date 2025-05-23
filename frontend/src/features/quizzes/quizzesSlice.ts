@@ -327,6 +327,37 @@ export const updateShowExplanation = createAsyncThunk(
   }
 );
 
+// Add new thunk for generating quiz from file
+export const generateQuizFromFile = createAsyncThunk(
+  "quizzes/generateFromFile",
+  async (
+    {
+      file,
+      numQuestions,
+      lessonId,
+    }: { file: File; numQuestions: number; lessonId: number },
+    { rejectWithValue }
+  ) => {
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("numQuestions", numQuestions.toString());
+      formData.append("lessonId", lessonId.toString());
+
+      const response = await api.post("/quizzes/generate-from-file", formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      });
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Không thể tạo bài trắc nghiệm từ file"
+      );
+    }
+  }
+);
+
 // Add to interface QuizzesState
 interface QuizzesState {
   quizzes: any[];
@@ -348,6 +379,15 @@ interface QuizzesState {
   quizAttemptsError: string | null;
   showExplanationStatus: "idle" | "loading" | "succeeded" | "failed";
   showExplanationError: string | null;
+  generatedQuiz: {
+    questions: any[];
+    sourceFile: string;
+    generatedAt: string;
+    maxQuestions: number;
+    contentLength: number;
+  } | null;
+  generateQuizStatus: "idle" | "loading" | "succeeded" | "failed";
+  generateQuizError: string | null;
 }
 
 // Update initial state
@@ -371,6 +411,9 @@ const initialState: QuizzesState = {
   quizAttemptsError: null,
   showExplanationStatus: "idle",
   showExplanationError: null,
+  generatedQuiz: null,
+  generateQuizStatus: "idle",
+  generateQuizError: null,
 };
 
 // Add to reducers
@@ -403,6 +446,11 @@ const quizzesSlice = createSlice({
     resetShowExplanationStatus: (state) => {
       state.showExplanationStatus = "idle";
       state.showExplanationError = null;
+    },
+    resetGeneratedQuiz: (state) => {
+      state.generatedQuiz = null;
+      state.generateQuizStatus = "idle";
+      state.generateQuizError = null;
     },
   },
   extraReducers: (builder) => {
@@ -744,6 +792,23 @@ const quizzesSlice = createSlice({
       .addCase(updateShowExplanation.rejected, (state, action) => {
         state.showExplanationStatus = "failed";
         state.showExplanationError = action.payload as string;
+      })
+
+      // Generate quiz from file
+      .addCase(generateQuizFromFile.pending, (state) => {
+        state.generateQuizStatus = "loading";
+        state.generateQuizError = null;
+      })
+      .addCase(generateQuizFromFile.fulfilled, (state, action) => {
+        state.generateQuizStatus = "succeeded";
+        state.generatedQuiz = action.payload.questions.questions;
+        state.error = null;
+        toast.success("Tạo bài trắc nghiệm từ file thành công");
+      })
+      .addCase(generateQuizFromFile.rejected, (state, action) => {
+        state.generateQuizStatus = "failed";
+        state.generateQuizError = action.payload as string;
+        toast.error(action.payload as string);
       });
   },
 });
@@ -756,6 +821,7 @@ export const {
   resetInstructorAttempts,
   resetQuizAttempts,
   resetShowExplanationStatus,
+  resetGeneratedQuiz,
 } = quizzesSlice.actions;
 
 export default quizzesSlice.reducer;

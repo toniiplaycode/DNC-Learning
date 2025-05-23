@@ -189,3 +189,7 @@ export const selectUpcomingAcademicQuizzes = createSelector(
     );
   }
 );
+
+// Selectors for generated quiz
+export const selectGeneratedQuiz = (state: RootState) =>
+  state.quizzes.generatedQuiz;
