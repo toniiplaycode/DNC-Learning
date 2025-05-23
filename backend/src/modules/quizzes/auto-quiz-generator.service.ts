@@ -15,8 +15,7 @@ interface QuizQuestion {
 @Injectable()
 export class AutoQuizGeneratorService {
   private readonly logger = new Logger(AutoQuizGeneratorService.name);
-  private readonly MAX_TOKENS = 2000; // Giới hạn độ dài nội dung cho mỗi lần tạo
-  private readonly CHUNK_SIZE = 8; // hoặc 10, tuỳ mức ổn định của AI
+  private readonly CHUNK_SIZE = 10; // hoặc 10, tuỳ mức ổn định của AI
 
   constructor(
     private readonly openAIService: OpenAIService,
@@ -33,14 +32,15 @@ export class AutoQuizGeneratorService {
       switch (fileType.toLowerCase()) {
         case 'pdf':
           const pdfData = await pdf(fileBuffer);
-          return pdfData.text;
+          return pdfData.text.replace(/\s/g, '');
         case 'docx':
           const docxResult = await mammoth.extractRawText({
             buffer: fileBuffer,
           });
-          return docxResult.value;
+          return docxResult.value.replace(/\s/g, '');
         case 'txt':
-          return fileBuffer.toString('utf-8');
+          const text = fileBuffer.toString('utf-8');
+          return text.replace(/\s/g, '');
         default:
           throw new Error(`Unsupported file type: ${fileType}`);
       }
@@ -101,6 +101,7 @@ export class AutoQuizGeneratorService {
         warning,
         contentLength,
         maxQuestions,
+        actualQuestionsGenerated: questions.length,
       };
     } catch (error) {
       this.logger.error(`Error generating quiz from buffer: ${error.message}`);
@@ -216,12 +217,13 @@ export class AutoQuizGeneratorService {
     switch (fileType.toLowerCase()) {
       case 'pdf':
         const pdfData = await pdf(fileBuffer);
-        return pdfData.text;
+        return pdfData.text.replace(/\s/g, '');
       case 'docx':
         const docxResult = await mammoth.extractRawText({ buffer: fileBuffer });
-        return docxResult.value;
+        return docxResult.value.replace(/\s/g, '');
       case 'txt':
-        return fileBuffer.toString('utf-8');
+        const text = fileBuffer.toString('utf-8');
+        return text.replace(/\s/g, '');
       default:
         throw new Error(`Unsupported file type: ${fileType}`);
     }

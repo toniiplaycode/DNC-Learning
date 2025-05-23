@@ -385,6 +385,7 @@ interface QuizzesState {
     generatedAt: string;
     maxQuestions: number;
     contentLength: number;
+    actualQuestionsGenerated: number;
   } | null;
   generateQuizStatus: "idle" | "loading" | "succeeded" | "failed";
   generateQuizError: string | null;

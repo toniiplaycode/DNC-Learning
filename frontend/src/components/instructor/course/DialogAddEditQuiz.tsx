@@ -32,6 +32,7 @@ import {
   Switch,
   CircularProgress,
   Alert,
+  LinearProgress,
 } from "@mui/material";
 import {
   Close,
@@ -78,7 +79,6 @@ import { selectAcademicClassStudents } from "../../../features/users/usersSelect
 import { fetchStudentsByAcademicClass } from "../../../features/users/usersApiSlice";
 import { createNotification } from "../../../features/notifications/notificationsSlice";
 import { selectGeneratedQuiz } from "../../../features/quizzes/quizzesSelectors";
-
 // Định nghĩa kiểu QuizOption
 interface QuizOption {
   id?: number;
@@ -170,6 +170,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
   const [fileStats, setFileStats] = useState<{
     contentLength?: number;
     maxQuestions?: number;
+    actualQuestionsGenerated?: number;
   } | null>(null);
 
   const [hasBackendResult, setHasBackendResult] = useState(false);
@@ -493,10 +494,15 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
 
     try {
       setIsLoading(true);
-
       const parsedQuestions = await parseQuizDocument(file);
 
-      // Update quiz form with initial values
+      // Chuẩn hóa dữ liệu
+      const normalized = normalizeQuestions(
+        Array.isArray(parsedQuestions)
+          ? parsedQuestions
+          : parsedQuestions.questions
+      );
+
       setQuizForm((prev) => ({
         ...prev,
         title: prev.title || file.name.replace(/\.[^/.]+$/, ""),
@@ -509,37 +515,9 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
         random: quizForm.random,
       }));
 
-      // Add parsed questions with proper type casting
-      const questionsArray = Array.isArray(parsedQuestions)
-        ? parsedQuestions
-        : parsedQuestions.questions;
+      setQuestions((prevQuestions) => [...prevQuestions, ...normalized]);
 
-      const now = Date.now();
-      const transformedQuestions = questionsArray.map(
-        (q: any, index: number) => ({
-          id: `${now}_${index}`,
-          quizId: `${now}`,
-          questionText: q.question,
-          questionType: QuestionType.MULTIPLE_CHOICE,
-          points: 1,
-          orderNumber: index + 1,
-          correctExplanation: q.explanation,
-          options: q.options.map((opt: string, optIndex: number) => ({
-            id: `${now}_${index}_${optIndex}`,
-            questionId: `${now}_${index}`,
-            optionText: opt,
-            isCorrect: opt === q.correctAnswer,
-            orderNumber: optIndex + 1,
-          })),
-        })
-      );
-
-      setQuestions((prevQuestions) => [
-        ...prevQuestions,
-        ...transformedQuestions,
-      ]);
-
-      toast.success(`Đã nhập ${transformedQuestions.length} câu hỏi từ tệp`);
+      toast.success(`Đã nhập ${normalized.length} câu hỏi từ tệp`);
     } catch (error) {
       console.error("Error importing questions:", error);
       toast.error("Không thể đọc tệp. Vui lòng kiểm tra định dạng tệp.");
@@ -594,26 +572,11 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
   };
 
   // Add handler for automatic quiz generation
-  const handleFileStats = async (file: File) => {
-    // Đọc file dưới dạng text
-    const text = await file.text();
-    // Đếm ký tự không trắng
-    const contentLength = text.replace(/\s/g, "").length;
-    const maxQuestions = Math.max(1, Math.floor(contentLength / 300));
-    setFileStats({ contentLength, maxQuestions });
-  };
-
   const handleGenerateQuizFromFile = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
-
-    // Reset state khi bắt đầu upload file mới
-    setHasBackendResult(false);
-
-    // Dự đoán ban đầu
-    await handleFileStats(file);
 
     try {
       setIsGeneratingQuiz(true);
@@ -626,57 +589,22 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
       ).unwrap();
 
       if (result.questions) {
-        // Đánh dấu đã có kết quả từ backend
+        setFileStats({
+          contentLength: result.questions.contentLength,
+          maxQuestions: result.questions.maxQuestions,
+          actualQuestionsGenerated: result.questions.actualQuestionsGenerated,
+        });
         setHasBackendResult(true);
 
         const questionsArray = Array.isArray(result.questions)
           ? result.questions
           : result.questions.questions;
 
-        // Hiển thị cảnh báo nếu có warning từ backend hoặc số lượng ít hơn yêu cầu
-        if (result.warning) {
-          toast.warn(result.warning);
-        } else if (questionsArray.length < numQuestions) {
-          toast.warn(
-            `Chỉ tạo được ${questionsArray.length} câu hỏi do nội dung file hoặc dữ liệu AI trả về không đủ.`
-          );
-        }
+        // Chuẩn hóa dữ liệu
+        const normalized = normalizeQuestions(questionsArray);
 
-        // Cập nhật lại dự đoán nếu backend trả về
-        if (result.questions?.maxQuestions && result.questions?.contentLength) {
-          setFileStats({
-            contentLength: result.questions.contentLength,
-            maxQuestions: result.questions.maxQuestions,
-          });
-        }
+        setQuestions((prevQuestions) => [...prevQuestions, ...normalized]);
 
-        const now = Date.now();
-        const transformedQuestions = questionsArray.map(
-          (q: any, index: number) => ({
-            id: `${now}_${index}`,
-            quizId: `${now}`,
-            questionText: q.question,
-            questionType: QuestionType.MULTIPLE_CHOICE,
-            points: 1,
-            orderNumber: index + 1,
-            correctExplanation: q.explanation,
-            options: q.options.map((opt: string, optIndex: number) => ({
-              id: `${now}_${index}_${optIndex}`,
-              questionId: `${now}_${index}`,
-              optionText: opt,
-              isCorrect: opt === q.correctAnswer,
-              orderNumber: optIndex + 1,
-            })),
-          })
-        );
-
-        // Update quiz form with generated questions
-        setQuestions((prevQuestions) => [
-          ...prevQuestions,
-          ...transformedQuestions,
-        ]);
-
-        // Update quiz title if empty
         if (!quizForm.title) {
           setQuizForm((prev) => ({
             ...prev,
@@ -684,7 +612,12 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
           }));
         }
 
-        toast.success(`Đã tạo ${transformedQuestions.length} câu hỏi từ file`);
+        toast.success(
+          `Đã tạo ${result.questions.actualQuestionsGenerated} câu hỏi từ file (nội dung: ${result.questions.contentLength} ký tự, tối đa: ${result.questions.maxQuestions} câu)`,
+          {
+            autoClose: 5000,
+          }
+        );
       }
     } catch (error: any) {
       toast.error(error.message || "Không thể tạo bài trắc nghiệm từ file");
@@ -1088,19 +1021,18 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                 )}
 
                 {isGeneratingQuiz && (
-                  <Alert
-                    severity="info"
-                    sx={{
-                      mt: 1,
-                      borderRadius: 2,
-                      "& .MuiAlert-icon": {
-                        alignItems: "center",
-                      },
-                    }}
-                  >
-                    Đang phân tích nội dung và tạo câu hỏi. Vui lòng đợi trong
-                    giây lát...
-                  </Alert>
+                  <Box sx={{ width: "100%" }}>
+                    <LinearProgress color="primary" />
+                    <Typography
+                      variant="body2"
+                      color="primary"
+                      align="center"
+                      sx={{ mt: 1 }}
+                    >
+                      Đang phân tích file và tạo câu hỏi tự động, vui lòng
+                      đợi...
+                    </Typography>
+                  </Box>
                 )}
 
                 {fileStats && (
@@ -1113,19 +1045,12 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                       <strong>Nội dung file:</strong> {fileStats.contentLength}{" "}
                       ký tự (không tính khoảng trắng).
                       <br />
-                      {hasBackendResult ? (
-                        // Nếu đã có kết quả từ backend
-                        <>
-                          <strong>Đã tạo được:</strong> {fileStats.maxQuestions}{" "}
-                          câu hỏi chất lượng.
-                        </>
-                      ) : (
-                        // Nếu mới upload file, chưa có kết quả từ backend
-                        <>
-                          <strong>Dự đoán có thể tạo tối đa:</strong>{" "}
-                          {fileStats.maxQuestions} câu hỏi chất lượng.
-                        </>
-                      )}
+                      <strong>Số câu hỏi tối đa có thể tạo:</strong>{" "}
+                      {fileStats.maxQuestions} câu hỏi chất lượng.
+                      <br />
+                      <strong>Số câu hỏi thực tế đã tạo:</strong>{" "}
+                      {fileStats.actualQuestionsGenerated ?? questions.length}{" "}
+                      câu hỏi.
                     </Typography>
                   </Alert>
                 )}
@@ -1517,5 +1442,38 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
     </Dialog>
   );
 };
+
+function normalizeQuestions(rawQuestions: any[]): QuizQuestion[] {
+  const now = Date.now();
+  return rawQuestions.map((q, index) => ({
+    id: q.id || `${now}_${index}`,
+    quizId: q.quizId || `${now}`,
+    questionText: q.questionText || q.question || "",
+    questionType: q.questionType || QuestionType.MULTIPLE_CHOICE,
+    points: q.points || 1,
+    orderNumber: q.orderNumber || index + 1,
+    correctExplanation: q.correctExplanation || q.explanation || "",
+    options: (q.options || []).map((opt: any, optIndex: number) =>
+      typeof opt === "string"
+        ? {
+            id: `${now}_${index}_${optIndex}`,
+            questionId: q.id || `${now}_${index}`,
+            optionText: opt,
+            isCorrect: opt === (q.correctAnswer || q.correct_option),
+            orderNumber: optIndex + 1,
+          }
+        : {
+            id: opt.id || `${now}_${index}_${optIndex}`,
+            questionId: opt.questionId || q.id || `${now}_${index}`,
+            optionText: opt.optionText || opt.text || "",
+            isCorrect:
+              typeof opt.isCorrect === "boolean"
+                ? opt.isCorrect
+                : opt.optionText === (q.correctAnswer || q.correct_option),
+            orderNumber: opt.orderNumber || optIndex + 1,
+          }
+    ),
+  }));
+}
 
 export default DialogAddEditQuiz;
