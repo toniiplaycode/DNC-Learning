@@ -334,15 +334,16 @@ export const generateQuizFromFile = createAsyncThunk(
     {
       file,
       numQuestions,
-      lessonId,
-    }: { file: File; numQuestions: number; lessonId: number },
+    }: {
+      file: File;
+      numQuestions: number;
+    },
     { rejectWithValue }
   ) => {
     try {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("numQuestions", numQuestions.toString());
-      formData.append("lessonId", lessonId.toString());
 
       const response = await api.post("/quizzes/generate-from-file", formData, {
         headers: {

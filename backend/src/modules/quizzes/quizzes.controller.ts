@@ -244,7 +244,6 @@ export class QuizzesController {
   async generateQuizFromFile(
     @UploadedFile() file: Express.Multer.File,
     @Body('numQuestions') numQuestions: number = 5,
-    @Body('lessonId') lessonId: number,
   ) {
     const fileType = file.originalname.split('.').pop() || 'txt';
     const questions = await this.autoQuizGeneratorService.generateQuizFromFile(

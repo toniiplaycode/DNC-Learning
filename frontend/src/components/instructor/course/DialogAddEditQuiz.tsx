@@ -48,6 +48,9 @@ import {
   HelpOutline,
   InfoOutlined,
   LightbulbOutlined,
+  DescriptionOutlined,
+  TrendingUpOutlined,
+  CheckCircleOutlined,
 } from "@mui/icons-material";
 import { useParams } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
@@ -158,6 +161,8 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
   const quizzesData = useAppSelector(selectAllQuizzes);
   const currentClassInstructor = useAppSelector(selectCurrentClassInstructor);
   const academicClassStudents = useAppSelector(selectAcademicClassStudents);
+
+  console.log(additionalInfo);
 
   // Thêm state để theo dõi trạng thái cập nhật showExplanation
   const showExplanationStatus = useAppSelector(selectShowExplanationStatus);
@@ -578,13 +583,28 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
     const file = event.target.files?.[0];
     if (!file) return;
 
+    // Validate required fields based on target type
+    if (
+      additionalInfo?.targetType === "academic" &&
+      !quizForm.academicClassId
+    ) {
+      toast.error("Vui lòng chọn lớp học trước khi tạo câu hỏi tự động");
+      return;
+    }
+
+    if (!additionalInfo && !quizForm.lessonId) {
+      toast.error(
+        "Vui lòng chọn nội dung bài học trước khi tạo câu hỏi tự động"
+      );
+      return;
+    }
+
     try {
       setIsGeneratingQuiz(true);
       const result = await dispatch(
         generateQuizFromFile({
           file,
           numQuestions,
-          lessonId: quizForm.lessonId || 0,
         })
       ).unwrap();
 
@@ -600,7 +620,6 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
           ? result.questions
           : result.questions.questions;
 
-        // Chuẩn hóa dữ liệu
         const normalized = normalizeQuestions(questionsArray);
 
         setQuestions((prevQuestions) => [...prevQuestions, ...normalized]);
@@ -614,9 +633,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
 
         toast.success(
           `Đã tạo ${result.questions.actualQuestionsGenerated} câu hỏi từ file (nội dung: ${result.questions.contentLength} ký tự, tối đa: ${result.questions.maxQuestions} câu)`,
-          {
-            autoClose: 5000,
-          }
+          { autoClose: 3000 }
         );
       }
     } catch (error: any) {
@@ -972,7 +989,12 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                     component="label"
                     variant="contained"
                     startIcon={<CloudUpload />}
-                    disabled={isGeneratingQuiz || !quizForm.lessonId}
+                    disabled={
+                      isGeneratingQuiz ||
+                      (additionalInfo?.targetType === "academic"
+                        ? !quizForm.academicClassId
+                        : !quizForm.lessonId)
+                    }
                     sx={{
                       flex: 1,
                       py: 1.5,
@@ -1005,7 +1027,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                   </Button>
                 </Stack>
 
-                {!quizForm.lessonId && (
+                {!quizForm.lessonId && !additionalInfo && (
                   <Alert
                     severity="warning"
                     sx={{
@@ -1019,6 +1041,22 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                     Vui lòng chọn nội dung bài học trước khi tạo câu hỏi tự động
                   </Alert>
                 )}
+
+                {additionalInfo?.targetType === "academic" &&
+                  !quizForm.academicClassId && (
+                    <Alert
+                      severity="warning"
+                      sx={{
+                        mt: 1,
+                        borderRadius: 2,
+                        "& .MuiAlert-icon": {
+                          alignItems: "center",
+                        },
+                      }}
+                    >
+                      Vui lòng chọn lớp học trước khi tạo câu hỏi tự động
+                    </Alert>
+                  )}
 
                 {isGeneratingQuiz && (
                   <Box sx={{ width: "100%" }}>
@@ -1038,20 +1076,69 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                 {fileStats && (
                   <Alert
                     severity="info"
-                    sx={{ mt: 2, borderRadius: 2, alignItems: "center" }}
-                    icon={false}
+                    sx={{
+                      mt: 2,
+                      borderRadius: 2,
+                      "& .MuiAlert-message": {
+                        width: "100%",
+                      },
+                    }}
                   >
-                    <Typography variant="body2">
-                      <strong>Nội dung file:</strong> {fileStats.contentLength}{" "}
-                      ký tự (không tính khoảng trắng).
-                      <br />
-                      <strong>Số câu hỏi tối đa có thể tạo:</strong>{" "}
-                      {fileStats.maxQuestions} câu hỏi chất lượng.
-                      <br />
-                      <strong>Số câu hỏi thực tế đã tạo:</strong>{" "}
-                      {fileStats.actualQuestionsGenerated ?? questions.length}{" "}
-                      câu hỏi.
-                    </Typography>
+                    <Stack spacing={1.5}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                          color: "text.primary",
+                        }}
+                      >
+                        <DescriptionOutlined fontSize="small" />
+                        <Typography variant="body2">
+                          <strong>Nội dung file:</strong>{" "}
+                          {fileStats.contentLength.toLocaleString()} ký tự
+                          <Typography
+                            component="span"
+                            variant="caption"
+                            sx={{ ml: 0.5, color: "text.secondary" }}
+                          >
+                            (không tính khoảng trắng)
+                          </Typography>
+                        </Typography>
+                      </Box>
+
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                          color: "success.main",
+                        }}
+                      >
+                        <TrendingUpOutlined fontSize="small" />
+                        <Typography variant="body2">
+                          <strong>Số câu hỏi tối đa:</strong>{" "}
+                          {fileStats.maxQuestions} câu hỏi chất lượng
+                        </Typography>
+                      </Box>
+
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                          color: "info.main",
+                        }}
+                      >
+                        <CheckCircleOutlined fontSize="small" />
+                        <Typography variant="body2">
+                          <strong>Số câu hỏi đã tạo:</strong>{" "}
+                          {fileStats.actualQuestionsGenerated ??
+                            questions.length}{" "}
+                          câu hỏi
+                        </Typography>
+                      </Box>
+                    </Stack>
                   </Alert>
                 )}
               </Stack>
