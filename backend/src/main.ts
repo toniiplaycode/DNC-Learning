@@ -3,9 +3,10 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { BadRequestException, ValidationPipe } from '@nestjs/common';
 import { ValidationError } from 'class-validator';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule); // tạo app
+  const app = await NestFactory.create(AppModule);
 
   // custom validation pipe cho toàn bộ controller
   app.useGlobalPipes(
@@ -21,12 +22,16 @@ async function bootstrap() {
     }),
   );
 
-  // Cấu hình CORS
+  // Cấu hình CORS và WebSocket
   app.enableCors({
-    origin: 'http://localhost:5173', // Đổi thành URL của frontend
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    origin: ['http://localhost:5173', 'http://localhost:3000'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   });
+
+  // Configure WebSocket adapter
+  app.useWebSocketAdapter(new IoAdapter(app));
 
   await app.listen(3000);
 }

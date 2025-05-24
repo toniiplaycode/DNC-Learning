@@ -114,10 +114,11 @@ export const updateQuiz = createAsyncThunk(
   async (data: any, { rejectWithValue }) => {
     try {
       const response = await api.patch(`/quizzes/${Number(data.id)}`, data);
+      console.log("response", response);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
-        error.response?.data?.message || "Không thể cập nhật Bài trắc nghiệm"
+        error.response?.data?.message || "Không thể cập nhật bài trắc nghiệm"
       );
     }
   }

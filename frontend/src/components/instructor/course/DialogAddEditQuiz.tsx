@@ -82,6 +82,8 @@ import { selectAcademicClassStudents } from "../../../features/users/usersSelect
 import { fetchStudentsByAcademicClass } from "../../../features/users/usersApiSlice";
 import { createNotification } from "../../../features/notifications/notificationsSlice";
 import { selectGeneratedQuiz } from "../../../features/quizzes/quizzesSelectors";
+import { io, Socket } from "socket.io-client";
+
 // Định nghĩa kiểu QuizOption
 interface QuizOption {
   id?: number;
@@ -146,6 +148,14 @@ interface DialogAddEditQuizProps {
   };
 }
 
+// Add QuizProgress interface
+interface QuizProgress {
+  totalQuestions: number;
+  currentQuestions: number;
+  status: "processing" | "completed" | "error";
+  message?: string;
+}
+
 const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
   open,
   onClose,
@@ -179,6 +189,8 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
   } | null>(null);
 
   const [hasBackendResult, setHasBackendResult] = useState(false);
+  const [quizProgress, setQuizProgress] = useState<QuizProgress | null>(null);
+  const [socket, setSocket] = useState<Socket | null>(null);
 
   useEffect(() => {
     dispatch(fetchClassInstructorById(Number(currentUser?.userInstructor?.id)));
@@ -414,10 +426,6 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
   const handleSubmit = async () => {
     // Validate form
     if (!quizForm.title.trim() || questions.length === 0) {
-      return;
-    }
-
-    if (!quizForm.title.trim() || questions.length === 0) {
       toast.error("Vui lòng điền đầy đủ thông tin bắt buộc");
       return;
     }
@@ -453,6 +461,9 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
       await dispatch(createQuiz(quizData));
       toast.success("Thêm Bài trắc nghiệm thành công!");
 
+      // Đóng dialog ngay sau khi tạo quiz thành công
+      onClose();
+
       if (academicClassStudents.length > 0) {
         const notificationData = {
           userIds: academicClassStudents.map((user) => user.userId),
@@ -463,17 +474,20 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
         await dispatch(createNotification(notificationData));
       }
     } else if (editMode) {
-      await dispatch(updateQuiz(quizData)).then((result) => {
-        if (result?.error?.message == "Rejected") {
-          toast.error(
-            "Không thể sửa Bài trắc nghiệm vì đã có học sinh/sinh viên làm !"
-          );
-          return;
-        }
-        toast.success("Cập nhật Bài trắc nghiệm thành công!");
-      });
+      const result = await dispatch(updateQuiz(quizData));
+      if (result?.error?.message == "Rejected") {
+        toast.error(
+          "Không thể sửa Bài trắc nghiệm vì đã có học sinh/sinh viên làm!"
+        );
+        return;
+      }
+      toast.success("Cập nhật Bài trắc nghiệm thành công!");
+
+      // Đóng dialog ngay sau khi cập nhật quiz thành công
+      onClose();
     }
 
+    // Các actions refresh data sẽ chạy sau khi dialog đã đóng
     if (id) {
       await dispatch(fetchCourseQuizzes(Number(id)));
       await dispatch(fetchCourseById(Number(id)));
@@ -486,8 +500,6 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
     await dispatch(
       fetchInstructorAttempts(Number(currentUser.userInstructor.id))
     );
-
-    onClose();
   };
 
   // Add file upload handler in component
@@ -576,12 +588,61 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
     }
   };
 
-  // Add handler for automatic quiz generation
+  // Add WebSocket connection
+  useEffect(() => {
+    const backendUrl =
+      process.env.REACT_APP_BACKEND_URL || "http://localhost:3000";
+    const socket = io(`${backendUrl}/quiz-progress`, {
+      withCredentials: true,
+      transports: ["websocket"],
+      reconnectionAttempts: 5,
+      reconnectionDelay: 1000,
+      timeout: 10000,
+      forceNew: true,
+      autoConnect: true,
+    });
+
+    socket.on("connect", () => {
+      console.log("WebSocket connected successfully");
+      setSocket(socket);
+    });
+
+    socket.on("connect_error", (error) => {
+      console.error("WebSocket connection error:", error);
+      toast.error("Không thể kết nối đến máy chủ. Vui lòng thử lại sau.");
+    });
+
+    socket.on("disconnect", (reason) => {
+      console.log("WebSocket disconnected:", reason);
+      if (reason === "io server disconnect") {
+        // Server initiated disconnect, try to reconnect
+        socket.connect();
+      }
+    });
+
+    socket.on("quizProgress", (data: QuizProgress) => {
+      console.log("Received quiz progress:", data);
+      setQuizProgress(data);
+    });
+
+    // Cleanup on unmount (when dialog closes)
+    return () => {
+      if (socket.connected) {
+        console.log("Dialog closing, disconnecting WebSocket...");
+        socket.disconnect();
+      }
+    };
+  }, []); // Empty dependency array since we only want to connect/disconnect when dialog opens/closes
+
+  // Update handleGenerateQuizFromFile to reset progress
   const handleGenerateQuizFromFile = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
     const file = event.target.files?.[0];
     if (!file) return;
+
+    // Reset progress state
+    setQuizProgress(null);
 
     // Validate required fields based on target type
     if (
@@ -638,10 +699,54 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
       }
     } catch (error: any) {
       toast.error(error.message || "Không thể tạo bài trắc nghiệm từ file");
+      setQuizProgress(null);
     } finally {
       setIsGeneratingQuiz(false);
       event.target.value = "";
     }
+  };
+
+  // Add renderProgress function
+  const renderProgress = () => {
+    if (!quizProgress) return null;
+
+    const progress =
+      (quizProgress.currentQuestions / quizProgress.totalQuestions) * 100;
+    const statusColor =
+      quizProgress.status === "error"
+        ? "error"
+        : quizProgress.status === "completed"
+        ? "success"
+        : "primary";
+
+    return (
+      <Box sx={{ width: "100%", mt: 2 }}>
+        <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
+          <Typography variant="body2" color="text.secondary" sx={{ flex: 1 }}>
+            {quizProgress.message ||
+              `Đang tạo câu hỏi (${quizProgress.currentQuestions}/${quizProgress.totalQuestions})`}
+          </Typography>
+          <Typography variant="body2" color="text.secondary">
+            {Math.round(progress)}%
+          </Typography>
+        </Box>
+        <LinearProgress
+          variant="determinate"
+          value={progress}
+          color={statusColor as any}
+          sx={{ height: 8, borderRadius: 4 }}
+        />
+        {quizProgress.status === "error" && (
+          <Typography
+            variant="caption"
+            color="error"
+            sx={{ mt: 1, display: "block" }}
+          >
+            {quizProgress.message}
+          </Typography>
+        )}
+      </Box>
+    );
   };
 
   // Add cleanup effect
@@ -1058,20 +1163,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                     </Alert>
                   )}
 
-                {isGeneratingQuiz && (
-                  <Box sx={{ width: "100%" }}>
-                    <LinearProgress color="primary" />
-                    <Typography
-                      variant="body2"
-                      color="primary"
-                      align="center"
-                      sx={{ mt: 1 }}
-                    >
-                      Đang phân tích file và tạo câu hỏi tự động, vui lòng
-                      đợi...
-                    </Typography>
-                  </Box>
-                )}
+                {isGeneratingQuiz && renderProgress()}
 
                 {fileStats && (
                   <Alert

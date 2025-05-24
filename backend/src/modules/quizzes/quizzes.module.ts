@@ -16,6 +16,7 @@ import { QuizResponsesService } from './quiz-responses.service';
 import { Course } from 'src/entities/Course';
 import { OpenAIModule } from '../openai/openai.module';
 import { AutoQuizGeneratorService } from './auto-quiz-generator.service';
+import { QuizProgressGateway } from './quiz-progress.gateway';
 
 @Module({
   imports: [
@@ -39,12 +40,14 @@ import { AutoQuizGeneratorService } from './auto-quiz-generator.service';
     QuizAttemptsService,
     QuizResponsesService,
     AutoQuizGeneratorService,
+    QuizProgressGateway,
   ],
   exports: [
     QuizzesService,
     QuizAttemptsService,
     QuizResponsesService,
     AutoQuizGeneratorService,
+    QuizProgressGateway,
   ],
 })
 export class QuizzesModule {}

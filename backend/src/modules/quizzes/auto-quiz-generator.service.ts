@@ -4,6 +4,7 @@ import { ConfigService } from '@nestjs/config';
 import * as pdf from 'pdf-parse';
 import * as mammoth from 'mammoth';
 import * as fs from 'fs';
+import { QuizProgressGateway } from './quiz-progress.gateway';
 
 interface QuizQuestion {
   question: string;
@@ -15,11 +16,13 @@ interface QuizQuestion {
 @Injectable()
 export class AutoQuizGeneratorService {
   private readonly logger = new Logger(AutoQuizGeneratorService.name);
-  private readonly CHUNK_SIZE = 10; // hoặc 10, tuỳ mức ổn định của AI
+  private readonly CHUNK_SIZE = 5; // Tăng lên 5 câu hỏi mỗi lần
+  private readonly MAX_PARALLEL_REQUESTS = 2; // Giữ nguyên số request song song để tránh quá tải
 
   constructor(
     private readonly openAIService: OpenAIService,
     private readonly configService: ConfigService,
+    private readonly progressGateway: QuizProgressGateway,
   ) {}
 
   async extractTextFromFile(
@@ -116,98 +119,189 @@ export class AutoQuizGeneratorService {
     let allQuestions: QuizQuestion[] = [];
     let remaining = numQuestions;
     let chunkIndex = 0;
+    let retryCount = 0;
+    const MAX_RETRIES = 2; // Thêm số lần thử lại tối đa
+
+    // Emit initial progress
+    await this.progressGateway.emitProgress({
+      totalQuestions: numQuestions,
+      currentQuestions: 0,
+      status: 'processing',
+      message: 'Bắt đầu tạo câu hỏi...',
+    });
 
     while (remaining > 0) {
-      const chunkSize = Math.min(this.CHUNK_SIZE, remaining);
+      const currentChunkSize = Math.min(this.CHUNK_SIZE, remaining);
+
+      // Emit progress before processing chunk
+      await this.progressGateway.emitProgress({
+        totalQuestions: numQuestions,
+        currentQuestions: allQuestions.length,
+        status: 'processing',
+        message: `Đang tạo ${currentChunkSize} câu hỏi (${allQuestions.length + 1}-${allQuestions.length + currentChunkSize}/${numQuestions})...`,
+      });
+
       const prompt = `
-        Tạo ${chunkSize} câu hỏi trắc nghiệm dựa trên nội dung sau.
+        Tạo ${currentChunkSize} câu hỏi trắc nghiệm dựa trên nội dung sau.
         YÊU CẦU:
-        - Mỗi câu hỏi phải có 4 lựa chọn (options), chỉ có 1 đáp án đúng (correctAnswer).
-        - Đáp án đúng (correctAnswer) PHẢI TRÙNG KHỚP với một trong 4 lựa chọn phía trên.
-        - Mỗi lựa chọn phải khác biệt, không trùng lặp, không chứa đáp án đúng nhiều lần.
-        - Đáp án đúng phải là lựa chọn duy nhất đúng, các lựa chọn còn lại phải sai.
-        - Mỗi câu hỏi cần có giải thích ngắn gọn (explanation) tại sao đáp án đúng là đúng.
-        - Tất cả nội dung phải bằng tiếng Việt, rõ ràng, dễ hiểu.
-        - CHỈ trả về mảng JSON, không thêm bất kỳ text nào khác.
-        - Đảm bảo JSON hợp lệ, đúng cấu trúc sau:
+        - Mỗi câu hỏi phải có 4 lựa chọn, chỉ 1 đáp án đúng
+        - Đáp án đúng PHẢI TRÙNG với một trong 4 lựa chọn
+        - Các lựa chọn phải khác biệt, không trùng lặp
+        - Giải thích ngắn gọn (1-2 câu) tại sao đáp án đúng
+        - Tất cả bằng tiếng Việt, rõ ràng
+        - CHỈ trả về mảng JSON, không thêm text khác
+        - Đảm bảo JSON hợp lệ theo cấu trúc:
         [
           {
             "question": "Câu hỏi...",
             "options": ["Lựa chọn 1", "Lựa chọn 2", "Lựa chọn 3", "Lựa chọn 4"],
-            "correctAnswer": "Một trong 4 lựa chọn phía trên",
+            "correctAnswer": "Một trong 4 lựa chọn trên",
             "explanation": "Giải thích ngắn gọn"
           }
         ]
+        Lưu ý: Tạo đúng ${currentChunkSize} câu hỏi, không thiếu không thừa.
         Nội dung:
         ${content}
       `;
 
-      this.logger.log(
-        `Gọi AI chunk ${chunkIndex + 1}, yêu cầu ${chunkSize} câu hỏi...`,
-      );
-      const response = await this.openAIService.generate(prompt);
-      this.logger.debug(`AI response chunk ${chunkIndex + 1}: ${response}`);
-
-      // Fallback: cắt đến dấu ] cuối cùng nếu không tìm thấy mảng JSON hợp lệ
-      let jsonMatch = response.match(/\[\s*\{[\s\S]*\}\s*\]/);
-      let jsonStr = '';
-      if (!jsonMatch) {
-        const lastBracket = response.lastIndexOf(']');
-        if (lastBracket !== -1) {
-          jsonStr = response.slice(0, lastBracket + 1);
-          this.logger.warn(
-            'Không tìm thấy mảng JSON hợp lệ, thử cắt đến dấu ] cuối cùng.',
-          );
-        } else {
-          throw new Error(
-            'Không tìm thấy mảng JSON hợp lệ trong response của AI.',
-          );
-        }
-      } else {
-        jsonStr = jsonMatch[0];
-      }
-
-      let questions: QuizQuestion[] = [];
       try {
-        questions = JSON.parse(jsonStr);
-      } catch (e) {
-        this.logger.error(
-          `JSON Parse Error ở chunk ${chunkIndex + 1}: ${e.message}`,
+        // Tạo các câu hỏi song song nếu có thể
+        const parallelRequests = Math.min(
+          this.MAX_PARALLEL_REQUESTS,
+          Math.ceil(currentChunkSize / this.CHUNK_SIZE),
         );
-        continue; // Bỏ qua chunk lỗi, thử chunk tiếp theo
-      }
+        const chunkPromises = Array(parallelRequests)
+          .fill(null)
+          .map(async () => {
+            const response = await this.openAIService.generate(prompt);
+            return this.parseAndValidateQuestions(response, currentChunkSize);
+          });
 
-      // Validate từng câu hỏi như cũ...
-      const validQuestions = questions.filter(
-        (q) =>
+        const results = await Promise.all(chunkPromises);
+        const validQuestions = results.flat().filter((q) => q);
+
+        if (validQuestions.length > 0) {
+          allQuestions = allQuestions.concat(validQuestions);
+          remaining -= validQuestions.length;
+          chunkIndex++;
+          retryCount = 0; // Reset retry count on success
+
+          // Emit progress after successful chunk creation
+          await this.progressGateway.emitProgress({
+            totalQuestions: numQuestions,
+            currentQuestions: allQuestions.length,
+            status: 'processing',
+            message: `Đã tạo thành công ${validQuestions.length} câu hỏi (${allQuestions.length}/${numQuestions})`,
+          });
+        } else {
+          this.logger.warn(
+            `Không tạo được câu hỏi hợp lệ cho chunk ${chunkIndex + 1}`,
+          );
+
+          // Thử lại với chunk size nhỏ hơn nếu còn cơ hội
+          if (retryCount < MAX_RETRIES) {
+            retryCount++;
+            const smallerChunkSize = Math.max(
+              1,
+              Math.floor(currentChunkSize / 2),
+            );
+            this.logger.log(
+              `Thử lại với chunk size nhỏ hơn: ${smallerChunkSize} (lần thử ${retryCount}/${MAX_RETRIES})`,
+            );
+
+            await this.progressGateway.emitProgress({
+              totalQuestions: numQuestions,
+              currentQuestions: allQuestions.length,
+              status: 'processing',
+              message: `Thử lại với số lượng câu hỏi ít hơn (${smallerChunkSize} câu)...`,
+            });
+
+            continue;
+          }
+
+          await this.progressGateway.emitProgress({
+            totalQuestions: numQuestions,
+            currentQuestions: allQuestions.length,
+            status: 'error',
+            message: 'Không thể tạo câu hỏi hợp lệ từ nội dung này',
+          });
+
+          if (remaining > 1) {
+            continue;
+          }
+          break;
+        }
+      } catch (error) {
+        this.logger.error(`Error generating questions: ${error.message}`);
+        await this.progressGateway.emitProgress({
+          totalQuestions: numQuestions,
+          currentQuestions: allQuestions.length,
+          status: 'error',
+          message: 'Lỗi khi tạo câu hỏi',
+        });
+        break;
+      }
+    }
+
+    // Emit final progress
+    await this.progressGateway.emitProgress({
+      totalQuestions: numQuestions,
+      currentQuestions: allQuestions.length,
+      status: allQuestions.length > 0 ? 'completed' : 'error',
+      message:
+        allQuestions.length > 0
+          ? `Hoàn thành tạo ${allQuestions.length} câu hỏi`
+          : 'Không thể tạo được câu hỏi nào từ nội dung này',
+    });
+
+    if (allQuestions.length === 0) {
+      throw new Error('Không tạo được câu hỏi hợp lệ nào từ nội dung file.');
+    }
+
+    return allQuestions.slice(0, numQuestions);
+  }
+
+  private async parseAndValidateQuestions(
+    response: string,
+    expectedCount: number,
+  ): Promise<QuizQuestion[]> {
+    // Parse JSON response
+    let jsonMatch = response.match(/\[\s*\{[\s\S]*\}\s*\]/);
+    let jsonStr = '';
+
+    if (!jsonMatch) {
+      const lastBracket = response.lastIndexOf(']');
+      if (lastBracket !== -1) {
+        jsonStr = response.slice(0, lastBracket + 1);
+      } else {
+        return [];
+      }
+    } else {
+      jsonStr = jsonMatch[0];
+    }
+
+    try {
+      const questions = JSON.parse(jsonStr);
+
+      // Validate và lọc câu hỏi hợp lệ
+      return questions.filter(
+        (q: QuizQuestion) =>
           q &&
           typeof q.question === 'string' &&
           Array.isArray(q.options) &&
           q.options.length === 4 &&
           typeof q.correctAnswer === 'string' &&
           typeof q.explanation === 'string' &&
-          q.options.includes(q.correctAnswer),
+          q.options.includes(q.correctAnswer) &&
+          // Thêm validation cho độ dài
+          q.question.length >= 10 &&
+          q.explanation.length >= 10 &&
+          q.options.every((opt) => opt.length >= 2),
       );
-
-      allQuestions = allQuestions.concat(validQuestions);
-      remaining -= validQuestions.length;
-      chunkIndex++;
-
-      if (validQuestions.length === 0) {
-        this.logger.warn(
-          `Chunk ${chunkIndex} không tạo được câu hỏi hợp lệ nào.`,
-        );
-        break; // Nếu chunk này không tạo được câu nào, dừng luôn
-      }
+    } catch (e) {
+      this.logger.error(`JSON Parse Error: ${e.message}`);
+      return [];
     }
-
-    if (allQuestions.length === 0) {
-      throw new Error(
-        'Không tạo được câu hỏi hợp lệ nào từ nội dung file hoặc dữ liệu AI trả về không đúng định dạng.',
-      );
-    }
-
-    return allQuestions.slice(0, numQuestions); // Trả về đúng số lượng yêu cầu nếu đủ
   }
 
   async extractTextFromBuffer(
