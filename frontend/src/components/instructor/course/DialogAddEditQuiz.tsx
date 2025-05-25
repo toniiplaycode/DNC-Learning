@@ -172,8 +172,6 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
   const currentClassInstructor = useAppSelector(selectCurrentClassInstructor);
   const academicClassStudents = useAppSelector(selectAcademicClassStudents);
 
-  console.log(additionalInfo);
-
   // Thêm state để theo dõi trạng thái cập nhật showExplanation
   const showExplanationStatus = useAppSelector(selectShowExplanationStatus);
   const showExplanationError = useAppSelector(selectShowExplanationError);
@@ -191,6 +189,10 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
   const [hasBackendResult, setHasBackendResult] = useState(false);
   const [quizProgress, setQuizProgress] = useState<QuizProgress | null>(null);
   const [socket, setSocket] = useState<Socket | null>(null);
+
+  // Add state for tracking last error toast
+  const [lastErrorToast, setLastErrorToast] = useState<number>(0);
+  const ERROR_TOAST_COOLDOWN = 5000; // 5 seconds cooldown between error toasts
 
   useEffect(() => {
     dispatch(fetchClassInstructorById(Number(currentUser?.userInstructor?.id)));
@@ -236,10 +238,10 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
   const editSectionRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (id) {
+    if (open && id) {
       dispatch(fetchCourseQuizzes(Number(id)));
     }
-  }, [dispatch, id]);
+  }, [open, id, dispatch]);
 
   // Cập nhật useEffect để hiển thị mock data trong cả hai trường hợp
   useEffect(() => {
@@ -461,7 +463,6 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
       await dispatch(createQuiz(quizData));
       toast.success("Thêm Bài trắc nghiệm thành công!");
 
-      // Đóng dialog ngay sau khi tạo quiz thành công
       onClose();
 
       if (academicClassStudents.length > 0) {
@@ -471,7 +472,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
           content: `Giảng viên vừa thêm trắc nghiệm "${quizForm.title}".`,
           type: "quiz",
         };
-        await dispatch(createNotification(notificationData));
+        dispatch(createNotification(notificationData));
       }
     } else if (editMode) {
       const result = await dispatch(updateQuiz(quizData));
@@ -483,7 +484,6 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
       }
       toast.success("Cập nhật Bài trắc nghiệm thành công!");
 
-      // Đóng dialog ngay sau khi cập nhật quiz thành công
       onClose();
     }
 
@@ -609,7 +609,18 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
 
     socket.on("connect_error", (error) => {
       console.error("WebSocket connection error:", error);
-      toast.error("Không thể kết nối đến máy chủ. Vui lòng thử lại sau.");
+      const now = Date.now();
+      // Only show toast if enough time has passed since last error
+      if (now - lastErrorToast > ERROR_TOAST_COOLDOWN) {
+        toast.warning(
+          "Không thể kết nối đến socket progress. Vui lòng thử lại sau.",
+          {
+            toastId: "websocket-error", // Prevent duplicate toasts
+            autoClose: 2000,
+          }
+        );
+        setLastErrorToast(now);
+      }
     });
 
     socket.on("disconnect", (reason) => {
@@ -632,7 +643,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
         socket.disconnect();
       }
     };
-  }, []); // Empty dependency array since we only want to connect/disconnect when dialog opens/closes
+  }, [lastErrorToast]); // Add lastErrorToast to dependencies
 
   // Update handleGenerateQuizFromFile to reset progress
   const handleGenerateQuizFromFile = async (
@@ -1055,6 +1066,42 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                     Để có kết quả tốt nhất, hãy sử dụng tài liệu có nội dung rõ
                     ràng, cấu trúc tốt và ngôn ngữ chính xác.
                   </Typography>
+                </Box>
+
+                <Box sx={{ display: "flex", alignItems: "flex-start", gap: 2 }}>
+                  <HelpOutline sx={{ color: "warning.main", mt: 0.5 }} />
+                  <Alert
+                    severity="warning"
+                    sx={{
+                      width: "100%",
+                      "& .MuiAlert-icon": {
+                        display: "none",
+                      },
+                      "& .MuiAlert-message": {
+                        width: "100%",
+                      },
+                    }}
+                  >
+                    <Typography variant="body2">
+                      <strong>Lưu ý về số lượng câu hỏi:</strong>
+                      <ul style={{ margin: "8px 0 0 0", paddingLeft: "20px" }}>
+                        <li>
+                          Mỗi câu hỏi trắc nghiệm chất lượng cần khoảng 250-350
+                          ký tự, bao gồm:
+                          <ul
+                            style={{ margin: "4px 0 0 0", paddingLeft: "20px" }}
+                          >
+                            <li>Phần dẫn câu hỏi: 100-150 ký tự</li>
+                            <li>4 lựa chọn: 150-200 ký tự</li>
+                          </ul>
+                        </li>
+                      </ul>
+                      Ví dụ: Nội dung 3000 ký tự có thể tạo khoảng 8-10 câu hỏi
+                      chất lượng. Hệ thống sẽ tự động điều chỉnh số lượng câu
+                      hỏi dựa trên độ dài và chất lượng nội dung, đảm bảo mỗi
+                      câu hỏi có đủ ngữ cảnh và các lựa chọn rõ ràng.
+                    </Typography>
+                  </Alert>
                 </Box>
 
                 <Divider sx={{ my: 1 }} />

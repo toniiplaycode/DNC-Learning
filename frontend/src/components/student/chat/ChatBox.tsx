@@ -1203,6 +1203,7 @@ const ChatBox = () => {
     setSelectedRoom(room);
     setShowInstructors(false);
     setIsChatbotTyping(false); // Reset typing indicator when changing rooms
+    setSearchQuery(""); // Reset search query after selecting a user
 
     // Special handling for chatbot
     if (room.id === -1) {

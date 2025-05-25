@@ -107,8 +107,6 @@ const InstructorAssignments = () => {
   // Add new state for date sorting
   const [dateSort, setDateSort] = useState("newest"); // "newest" or "oldest"
 
-  console.log(instructorGrades);
-
   // Thêm state và các hàm xử lý để mở dialog tạo bài tập
   const [openAddAssignmentModal, setOpenAddAssignmentModal] = useState(false);
   const [currentSectionId, setCurrentSectionId] = useState<number | null>(null);

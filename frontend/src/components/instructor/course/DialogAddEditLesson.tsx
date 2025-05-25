@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -103,10 +103,10 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
   const [uploadedFileUrl, setUploadedFileUrl] = useState<string>("");
 
   useEffect(() => {
-    if (id) {
+    if (open && allUsersEnrollments.length === 0 && id) {
       dispatch(fetchCourseUsersEnrollments(Number(id)));
     }
-  }, [dispatch, id]);
+  }, [open, id, allUsersEnrollments.length, dispatch]);
 
   // Cập nhật form khi có dữ liệu ban đầu
   useEffect(() => {
@@ -284,7 +284,9 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
                   : "course",
             };
 
-            await dispatch(createNotification(notificationData));
+            if (notificationData.userIds.length > 0) {
+              await dispatch(createNotification(notificationData));
+            }
 
             // Refresh course data and quizzes
             dispatch(fetchCourseById(Number(id)));
@@ -302,7 +304,7 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
         toast.success("Cập nhật nội dung thành công!");
       });
     }
-    console.log(submitData);
+
     onClose();
   };
 
@@ -351,6 +353,13 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
       }
     }
   }, [contentForm.sectionId, sections, editMode, contentToEdit?.sectionId]);
+
+  const lessonPositions = useMemo(() => {
+    const currentSection = sections.find((s) => s.id === contentForm.sectionId);
+    const lessonsCount = currentSection?.lessons?.length || 0;
+    const totalPositions = editMode ? lessonsCount : lessonsCount + 1;
+    return Array.from({ length: totalPositions }, (_, i) => i + 1);
+  }, [sections, contentForm.sectionId, editMode]);
 
   return (
     <Dialog
@@ -652,30 +661,18 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
               }
               label="Vị trí bài học"
             >
-              {(() => {
-                const currentSection = sections.find(
-                  (s) => s.id === contentForm.sectionId
-                );
-                const lessonsCount = currentSection?.lessons?.length || 0;
-                const totalPositions = editMode
-                  ? lessonsCount
-                  : lessonsCount + 1;
-
-                return Array.from({ length: totalPositions }, (_, i) => {
-                  const position = i + 1;
-                  return (
-                    <MenuItem key={position} value={position}>
-                      {position === 1
-                        ? "Đầu tiên trong phần"
-                        : position === totalPositions
-                        ? "Cuối cùng trong phần"
-                        : `Sau "${
-                            currentSection?.lessons?.[position - 2]?.title || ""
-                          }`}
-                    </MenuItem>
-                  );
-                });
-              })()}
+              {lessonPositions.map((position) => (
+                <MenuItem key={position} value={position}>
+                  {position === 1
+                    ? "Đầu tiên trong phần"
+                    : position === lessonPositions.length
+                    ? "Cuối cùng trong phần"
+                    : `Sau "${
+                        sections.find((s) => s.id === contentForm.sectionId)
+                          ?.lessons?.[position - 2]?.title || ""
+                      }`}
+                </MenuItem>
+              ))}
             </Select>
             <FormHelperText>
               Chọn vị trí hiển thị của bài học trong phần học

@@ -1006,6 +1006,7 @@ const ChatCommon = () => {
     dispatch(setSelectedReceiver(room.instructor.id));
     setSelectedRoom(room);
     setShowInstructors(false);
+    setSearchQuery(""); // Reset search query when selecting a user
 
     // Mark unread messages as read
     if (room.unread > 0) {
