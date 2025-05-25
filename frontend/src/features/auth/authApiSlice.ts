@@ -16,6 +16,23 @@ export interface User {
   createdAt?: string;
   updatedAt?: string;
   twoFactorEnabled?: boolean;
+  userStudentAcademic?: {
+    id: string;
+    fullName: string;
+    studentId: string;
+    academicClass?: {
+      id: string;
+      classCode: string;
+      className: string;
+      semester: string;
+      status: string;
+    };
+  } | null;
+  userInstructor?: {
+    id: string;
+    fullName: string;
+    professionalTitle: string;
+  } | null;
 }
 
 // Interface cho dữ liệu đăng nhập/đăng ký thành công

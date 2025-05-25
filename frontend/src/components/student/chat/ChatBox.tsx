@@ -25,6 +25,8 @@ import {
   Grid,
   CircularProgress,
   Button,
+  Tabs,
+  Tab,
 } from "@mui/material";
 import {
   Chat as ChatIcon,
@@ -57,6 +59,7 @@ import ChatErrorBoundary from "./ChatErrorBoundary";
 import { fetchUsers } from "../../../features/users/usersApiSlice";
 import { selectAllUsers } from "../../../features/users/usersSelectors";
 import parse, { domToReact } from "html-react-parser";
+import GroupChatBox from "./GroupChatBox";
 
 // Add CHATBOT constant at the top
 const CHATBOT = {
@@ -359,6 +362,7 @@ const ChatBox = () => {
   const [message, setMessage] = useState("");
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
   const [userInfoOpen, setUserInfoOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState(0); // Add this state for tab control
 
   // Keep only one state declaration
   const processMessages = (messages: Message[]) => {
@@ -1325,6 +1329,16 @@ const ChatBox = () => {
     };
   }, [currentUser?.id]);
 
+  // Add function to handle tab change
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+    // Reset states when switching tabs
+    if (newValue === 0) {
+      setShowInstructors(true);
+      setSelectedRoom(null);
+    }
+  };
+
   return (
     <>
       {/* Chat Icon */}
@@ -1367,74 +1381,56 @@ const ChatBox = () => {
             transformOrigin: "right",
           }}
         >
-          {/* Header */}
-          <Box
+          {/* Tabs */}
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            variant="fullWidth"
             sx={{
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "space-between",
-              px: 2,
-              py: 0.5,
+              borderBottom: 1,
+              borderColor: "divider",
               bgcolor: "primary.main",
-              color: "white",
+              minHeight: "48px",
+              "& .MuiTab-root": {
+                color: "rgba(255, 255, 255, 0.7)",
+                textTransform: "none",
+                fontSize: "0.875rem",
+                fontWeight: 500,
+                minHeight: "48px",
+                "&.Mui-selected": {
+                  color: "white",
+                  fontWeight: 600,
+                },
+                "&:hover": {
+                  color: "white",
+                  bgcolor: "rgba(255, 255, 255, 0.08)",
+                },
+              },
+              "& .MuiTabs-indicator": {
+                bgcolor: "white",
+                height: "3px",
+              },
             }}
           >
-            <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-              {!showInstructors && (
-                <IconButton
-                  size="small"
-                  sx={{ color: "white", mr: 1 }}
-                  onClick={() => setShowInstructors(true)}
-                >
-                  <ArrowBack />
-                </IconButton>
-              )}
-              <Box>
+            <Tab
+              label={
                 <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <Typography variant="h6">
-                    {showInstructors
-                      ? "Chọn người để chat"
-                      : selectedRoom?.instructor.fullName}
-                  </Typography>
-                  {!showInstructors && selectedRoom?.instructor.online && (
-                    <Circle sx={{ color: "#4caf50", fontSize: 12 }} />
-                  )}
+                  <Person fontSize="small" />
+                  <span>Chat riêng</span>
                 </Box>
-                {!showInstructors && selectedRoom?.instructor.role && (
-                  <Typography sx={{ fontSize: 13, opacity: 0.8 }}>
-                    {selectedRoom.instructor.role}
-                  </Typography>
-                )}
-              </Box>
-            </Box>
+              }
+            />
+            <Tab
+              label={
+                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                  <School fontSize="small" />
+                  <span>Chat nhóm</span>
+                </Box>
+              }
+            />
+          </Tabs>
 
-            <Box sx={{ display: "flex", alignItems: "center" }}>
-              {!showInstructors && selectedRoom?.instructor.id && (
-                <IconButton
-                  size="small"
-                  sx={{
-                    color: "white",
-                    mr: 1,
-                    "&:hover": {
-                      bgcolor: "rgba(255, 255, 255, 0.1)",
-                    },
-                  }}
-                  onClick={() => setUserInfoOpen(true)}
-                >
-                  <Person />
-                </IconButton>
-              )}
-              <IconButton
-                size="small"
-                onClick={handleClose}
-                sx={{ color: "white" }}
-              >
-                <Close />
-              </IconButton>
-            </Box>
-          </Box>
-
-          {/* Content */}
+          {/* Content based on active tab */}
           <Box
             sx={{
               flex: 1,
@@ -1443,576 +1439,703 @@ const ChatBox = () => {
               overflow: "hidden",
             }}
           >
-            {showInstructors ? (
+            {activeTab === 0 ? (
               <>
-                <Box sx={{ p: 2 }}>
-                  <TextField
-                    fullWidth
-                    placeholder="Tìm kiếm..."
-                    variant="outlined"
-                    size="small"
-                    value={searchQuery}
-                    onChange={(e) => handleSearch(e.target.value)}
-                    InputProps={{
-                      startAdornment: (
-                        <InputAdornment position="start">
-                          <Search />
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
-                  <FormControlLabel
-                    control={
-                      <Switch
-                        checked={filterUnread}
-                        onChange={(e) => setFilterUnread(e.target.checked)}
-                      />
-                    }
-                    label="Chỉ hiện tin nhắn chưa đọc"
-                  />
+                {/* Header */}
+                <Box
+                  sx={{
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between",
+                    px: 2,
+                    py: 0.5,
+                    bgcolor: "primary.main",
+                    color: "white",
+                  }}
+                >
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    {!showInstructors && (
+                      <IconButton
+                        size="small"
+                        sx={{ color: "white", mr: 1 }}
+                        onClick={() => setShowInstructors(true)}
+                      >
+                        <ArrowBack />
+                      </IconButton>
+                    )}
+                    <Box>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        <Typography variant="h6">
+                          {showInstructors
+                            ? "Chọn người để chat"
+                            : selectedRoom?.instructor.fullName}
+                        </Typography>
+                        {!showInstructors &&
+                          selectedRoom?.instructor.online && (
+                            <Circle sx={{ color: "#4caf50", fontSize: 12 }} />
+                          )}
+                      </Box>
+                      {!showInstructors && selectedRoom?.instructor.role && (
+                        <Typography sx={{ fontSize: 13, opacity: 0.8 }}>
+                          {selectedRoom.instructor.role}
+                        </Typography>
+                      )}
+                    </Box>
+                  </Box>
+
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                    {!showInstructors && selectedRoom?.instructor.id && (
+                      <IconButton
+                        size="small"
+                        sx={{
+                          color: "white",
+                          mr: 1,
+                          "&:hover": {
+                            bgcolor: "rgba(255, 255, 255, 0.1)",
+                          },
+                        }}
+                        onClick={() => setUserInfoOpen(true)}
+                      >
+                        <Person />
+                      </IconButton>
+                    )}
+                    <IconButton
+                      size="small"
+                      onClick={handleClose}
+                      sx={{ color: "white" }}
+                    >
+                      <Close />
+                    </IconButton>
+                  </Box>
                 </Box>
 
-                <List sx={{ flex: 1, overflowY: "auto" }}>
-                  {isLoadingMessages ? (
-                    <Box sx={{ p: 2, textAlign: "center" }}>
-                      <CircularProgress size={24} />
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mt: 1 }}
-                      >
-                        Đang tải tin nhắn...
-                      </Typography>
-                    </Box>
-                  ) : (
+                {/* Content */}
+                <Box
+                  sx={{
+                    flex: 1,
+                    display: "flex",
+                    flexDirection: "column",
+                    overflow: "hidden",
+                  }}
+                >
+                  {showInstructors ? (
                     <>
-                      {/* Chatbot List Item */}
-                      <ListItemButton
-                        key="chatbot"
-                        selected={selectedRoom?.id === -1}
-                        onClick={() => {
-                          const chatbotRoom = chatRooms.find(
-                            (room) => room.id === -1
-                          );
-                          if (chatbotRoom) {
-                            handleSelectRoom(chatbotRoom);
-                          }
-                        }}
-                        sx={{
-                          borderBottom: 1,
-                          borderColor: "divider",
-                          bgcolor: (theme) =>
-                            selectedRoom?.id === -1
-                              ? theme.palette.action.selected
-                              : "transparent",
-                        }}
-                      >
-                        <ListItemAvatar>
-                          <Avatar
-                            src={CHATBOT.avatarUrl}
-                            sx={{ bgcolor: "primary.main" }}
-                          >
-                            <SmartToy />
-                          </Avatar>
-                        </ListItemAvatar>
-                        <ListItemText
-                          primary={
-                            <Typography fontWeight={500}>
-                              {CHATBOT.fullName}
-                            </Typography>
-                          }
-                          secondary={
-                            <Typography variant="body2" color="text.secondary">
-                              AI Assistant
-                            </Typography>
-                          }
+                      <Box sx={{ p: 2 }}>
+                        <TextField
+                          fullWidth
+                          placeholder="Tìm kiếm..."
+                          variant="outlined"
+                          size="small"
+                          value={searchQuery}
+                          onChange={(e) => handleSearch(e.target.value)}
+                          InputProps={{
+                            startAdornment: (
+                              <InputAdornment position="start">
+                                <Search />
+                              </InputAdornment>
+                            ),
+                          }}
                         />
-                      </ListItemButton>
-
-                      {/* Regular chat rooms */}
-                      {(searchQuery ? searchResults : getFilteredChatRooms())
-                        .filter((item) => item.id !== -1)
-                        .map((item) => {
-                          // For existing chat rooms
-                          if (!searchQuery) {
-                            const lastMessage =
-                              item.messages[item.messages.length - 1];
-                            return (
-                              <ListItemButton
-                                key={item.id}
-                                onClick={() => handleSelectRoom(item)}
-                              >
-                                <ListItemAvatar>
-                                  <Badge
-                                    overlap="circular"
-                                    anchorOrigin={{
-                                      vertical: "bottom",
-                                      horizontal: "right",
-                                    }}
-                                    variant="dot"
-                                    color={
-                                      item.instructor.online
-                                        ? "success"
-                                        : "default"
-                                    }
-                                  >
-                                    <Avatar src={item.instructor.avatarUrl} />
-                                  </Badge>
-                                </ListItemAvatar>
-                                <ListItemText
-                                  primary={
-                                    <Box
-                                      sx={{
-                                        display: "flex",
-                                        justifyContent: "space-between",
-                                      }}
-                                    >
-                                      <Typography>
-                                        {item.instructor.fullName}
-                                      </Typography>
-                                      {lastMessage && (
-                                        <Typography
-                                          variant="caption"
-                                          color="text.secondary"
-                                        >
-                                          {formatLastMessageTime(
-                                            lastMessage.timestamp
-                                          )}
-                                        </Typography>
-                                      )}
-                                    </Box>
-                                  }
-                                  secondary={
-                                    <Box
-                                      sx={{
-                                        display: "flex",
-                                        justifyContent: "space-between",
-                                        alignItems: "center",
-                                      }}
-                                    >
-                                      <Typography
-                                        variant="body2"
-                                        color="text.secondary"
-                                        sx={{
-                                          maxWidth: "70%",
-                                          overflow: "hidden",
-                                          textOverflow: "ellipsis",
-                                          whiteSpace: "nowrap",
-                                        }}
-                                      >
-                                        {lastMessage
-                                          ? lastMessage.content
-                                          : "Không có tin nhắn"}
-                                      </Typography>
-                                      {item.unread > 0 && (
-                                        <Badge
-                                          badgeContent={item.unread}
-                                          color="error"
-                                        />
-                                      )}
-                                    </Box>
-                                  }
-                                />
-                              </ListItemButton>
-                            );
+                        <FormControlLabel
+                          control={
+                            <Switch
+                              checked={filterUnread}
+                              onChange={(e) =>
+                                setFilterUnread(e.target.checked)
+                              }
+                            />
                           }
-                          // For search results
-                          const fullName =
-                            item.userStudent?.fullName ||
-                            item.userInstructor?.fullName ||
-                            item.userStudentAcademic?.fullName ||
-                            item.username;
-                          const role =
-                            item.userInstructor?.professionalTitle ||
-                            item.role.charAt(0).toUpperCase() +
-                              item.role.slice(1);
+                          label="Chỉ hiện tin nhắn chưa đọc"
+                        />
+                      </Box>
 
-                          return (
+                      <List sx={{ flex: 1, overflowY: "auto" }}>
+                        {isLoadingMessages ? (
+                          <Box sx={{ p: 2, textAlign: "center" }}>
+                            <CircularProgress size={24} />
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ mt: 1 }}
+                            >
+                              Đang tải tin nhắn...
+                            </Typography>
+                          </Box>
+                        ) : (
+                          <>
+                            {/* Chatbot List Item */}
                             <ListItemButton
-                              key={item.id}
+                              key="chatbot"
+                              selected={selectedRoom?.id === -1}
                               onClick={() => {
-                                // Create new chat room if doesn't exist
-                                const existingRoom = chatRooms.find(
-                                  (room) => room.id === Number(item.id)
+                                const chatbotRoom = chatRooms.find(
+                                  (room) => room.id === -1
                                 );
-                                if (!existingRoom) {
-                                  const newRoom: ChatRoom = {
-                                    id: Number(item.id),
-                                    instructor: {
-                                      id: item.id,
-                                      fullName: fullName,
-                                      avatarUrl: item.avatarUrl || "",
-                                      role: role,
-                                      online: false,
-                                    },
-                                    messages: [],
-                                    unread: 0,
-                                  };
-                                  setChatRooms((prev) => [...prev, newRoom]);
-                                  handleSelectRoom(newRoom);
-                                } else {
-                                  handleSelectRoom(existingRoom);
+                                if (chatbotRoom) {
+                                  handleSelectRoom(chatbotRoom);
                                 }
+                              }}
+                              sx={{
+                                borderBottom: 1,
+                                borderColor: "divider",
+                                bgcolor: (theme) =>
+                                  selectedRoom?.id === -1
+                                    ? theme.palette.action.selected
+                                    : "transparent",
                               }}
                             >
                               <ListItemAvatar>
-                                <Avatar src={item.avatarUrl || ""} />
+                                <Avatar
+                                  src={CHATBOT.avatarUrl}
+                                  sx={{ bgcolor: "primary.main" }}
+                                >
+                                  <SmartToy />
+                                </Avatar>
                               </ListItemAvatar>
                               <ListItemText
-                                primary={fullName}
+                                primary={
+                                  <Typography fontWeight={500}>
+                                    {CHATBOT.fullName}
+                                  </Typography>
+                                }
                                 secondary={
                                   <Typography
                                     variant="body2"
                                     color="text.secondary"
                                   >
-                                    {role}
+                                    AI Assistant
                                   </Typography>
                                 }
                               />
                             </ListItemButton>
-                          );
-                        })}
-                    </>
-                  )}
-                </List>
-              </>
-            ) : (
-              // Chat room
-              <>
-                <Box sx={{ flex: 1, overflowY: "auto", p: 2 }}>
-                  <Stack spacing={2}>
-                    {selectedRoom?.messages
-                      .slice() // Create a copy to avoid mutating original array
-                      .sort(
-                        (a, b) =>
-                          new Date(a.timestamp).getTime() -
-                          new Date(b.timestamp).getTime()
-                      )
-                      .map((msg) => (
-                        <Box
-                          key={msg.id}
-                          sx={{
-                            display: "flex",
-                            justifyContent:
-                              msg.sender === "user" ? "flex-end" : "flex-start",
-                          }}
-                        >
-                          <Card
-                            sx={{
-                              maxWidth: "80%",
-                              bgcolor:
-                                msg.sender === "user"
-                                  ? "primary.main"
-                                  : "grey.100",
-                            }}
-                          >
-                            <Box sx={{ p: 2 }}>
-                              {msg.sender === "support" && (
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 1,
-                                    mb: 1,
-                                  }}
-                                >
-                                  <Avatar
-                                    src={msg.avatar}
-                                    sx={{ width: 24, height: 24 }}
-                                  />
-                                  <Stack>
-                                    <Typography variant="subtitle2">
-                                      {msg.name}
-                                    </Typography>
-                                    <Typography
-                                      variant="caption"
-                                      color="text.secondary"
+
+                            {/* Regular chat rooms */}
+                            {(searchQuery
+                              ? searchResults
+                              : getFilteredChatRooms()
+                            )
+                              .filter((item) => item.id !== -1)
+                              .map((item) => {
+                                // For existing chat rooms
+                                if (!searchQuery) {
+                                  const lastMessage =
+                                    item.messages[item.messages.length - 1];
+                                  return (
+                                    <ListItemButton
+                                      key={item.id}
+                                      onClick={() => handleSelectRoom(item)}
                                     >
-                                      {selectedRoom.instructor.role}
-                                    </Typography>
-                                  </Stack>
-                                </Box>
-                              )}
-                              <div
-                                style={{
-                                  color:
-                                    msg.sender === "user" ? "white" : undefined,
-                                  wordBreak: "break-word",
-                                  fontSize: 16,
-                                  lineHeight: 1.7,
+                                      <ListItemAvatar>
+                                        <Badge
+                                          overlap="circular"
+                                          anchorOrigin={{
+                                            vertical: "bottom",
+                                            horizontal: "right",
+                                          }}
+                                          variant="dot"
+                                          color={
+                                            item.instructor.online
+                                              ? "success"
+                                              : "default"
+                                          }
+                                        >
+                                          <Avatar
+                                            src={item.instructor.avatarUrl}
+                                          />
+                                        </Badge>
+                                      </ListItemAvatar>
+                                      <ListItemText
+                                        primary={
+                                          <Box
+                                            sx={{
+                                              display: "flex",
+                                              justifyContent: "space-between",
+                                            }}
+                                          >
+                                            <Typography>
+                                              {item.instructor.fullName}
+                                            </Typography>
+                                            {lastMessage && (
+                                              <Typography
+                                                variant="caption"
+                                                color="text.secondary"
+                                              >
+                                                {formatLastMessageTime(
+                                                  lastMessage.timestamp
+                                                )}
+                                              </Typography>
+                                            )}
+                                          </Box>
+                                        }
+                                        secondary={
+                                          <Box
+                                            sx={{
+                                              display: "flex",
+                                              justifyContent: "space-between",
+                                              alignItems: "center",
+                                            }}
+                                          >
+                                            <Typography
+                                              variant="body2"
+                                              color="text.secondary"
+                                              sx={{
+                                                maxWidth: "70%",
+                                                overflow: "hidden",
+                                                textOverflow: "ellipsis",
+                                                whiteSpace: "nowrap",
+                                              }}
+                                            >
+                                              {lastMessage
+                                                ? lastMessage.content
+                                                : "Không có tin nhắn"}
+                                            </Typography>
+                                            {item.unread > 0 && (
+                                              <Badge
+                                                badgeContent={item.unread}
+                                                color="error"
+                                              />
+                                            )}
+                                          </Box>
+                                        }
+                                      />
+                                    </ListItemButton>
+                                  );
+                                }
+                                // For search results
+                                const fullName =
+                                  item.userStudent?.fullName ||
+                                  item.userInstructor?.fullName ||
+                                  item.userStudentAcademic?.fullName ||
+                                  item.username;
+                                const role =
+                                  item.userInstructor?.professionalTitle ||
+                                  item.role.charAt(0).toUpperCase() +
+                                    item.role.slice(1);
+
+                                return (
+                                  <ListItemButton
+                                    key={item.id}
+                                    onClick={() => {
+                                      // Create new chat room if doesn't exist
+                                      const existingRoom = chatRooms.find(
+                                        (room) => room.id === Number(item.id)
+                                      );
+                                      if (!existingRoom) {
+                                        const newRoom: ChatRoom = {
+                                          id: Number(item.id),
+                                          instructor: {
+                                            id: item.id,
+                                            fullName: fullName,
+                                            avatarUrl: item.avatarUrl || "",
+                                            role: role,
+                                            online: false,
+                                          },
+                                          messages: [],
+                                          unread: 0,
+                                        };
+                                        setChatRooms((prev) => [
+                                          ...prev,
+                                          newRoom,
+                                        ]);
+                                        handleSelectRoom(newRoom);
+                                      } else {
+                                        handleSelectRoom(existingRoom);
+                                      }
+                                    }}
+                                  >
+                                    <ListItemAvatar>
+                                      <Avatar src={item.avatarUrl || ""} />
+                                    </ListItemAvatar>
+                                    <ListItemText
+                                      primary={fullName}
+                                      secondary={
+                                        <Typography
+                                          variant="body2"
+                                          color="text.secondary"
+                                        >
+                                          {role}
+                                        </Typography>
+                                      }
+                                    />
+                                  </ListItemButton>
+                                );
+                              })}
+                          </>
+                        )}
+                      </List>
+                    </>
+                  ) : (
+                    // Chat room
+                    <>
+                      <Box sx={{ flex: 1, overflowY: "auto", p: 2 }}>
+                        <Stack spacing={2}>
+                          {selectedRoom?.messages
+                            .slice() // Create a copy to avoid mutating original array
+                            .sort(
+                              (a, b) =>
+                                new Date(a.timestamp).getTime() -
+                                new Date(b.timestamp).getTime()
+                            )
+                            .map((msg) => (
+                              <Box
+                                key={msg.id}
+                                sx={{
+                                  display: "flex",
+                                  justifyContent:
+                                    msg.sender === "user"
+                                      ? "flex-end"
+                                      : "flex-start",
                                 }}
                               >
-                                {msg.content
-                                  ? parse(msg.content, chatHtmlParserOptions)
-                                  : null}
-                              </div>
-                              {isValidUrl(msg.referenceLink) && (
-                                <Box
+                                <Card
                                   sx={{
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    mt: msg.content ? 1.5 : 0,
-                                    pt: msg.content ? 1 : 0,
+                                    maxWidth: "80%",
+                                    bgcolor:
+                                      msg.sender === "user"
+                                        ? "primary.main"
+                                        : "grey.100",
                                   }}
                                 >
-                                  {msg.sender === "support" ? (
-                                    <Paper
-                                      elevation={0}
-                                      sx={{
-                                        p: 1.5,
-                                        mt: 0.5,
-                                        borderRadius: 2,
-                                        bgcolor: "rgba(25, 118, 210, 0.05)",
-                                        border:
-                                          "1px solid rgba(25, 118, 210, 0.2)",
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        gap: 1,
-                                        position: "relative",
-                                        overflow: "hidden",
-                                        "&:hover": {
-                                          bgcolor: "rgba(25, 118, 210, 0.1)",
-                                        },
-                                      }}
-                                    >
-                                      <Box
-                                        sx={{
-                                          position: "absolute",
-                                          top: 0,
-                                          left: 0,
-                                          width: "4px",
-                                          height: "100%",
-                                          bgcolor: "primary.main",
-                                        }}
-                                      />
-
+                                  <Box sx={{ p: 2 }}>
+                                    {msg.sender === "support" && (
                                       <Box
                                         sx={{
                                           display: "flex",
                                           alignItems: "center",
                                           gap: 1,
+                                          mb: 1,
                                         }}
                                       >
-                                        <Box
-                                          sx={{
-                                            bgcolor: "primary.main",
-                                            color: "white",
-                                            borderRadius: "50%",
-                                            p: 0.7,
-                                            display: "flex",
-                                            justifyContent: "center",
-                                            alignItems: "center",
-                                          }}
-                                        >
-                                          {getPageNameFromUrl(
-                                            msg.referenceLink || ""
-                                          ) === "Khóa học" ? (
-                                            <School fontSize="small" />
-                                          ) : (
-                                            <Article fontSize="small" />
-                                          )}
-                                        </Box>
-                                        <Typography
-                                          variant="subtitle2"
-                                          color="primary.main"
-                                        >
-                                          {getPageNameFromUrl(
-                                            msg.referenceLink || ""
-                                          )}
-                                        </Typography>
+                                        <Avatar
+                                          src={msg.avatar}
+                                          sx={{ width: 24, height: 24 }}
+                                        />
+                                        <Stack>
+                                          <Typography variant="subtitle2">
+                                            {msg.name}
+                                          </Typography>
+                                          <Typography
+                                            variant="caption"
+                                            color="text.secondary"
+                                          >
+                                            {selectedRoom.instructor.role}
+                                          </Typography>
+                                        </Stack>
                                       </Box>
-
-                                      <Typography
-                                        variant="body2"
+                                    )}
+                                    <div
+                                      style={{
+                                        color:
+                                          msg.sender === "user"
+                                            ? "white"
+                                            : undefined,
+                                        wordBreak: "break-word",
+                                        fontSize: 16,
+                                        lineHeight: 1.7,
+                                      }}
+                                    >
+                                      {msg.content
+                                        ? parse(
+                                            msg.content,
+                                            chatHtmlParserOptions
+                                          )
+                                        : null}
+                                    </div>
+                                    {isValidUrl(msg.referenceLink) && (
+                                      <Box
                                         sx={{
-                                          color: "text.secondary",
-                                          fontSize: 13,
-                                          pl: 0.5,
+                                          display: "flex",
+                                          flexDirection: "column",
+                                          mt: msg.content ? 1.5 : 0,
+                                          pt: msg.content ? 1 : 0,
                                         }}
                                       >
-                                        {shortenUrl(msg.referenceLink || "")}
-                                      </Typography>
-
-                                      {msg.referenceLink && (
-                                        <Box
-                                          sx={{
-                                            display: "flex",
-                                            justifyContent: "flex-end",
-                                          }}
-                                        >
-                                          <Button
-                                            variant="contained"
-                                            size="small"
-                                            color="primary"
-                                            endIcon={
-                                              <OpenInNew fontSize="small" />
-                                            }
-                                            href={msg.referenceLink || "#"}
-                                            target="_blank"
-                                            rel="noreferrer"
+                                        {msg.sender === "support" ? (
+                                          <Paper
+                                            elevation={0}
                                             sx={{
-                                              textTransform: "none",
+                                              p: 1.5,
                                               mt: 0.5,
-                                              boxShadow:
-                                                "0 2px 4px rgba(0,0,0,0.1)",
-                                              fontWeight: 500,
-                                              borderRadius: "8px",
+                                              borderRadius: 2,
+                                              bgcolor:
+                                                "rgba(25, 118, 210, 0.05)",
+                                              border:
+                                                "1px solid rgba(25, 118, 210, 0.2)",
+                                              display: "flex",
+                                              flexDirection: "column",
+                                              gap: 1,
+                                              position: "relative",
+                                              overflow: "hidden",
+                                              "&:hover": {
+                                                bgcolor:
+                                                  "rgba(25, 118, 210, 0.1)",
+                                              },
                                             }}
                                           >
-                                            Truy cập
-                                          </Button>
-                                        </Box>
-                                      )}
-                                    </Paper>
-                                  ) : (
+                                            <Box
+                                              sx={{
+                                                position: "absolute",
+                                                top: 0,
+                                                left: 0,
+                                                width: "4px",
+                                                height: "100%",
+                                                bgcolor: "primary.main",
+                                              }}
+                                            />
+
+                                            <Box
+                                              sx={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: 1,
+                                              }}
+                                            >
+                                              <Box
+                                                sx={{
+                                                  bgcolor: "primary.main",
+                                                  color: "white",
+                                                  borderRadius: "50%",
+                                                  p: 0.7,
+                                                  display: "flex",
+                                                  justifyContent: "center",
+                                                  alignItems: "center",
+                                                }}
+                                              >
+                                                {getPageNameFromUrl(
+                                                  msg.referenceLink || ""
+                                                ) === "Khóa học" ? (
+                                                  <School fontSize="small" />
+                                                ) : (
+                                                  <Article fontSize="small" />
+                                                )}
+                                              </Box>
+                                              <Typography
+                                                variant="subtitle2"
+                                                color="primary.main"
+                                              >
+                                                {getPageNameFromUrl(
+                                                  msg.referenceLink || ""
+                                                )}
+                                              </Typography>
+                                            </Box>
+
+                                            <Typography
+                                              variant="body2"
+                                              sx={{
+                                                color: "text.secondary",
+                                                fontSize: 13,
+                                                pl: 0.5,
+                                              }}
+                                            >
+                                              {shortenUrl(
+                                                msg.referenceLink || ""
+                                              )}
+                                            </Typography>
+
+                                            {msg.referenceLink && (
+                                              <Box
+                                                sx={{
+                                                  display: "flex",
+                                                  justifyContent: "flex-end",
+                                                }}
+                                              >
+                                                <Button
+                                                  variant="contained"
+                                                  size="small"
+                                                  color="primary"
+                                                  endIcon={
+                                                    <OpenInNew fontSize="small" />
+                                                  }
+                                                  href={
+                                                    msg.referenceLink || "#"
+                                                  }
+                                                  target="_blank"
+                                                  rel="noreferrer"
+                                                  sx={{
+                                                    textTransform: "none",
+                                                    mt: 0.5,
+                                                    boxShadow:
+                                                      "0 2px 4px rgba(0,0,0,0.1)",
+                                                    fontWeight: 500,
+                                                    borderRadius: "8px",
+                                                  }}
+                                                >
+                                                  Truy cập
+                                                </Button>
+                                              </Box>
+                                            )}
+                                          </Paper>
+                                        ) : (
+                                          <Box
+                                            sx={{
+                                              display: "flex",
+                                              alignItems: "center",
+                                              gap: 0.5,
+                                            }}
+                                          >
+                                            <LinkIcon
+                                              fontSize="small"
+                                              color={
+                                                msg.sender === "user"
+                                                  ? "inherit"
+                                                  : "primary"
+                                              }
+                                            />
+                                            <a
+                                              href={msg.referenceLink || "#"}
+                                              target="_blank"
+                                              rel="noreferrer"
+                                              style={{
+                                                color:
+                                                  msg.sender === "user"
+                                                    ? "white"
+                                                    : "#1976d2",
+                                                textDecoration: "none",
+                                                fontSize: "14px",
+                                                wordBreak: "break-all",
+                                              }}
+                                            >
+                                              {shortenUrl(
+                                                msg.referenceLink || ""
+                                              )}
+                                            </a>
+                                          </Box>
+                                        )}
+                                      </Box>
+                                    )}
                                     <Box
                                       sx={{
                                         display: "flex",
                                         alignItems: "center",
-                                        gap: 0.5,
+                                        justifyContent: "flex-end",
+                                        gap: 1,
+                                        mt: 1,
                                       }}
                                     >
-                                      <LinkIcon
-                                        fontSize="small"
+                                      <Typography
+                                        variant="caption"
                                         color={
                                           msg.sender === "user"
-                                            ? "inherit"
-                                            : "primary"
+                                            ? "white"
+                                            : "text.secondary"
                                         }
-                                      />
-                                      <a
-                                        href={msg.referenceLink || "#"}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        style={{
-                                          color:
+                                      >
+                                        {new Date(msg.timestamp).toLocaleString(
+                                          "vi-VN",
+                                          {
+                                            hour: "2-digit",
+                                            minute: "2-digit",
+                                            hour12: false,
+                                            day: "2-digit",
+                                            month: "2-digit",
+                                            year: "numeric",
+                                          }
+                                        )}
+                                      </Typography>
+                                      {msg.sender === "user" && (
+                                        <Typography
+                                          variant="caption"
+                                          color={
                                             msg.sender === "user"
                                               ? "white"
-                                              : "#1976d2",
-                                          textDecoration: "none",
-                                          fontSize: "14px",
-                                          wordBreak: "break-all",
-                                        }}
-                                      >
-                                        {shortenUrl(msg.referenceLink || "")}
-                                      </a>
+                                              : "text.secondary"
+                                          }
+                                        >
+                                          {msg.isRead ? "Đã xem" : "Đã gửi"}
+                                        </Typography>
+                                      )}
                                     </Box>
-                                  )}
-                                </Box>
-                              )}
-                              <Box
+                                  </Box>
+                                </Card>
+                              </Box>
+                            ))}
+                          <div ref={messagesEndRef} />
+                          {/* Add typing indicator component in the chat messages area */}
+                          {selectedRoom?.id === -1 && isChatbotTyping && (
+                            <Box
+                              sx={{
+                                display: "flex",
+                                alignItems: "center",
+                                gap: 1,
+                                // p: 2,
+                              }}
+                            >
+                              <Avatar
+                                src={CHATBOT.avatarUrl}
+                                sx={{ width: 28, height: 28 }}
+                              />
+                              <Card
                                 sx={{
+                                  bgcolor: "grey.100",
+                                  px: 2,
+                                  py: 1,
                                   display: "flex",
                                   alignItems: "center",
-                                  justifyContent: "flex-end",
-                                  gap: 1,
-                                  mt: 1,
+                                  gap: 0.5,
                                 }}
                               >
+                                <CircularProgress size={8} />
                                 <Typography
-                                  variant="caption"
-                                  color={
-                                    msg.sender === "user"
-                                      ? "white"
-                                      : "text.secondary"
-                                  }
+                                  variant="body2"
+                                  color="text.secondary"
                                 >
-                                  {new Date(msg.timestamp).toLocaleString(
-                                    "vi-VN",
-                                    {
-                                      hour: "2-digit",
-                                      minute: "2-digit",
-                                      hour12: false,
-                                      day: "2-digit",
-                                      month: "2-digit",
-                                      year: "numeric",
-                                    }
-                                  )}
+                                  Đang suy nghĩ...
                                 </Typography>
-                                {msg.sender === "user" && (
-                                  <Typography
-                                    variant="caption"
-                                    color={
-                                      msg.sender === "user"
-                                        ? "white"
-                                        : "text.secondary"
-                                    }
-                                  >
-                                    {msg.isRead ? "Đã xem" : "Đã gửi"}
-                                  </Typography>
-                                )}
-                              </Box>
+                              </Card>
                             </Box>
-                          </Card>
-                        </Box>
-                      ))}
-                    <div ref={messagesEndRef} />
-                    {/* Add typing indicator component in the chat messages area */}
-                    {selectedRoom?.id === -1 && isChatbotTyping && (
-                      <Box
-                        sx={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: 1,
-                          // p: 2,
-                        }}
-                      >
-                        <Avatar
-                          src={CHATBOT.avatarUrl}
-                          sx={{ width: 28, height: 28 }}
-                        />
-                        <Card
-                          sx={{
-                            bgcolor: "grey.100",
-                            px: 2,
-                            py: 1,
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 0.5,
-                          }}
-                        >
-                          <CircularProgress size={8} />
-                          <Typography variant="body2" color="text.secondary">
-                            Đang suy nghĩ...
-                          </Typography>
-                        </Card>
+                          )}
+                        </Stack>
                       </Box>
-                    )}
-                  </Stack>
-                </Box>
 
-                <Box sx={{ p: 2, borderTop: 1, borderColor: "divider" }}>
-                  <TextField
-                    fullWidth
-                    size="small"
-                    multiline={true}
-                    placeholder="Nhập tin nhắn..."
-                    value={message}
-                    onChange={(e) => setMessage(e.target.value)}
-                    onKeyPress={(e) => {
-                      if (e.key === "Enter" && !e.shiftKey) {
-                        e.preventDefault(); // Prevent default to avoid newline
-                        handleSend();
-                      }
-                    }}
-                    InputProps={{
-                      endAdornment: (
-                        <InputAdornment position="end">
-                          <IconButton
-                            size="small"
-                            onClick={handleSend}
-                            disabled={!message.trim()}
-                          >
-                            <Send
-                              color={message.trim() ? "primary" : "disabled"}
-                            />
-                          </IconButton>
-                        </InputAdornment>
-                      ),
-                    }}
-                  />
+                      <Box sx={{ p: 2, borderTop: 1, borderColor: "divider" }}>
+                        <TextField
+                          fullWidth
+                          size="small"
+                          multiline={true}
+                          placeholder="Nhập tin nhắn..."
+                          value={message}
+                          onChange={(e) => setMessage(e.target.value)}
+                          onKeyPress={(e) => {
+                            if (e.key === "Enter" && !e.shiftKey) {
+                              e.preventDefault(); // Prevent default to avoid newline
+                              handleSend();
+                            }
+                          }}
+                          InputProps={{
+                            endAdornment: (
+                              <InputAdornment position="end">
+                                <IconButton
+                                  size="small"
+                                  onClick={handleSend}
+                                  disabled={!message.trim()}
+                                >
+                                  <Send
+                                    color={
+                                      message.trim() ? "primary" : "disabled"
+                                    }
+                                  />
+                                </IconButton>
+                              </InputAdornment>
+                            ),
+                          }}
+                        />
+                      </Box>
+                    </>
+                  )}
                 </Box>
               </>
+            ) : (
+              <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
+                <GroupChatBox
+                  open={true}
+                  onClose={() => {
+                    setOpen(false);
+                    setActiveTab(0); // Switch back to private chat when closing
+                  }}
+                />
+              </Box>
             )}
           </Box>
           {selectedRoom && (

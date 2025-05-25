@@ -76,6 +76,8 @@ import { SessionAttendance } from './entities/SessionAttendance';
 import { TeachingSchedulesModule } from './modules/teaching-schedules/teaching-schedules.module';
 import { SessionAttendancesModule } from './modules/session-attendances/session-attendances.module';
 import { OpenAIModule } from './modules/openai/openai.module';
+import { GroupMessagesModule } from './modules/group-messages/group-messages.module';
+import { GroupMessage } from './entities/GroupMessage';
 
 @Module({
   imports: [
@@ -134,6 +136,7 @@ import { OpenAIModule } from './modules/openai/openai.module';
           TeachingSchedule,
           SessionAttendance,
           Payment,
+          GroupMessage,
         ],
       }),
       inject: [ConfigService],
@@ -169,6 +172,7 @@ import { OpenAIModule } from './modules/openai/openai.module';
     TeachingSchedulesModule,
     SessionAttendancesModule,
     OpenAIModule,
+    GroupMessagesModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthMiddleware, InstructorMiddleware],

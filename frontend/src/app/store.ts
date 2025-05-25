@@ -25,6 +25,7 @@ import paymentsReducer from "../features/payments/paymentsSlice";
 import teachingSchedulesReducer from "../features/teaching-schedules/teachingSchedulesSlice";
 import activeClassReducer from "../features/teaching-schedules/activeClassSlice";
 import sessionAttendancesReducer from "../features/session-attendances/sessionAttendancesSlice";
+import groupMessagesReducer from "../features/group-messages/groupMessagesSlice";
 
 export const store = configureStore({
   reducer: {
@@ -54,6 +55,7 @@ export const store = configureStore({
     teachingSchedules: teachingSchedulesReducer,
     activeClass: activeClassReducer,
     sessionAttendances: sessionAttendancesReducer,
+    groupMessages: groupMessagesReducer,
   },
 });
 
