@@ -18,6 +18,12 @@ import {
   ListItemAvatar,
   ListItemText,
   ListItemButton,
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Popover,
 } from "@mui/material";
 import {
   Send,
@@ -29,6 +35,8 @@ import {
   School,
   Person,
   Chat as ChatIcon,
+  AttachFile,
+  EmojiEmotions,
 } from "@mui/icons-material";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { io, Socket } from "socket.io-client";
@@ -47,6 +55,8 @@ import {
 import { GroupMessage } from "../../../types/groupMessage.types";
 import parse, { domToReact } from "html-react-parser";
 import { fetchAcademicClassById } from "../../../features/academic-classes/academicClassesSlice";
+import { uploadToDrive } from "../../../utils/uploadToDrive";
+import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 
 interface AcademicClass {
   id: string;
@@ -160,6 +170,15 @@ const GroupChatBox: React.FC<GroupChatBoxProps> = ({
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState("");
+  const [emojiAnchorEl, setEmojiAnchorEl] = useState<HTMLButtonElement | null>(
+    null
+  );
 
   if (!classId) {
     return (
@@ -326,6 +345,95 @@ const GroupChatBox: React.FC<GroupChatBoxProps> = ({
     });
   };
 
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setUploadDialogOpen(true);
+      setUploadMessage(`Đã tải lên file: ${file.name}`);
+    }
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleUploadConfirm = async () => {
+    if (!selectedFile || !socket || !currentUser || !classId) return;
+
+    // Close dialog immediately
+    setUploadDialogOpen(false);
+    setSelectedFile(null);
+    setUploadMessage("");
+
+    // Start upload process
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    try {
+      const response = await uploadToDrive(selectedFile, (progress) => {
+        setUploadProgress(progress);
+      });
+
+      if (response.success && response.fileUrl) {
+        // Send message with the file link
+        const messageData = {
+          classId,
+          messageText: uploadMessage.trim(),
+          referenceLink: response.fileUrl,
+          senderId: currentUser.id,
+          sender: {
+            id: currentUser.id,
+            username: currentUser.username,
+            email: currentUser.email,
+            avatarUrl: currentUser.avatarUrl,
+            role: currentUser.role,
+            userStudentAcademic: currentUser.userStudentAcademic,
+            userInstructor: currentUser.userInstructor,
+          },
+        };
+
+        socket.emit("sendGroupMessage", messageData, (response: any) => {
+          if (response?.error) {
+            console.error("Error sending message:", response.error);
+          } else {
+            console.log("Message sent successfully:", response);
+            setMessage("");
+            scrollToBottom();
+          }
+        });
+      } else {
+        console.error("Upload failed:", response.message);
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error);
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const handleUploadCancel = () => {
+    setSelectedFile(null);
+    setUploadMessage("");
+    setUploadDialogOpen(false);
+  };
+
+  const handleEmojiClick = (emojiData: EmojiClickData) => {
+    setMessage((prev) => prev + emojiData.emoji);
+    setEmojiAnchorEl(null);
+  };
+
+  const handleEmojiButtonClick = (
+    event: React.MouseEvent<HTMLButtonElement>
+  ) => {
+    setEmojiAnchorEl(event.currentTarget);
+  };
+
+  const handleEmojiClose = () => {
+    setEmojiAnchorEl(null);
+  };
+
   if (!academicClass) {
     return null;
   }
@@ -430,9 +538,10 @@ const GroupChatBox: React.FC<GroupChatBoxProps> = ({
                   sx={{
                     maxWidth: "80%",
                     bgcolor:
-                      msg.senderId === currentUser?.id
-                        ? "primary.main"
-                        : "grey.100",
+                      msg.senderId === currentUser?.id ? "#FFF4E5" : "grey.100",
+                    color: "text.primary",
+                    borderRadius: 2,
+                    boxShadow: 1,
                   }}
                 >
                   <Box sx={{ p: 2 }}>
@@ -465,10 +574,6 @@ const GroupChatBox: React.FC<GroupChatBoxProps> = ({
                     )}
                     <div
                       style={{
-                        color:
-                          msg.senderId === currentUser?.id
-                            ? "white"
-                            : undefined,
                         wordBreak: "break-word",
                         fontSize: 16,
                         lineHeight: 1.7,
@@ -487,139 +592,113 @@ const GroupChatBox: React.FC<GroupChatBoxProps> = ({
                           pt: msg.messageText ? 1 : 0,
                         }}
                       >
-                        {msg.senderId !== currentUser?.id ? (
-                          <Paper
-                            elevation={0}
+                        <Paper
+                          elevation={0}
+                          sx={{
+                            p: 1.5,
+                            mt: 0.5,
+                            borderRadius: 2,
+                            bgcolor:
+                              msg.senderId === currentUser?.id
+                                ? "rgba(255, 244, 229, 0.7)"
+                                : "rgba(25, 118, 210, 0.05)",
+                            border:
+                              msg.senderId === currentUser?.id
+                                ? "1px solid rgba(255, 244, 229, 0.9)"
+                                : "1px solid rgba(25, 118, 210, 0.2)",
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: 1,
+                            position: "relative",
+                            overflow: "hidden",
+                            "&:hover": {
+                              bgcolor:
+                                msg.senderId === currentUser?.id
+                                  ? "rgba(255, 244, 229, 0.9)"
+                                  : "rgba(25, 118, 210, 0.1)",
+                            },
+                          }}
+                        >
+                          <Box
                             sx={{
-                              p: 1.5,
-                              mt: 0.5,
-                              borderRadius: 2,
-                              bgcolor: "rgba(25, 118, 210, 0.05)",
-                              border: "1px solid rgba(25, 118, 210, 0.2)",
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: 1,
-                              position: "relative",
-                              overflow: "hidden",
-                              "&:hover": {
-                                bgcolor: "rgba(25, 118, 210, 0.1)",
-                              },
+                              position: "absolute",
+                              top: 0,
+                              left: 0,
+                              width: "4px",
+                              height: "100%",
+                              bgcolor: "primary.main",
                             }}
-                          >
-                            <Box
-                              sx={{
-                                position: "absolute",
-                                top: 0,
-                                left: 0,
-                                width: "4px",
-                                height: "100%",
-                                bgcolor: "primary.main",
-                              }}
-                            />
-                            <Box
-                              sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 1,
-                              }}
-                            >
-                              <Box
-                                sx={{
-                                  bgcolor: "primary.main",
-                                  color: "white",
-                                  borderRadius: "50%",
-                                  p: 0.7,
-                                  display: "flex",
-                                  justifyContent: "center",
-                                  alignItems: "center",
-                                }}
-                              >
-                                {getPageNameFromUrl(msg.referenceLink) ===
-                                "Khóa học" ? (
-                                  <School fontSize="small" />
-                                ) : (
-                                  <Article fontSize="small" />
-                                )}
-                              </Box>
-                              <Typography
-                                variant="subtitle2"
-                                color="primary.main"
-                              >
-                                {getPageNameFromUrl(msg.referenceLink)}
-                              </Typography>
-                            </Box>
-                            <Typography
-                              variant="body2"
-                              sx={{
-                                color: "text.secondary",
-                                fontSize: 13,
-                                pl: 0.5,
-                              }}
-                            >
-                              {shortenUrl(msg.referenceLink)}
-                            </Typography>
-                            {msg.referenceLink && (
-                              <Box
-                                sx={{
-                                  display: "flex",
-                                  justifyContent: "flex-end",
-                                }}
-                              >
-                                <Button
-                                  variant="contained"
-                                  size="small"
-                                  color="primary"
-                                  endIcon={<OpenInNew fontSize="small" />}
-                                  href={msg.referenceLink}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  sx={{
-                                    textTransform: "none",
-                                    mt: 0.5,
-                                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
-                                    fontWeight: 500,
-                                    borderRadius: "8px",
-                                  }}
-                                >
-                                  Truy cập
-                                </Button>
-                              </Box>
-                            )}
-                          </Paper>
-                        ) : (
+                          />
                           <Box
                             sx={{
                               display: "flex",
                               alignItems: "center",
-                              gap: 0.5,
+                              gap: 1,
                             }}
                           >
-                            <LinkIcon
-                              fontSize="small"
-                              color={
-                                msg.senderId === currentUser?.id
-                                  ? "inherit"
-                                  : "primary"
-                              }
-                            />
-                            <a
-                              href={msg.referenceLink || "#"}
-                              target="_blank"
-                              rel="noreferrer"
-                              style={{
-                                color:
-                                  msg.senderId === currentUser?.id
-                                    ? "white"
-                                    : "#1976d2",
-                                textDecoration: "none",
-                                fontSize: "14px",
-                                wordBreak: "break-all",
+                            <Box
+                              sx={{
+                                bgcolor: "primary.main",
+                                color: "white",
+                                borderRadius: "50%",
+                                p: 0.7,
+                                display: "flex",
+                                justifyContent: "center",
+                                alignItems: "center",
                               }}
                             >
-                              {shortenUrl(msg.referenceLink)}
-                            </a>
+                              {getPageNameFromUrl(msg.referenceLink) ===
+                              "Khóa học" ? (
+                                <School fontSize="small" />
+                              ) : (
+                                <Article fontSize="small" />
+                              )}
+                            </Box>
+                            <Typography
+                              variant="subtitle2"
+                              color="primary.main"
+                            >
+                              {getPageNameFromUrl(msg.referenceLink)}
+                            </Typography>
                           </Box>
-                        )}
+                          <Typography
+                            variant="body2"
+                            sx={{
+                              color: "text.secondary",
+                              fontSize: 13,
+                              pl: 0.5,
+                            }}
+                          >
+                            {shortenUrl(msg.referenceLink)}
+                          </Typography>
+                          {msg.referenceLink && (
+                            <Box
+                              sx={{
+                                display: "flex",
+                                justifyContent: "flex-end",
+                              }}
+                            >
+                              <Button
+                                variant="contained"
+                                size="small"
+                                color="primary"
+                                endIcon={<OpenInNew fontSize="small" />}
+                                href={msg.referenceLink}
+                                target="_blank"
+                                rel="noreferrer"
+                                sx={{
+                                  textTransform: "none",
+                                  mt: 0.5,
+                                  boxShadow: "0 2px 4px rgba(0,0,0,0.1)",
+                                  fontWeight: 500,
+                                  borderRadius: "8px",
+                                }}
+                              >
+                                Truy cập
+                              </Button>
+                            </Box>
+                          )}
+                        </Paper>
                       </Box>
                     )}
                     <Box
@@ -631,14 +710,7 @@ const GroupChatBox: React.FC<GroupChatBoxProps> = ({
                         mt: 1,
                       }}
                     >
-                      <Typography
-                        variant="caption"
-                        color={
-                          msg.senderId === currentUser?.id
-                            ? "white"
-                            : "text.secondary"
-                        }
-                      >
+                      <Typography variant="caption" color="text.secondary">
                         {new Date(msg.createdAt).toLocaleString("vi-VN", {
                           hour: "2-digit",
                           minute: "2-digit",
@@ -658,34 +730,166 @@ const GroupChatBox: React.FC<GroupChatBoxProps> = ({
         </Box>
 
         <Box sx={{ p: 2, borderTop: 1, borderColor: "divider" }}>
-          <TextField
-            fullWidth
-            size="small"
-            multiline
-            placeholder="Nhập tin nhắn..."
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyPress={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSend();
-              }
-            }}
-            InputProps={{
-              endAdornment: (
-                <InputAdornment position="end">
-                  <IconButton
-                    size="small"
-                    onClick={handleSend}
-                    disabled={!message.trim()}
-                  >
-                    <Send color={message.trim() ? "primary" : "disabled"} />
-                  </IconButton>
-                </InputAdornment>
-              ),
+          <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              style={{ display: "none" }}
+              accept="*/*"
+            />
+            <Tooltip title="Tải file lên">
+              <IconButton
+                size="small"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={isUploading}
+                sx={{ mb: 1 }}
+              >
+                <AttachFile color={isUploading ? "disabled" : "primary"} />
+              </IconButton>
+            </Tooltip>
+            <Tooltip title="Chọn emoji">
+              <IconButton
+                size="small"
+                onClick={handleEmojiButtonClick}
+                sx={{ mb: 1 }}
+              >
+                <EmojiEmotions color="primary" />
+              </IconButton>
+            </Tooltip>
+            <TextField
+              fullWidth
+              size="small"
+              multiline
+              placeholder="Nhập tin nhắn..."
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSend();
+                }
+              }}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      size="small"
+                      onClick={handleSend}
+                      disabled={!message.trim() || isUploading}
+                    >
+                      <Send
+                        color={
+                          message.trim() && !isUploading
+                            ? "primary"
+                            : "disabled"
+                        }
+                      />
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+          </Box>
+          {isUploading && (
+            <Box
+              sx={{
+                mt: 1,
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                bgcolor: "action.hover",
+                p: 1,
+                borderRadius: 1,
+              }}
+            >
+              <CircularProgress
+                size={16}
+                variant="determinate"
+                value={uploadProgress}
+              />
+              <Typography variant="caption" color="text.secondary">
+                Đang tải lên file... {uploadProgress}%
+              </Typography>
+            </Box>
+          )}
+        </Box>
+
+        {/* Emoji Picker Popover */}
+        <Popover
+          open={Boolean(emojiAnchorEl)}
+          anchorEl={emojiAnchorEl}
+          onClose={handleEmojiClose}
+          anchorOrigin={{
+            vertical: "top",
+            horizontal: "left",
+          }}
+          transformOrigin={{
+            vertical: "bottom",
+            horizontal: "left",
+          }}
+          sx={{
+            zIndex: 999999999999,
+          }}
+        >
+          <EmojiPicker
+            onEmojiClick={handleEmojiClick}
+            width={350}
+            height={400}
+            searchDisabled
+            skinTonesDisabled
+            previewConfig={{
+              showPreview: false,
             }}
           />
-        </Box>
+        </Popover>
+
+        {/* Upload Confirmation Dialog */}
+        <Dialog
+          open={uploadDialogOpen}
+          onClose={handleUploadCancel}
+          maxWidth="sm"
+          fullWidth
+          sx={{
+            zIndex: 999999999999,
+          }}
+        >
+          <DialogTitle>Xác nhận tải file lên</DialogTitle>
+          <DialogContent>
+            <Box sx={{ mt: 2 }}>
+              <Typography variant="subtitle1" gutterBottom>
+                File: {selectedFile?.name}
+              </Typography>
+              <Typography variant="body2" color="text.secondary" gutterBottom>
+                Kích thước:{" "}
+                {(selectedFile?.size || 0) / 1024 / 1024 > 1
+                  ? `${((selectedFile?.size || 0) / 1024 / 1024).toFixed(2)} MB`
+                  : `${((selectedFile?.size || 0) / 1024).toFixed(2)} KB`}
+              </Typography>
+              <TextField
+                fullWidth
+                multiline
+                rows={3}
+                placeholder="Nhập tin nhắn kèm theo file (không bắt buộc)"
+                value={uploadMessage}
+                onChange={(e) => setUploadMessage(e.target.value)}
+                sx={{ mt: 2 }}
+              />
+            </Box>
+          </DialogContent>
+          <DialogActions>
+            <Button onClick={handleUploadCancel} color="inherit">
+              Hủy
+            </Button>
+            <Button
+              onClick={handleUploadConfirm}
+              variant="contained"
+              color="primary"
+            >
+              Tải lên
+            </Button>
+          </DialogActions>
+        </Dialog>
       </Paper>
     </Slide>
   );

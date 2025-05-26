@@ -33,6 +33,9 @@ import {
   Button,
   CardContent,
   Link,
+  Tooltip,
+  Popover,
+  DialogActions,
 } from "@mui/material";
 import {
   Chat as ChatIcon,
@@ -45,6 +48,10 @@ import {
   OpenInNew,
   Article,
   School,
+  AttachFile,
+  EmojiEmotions,
+  Done,
+  DoneAll,
 } from "@mui/icons-material";
 import { useNavigate, useLocation } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
@@ -67,6 +74,8 @@ import parse, { domToReact } from "html-react-parser";
 import { selectCurrentClassInstructor } from "../../features/academic-class-instructors/academicClassInstructorsSelectors";
 import { fetchClassInstructorById } from "../../features/academic-class-instructors/academicClassInstructorsSlice";
 import GroupChatBox from "../student/chat/GroupChatBox";
+import { uploadToDrive } from "../../utils/uploadToDrive";
+import EmojiPicker, { EmojiClickData } from "emoji-picker-react";
 
 interface Message {
   id: number;
@@ -315,6 +324,17 @@ const ChatCommon = () => {
   );
 
   const location = useLocation();
+
+  // Add new state variables inside ChatCommon component
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
+  const [uploadMessage, setUploadMessage] = useState("");
+  const [emojiAnchorEl, setEmojiAnchorEl] = useState<HTMLButtonElement | null>(
+    null
+  );
 
   // Hàm filter chat rooms
   const getFilteredChatRooms = () => {
@@ -773,8 +793,8 @@ const ChatCommon = () => {
               timestamp: message.createdAt,
               avatar: message.sender.avatarUrl,
               name:
-                message.sender.userStudent?.fullName ||
                 message.sender.userInstructor?.fullName ||
+                message.sender.userStudent?.fullName ||
                 message.sender.username,
               isRead: message.isRead,
               senderId: message.sender.id,
@@ -1265,6 +1285,139 @@ const ChatCommon = () => {
     return content.replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
   };
 
+  const handleFileSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      setSelectedFile(file);
+      setUploadDialogOpen(true);
+      setUploadMessage(`Đã tải lên file: ${file.name}`);
+    }
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const handleUploadConfirm = async () => {
+    if (!selectedFile || !socketRef.current || !currentUser || !selectedRoom)
+      return;
+
+    // Close dialog immediately
+    setUploadDialogOpen(false);
+    setSelectedFile(null);
+    setUploadMessage("");
+
+    // Start upload process
+    setIsUploading(true);
+    setUploadProgress(0);
+
+    try {
+      const response = await uploadToDrive(selectedFile, (progress) => {
+        setUploadProgress(progress);
+      });
+
+      if (response.success && response.fileUrl) {
+        // Create temporary message for immediate UI update
+        const tempMessage: Message = {
+          id: Date.now(),
+          messageText: uploadMessage.trim(),
+          isRead: false,
+          createdAt: new Date().toISOString(),
+          referenceLink: response.fileUrl,
+          sender: {
+            id: currentUser.id,
+            username: currentUser.username,
+            email: currentUser.email,
+            role: currentUser.role,
+            avatarUrl: currentUser.avatarUrl || "",
+            userStudent: currentUser.userStudent,
+            userStudentAcademic: currentUser.userStudentAcademic,
+            userInstructor: currentUser.userInstructor,
+          },
+          receiver: {
+            id: selectedRoom.instructor.id,
+            username: selectedRoom.instructor.fullName,
+            email: "",
+            role: selectedRoom.instructor.role,
+            avatarUrl: selectedRoom.instructor.avatarUrl,
+          },
+        };
+
+        // Add to Redux store immediately
+        dispatch(addMessage(tempMessage));
+
+        // Update local state immediately for sender
+        setChatRooms((prev) =>
+          prev.map((room) => {
+            if (room.id === selectedRoom.id) {
+              return {
+                ...room,
+                messages: [
+                  ...room.messages,
+                  {
+                    id: tempMessage.id,
+                    content: tempMessage.messageText,
+                    sender: "user",
+                    timestamp: tempMessage.createdAt,
+                    avatar: currentUser.avatarUrl,
+                    name: currentUser.username,
+                    isRead: false,
+                    senderId: currentUser.id,
+                    receiverId: selectedRoom.instructor.id,
+                    referenceLink: tempMessage.referenceLink,
+                  },
+                ].sort(
+                  (a, b) =>
+                    new Date(a.timestamp).getTime() -
+                    new Date(b.timestamp).getTime()
+                ),
+              };
+            }
+            return room;
+          })
+        );
+
+        // Send message through socket
+        socketRef.current.emit("sendMessage", {
+          receiverId: selectedRoom.instructor.id,
+          messageText: uploadMessage.trim(),
+          referenceLink: response.fileUrl,
+        });
+
+        // Scroll to bottom after adding message
+        scrollToBottom();
+      } else {
+        console.error("Upload failed:", response.message);
+      }
+    } catch (error) {
+      console.error("Error uploading file:", error);
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const handleUploadCancel = () => {
+    setSelectedFile(null);
+    setUploadMessage("");
+    setUploadDialogOpen(false);
+  };
+
+  const handleEmojiClick = (emojiData: EmojiClickData) => {
+    setMessage((prev) => prev + emojiData.emoji);
+    setEmojiAnchorEl(null);
+  };
+
+  const handleEmojiButtonClick = (
+    event: React.MouseEvent<HTMLButtonElement>
+  ) => {
+    setEmojiAnchorEl(event.currentTarget);
+  };
+
+  const handleEmojiClose = () => {
+    setEmojiAnchorEl(null);
+  };
+
   return (
     <Box sx={{ height: "100%", display: "flex" }}>
       {/* Left Panel - Chat List */}
@@ -1736,18 +1889,14 @@ const ChatCommon = () => {
                       sx={{
                         maxWidth: "70%",
                         p: 2,
-                        bgcolor:
-                          msg.sender === "user"
-                            ? "primary.main"
-                            : "background.paper",
-                        color: msg.sender === "user" ? "white" : "text.primary",
+                        bgcolor: msg.sender === "user" ? "#FFF4E5" : "grey.100",
+                        color: "text.primary",
                         borderRadius: 2,
                         boxShadow: 1,
                       }}
                     >
                       <div
                         style={{
-                          color: msg.sender === "user" ? "white" : undefined,
                           wordBreak: "break-word",
                           fontSize: 16,
                           lineHeight: 1.7,
@@ -1826,9 +1975,7 @@ const ChatCommon = () => {
                             </Box>
                             <Typography
                               variant="subtitle2"
-                              color={
-                                msg.sender === "user" ? "white" : "primary.main"
-                              }
+                              color="primary.main"
                               sx={{ fontWeight: 600 }}
                             >
                               {getPageNameFromUrl(msg.referenceLink || "")}
@@ -1838,10 +1985,7 @@ const ChatCommon = () => {
                           <Typography
                             variant="body2"
                             sx={{
-                              color:
-                                msg.sender === "user"
-                                  ? "rgba(255, 255, 255, 0.8)"
-                                  : "text.secondary",
+                              color: "text.secondary",
                               fontSize: 13,
                               pl: 0.5,
                               mb: 1,
@@ -1867,20 +2011,17 @@ const ChatCommon = () => {
                               target="_blank"
                               rel="noreferrer"
                               onClick={(e) => {
-                                // Log before navigation
                                 console.log("Link clicked:", msg.referenceLink);
-                                // Don't prevent default - let navigation happen
                               }}
                               sx={{
                                 textTransform: "none",
                                 ...(msg.sender === "user"
                                   ? {
-                                      color: "white",
-                                      borderColor: "rgba(255, 255, 255, 0.5)",
+                                      color: "primary.main",
+                                      borderColor: "primary.main",
                                       "&:hover": {
-                                        borderColor: "white",
-                                        backgroundColor:
-                                          "rgba(255, 255, 255, 0.1)",
+                                        borderColor: "primary.dark",
+                                        backgroundColor: "primary.lighter",
                                       },
                                     }
                                   : {
@@ -1901,20 +2042,28 @@ const ChatCommon = () => {
                           justifyContent: "flex-end",
                           gap: 1,
                           mt: 0.5,
+                          alignItems: "center",
                         }}
                       >
-                        <Typography
-                          variant="caption"
-                          color={
-                            msg.sender === "user" ? "white" : "text.secondary"
-                          }
-                        >
+                        <Typography variant="caption" color="text.secondary">
                           {formatLastMessageTime(msg.timestamp)}
                         </Typography>
                         {msg.sender === "user" && (
-                          <Typography variant="caption" color="white">
-                            {msg.isRead ? "Đã xem" : "Đã gửi"}
-                          </Typography>
+                          <Box sx={{ display: "flex", alignItems: "center" }}>
+                            {msg.isRead ? (
+                              <DoneAll
+                                fontSize="small"
+                                color="primary"
+                                sx={{ fontSize: 16 }}
+                              />
+                            ) : (
+                              <Done
+                                fontSize="small"
+                                color="action"
+                                sx={{ fontSize: 16 }}
+                              />
+                            )}
+                          </Box>
                         )}
                       </Box>
                     </Box>
@@ -1956,39 +2105,171 @@ const ChatCommon = () => {
 
             {/* Message Input */}
             <Box sx={{ p: 2, borderTop: 1, borderColor: "divider" }}>
-              <TextField
-                fullWidth
-                multiline
-                maxRows={4}
-                placeholder="Nhập tin nhắn..."
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSend();
-                  }
-                }}
-                InputProps={{
-                  endAdornment: (
-                    <InputAdornment position="end">
-                      <IconButton
-                        color="primary"
-                        onClick={handleSend}
-                        disabled={!message.trim()}
-                      >
-                        <Send />
-                      </IconButton>
-                    </InputAdornment>
-                  ),
-                }}
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    borderRadius: 2,
-                  },
+              <Box sx={{ display: "flex", gap: 1, alignItems: "flex-end" }}>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  style={{ display: "none" }}
+                  accept="*/*"
+                />
+                <Tooltip title="Tải file lên">
+                  <IconButton
+                    size="small"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isUploading}
+                    sx={{ mb: 2 }}
+                  >
+                    <AttachFile color={isUploading ? "disabled" : "primary"} />
+                  </IconButton>
+                </Tooltip>
+                <Tooltip title="Chọn emoji">
+                  <IconButton
+                    size="small"
+                    onClick={handleEmojiButtonClick}
+                    sx={{ mb: 2 }}
+                  >
+                    <EmojiEmotions color="primary" />
+                  </IconButton>
+                </Tooltip>
+                <TextField
+                  fullWidth
+                  multiline
+                  maxRows={4}
+                  placeholder="Nhập tin nhắn..."
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSend();
+                    }
+                  }}
+                  InputProps={{
+                    endAdornment: (
+                      <InputAdornment position="end">
+                        <IconButton
+                          color="primary"
+                          onClick={handleSend}
+                          disabled={!message.trim() || isUploading}
+                        >
+                          <Send />
+                        </IconButton>
+                      </InputAdornment>
+                    ),
+                  }}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      borderRadius: 2,
+                    },
+                  }}
+                />
+              </Box>
+              {isUploading && (
+                <Box
+                  sx={{
+                    mt: 1,
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 1,
+                    bgcolor: "action.hover",
+                    p: 1,
+                    borderRadius: 1,
+                  }}
+                >
+                  <CircularProgress
+                    size={16}
+                    variant="determinate"
+                    value={uploadProgress}
+                  />
+                  <Typography variant="caption" color="text.secondary">
+                    Đang tải lên file... {uploadProgress}%
+                  </Typography>
+                </Box>
+              )}
+            </Box>
+
+            {/* Emoji Picker Popover */}
+            <Popover
+              open={Boolean(emojiAnchorEl)}
+              anchorEl={emojiAnchorEl}
+              onClose={handleEmojiClose}
+              anchorOrigin={{
+                vertical: "top",
+                horizontal: "left",
+              }}
+              transformOrigin={{
+                vertical: "bottom",
+                horizontal: "left",
+              }}
+              sx={{
+                zIndex: 999999999999,
+              }}
+            >
+              <EmojiPicker
+                onEmojiClick={handleEmojiClick}
+                width={350}
+                height={400}
+                searchDisabled
+                skinTonesDisabled
+                previewConfig={{
+                  showPreview: false,
                 }}
               />
-            </Box>
+            </Popover>
+
+            {/* Upload Confirmation Dialog */}
+            <Dialog
+              open={uploadDialogOpen}
+              onClose={handleUploadCancel}
+              maxWidth="sm"
+              fullWidth
+              sx={{
+                zIndex: 999999999999,
+              }}
+            >
+              <DialogTitle>Xác nhận tải file lên</DialogTitle>
+              <DialogContent>
+                <Box sx={{ mt: 2 }}>
+                  <Typography variant="subtitle1" gutterBottom>
+                    File: {selectedFile?.name}
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    gutterBottom
+                  >
+                    Kích thước:{" "}
+                    {(selectedFile?.size || 0) / 1024 / 1024 > 1
+                      ? `${((selectedFile?.size || 0) / 1024 / 1024).toFixed(
+                          2
+                        )} MB`
+                      : `${((selectedFile?.size || 0) / 1024).toFixed(2)} KB`}
+                  </Typography>
+                  <TextField
+                    fullWidth
+                    multiline
+                    rows={3}
+                    placeholder="Nhập tin nhắn kèm theo file (không bắt buộc)"
+                    value={uploadMessage}
+                    onChange={(e) => setUploadMessage(e.target.value)}
+                    sx={{ mt: 2 }}
+                  />
+                </Box>
+              </DialogContent>
+              <DialogActions>
+                <Button onClick={handleUploadCancel} color="inherit">
+                  Hủy
+                </Button>
+                <Button
+                  onClick={handleUploadConfirm}
+                  variant="contained"
+                  color="primary"
+                >
+                  Tải lên
+                </Button>
+              </DialogActions>
+            </Dialog>
           </>
         ) : (
           // Empty state
