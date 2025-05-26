@@ -28,6 +28,7 @@ import {
   Article,
   School,
   Person,
+  Chat as ChatIcon,
 } from "@mui/icons-material";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { io, Socket } from "socket.io-client";
@@ -139,34 +140,39 @@ interface GroupChatBoxProps {
   open: boolean;
   onClose: () => void;
   socket: Socket | null;
+  classId?: string;
+  fullWidth?: boolean;
 }
 
 const GroupChatBox: React.FC<GroupChatBoxProps> = ({
   open,
   onClose,
   socket,
+  classId: propClassId,
+  fullWidth = false,
 }) => {
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector(selectCurrentUser) as User | null;
-  const [classId, setClassId] = useState<string | undefined>(undefined);
+  const classId =
+    propClassId || currentUser?.userStudentAcademic?.academicClass?.id;
   const [isConnected, setIsConnected] = useState(false);
   const [usersInRoom, setUsersInRoom] = useState<string[]>([]);
   const [message, setMessage] = useState("");
   const [isLoading, setIsLoading] = useState(true);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  // Update classId when currentUser changes
-  useEffect(() => {
-    const newClassId = currentUser?.userStudentAcademic?.academicClass?.id;
-    console.log("Current User:", currentUser);
-    console.log("Academic Class ID:", newClassId);
-    setClassId(newClassId);
-  }, [currentUser]);
+  if (!classId) {
+    return (
+      <Box sx={{ p: 4, textAlign: "center" }}>
+        <Typography color="text.secondary">
+          Vui lòng chọn lớp để bắt đầu chat nhóm.
+        </Typography>
+      </Box>
+    );
+  }
 
-  // Fetch academic class details when classId changes
   useEffect(() => {
     if (!classId) return;
-
     dispatch(fetchAcademicClassById(parseInt(classId)))
       .unwrap()
       .catch((error) => {
@@ -174,12 +180,10 @@ const GroupChatBox: React.FC<GroupChatBoxProps> = ({
       });
   }, [classId, dispatch]);
 
-  // Get academic class from store
   const academicClass = useAppSelector(
     (state) => state.academicClasses.currentClass
   );
 
-  // Memoize the messages selector
   const messagesSelector = React.useMemo(
     () => (classId ? selectGroupMessagesByClass(classId) : undefined),
     [classId]
@@ -189,7 +193,6 @@ const GroupChatBox: React.FC<GroupChatBoxProps> = ({
     messagesSelector ? messagesSelector(state) : []
   );
 
-  // Fetch messages when classId changes
   useEffect(() => {
     if (!classId) return;
 
@@ -206,7 +209,6 @@ const GroupChatBox: React.FC<GroupChatBoxProps> = ({
       });
   }, [classId, dispatch]);
 
-  // Socket connection effect
   useEffect(() => {
     if (!socket || !currentUser?.id || !classId) return;
 
@@ -215,7 +217,6 @@ const GroupChatBox: React.FC<GroupChatBoxProps> = ({
       classId: classId,
     });
 
-    // Join class room
     socket.emit("joinClassRoom", { classId }, (response: any) => {
       if (response?.success) {
         console.log("Joined class room:", response);
@@ -225,7 +226,6 @@ const GroupChatBox: React.FC<GroupChatBoxProps> = ({
       }
     });
 
-    // Room events
     socket.on("userJoined", (data) => {
       console.log("User joined:", data);
       if (data.classId === classId) {
@@ -247,7 +247,6 @@ const GroupChatBox: React.FC<GroupChatBoxProps> = ({
       }
     });
 
-    // Message events
     socket.on("newGroupMessage", (newMessage: GroupMessage) => {
       console.log("Received new group message:", newMessage);
       if (newMessage.classId === classId) {
@@ -259,13 +258,10 @@ const GroupChatBox: React.FC<GroupChatBoxProps> = ({
       }
     });
 
-    // Cleanup on unmount
     return () => {
       console.log("Cleaning up group chat");
       if (socket) {
-        // Leave the class room
         socket.emit("leaveClassRoom", { classId });
-        // Remove listeners
         socket.off("userJoined");
         socket.off("userLeft");
         socket.off("roomUsers");
@@ -319,13 +315,11 @@ const GroupChatBox: React.FC<GroupChatBoxProps> = ({
 
     console.log("Sending message:", messageData);
 
-    // Emit message to server
     socket.emit("sendGroupMessage", messageData, (response: any) => {
       if (response?.error) {
         console.error("Error sending message:", response.error);
       } else {
         console.log("Message sent successfully:", response);
-        // Clear input after successful send
         setMessage("");
         scrollToBottom();
       }
@@ -341,19 +335,17 @@ const GroupChatBox: React.FC<GroupChatBoxProps> = ({
       <Paper
         elevation={6}
         sx={{
-          position: "fixed",
-          bottom: 10,
-          right: 10,
-          width: "500px",
-          height: "88%",
+          position: fullWidth ? "static" : "fixed",
+          bottom: fullWidth ? undefined : 10,
+          right: fullWidth ? undefined : 10,
+          width: fullWidth ? "100%" : "500px",
+          height: fullWidth ? "100vh" : "83.5%",
+          zIndex: 99999999,
           display: "flex",
           flexDirection: "column",
           overflow: "hidden",
-          zIndex: 99999999,
-          borderRadius: 2,
         }}
       >
-        {/* Header */}
         <Box
           sx={{
             display: "flex",
@@ -383,7 +375,6 @@ const GroupChatBox: React.FC<GroupChatBoxProps> = ({
           </IconButton>
         </Box>
 
-        {/* Messages */}
         <Box
           sx={{
             flex: 1,
@@ -397,6 +388,31 @@ const GroupChatBox: React.FC<GroupChatBoxProps> = ({
           {isLoading ? (
             <Box sx={{ display: "flex", justifyContent: "center", p: 3 }}>
               <CircularProgress />
+            </Box>
+          ) : messages.length === 0 ? (
+            <Box
+              sx={{
+                flex: 1,
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                color: "text.secondary",
+                height: "100%",
+                gap: 2,
+              }}
+            >
+              <ChatIcon sx={{ fontSize: 48, opacity: 0.5 }} />
+              <Typography variant="h6" textAlign="center">
+                Chưa có tin nhắn nào
+              </Typography>
+              <Typography
+                variant="body2"
+                textAlign="center"
+                color="text.secondary"
+              >
+                Hãy bắt đầu cuộc trò chuyện bằng cách gửi tin nhắn đầu tiên
+              </Typography>
             </Box>
           ) : (
             messages.map((msg: GroupMessage) => (
@@ -641,7 +657,6 @@ const GroupChatBox: React.FC<GroupChatBoxProps> = ({
           <div ref={messagesEndRef} />
         </Box>
 
-        {/* Input */}
         <Box sx={{ p: 2, borderTop: 1, borderColor: "divider" }}>
           <TextField
             fullWidth

@@ -961,7 +961,7 @@ const TeachingSchedules = () => {
                 }}
               >
                 <CircularProgress
-                  variant="determinate"
+                  variant="determinate" 
                   value={100}
                   size={100}
                   thickness={5}

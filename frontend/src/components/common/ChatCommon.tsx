@@ -46,7 +46,7 @@ import {
   Article,
   School,
 } from "@mui/icons-material";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
 import {
   addMessage,
@@ -64,6 +64,9 @@ import { fetchUsers } from "../../features/users/usersApiSlice";
 import { selectAllUsers } from "../../features/users/usersSelectors";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import parse, { domToReact } from "html-react-parser";
+import { selectCurrentClassInstructor } from "../../features/academic-class-instructors/academicClassInstructorsSelectors";
+import { fetchClassInstructorById } from "../../features/academic-class-instructors/academicClassInstructorsSlice";
+import GroupChatBox from "../student/chat/GroupChatBox";
 
 interface Message {
   id: number;
@@ -291,12 +294,17 @@ const ChatCommon = () => {
   const messages = useAppSelector(selectAllMessages);
   const loading = useAppSelector(selectMessagesLoading);
   const allUsers = useAppSelector(selectAllUsers);
+  const currentClassInstructor = useAppSelector(selectCurrentClassInstructor);
   const [showInstructors, setShowInstructors] = useState(true);
   const [selectedRoom, setSelectedRoom] = useState<ChatRoom | null>(null);
   const [message, setMessage] = useState("");
   const [chatRooms, setChatRooms] = useState<ChatRoom[]>([]);
   const [userInfoOpen, setUserInfoOpen] = useState(false);
   const [userTypeFilter, setUserTypeFilter] = useState("all");
+  const [chatType, setChatType] = useState<"private" | "group">("private");
+  const [selectedClass, setSelectedClass] = useState<{ id: string } | null>(
+    null
+  );
 
   // Add chatbot typing state
   const [isChatbotTyping, setIsChatbotTyping] = useState(false);
@@ -305,6 +313,8 @@ const ChatCommon = () => {
   const [recentLinkTimestamp, setRecentLinkTimestamp] = useState<number | null>(
     null
   );
+
+  const location = useLocation();
 
   // Hàm filter chat rooms
   const getFilteredChatRooms = () => {
@@ -338,7 +348,10 @@ const ChatCommon = () => {
 
   useEffect(() => {
     dispatch(fetchUsers());
+    dispatch(fetchClassInstructorById(Number(currentUser?.userInstructor?.id)));
   }, []);
+
+  console.log("currentClassInstructor", currentClassInstructor);
 
   // Socket connection
   useEffect(() => {
@@ -1266,220 +1279,342 @@ const ChatCommon = () => {
         }}
       >
         {/* Header */}
-        <Box
-          sx={{
-            p: 2,
-          }}
-        >
-          <Typography variant="h5" fontWeight={600}>
+        <Box sx={{ p: 2 }}>
+          <Typography variant="h5" fontWeight={600} sx={{ mb: 2 }}>
             Tin nhắn
           </Typography>
-        </Box>
 
-        {/* Search and Filters */}
-        <Box sx={{ p: 2, borderBottom: 1, borderColor: "divider" }}>
-          <TextField
-            fullWidth
-            size="small"
-            placeholder="Tìm kiếm người dùng..."
-            value={searchQuery}
-            onChange={(e) => handleSearch(e.target.value)}
-            InputProps={{
-              startAdornment: (
-                <InputAdornment position="start">
-                  <Search />
-                </InputAdornment>
-              ),
-            }}
-            sx={{ mb: 2 }}
-          />
+          {/* Chat Type Tabs - Only show for instructors and students */}
+          {currentUser?.role !== "admin" && (
+            <Tabs
+              value={chatType}
+              onChange={(_, newValue) => setChatType(newValue)}
+              sx={{ mb: 1 }}
+            >
+              <Tab
+                label="Tin nhắn riêng"
+                value="private"
+                sx={{ textTransform: "none" }}
+              />
+              <Tab
+                label="Tin nhắn lớp"
+                value="group"
+                sx={{ textTransform: "none" }}
+              />
+            </Tabs>
+          )}
 
-          <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
-            <FormControl size="small" sx={{ minWidth: 200 }}>
-              <InputLabel>Lọc theo vai trò</InputLabel>
-              <Select
-                value={userTypeFilter}
-                label="Lọc theo vai trò"
-                onChange={(e) => setUserTypeFilter(e.target.value)}
-              >
-                {USER_TYPE_OPTIONS.map((option) => (
-                  <MenuItem key={option.value} value={option.value}>
-                    {option.label}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={filterUnread}
-                  onChange={(e) => setFilterUnread(e.target.checked)}
-                  size="small"
-                />
-              }
-              label="Chưa đọc"
-            />
-          </Box>
-        </Box>
-
-        {/* Chat List */}
-        <List
-          sx={{ flex: 1, overflowY: "auto", maxHeight: "calc(100vh - 200px)" }}
-        >
-          <ListItemButton
-            key="chatbot"
-            selected={selectedRoom?.id === -1}
-            onClick={() => {
-              const chatbotRoom = chatRooms.find((room) => room.id === -1);
-              if (chatbotRoom) {
-                handleSelectRoom(chatbotRoom);
-              }
-            }}
-            sx={{
-              borderBottom: 1,
-              borderColor: "divider",
-              bgcolor: (theme) =>
-                selectedRoom?.id === -1
-                  ? theme.palette.action.selected
-                  : "transparent",
-            }}
-          >
-            <ListItemAvatar>
-              <Avatar src={CHATBOT.avatarUrl} sx={{ bgcolor: "primary.main" }}>
-                <SmartToy />
-              </Avatar>
-            </ListItemAvatar>
-            <ListItemText
-              primary={
-                <Typography fontWeight={500}>{CHATBOT.fullName}</Typography>
-              }
-              secondary={
-                <Typography variant="body2" color="text.secondary">
-                  AI Assistant
-                </Typography>
-              }
-            />
-          </ListItemButton>
-
-          {(searchQuery ? searchResults : getFilteredChatRooms())
-            .filter((item) => item.id !== -1)
-            .map((item) => {
-              // For search results, construct chat room structure
-              const roomData = searchQuery
-                ? {
-                    id: Number(item.id),
-                    instructor: {
-                      id: item.id,
-                      fullName:
-                        item.userInstructor?.fullName ||
-                        item.userStudent?.fullName ||
-                        item.userStudentAcademic?.fullName ||
-                        item.username, // Fallback to username
-                      avatarUrl: item.avatarUrl || "", // Provide default empty string
-                      role: item.role,
-                      online: false,
-                    },
-                    messages: [],
-                    unread: 0,
-                  }
-                : item;
-
-              return (
+          {/* Class Selection for Instructors */}
+          {chatType === "group" && currentUser?.role === "instructor" && (
+            <List sx={{ py: 2, width: "100%" }}>
+              {currentClassInstructor?.map((item) => (
                 <ListItemButton
-                  key={roomData.id}
-                  selected={selectedRoom?.id === roomData.id}
-                  onClick={() => handleSelectRoom(roomData)}
+                  key={item.academicClass.id}
+                  selected={selectedClass?.id === item.academicClass.id}
+                  onClick={() =>
+                    setSelectedClass({ id: item.academicClass.id })
+                  }
                   sx={{
-                    borderBottom: "1px solid",
-                    borderColor: "divider",
-                    "&:hover": { bgcolor: "action.hover" },
-                    "&.Mui-selected": { bgcolor: "action.selected" },
+                    borderRadius: 1,
+                    mb: 1,
+                    bgcolor:
+                      selectedClass?.id === item.academicClass.id
+                        ? "primary.50"
+                        : undefined,
+                    border:
+                      selectedClass?.id === item.academicClass.id
+                        ? "1px solid"
+                        : "1px solid #eee",
+                    borderColor:
+                      selectedClass?.id === item.academicClass.id
+                        ? "primary.main"
+                        : "#eee",
                   }}
                 >
-                  <ListItemAvatar>
-                    <Badge
-                      overlap="circular"
-                      anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-                      badgeContent={
-                        roomData.unread > 0 ? roomData.unread : null
-                      }
-                      color="error"
-                    >
-                      <Avatar src={roomData.instructor.avatarUrl || ""} />
-                    </Badge>
-                  </ListItemAvatar>
                   <ListItemText
                     primary={
-                      <Box
-                        sx={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                        }}
+                      <Typography
+                        fontWeight={600}
+                        color={
+                          selectedClass?.id === item.academicClass.id
+                            ? "primary.main"
+                            : undefined
+                        }
                       >
-                        <Box>
-                          <Typography
-                            fontWeight={roomData.unread > 0 ? 600 : 400}
-                          >
-                            {roomData.instructor.fullName}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {USER_TYPE_OPTIONS.find(
-                              (opt) =>
-                                opt.value ===
-                                allUsers.find(
-                                  (u) => u.id === roomData.instructor.id
-                                )?.role
-                            )?.label || roomData.instructor.role}
-                          </Typography>
-                        </Box>
-                        {roomData.messages.length > 0 && (
-                          <Typography variant="caption" color="text.secondary">
-                            {formatLastMessageTime(
-                              roomData.messages[roomData.messages.length - 1]
-                                .timestamp
-                            )}
-                          </Typography>
-                        )}
-                      </Box>
+                        {item.academicClass.classCode} -{" "}
+                        {item.academicClass.className}
+                      </Typography>
                     }
                     secondary={
-                      <Box sx={{ display: "flex", flexDirection: "column" }}>
-                        <Typography
-                          variant="body2"
-                          color={
-                            roomData.unread > 0
-                              ? "text.primary"
-                              : "text.secondary"
-                          }
-                          sx={{
-                            fontWeight: roomData.unread > 0 ? 500 : 400,
-                            overflow: "hidden",
-                            textOverflow: "ellipsis",
-                            whiteSpace: "nowrap",
-                          }}
-                        >
-                          {roomData.messages.length > 0
-                            ? roomData.messages[roomData.messages.length - 1]
-                                .content
-                            : "Chưa có tin nhắn"}
-                        </Typography>
-                        {roomData.instructor.role === "student_academic" && (
-                          <Typography variant="caption" color="primary">
-                            {`Mã SV: ${
-                              allUsers.find(
-                                (u) => u.id === roomData.instructor.id
-                              )?.userStudentAcademic?.studentCode || ""
-                            }`}
-                          </Typography>
-                        )}
-                      </Box>
+                      <Typography variant="caption" color="text.secondary">
+                        {item.academicClass.semester}
+                      </Typography>
                     }
                   />
                 </ListItemButton>
-              );
-            })}
-        </List>
+              ))}
+            </List>
+          )}
+          {chatType === "group" && currentUser?.role !== "instructor" && (
+            <List sx={{ p: 0, width: "100%" }}>
+              {currentUser?.userStudentAcademic?.academicClass && (
+                <ListItemButton selected disabled>
+                  <ListItemText
+                    primary={
+                      <Typography fontWeight={600} color={"primary.main"}>
+                        {
+                          currentUser.userStudentAcademic.academicClass
+                            .classCode
+                        }{" "}
+                        -{" "}
+                        {
+                          currentUser.userStudentAcademic.academicClass
+                            .className
+                        }
+                      </Typography>
+                    }
+                    secondary={
+                      <Typography variant="caption" color="text.secondary">
+                        {currentUser.userStudentAcademic.academicClass.semester}
+                      </Typography>
+                    }
+                  />
+                </ListItemButton>
+              )}
+            </List>
+          )}
+        </Box>
+
+        {/* Only show the rest if chatType is private */}
+        {chatType === "private" && (
+          <>
+            {/* Search and Filters */}
+            <Box sx={{ px: 2, borderBottom: 1, borderColor: "divider" }}>
+              <TextField
+                fullWidth
+                size="small"
+                placeholder="Tìm kiếm người dùng..."
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <InputAdornment position="start">
+                      <Search />
+                    </InputAdornment>
+                  ),
+                }}
+                sx={{ mb: 2 }}
+              />
+
+              <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
+                <FormControl size="small" sx={{ minWidth: 200 }}>
+                  <InputLabel>Lọc theo vai trò</InputLabel>
+                  <Select
+                    value={userTypeFilter}
+                    label="Lọc theo vai trò"
+                    onChange={(e) => setUserTypeFilter(e.target.value)}
+                  >
+                    {USER_TYPE_OPTIONS.map((option) => (
+                      <MenuItem key={option.value} value={option.value}>
+                        {option.label}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+
+                <FormControlLabel
+                  control={
+                    <Switch
+                      checked={filterUnread}
+                      onChange={(e) => setFilterUnread(e.target.checked)}
+                      size="small"
+                    />
+                  }
+                  label="Chưa đọc"
+                />
+              </Box>
+            </Box>
+
+            {/* Chat List */}
+            <List
+              sx={{
+                flex: 1,
+                overflowY: "auto",
+                maxHeight: "calc(100vh - 200px)",
+              }}
+            >
+              <ListItemButton
+                key="chatbot"
+                selected={selectedRoom?.id === -1}
+                onClick={() => {
+                  const chatbotRoom = chatRooms.find((room) => room.id === -1);
+                  if (chatbotRoom) {
+                    handleSelectRoom(chatbotRoom);
+                  }
+                }}
+                sx={{
+                  borderBottom: 1,
+                  borderColor: "divider",
+                  bgcolor: (theme) =>
+                    selectedRoom?.id === -1
+                      ? theme.palette.action.selected
+                      : "transparent",
+                }}
+              >
+                <ListItemAvatar>
+                  <Avatar
+                    src={CHATBOT.avatarUrl}
+                    sx={{ bgcolor: "primary.main" }}
+                  >
+                    <SmartToy />
+                  </Avatar>
+                </ListItemAvatar>
+                <ListItemText
+                  primary={
+                    <Typography fontWeight={500}>{CHATBOT.fullName}</Typography>
+                  }
+                  secondary={
+                    <Typography variant="body2" color="text.secondary">
+                      AI Assistant
+                    </Typography>
+                  }
+                />
+              </ListItemButton>
+
+              {(searchQuery ? searchResults : getFilteredChatRooms())
+                .filter((item) => item.id !== -1)
+                .map((item) => {
+                  // For search results, construct chat room structure
+                  const roomData = searchQuery
+                    ? {
+                        id: Number(item.id),
+                        instructor: {
+                          id: item.id,
+                          fullName:
+                            item.userInstructor?.fullName ||
+                            item.userStudent?.fullName ||
+                            item.userStudentAcademic?.fullName ||
+                            item.username, // Fallback to username
+                          avatarUrl: item.avatarUrl || "", // Provide default empty string
+                          role: item.role,
+                          online: false,
+                        },
+                        messages: [],
+                        unread: 0,
+                      }
+                    : item;
+
+                  return (
+                    <ListItemButton
+                      key={roomData.id}
+                      selected={selectedRoom?.id === roomData.id}
+                      onClick={() => handleSelectRoom(roomData)}
+                      sx={{
+                        borderBottom: "1px solid",
+                        borderColor: "divider",
+                        "&:hover": { bgcolor: "action.hover" },
+                        "&.Mui-selected": { bgcolor: "action.selected" },
+                      }}
+                    >
+                      <ListItemAvatar>
+                        <Badge
+                          overlap="circular"
+                          anchorOrigin={{
+                            vertical: "bottom",
+                            horizontal: "right",
+                          }}
+                          badgeContent={
+                            roomData.unread > 0 ? roomData.unread : null
+                          }
+                          color="error"
+                        >
+                          <Avatar src={roomData.instructor.avatarUrl || ""} />
+                        </Badge>
+                      </ListItemAvatar>
+                      <ListItemText
+                        primary={
+                          <Box
+                            sx={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                            }}
+                          >
+                            <Box>
+                              <Typography
+                                fontWeight={roomData.unread > 0 ? 600 : 400}
+                              >
+                                {roomData.instructor.fullName}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                {USER_TYPE_OPTIONS.find(
+                                  (opt) =>
+                                    opt.value ===
+                                    allUsers.find(
+                                      (u) => u.id === roomData.instructor.id
+                                    )?.role
+                                )?.label || roomData.instructor.role}
+                              </Typography>
+                            </Box>
+                            {roomData.messages.length > 0 && (
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                {formatLastMessageTime(
+                                  roomData.messages[
+                                    roomData.messages.length - 1
+                                  ].timestamp
+                                )}
+                              </Typography>
+                            )}
+                          </Box>
+                        }
+                        secondary={
+                          <Box
+                            sx={{ display: "flex", flexDirection: "column" }}
+                          >
+                            <Typography
+                              variant="body2"
+                              color={
+                                roomData.unread > 0
+                                  ? "text.primary"
+                                  : "text.secondary"
+                              }
+                              sx={{
+                                fontWeight: roomData.unread > 0 ? 500 : 400,
+                                overflow: "hidden",
+                                textOverflow: "ellipsis",
+                                whiteSpace: "nowrap",
+                              }}
+                            >
+                              {roomData.messages.length > 0
+                                ? roomData.messages[
+                                    roomData.messages.length - 1
+                                  ].content
+                                : "Chưa có tin nhắn"}
+                            </Typography>
+                            {roomData.instructor.role ===
+                              "student_academic" && (
+                              <Typography variant="caption" color="primary">
+                                {`Mã SV: ${
+                                  allUsers.find(
+                                    (u) => u.id === roomData.instructor.id
+                                  )?.userStudentAcademic?.studentCode || ""
+                                }`}
+                              </Typography>
+                            )}
+                          </Box>
+                        }
+                      />
+                    </ListItemButton>
+                  );
+                })}
+            </List>
+          </>
+        )}
       </Paper>
 
       {/* Right Panel - Chat Content */}
@@ -1495,7 +1630,40 @@ const ChatCommon = () => {
           borderColor: "divider",
         }}
       >
-        {selectedRoom ? (
+        {chatType === "group" ? (
+          currentUser?.role === "instructor" ? (
+            selectedClass?.id ? (
+              <GroupChatBox
+                open={true}
+                onClose={() => {}}
+                socket={socketRef.current}
+                classId={selectedClass.id}
+                fullWidth={location.pathname === "/instructor/chats"}
+              />
+            ) : (
+              <Box
+                sx={{
+                  flex: 1,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  color: "text.secondary",
+                }}
+              >
+                <Typography variant="h6">
+                  Hãy chọn lớp để bắt đầu chat nhóm
+                </Typography>
+              </Box>
+            )
+          ) : (
+            <GroupChatBox
+              open={true}
+              onClose={() => {}}
+              socket={socketRef.current}
+              fullWidth={location.pathname === "/instructor/chats"}
+            />
+          )
+        ) : selectedRoom ? (
           <>
             {/* Chat Header */}
             <Box
