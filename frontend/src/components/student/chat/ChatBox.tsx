@@ -41,6 +41,7 @@ import {
   OpenInNew,
   Article,
   School,
+  Forum,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { io, Socket } from "socket.io-client";
@@ -238,56 +239,16 @@ const chatHtmlParserOptions = {
   },
 };
 
-// Improve the getPageNameFromUrl function to handle edge cases
-const getPageNameFromUrl = (url?: string | null): string => {
-  if (!url || typeof url !== "string" || url.trim() === "") return "";
-
-  try {
-    // Try to extract course ID or other patterns from URL
-    if (url.includes("/course") || url.includes("/courses")) {
-      return "Khóa học";
-    } else if (url.includes("/lesson") || url.includes("/lessons")) {
-      return "Bài học";
-    } else if (url.includes("/article")) {
-      return "Bài viết";
-    } else if (url.includes("/document")) {
-      return "Tài liệu";
-    } else {
-      return "Tham khảo";
-    }
-  } catch (e) {
-    return "Tham khảo";
-  }
-};
-
-// Enhance the isValidUrl function to be more robust
-const isValidUrl = (url?: string | null): boolean => {
-  // Return false for null, undefined, or empty strings
-  if (!url || typeof url !== "string" || url.trim() === "") return false;
-
-  try {
-    const urlObj = new URL(url);
-    // Only return true if it's a valid HTTP/HTTPS URL
-    return urlObj.protocol === "http:" || urlObj.protocol === "https:";
-  } catch (e) {
-    return false;
-  }
-};
-
-// Fix the shortenUrl function to handle invalid URLs
-const shortenUrl = (url?: string | null): string => {
-  if (!url || typeof url !== "string" || url.trim() === "") return "";
-
-  try {
-    const urlObj = new URL(url);
-    // Only show hostname and limited path
-    return `${urlObj.hostname}${urlObj.pathname.substring(0, 20)}${
-      urlObj.pathname.length > 20 ? "..." : ""
-    }`;
-  } catch (e) {
-    return url.substring(0, 30) + (url.length > 30 ? "..." : "");
-  }
-};
+function getLinkIcon(url) {
+  if (!url) return <LinkIcon color="primary" sx={{ fontSize: 22 }} />;
+  if (url.includes("/course/"))
+    return <School color="primary" sx={{ fontSize: 22 }} />;
+  if (url.includes("/document/"))
+    return <Article color="primary" sx={{ fontSize: 22 }} />;
+  if (url.includes("/forum/"))
+    return <Forum color="primary" sx={{ fontSize: 22 }} />;
+  return <LinkIcon color="primary" sx={{ fontSize: 22 }} />;
+}
 
 // Or for a more detailed approach with login prompt:
 const ChatBox = () => {
@@ -1140,7 +1101,7 @@ const ChatBox = () => {
           createdAt: response.createdAt,
           referenceLink: response.referenceLink || undefined,
           sender: {
-            id: "-1",
+            id: -1,
             username: "DNC Assistant",
             email: "chatbot@dnc.com",
             role: "chatbot",
@@ -1353,11 +1314,7 @@ const ChatBox = () => {
             zIndex: 1000,
           }}
         >
-          <Badge
-            badgeContent={getTotalUnreadMessages(chatRooms)}
-            color="error"
-            invisible={getTotalUnreadMessages(chatRooms) === 0}
-          >
+          <Badge color="error" variant="dot">
             <ChatIcon />
           </Badge>
         </Fab>
@@ -1390,25 +1347,29 @@ const ChatBox = () => {
               borderBottom: 1,
               borderColor: "divider",
               bgcolor: "primary.main",
-              minHeight: "48px",
+              minHeight: "40px",
               "& .MuiTab-root": {
-                color: "rgba(255, 255, 255, 0.7)",
+                color: "white",
                 textTransform: "none",
-                fontSize: "0.875rem",
+                fontSize: "0.95rem",
                 fontWeight: 500,
-                minHeight: "48px",
+                minHeight: "40px",
+                borderRadius: 1.5,
+                px: 2,
+                mx: 0.5,
+                transition: "background 0.2s",
                 "&.Mui-selected": {
-                  color: "white",
-                  fontWeight: 600,
+                  background: "rgba(255,255,255,0.18)",
+                  color: "#fff",
                 },
                 "&:hover": {
-                  color: "white",
-                  bgcolor: "rgba(255, 255, 255, 0.08)",
+                  background: "rgba(255,255,255,0.10)",
                 },
               },
               "& .MuiTabs-indicator": {
-                bgcolor: "white",
+                bgcolor: "#fff",
                 height: "3px",
+                borderRadius: 2,
               },
             }}
           >
@@ -1843,168 +1804,63 @@ const ChatBox = () => {
                                           )
                                         : null}
                                     </div>
-                                    {isValidUrl(msg.referenceLink) && (
+
+                                    {msg.referenceLink && (
                                       <Box
                                         sx={{
                                           display: "flex",
-                                          flexDirection: "column",
-                                          mt: msg.content ? 1.5 : 0,
-                                          pt: msg.content ? 1 : 0,
+                                          alignItems: "center",
+                                          gap: 1,
+                                          mt: 1,
+                                          bgcolor: "#f5f7fa",
+                                          borderRadius: 1,
+                                          px: 1.5,
+                                          py: 1,
+                                          boxShadow:
+                                            "0 1px 4px rgba(0,0,0,0.04)",
+                                          maxWidth: 400,
                                         }}
                                       >
-                                        {msg.sender === "support" ? (
-                                          <Paper
-                                            elevation={0}
-                                            sx={{
-                                              p: 1.5,
-                                              mt: 0.5,
-                                              borderRadius: 2,
-                                              bgcolor:
-                                                "rgba(25, 118, 210, 0.05)",
-                                              border:
-                                                "1px solid rgba(25, 118, 210, 0.2)",
-                                              display: "flex",
-                                              flexDirection: "column",
-                                              gap: 1,
-                                              position: "relative",
-                                              overflow: "hidden",
-                                              "&:hover": {
-                                                bgcolor:
-                                                  "rgba(25, 118, 210, 0.1)",
-                                              },
-                                            }}
-                                          >
-                                            <Box
-                                              sx={{
-                                                position: "absolute",
-                                                top: 0,
-                                                left: 0,
-                                                width: "4px",
-                                                height: "100%",
-                                                bgcolor: "primary.main",
-                                              }}
-                                            />
-
-                                            <Box
-                                              sx={{
-                                                display: "flex",
-                                                alignItems: "center",
-                                                gap: 1,
-                                              }}
-                                            >
-                                              <Box
-                                                sx={{
-                                                  bgcolor: "primary.main",
-                                                  color: "white",
-                                                  borderRadius: "50%",
-                                                  p: 0.7,
-                                                  display: "flex",
-                                                  justifyContent: "center",
-                                                  alignItems: "center",
-                                                }}
-                                              >
-                                                {getPageNameFromUrl(
-                                                  msg.referenceLink || ""
-                                                ) === "Khóa học" ? (
-                                                  <School fontSize="small" />
-                                                ) : (
-                                                  <Article fontSize="small" />
-                                                )}
-                                              </Box>
-                                              <Typography
-                                                variant="subtitle2"
-                                                color="primary.main"
-                                              >
-                                                {getPageNameFromUrl(
-                                                  msg.referenceLink || ""
-                                                )}
-                                              </Typography>
-                                            </Box>
-
-                                            <Typography
-                                              variant="body2"
-                                              sx={{
-                                                color: "text.secondary",
-                                                fontSize: 13,
-                                                pl: 0.5,
-                                              }}
-                                            >
-                                              {shortenUrl(
-                                                msg.referenceLink || ""
-                                              )}
-                                            </Typography>
-
-                                            {msg.referenceLink && (
-                                              <Box
-                                                sx={{
-                                                  display: "flex",
-                                                  justifyContent: "flex-end",
-                                                }}
-                                              >
-                                                <Button
-                                                  variant="contained"
-                                                  size="small"
-                                                  color="primary"
-                                                  endIcon={
-                                                    <OpenInNew fontSize="small" />
-                                                  }
-                                                  href={
-                                                    msg.referenceLink || "#"
-                                                  }
-                                                  target="_blank"
-                                                  rel="noreferrer"
-                                                  sx={{
-                                                    textTransform: "none",
-                                                    mt: 0.5,
-                                                    boxShadow:
-                                                      "0 2px 4px rgba(0,0,0,0.1)",
-                                                    fontWeight: 500,
-                                                    borderRadius: "8px",
-                                                  }}
-                                                >
-                                                  Truy cập
-                                                </Button>
-                                              </Box>
-                                            )}
-                                          </Paper>
-                                        ) : (
-                                          <Box
-                                            sx={{
-                                              display: "flex",
-                                              alignItems: "center",
-                                              gap: 0.5,
-                                            }}
-                                          >
-                                            <LinkIcon
-                                              fontSize="small"
-                                              color={
-                                                msg.sender === "user"
-                                                  ? "inherit"
-                                                  : "primary"
-                                              }
-                                            />
-                                            <a
-                                              href={msg.referenceLink || "#"}
-                                              target="_blank"
-                                              rel="noreferrer"
-                                              style={{
-                                                color:
-                                                  msg.sender === "user"
-                                                    ? "white"
-                                                    : "#1976d2",
-                                                textDecoration: "none",
-                                                fontSize: "14px",
-                                                wordBreak: "break-all",
-                                              }}
-                                            >
-                                              {shortenUrl(
-                                                msg.referenceLink || ""
-                                              )}
-                                            </a>
-                                          </Box>
-                                        )}
+                                        {getLinkIcon(msg.referenceLink)}
+                                        <Typography
+                                          variant="body2"
+                                          sx={{
+                                            color: "#1976d2",
+                                            fontWeight: 500,
+                                            overflow: "hidden",
+                                            textOverflow: "ellipsis",
+                                            whiteSpace: "nowrap",
+                                            maxWidth: 180,
+                                          }}
+                                          title={msg.referenceLink}
+                                        >
+                                          {msg.referenceLink.replace(
+                                            /^https?:\/\//,
+                                            ""
+                                          )}
+                                        </Typography>
+                                        <Button
+                                          variant="contained"
+                                          color="primary"
+                                          size="small"
+                                          endIcon={<OpenInNew />}
+                                          href={msg.referenceLink}
+                                          target="_blank"
+                                          rel="noopener noreferrer"
+                                          sx={{
+                                            textTransform: "none",
+                                            fontWeight: 500,
+                                            fontSize: 13,
+                                            ml: "auto",
+                                            minWidth: 90,
+                                            boxShadow: "none",
+                                          }}
+                                        >
+                                          Truy cập
+                                        </Button>
                                       </Box>
                                     )}
+
                                     <Box
                                       sx={{
                                         display: "flex",
@@ -2130,10 +1986,8 @@ const ChatBox = () => {
               <Box sx={{ flex: 1, display: "flex", flexDirection: "column" }}>
                 <GroupChatBox
                   open={true}
-                  onClose={() => {
-                    setOpen(false);
-                    setActiveTab(0); // Switch back to private chat when closing
-                  }}
+                  onClose={() => setActiveTab(0)} // Only switch back to private chat tab
+                  socket={socketRef.current}
                 />
               </Box>
             )}

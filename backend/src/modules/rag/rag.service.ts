@@ -231,7 +231,8 @@ export class RagService {
       if (isCourseQuery) {
         const contextUrls = context.map(extractUrls).filter(Boolean);
         if (contextUrls.length > 0) {
-          urlInfo = `\n\nURL liên quan: ${contextUrls[0]}\nNếu phù hợp, hãy đề xuất người dùng tham khảo URL này để biết thêm chi tiết.`;
+          // Chỉ thêm URL vào prompt mà không thêm hướng dẫn tham khảo
+          urlInfo = `\n\nURL liên quan: ${contextUrls[0]}`;
         }
       }
 
@@ -239,7 +240,7 @@ export class RagService {
       - Ưu tiên sử dụng thông tin trong ngữ cảnh để trả lời.
       - Nếu ngữ cảnh không đủ thông tin, hãy nói rõ là không tìm thấy thông tin phù hợp.
       - Trả lời ngắn gọn, dễ hiểu.
-      - Nếu có URL liên quan và phù hợp với câu hỏi, hãy mời người dùng truy cập URL đó.${urlInfo}
+      - KHÔNG thêm các cụm từ như "Bạn có thể tham khảo thêm", "Xem thêm", "Truy cập" vào câu trả lời.${urlInfo}
 
       Ngữ cảnh:
       ${context.join('\n')}

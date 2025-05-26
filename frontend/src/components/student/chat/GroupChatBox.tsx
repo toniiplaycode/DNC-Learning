@@ -138,14 +138,22 @@ const shortenUrl = (url?: string | null): string => {
 interface GroupChatBoxProps {
   open: boolean;
   onClose: () => void;
+  socket: Socket | null;
 }
 
-const GroupChatBox: React.FC<GroupChatBoxProps> = ({ open, onClose }) => {
+const GroupChatBox: React.FC<GroupChatBoxProps> = ({
+  open,
+  onClose,
+  socket,
+}) => {
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector(selectCurrentUser) as User | null;
   const [classId, setClassId] = useState<string | undefined>(undefined);
   const [isConnected, setIsConnected] = useState(false);
   const [usersInRoom, setUsersInRoom] = useState<string[]>([]);
+  const [message, setMessage] = useState("");
+  const [isLoading, setIsLoading] = useState(true);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Update classId when currentUser changes
   useEffect(() => {
@@ -198,95 +206,41 @@ const GroupChatBox: React.FC<GroupChatBoxProps> = ({ open, onClose }) => {
       });
   }, [classId, dispatch]);
 
-  const [message, setMessage] = useState("");
-  const [isLoading, setIsLoading] = useState(true);
-  const socketRef = useRef<Socket | null>(null);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-
   // Socket connection effect
   useEffect(() => {
-    if (!currentUser?.id || !classId) return;
+    if (!socket || !currentUser?.id || !classId) return;
 
-    console.log("Connecting to socket with:", {
+    console.log("Setting up group chat with:", {
       userId: currentUser.id,
       classId: classId,
     });
 
-    // Disconnect existing socket if any
-    if (socketRef.current) {
-      console.log("Disconnecting existing socket");
-      socketRef.current.disconnect();
-    }
-
-    // Create new socket connection
-    socketRef.current = io("http://localhost:3000", {
-      auth: {
-        userId: currentUser.id,
-        authorization: `Bearer ${localStorage.getItem("token")}`,
-      },
-      transports: ["websocket"],
-      reconnection: true,
-      reconnectionAttempts: 5,
-      reconnectionDelay: 1000,
-    });
-
-    // Socket connection events
-    socketRef.current.on("connect", () => {
-      console.log("Socket connected successfully");
-      setIsConnected(true);
-
-      // Join class room after connection
-      socketRef.current?.emit("joinClassRoom", { classId }, (response: any) => {
-        if (response?.success) {
-          console.log("Joined class room:", response);
-        } else {
-          console.error("Failed to join class room");
-        }
-      });
-    });
-
-    socketRef.current.on("connect_error", (error) => {
-      console.error("Socket connection error:", error);
-      setIsConnected(false);
-    });
-
-    socketRef.current.on("disconnect", (reason) => {
-      console.log("Socket disconnected:", reason);
-      setIsConnected(false);
-    });
-
-    socketRef.current.on("reconnect", (attemptNumber) => {
-      console.log("Socket reconnected after", attemptNumber, "attempts");
-      setIsConnected(true);
-
-      // Rejoin class room after reconnection
-      socketRef.current?.emit("joinClassRoom", { classId });
-    });
-
-    socketRef.current.on("reconnect_error", (error) => {
-      console.error("Socket reconnection error:", error);
-    });
-
-    socketRef.current.on("reconnect_failed", () => {
-      console.error("Socket reconnection failed");
+    // Join class room
+    socket.emit("joinClassRoom", { classId }, (response: any) => {
+      if (response?.success) {
+        console.log("Joined class room:", response);
+        setIsConnected(true);
+      } else {
+        console.error("Failed to join class room");
+      }
     });
 
     // Room events
-    socketRef.current.on("userJoined", (data) => {
+    socket.on("userJoined", (data) => {
       console.log("User joined:", data);
       if (data.classId === classId) {
         setUsersInRoom((prev) => [...prev, data.userId]);
       }
     });
 
-    socketRef.current.on("userLeft", (data) => {
+    socket.on("userLeft", (data) => {
       console.log("User left:", data);
       if (data.classId === classId) {
         setUsersInRoom((prev) => prev.filter((id) => id !== data.userId));
       }
     });
 
-    socketRef.current.on("roomUsers", (data) => {
+    socket.on("roomUsers", (data) => {
       console.log("Room users:", data);
       if (data.classId === classId) {
         setUsersInRoom(data.users);
@@ -294,7 +248,7 @@ const GroupChatBox: React.FC<GroupChatBoxProps> = ({ open, onClose }) => {
     });
 
     // Message events
-    socketRef.current.on("newGroupMessage", (newMessage: GroupMessage) => {
+    socket.on("newGroupMessage", (newMessage: GroupMessage) => {
       console.log("Received new group message:", newMessage);
       if (newMessage.classId === classId) {
         dispatch(addMessage(newMessage));
@@ -305,33 +259,20 @@ const GroupChatBox: React.FC<GroupChatBoxProps> = ({ open, onClose }) => {
       }
     });
 
-    socketRef.current.on("error", (error) => {
-      console.error("Socket error:", error);
-    });
-
     // Cleanup on unmount
     return () => {
-      console.log("Cleaning up socket connection");
-      if (socketRef.current) {
+      console.log("Cleaning up group chat");
+      if (socket) {
         // Leave the class room
-        socketRef.current.emit("leaveClassRoom", { classId });
-        // Remove all listeners
-        socketRef.current.off("connect");
-        socketRef.current.off("connect_error");
-        socketRef.current.off("disconnect");
-        socketRef.current.off("reconnect");
-        socketRef.current.off("reconnect_error");
-        socketRef.current.off("reconnect_failed");
-        socketRef.current.off("userJoined");
-        socketRef.current.off("userLeft");
-        socketRef.current.off("roomUsers");
-        socketRef.current.off("newGroupMessage");
-        socketRef.current.off("error");
-        // Disconnect socket
-        socketRef.current.disconnect();
+        socket.emit("leaveClassRoom", { classId });
+        // Remove listeners
+        socket.off("userJoined");
+        socket.off("userLeft");
+        socket.off("roomUsers");
+        socket.off("newGroupMessage");
       }
     };
-  }, [currentUser, classId, dispatch]);
+  }, [socket, currentUser, classId, dispatch]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -342,10 +283,10 @@ const GroupChatBox: React.FC<GroupChatBoxProps> = ({ open, onClose }) => {
   }, [messages]);
 
   const handleSend = () => {
-    if (!message.trim() || !socketRef.current || !currentUser || !classId) {
+    if (!message.trim() || !socket || !currentUser || !classId) {
       console.log("Cannot send message:", {
         hasMessage: !!message.trim(),
-        hasSocket: !!socketRef.current,
+        hasSocket: !!socket,
         hasUser: !!currentUser,
         hasClassId: !!classId,
         isConnected,
@@ -379,7 +320,7 @@ const GroupChatBox: React.FC<GroupChatBoxProps> = ({ open, onClose }) => {
     console.log("Sending message:", messageData);
 
     // Emit message to server
-    socketRef.current.emit("sendGroupMessage", messageData, (response: any) => {
+    socket.emit("sendGroupMessage", messageData, (response: any) => {
       if (response?.error) {
         console.error("Error sending message:", response.error);
       } else {
@@ -499,8 +440,9 @@ const GroupChatBox: React.FC<GroupChatBoxProps> = ({ open, onClose }) => {
                               msg.sender.username}
                           </Typography>
                           <Typography variant="caption" color="text.secondary">
-                            {msg.sender.userInstructor?.professionalTitle ||
-                              msg.sender.role}
+                            {msg.sender.role == "instructor"
+                              ? "Giảng viên"
+                              : "Sinh viên"}
                           </Typography>
                         </Stack>
                       </Box>

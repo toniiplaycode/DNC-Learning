@@ -266,8 +266,9 @@ export class MessagesGateway
         client.emit('newMessage', {
           id: botResponse.id,
           messageText: botResponse.messageText,
+          referenceLink: botResponse.referenceLink,
           isRead: true,
-          createdAt: new Date().toISOString(), // Use current time after delay
+          createdAt: new Date().toISOString(),
           sender: {
             id: '-1',
             username: 'DNC Assistant',

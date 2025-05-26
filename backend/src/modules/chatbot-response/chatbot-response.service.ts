@@ -273,7 +273,30 @@ export class ChatbotService {
     text: string,
     referenceLink?: string,
   ): Promise<Message> {
-    const html = this.textToHtml(text);
+    let messageText = text;
+
+    // If referenceLink exists, remove it from messageText
+    if (referenceLink && referenceLink.trim()) {
+      // Remove URL from messageText if it exists
+      messageText = messageText
+        .replace(new RegExp(referenceLink, 'g'), '')
+        .trim();
+
+      // Remove markdown link format if it exists
+      messageText = messageText
+        .replace(new RegExp(`\\[([^\\]]+)\\]\\(${referenceLink}\\)`, 'g'), '$1')
+        .trim();
+
+      // Remove any remaining URL references
+      messageText = messageText.replace(/URL:?\s*/i, '').trim();
+      messageText = messageText.replace(/tại\s+/i, '').trim();
+      messageText = messageText.replace(/truy cập\s+/i, '').trim();
+
+      // Remove any trailing punctuation that might be left
+      messageText = messageText.replace(/[.,;:]+\s*$/, '').trim();
+    }
+
+    const html = this.textToHtml(messageText);
 
     // Only include referenceLink if it's defined and not empty
     const botMessage = this.messageRepo.create({
