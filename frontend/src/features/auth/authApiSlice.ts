@@ -108,6 +108,7 @@ export const logout = createAsyncThunk("auth/logout", async () => {
   localStorage.removeItem("token");
   localStorage.removeItem("refreshToken");
   localStorage.removeItem("user");
+  localStorage.removeItem("saved_quiz_state");
   return null;
 });
 

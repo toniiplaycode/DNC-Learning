@@ -13,6 +13,11 @@ import {
   useTheme,
   useMediaQuery,
   Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  DialogContentText,
 } from "@mui/material";
 import { Quiz as QuizIcon } from "@mui/icons-material";
 import {
@@ -59,6 +64,18 @@ interface QuizContentProps {
   onComplete: (score: number) => void;
 }
 
+// Add new interfaces at the top
+interface SavedQuizState {
+  quizId: number;
+  answers: number[];
+  timeRemaining: number | null;
+  startTime: string;
+  randomOrder: number[];
+}
+
+// Add new constants
+const QUIZ_STORAGE_KEY = "saved_quiz_state";
+
 const QuizContent: React.FC<QuizContentProps> = ({
   quizId,
   lessonId,
@@ -104,6 +121,38 @@ const QuizContent: React.FC<QuizContentProps> = ({
     quizId: 0,
     answers: [],
   }));
+
+  const [showResumeDialog, setShowResumeDialog] = useState(false);
+  const [savedQuizState, setSavedQuizState] = useState<SavedQuizState | null>(
+    null
+  );
+
+  // Add new functions after the existing interfaces
+  const saveQuizState = (state: SavedQuizState) => {
+    try {
+      localStorage.setItem(QUIZ_STORAGE_KEY, JSON.stringify(state));
+    } catch (error) {
+      console.error("Error saving quiz state:", error);
+    }
+  };
+
+  const loadQuizState = (): SavedQuizState | null => {
+    try {
+      const savedState = localStorage.getItem(QUIZ_STORAGE_KEY);
+      return savedState ? JSON.parse(savedState) : null;
+    } catch (error) {
+      console.error("Error loading quiz state:", error);
+      return null;
+    }
+  };
+
+  const clearQuizState = () => {
+    try {
+      localStorage.removeItem(QUIZ_STORAGE_KEY);
+    } catch (error) {
+      console.error("Error clearing quiz state:", error);
+    }
+  };
 
   useEffect(() => {
     // Fetch quizzes when the component mounts
@@ -208,6 +257,8 @@ const QuizContent: React.FC<QuizContentProps> = ({
       }, 1000);
       return () => clearTimeout(timer);
     } else if (timeRemaining === 0 && !quizSubmitted) {
+      // Clear localStorage when time expires
+      clearQuizState();
       handleSubmit();
     }
   }, [timeRemaining, quizSubmitted]);
@@ -255,6 +306,9 @@ const QuizContent: React.FC<QuizContentProps> = ({
     if (!activeQuiz || currentAnswers.quizId !== activeQuiz.id) return;
 
     try {
+      // Clear saved state before submitting
+      clearQuizState();
+
       const questionIds =
         activeQuiz.questions?.map((question) => Number(question.id)) || [];
 
@@ -307,9 +361,10 @@ const QuizContent: React.FC<QuizContentProps> = ({
     }
   };
 
-  console.log(activeQuiz);
-
   const handleRetakeQuiz = () => {
+    // Clear saved state when retaking
+    clearQuizState();
+
     if (activeQuiz?.id) {
       setCurrentAnswers({
         quizId: activeQuiz.id,
@@ -320,7 +375,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
     setQuizStarted(false);
     setScore(0);
     setTimeRemaining(null);
-    setRandomQuestionOrder([]); // Reset random order
+    setRandomQuestionOrder([]);
   };
 
   const formatTime = (seconds: number) => {
@@ -424,6 +479,147 @@ const QuizContent: React.FC<QuizContentProps> = ({
       }
     }
   }, [activeQuiz?.questions, quizStarted, activeQuiz?.random]);
+
+  // Update useEffect for quiz state management
+  useEffect(() => {
+    // Save state whenever answers or time changes
+    if (activeQuiz && quizStarted && !quizSubmitted) {
+      const stateToSave: SavedQuizState = {
+        quizId: activeQuiz.id,
+        answers: currentAnswers.answers,
+        timeRemaining,
+        startTime: new Date().toISOString(),
+        randomOrder: randomQuestionOrder,
+      };
+      saveQuizState(stateToSave);
+    }
+  }, [
+    activeQuiz,
+    quizStarted,
+    quizSubmitted,
+    currentAnswers.answers,
+    timeRemaining,
+    randomQuestionOrder,
+  ]);
+
+  // Add new useEffect to handle page load/visibility change
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (
+        document.visibilityState === "visible" &&
+        activeQuiz &&
+        !quizSubmitted
+      ) {
+        const savedState = loadQuizState();
+        if (savedState && savedState.quizId === activeQuiz.id) {
+          // Calculate remaining time based on saved time
+          if (savedState.timeRemaining !== null) {
+            const savedTime = new Date(savedState.startTime).getTime();
+            const currentTime = new Date().getTime();
+            const elapsedSeconds = Math.floor((currentTime - savedTime) / 1000);
+            const newTimeRemaining = Math.max(
+              0,
+              savedState.timeRemaining - elapsedSeconds
+            );
+
+            if (newTimeRemaining > 0) {
+              // Restore answers and time if still valid
+              setCurrentAnswers((prev) => ({
+                ...prev,
+                answers: savedState.answers,
+              }));
+
+              // Restore random order if it exists
+              if (savedState.randomOrder.length > 0) {
+                setRandomQuestionOrder(savedState.randomOrder);
+              }
+
+              setTimeRemaining(newTimeRemaining);
+              setQuizStarted(true);
+            } else {
+              // Time's up, clear state and submit
+              clearQuizState();
+              handleSubmit();
+            }
+          }
+        }
+      }
+    };
+
+    // Add visibility change listener
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    // Check for saved state on initial load
+    if (activeQuiz && !quizStarted && !quizSubmitted) {
+      const savedState = loadQuizState();
+      if (savedState && savedState.quizId === activeQuiz.id) {
+        // Validate time when loading saved state
+        if (savedState.timeRemaining !== null) {
+          const savedTime = new Date(savedState.startTime).getTime();
+          const currentTime = new Date().getTime();
+          const elapsedSeconds = Math.floor((currentTime - savedTime) / 1000);
+          const newTimeRemaining = Math.max(
+            0,
+            savedState.timeRemaining - elapsedSeconds
+          );
+
+          if (newTimeRemaining > 0) {
+            setSavedQuizState(savedState);
+            setShowResumeDialog(true);
+            setQuizStarted(true);
+          } else {
+            // Time's up, clear state
+            clearQuizState();
+          }
+        }
+      }
+    }
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [activeQuiz, quizStarted, quizSubmitted]);
+
+  const handleResumeQuiz = () => {
+    if (savedQuizState) {
+      // Restore answers
+      setCurrentAnswers((prev) => ({
+        ...prev,
+        answers: savedQuizState.answers,
+      }));
+
+      // Restore random order if it exists
+      if (savedQuizState.randomOrder.length > 0) {
+        setRandomQuestionOrder(savedQuizState.randomOrder);
+      }
+
+      // Calculate remaining time based on saved time
+      if (savedQuizState.timeRemaining !== null) {
+        const savedTime = new Date(savedQuizState.startTime).getTime();
+        const currentTime = new Date().getTime();
+        const elapsedSeconds = Math.floor((currentTime - savedTime) / 1000);
+        const newTimeRemaining = Math.max(
+          0,
+          savedQuizState.timeRemaining - elapsedSeconds
+        );
+
+        if (newTimeRemaining > 0) {
+          setTimeRemaining(newTimeRemaining);
+          setQuizStarted(true);
+        } else {
+          // Time's up, submit the quiz
+          handleSubmit();
+        }
+      }
+    }
+    setShowResumeDialog(false);
+  };
+
+  const handleDiscardQuiz = () => {
+    clearQuizState();
+    setSavedQuizState(null);
+    setShowResumeDialog(false);
+  };
 
   // Replace the existing empty state
   if (!activeQuiz) {
@@ -819,6 +1015,11 @@ const QuizContent: React.FC<QuizContentProps> = ({
 
   // Màn hình bắt đầu
   if (activeQuiz && !quizStarted) {
+    // Nếu có savedQuizState đúng quizId thì không hiển thị màn hình giới thiệu
+    const savedState = loadQuizState();
+    if (savedState && savedState.quizId === activeQuiz.id) {
+      return null;
+    }
     return (
       <Box sx={{ p: 3 }}>
         <Card sx={{ maxWidth: 800, mx: "auto" }}>
@@ -904,268 +1105,393 @@ const QuizContent: React.FC<QuizContentProps> = ({
 
   // Nếu đã bắt đầu làm nhưng chưa nộp/chưa hiển thị kết quả
   return (
-    <Box sx={{ p: 3, position: "relative" }}>
-      <Box sx={{ mb: 2 }}>
-        <Typography variant="h5" gutterBottom>
-          {activeQuiz.title}
-        </Typography>
-        {activeQuiz.description && (
-          <Typography variant="body2" color="text.secondary" paragraph>
-            {activeQuiz.description}
-          </Typography>
-        )}
-      </Box>
-
-      {/* Responsive sidebar - fixed on desktop, normal flow on mobile */}
-      <Box
-        sx={{
-          ...(isMobile
-            ? {
-                width: "100%",
-                mb: 3,
-              }
-            : {
-                position: "fixed",
-                top: 100,
-                right: 4,
-                width: "240px",
-                zIndex: 10,
-              }),
+    <>
+      <Dialog
+        open={showResumeDialog}
+        onClose={() => setShowResumeDialog(false)}
+        aria-labelledby="resume-quiz-dialog-title"
+        aria-describedby="resume-quiz-dialog-description"
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+            minWidth: { xs: "90%", sm: 400 },
+          },
         }}
       >
-        <Paper elevation={3} sx={{ p: 2, borderRadius: 2 }}>
-          {timeRemaining !== null && (
-            <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-              <Timer color="primary" sx={{ mr: 1 }} />
-              <Typography variant="subtitle1" fontWeight="bold">
-                Thời gian còn lại: {formatTime(timeRemaining)}
-              </Typography>
-            </Box>
-          )}
-
-          <Box sx={{ mb: 2 }}>
-            {/* Add detailed counts */}
+        <DialogTitle id="resume-quiz-dialog-title" sx={{ pb: 1 }}>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+            <QuizIcon color="primary" />
+            <Typography variant="h6" component="div">
+              Tiếp tục bài làm
+            </Typography>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <DialogContentText id="resume-quiz-dialog-description" sx={{ mb: 2 }}>
+            Bạn có bài làm chưa hoàn thành cho bài trắc nghiệm này. Bạn có muốn
+            tiếp tục không?
+          </DialogContentText>
+          {savedQuizState && (
             <Box
               sx={{
-                display: "flex",
-                justifyContent: "space-between",
-                mt: 1,
-                mb: 2,
-                fontSize: "0.875rem",
+                bgcolor: "background.default",
+                p: 2,
+                borderRadius: 1,
+                border: "1px solid",
+                borderColor: "divider",
               }}
             >
-              <Box sx={{ display: "flex", alignItems: "center" }}>
-                <Box
-                  sx={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    bgcolor: "primary.main",
-                    mr: 0.5,
-                  }}
-                />
-                <Typography variant="body2" color="text.secondary">
-                  Đã chọn:{" "}
-                  {currentAnswers.answers.filter((a) => a !== undefined).length}
+              <Typography
+                variant="subtitle2"
+                color="text.secondary"
+                gutterBottom
+              >
+                Thông tin bài làm:
+              </Typography>
+              <Box sx={{ display: "flex", flexDirection: "column", gap: 1 }}>
+                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Số câu đã làm:
+                  </Typography>
+                  <Typography variant="body2" fontWeight="medium">
+                    {
+                      savedQuizState.answers.filter(
+                        (a) => a !== undefined && a !== null
+                      ).length
+                    }{" "}
+                    câu
+                  </Typography>
+                </Box>
+                <Box sx={{ display: "flex", justifyContent: "space-between" }}>
+                  <Typography variant="body2" color="text.secondary">
+                    Số câu chưa làm:
+                  </Typography>
+                  <Typography variant="body2" fontWeight="medium">
+                    {savedQuizState.answers.length -
+                      savedQuizState.answers.filter(
+                        (a) => a !== undefined && a !== null
+                      ).length}{" "}
+                    câu
+                  </Typography>
+                </Box>
+                {savedQuizState.timeRemaining !== null && (
+                  <Box
+                    sx={{ display: "flex", justifyContent: "space-between" }}
+                  >
+                    <Typography variant="body2" color="text.secondary">
+                      Thời gian còn lại:
+                    </Typography>
+                    <Typography variant="body2" fontWeight="medium">
+                      {formatTime(savedQuizState.timeRemaining)}
+                    </Typography>
+                  </Box>
+                )}
+              </Box>
+            </Box>
+          )}
+        </DialogContent>
+        <DialogActions sx={{ px: 3, pb: 2, gap: 1 }}>
+          <Button
+            onClick={handleDiscardQuiz}
+            variant="outlined"
+            color="inherit"
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              px: 3,
+            }}
+          >
+            Bỏ qua
+          </Button>
+          <Button
+            onClick={handleResumeQuiz}
+            variant="contained"
+            color="primary"
+            sx={{
+              borderRadius: 2,
+              textTransform: "none",
+              px: 3,
+            }}
+          >
+            Tiếp tục
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      <Box sx={{ p: 3, position: "relative" }}>
+        <Box sx={{ mb: 2 }}>
+          <Typography variant="h5" gutterBottom>
+            {activeQuiz.title}
+          </Typography>
+          {activeQuiz.description && (
+            <Typography variant="body2" color="text.secondary" paragraph>
+              {activeQuiz.description}
+            </Typography>
+          )}
+        </Box>
+
+        {/* Responsive sidebar - fixed on desktop, normal flow on mobile */}
+        <Box
+          sx={{
+            ...(isMobile
+              ? {
+                  width: "100%",
+                  mb: 3,
+                }
+              : {
+                  position: "fixed",
+                  top: 100,
+                  right: 4,
+                  width: "240px",
+                  zIndex: 10,
+                }),
+          }}
+        >
+          <Paper elevation={3} sx={{ p: 2, borderRadius: 2 }}>
+            {timeRemaining !== null && (
+              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
+                <Timer color="primary" sx={{ mr: 1 }} />
+                <Typography variant="subtitle1" fontWeight="bold">
+                  Thời gian còn lại: {formatTime(timeRemaining)}
                 </Typography>
               </Box>
-              <Box sx={{ display: "flex", alignItems: "center" }}>
+            )}
+
+            <Box sx={{ mb: 2 }}>
+              {/* Add detailed counts */}
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  mt: 1,
+                  mb: 2,
+                  fontSize: "0.875rem",
+                }}
+              >
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Box
+                    sx={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      bgcolor: "primary.main",
+                      mr: 0.5,
+                    }}
+                  />
+                  <Typography variant="body2" color="text.secondary">
+                    Đã chọn:{" "}
+                    {
+                      currentAnswers.answers.filter(
+                        (a) => a !== undefined && a !== null
+                      ).length
+                    }
+                  </Typography>
+                </Box>
+                <Box sx={{ display: "flex", alignItems: "center" }}>
+                  <Box
+                    sx={{
+                      width: 10,
+                      height: 10,
+                      borderRadius: "50%",
+                      bgcolor: "grey.400",
+                      mr: 0.5,
+                    }}
+                  />
+                  <Typography variant="body2" color="text.secondary">
+                    Chưa chọn:{" "}
+                    {activeQuiz?.questions?.length -
+                      currentAnswers.answers.filter(
+                        (a) => a !== undefined && a !== null
+                      ).length}
+                  </Typography>
+                </Box>
+              </Box>
+
+              {/* Question number indicators */}
+              <Box sx={{ mt: 2, mb: 2 }}>
+                <Typography variant="body2" sx={{ mb: 1 }}>
+                  Câu hỏi:
+                </Typography>
+                <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
+                  {activeQuiz?.questions &&
+                    randomQuestionOrder.length > 0 &&
+                    activeQuiz.questions.map((_, originalIndex) => {
+                      // Lấy index từ randomQuestionOrder hoặc sử dụng originalIndex nếu không random
+                      const displayIndex =
+                        activeQuiz.random === 1
+                          ? randomQuestionOrder[originalIndex]
+                          : originalIndex;
+                      const question = activeQuiz.questions[displayIndex];
+
+                      if (!question) return null;
+
+                      const isAnswered =
+                        currentAnswers.answers[displayIndex] !== undefined &&
+                        currentAnswers.answers[displayIndex] !== null;
+                      return (
+                        <Box
+                          key={displayIndex}
+                          sx={{
+                            width: 28,
+                            height: 28,
+                            display: "flex",
+                            alignItems: "center",
+                            justifyContent: "center",
+                            borderRadius: "50%",
+                            bgcolor: isAnswered ? "primary.main" : "grey.200",
+                            color: isAnswered ? "white" : "text.secondary",
+                            fontWeight: isAnswered ? "bold" : "normal",
+                            fontSize: "0.75rem",
+                            cursor: "pointer",
+                            transition: "all 0.2s",
+                            "&:hover": {
+                              bgcolor: isAnswered ? "primary.dark" : "grey.300",
+                            },
+                          }}
+                          onClick={() => {
+                            const questionElement = document.getElementById(
+                              `question-${displayIndex}`
+                            );
+                            if (questionElement) {
+                              const rect =
+                                questionElement.getBoundingClientRect();
+                              const scrollTop =
+                                window.pageYOffset ||
+                                document.documentElement.scrollTop;
+                              const targetPosition = scrollTop + rect.top - 120;
+                              window.scrollTo({
+                                top: targetPosition,
+                                behavior: "smooth",
+                              });
+                            }
+                          }}
+                        >
+                          {originalIndex + 1}
+                        </Box>
+                      );
+                    })}
+                </Box>
+              </Box>
+
+              <Box sx={{ height: 8, bgcolor: "grey.200", borderRadius: 1 }}>
                 <Box
                   sx={{
-                    width: 10,
-                    height: 10,
-                    borderRadius: "50%",
-                    bgcolor: "grey.400",
-                    mr: 0.5,
+                    height: "100%",
+                    width: `${
+                      (currentAnswers.answers.filter(
+                        (a) => a !== undefined && a !== null
+                      ).length /
+                        activeQuiz?.questions?.length) *
+                      100
+                    }%`,
+                    bgcolor: "primary.main",
+                    borderRadius: 1,
                   }}
                 />
-                <Typography variant="body2" color="text.secondary">
-                  Chưa chọn:{" "}
-                  {activeQuiz?.questions?.length -
-                    currentAnswers.answers.filter((a) => a !== undefined)
-                      .length}
-                </Typography>
               </Box>
             </Box>
 
-            {/* Question number indicators */}
-            <Box sx={{ mt: 2, mb: 2 }}>
-              <Typography variant="body2" sx={{ mb: 1 }}>
-                Câu hỏi:
-              </Typography>
-              <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
-                {activeQuiz?.questions &&
-                  randomQuestionOrder.length > 0 &&
-                  activeQuiz.questions.map((_, originalIndex) => {
-                    // Lấy index từ randomQuestionOrder hoặc sử dụng originalIndex nếu không random
-                    const displayIndex =
-                      activeQuiz.random === 1
-                        ? randomQuestionOrder[originalIndex]
-                        : originalIndex;
-                    const question = activeQuiz.questions[displayIndex];
+            <Button
+              variant="contained"
+              color="primary"
+              fullWidth
+              onClick={handleSubmit}
+              disabled={
+                currentAnswers.answers.filter(
+                  (a) => a !== undefined && a !== null
+                ).length !== activeQuiz?.questions?.length
+              }
+            >
+              Nộp bài
+            </Button>
+          </Paper>
+        </Box>
 
-                    if (!question) return null;
+        <Card
+          sx={{
+            width: "100%",
+          }}
+        >
+          <CardContent>
+            {/* All quiz questions */}
+            {activeQuiz?.questions &&
+              randomQuestionOrder.length > 0 &&
+              activeQuiz.questions.map((_, originalIndex) => {
+                // Lấy index từ randomQuestionOrder hoặc sử dụng originalIndex nếu không random
+                const displayIndex =
+                  activeQuiz.random === 1
+                    ? randomQuestionOrder[originalIndex]
+                    : originalIndex;
+                const question = activeQuiz.questions[displayIndex];
 
-                    const isAnswered =
-                      currentAnswers.answers[displayIndex] !== undefined;
-                    return (
+                if (!question) return null;
+
+                return (
+                  <Box
+                    key={question.id}
+                    sx={{ mb: 4 }}
+                    id={`question-${displayIndex}`}
+                  >
+                    <Typography
+                      variant="h6"
+                      gutterBottom
+                      sx={{ display: "flex", alignItems: "center" }}
+                    >
                       <Box
-                        key={displayIndex}
                         sx={{
-                          width: 28,
-                          height: 28,
+                          width: 32,
+                          height: 32,
+                          borderRadius: "50%",
+                          bgcolor: "primary.main",
+                          color: "white",
                           display: "flex",
                           alignItems: "center",
                           justifyContent: "center",
-                          borderRadius: "50%",
-                          bgcolor: isAnswered ? "primary.main" : "grey.200",
-                          color: isAnswered ? "white" : "text.secondary",
-                          fontWeight: isAnswered ? "bold" : "normal",
-                          fontSize: "0.75rem",
-                          cursor: "pointer",
-                          transition: "all 0.2s",
-                          "&:hover": {
-                            bgcolor: isAnswered ? "primary.dark" : "grey.300",
-                          },
-                        }}
-                        onClick={() => {
-                          const questionElement = document.getElementById(
-                            `question-${displayIndex}`
-                          );
-                          if (questionElement) {
-                            const rect =
-                              questionElement.getBoundingClientRect();
-                            const scrollTop =
-                              window.pageYOffset ||
-                              document.documentElement.scrollTop;
-                            const targetPosition = scrollTop + rect.top - 120;
-                            window.scrollTo({
-                              top: targetPosition,
-                              behavior: "smooth",
-                            });
-                          }
+                          mr: 1,
                         }}
                       >
                         {originalIndex + 1}
                       </Box>
-                    );
-                  })}
-              </Box>
-            </Box>
+                      {question.questionText}
+                    </Typography>
 
-            <Box sx={{ height: 8, bgcolor: "grey.200", borderRadius: 1 }}>
-              <Box
-                sx={{
-                  height: "100%",
-                  width: `${
-                    (currentAnswers.answers.filter((a) => a !== undefined)
-                      .length /
-                      activeQuiz?.questions?.length) *
-                    100
-                  }%`,
-                  bgcolor: "primary.main",
-                  borderRadius: 1,
-                }}
-              />
-            </Box>
-          </Box>
-
-          <Button
-            variant="contained"
-            color="primary"
-            fullWidth
-            onClick={handleSubmit}
-            disabled={
-              currentAnswers.answers.filter((a) => a !== undefined).length !==
-              activeQuiz?.questions?.length
-            }
-          >
-            Nộp bài
-          </Button>
-        </Paper>
-      </Box>
-
-      <Card
-        sx={{
-          width: "100%",
-        }}
-      >
-        <CardContent>
-          {/* All quiz questions */}
-          {activeQuiz?.questions &&
-            randomQuestionOrder.length > 0 &&
-            activeQuiz.questions.map((_, originalIndex) => {
-              // Lấy index từ randomQuestionOrder hoặc sử dụng originalIndex nếu không random
-              const displayIndex =
-                activeQuiz.random === 1
-                  ? randomQuestionOrder[originalIndex]
-                  : originalIndex;
-              const question = activeQuiz.questions[displayIndex];
-
-              if (!question) return null;
-
-              return (
-                <Box
-                  key={question.id}
-                  sx={{ mb: 4 }}
-                  id={`question-${displayIndex}`}
-                >
-                  <Typography
-                    variant="h6"
-                    gutterBottom
-                    sx={{ display: "flex", alignItems: "center" }}
-                  >
-                    <Box
-                      sx={{
-                        width: 32,
-                        height: 32,
-                        borderRadius: "50%",
-                        bgcolor: "primary.main",
-                        color: "white",
-                        display: "flex",
-                        alignItems: "center",
-                        justifyContent: "center",
-                        mr: 1,
-                      }}
+                    <RadioGroup
+                      name={`question-${question.id}`}
+                      value={
+                        currentAnswers.answers[displayIndex] !== undefined
+                          ? currentAnswers.answers[displayIndex]
+                          : ""
+                      }
+                      onChange={(e) =>
+                        handleAnswerChange(
+                          displayIndex,
+                          parseInt(e.target.value)
+                        )
+                      }
+                      sx={{ ml: 4 }}
                     >
-                      {originalIndex + 1}
-                    </Box>
-                    {question.questionText}
-                  </Typography>
+                      {question?.options?.map((option, optionIndex) => (
+                        <FormControlLabel
+                          key={option.id}
+                          value={option.id}
+                          control={<Radio />}
+                          label={`${String.fromCharCode(65 + optionIndex)}. ${
+                            option.optionText
+                          }`}
+                        />
+                      ))}
+                    </RadioGroup>
 
-                  <RadioGroup
-                    name={`question-${question.id}`}
-                    value={
-                      currentAnswers.answers[displayIndex] !== undefined
-                        ? currentAnswers.answers[displayIndex]
-                        : ""
-                    }
-                    onChange={(e) =>
-                      handleAnswerChange(displayIndex, parseInt(e.target.value))
-                    }
-                    sx={{ ml: 4 }}
-                  >
-                    {question?.options?.map((option, optionIndex) => (
-                      <FormControlLabel
-                        key={option.id}
-                        value={option.id}
-                        control={<Radio />}
-                        label={`${String.fromCharCode(65 + optionIndex)}. ${
-                          option.optionText
-                        }`}
-                      />
-                    ))}
-                  </RadioGroup>
-
-                  {originalIndex < activeQuiz.questions.length - 1 && (
-                    <Divider sx={{ my: 2 }} />
-                  )}
-                </Box>
-              );
-            })}
-        </CardContent>
-      </Card>
-    </Box>
+                    {originalIndex < activeQuiz.questions.length - 1 && (
+                      <Divider sx={{ my: 2 }} />
+                    )}
+                  </Box>
+                );
+              })}
+          </CardContent>
+        </Card>
+      </Box>
+    </>
   );
 };
 

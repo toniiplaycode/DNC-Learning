@@ -129,6 +129,31 @@ const Assessment = () => {
       );
   };
 
+  // Helper to check if there is a saved quiz state for a quiz
+  const getSavedQuizState = (quizId: number | string) => {
+    try {
+      const saved = localStorage.getItem("saved_quiz_state");
+      if (!saved) return null;
+      const parsed = JSON.parse(saved);
+      if (parsed && parsed.quizId && String(parsed.quizId) === String(quizId)) {
+        // Nếu còn thời gian và chưa nộp
+        if (parsed.timeRemaining > 0) return parsed;
+      }
+      return null;
+    } catch {
+      return null;
+    }
+  };
+
+  // Helper để format thời gian mm:ss
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60)
+      .toString()
+      .padStart(2, "0");
+    const s = (seconds % 60).toString().padStart(2, "0");
+    return `${m}:${s}`;
+  };
+
   return (
     <CustomContainer maxWidth="lg">
       <Typography variant="h4" component="h1" gutterBottom fontWeight="bold">
@@ -175,6 +200,41 @@ const Assessment = () => {
               }}
             >
               <CardContent sx={{ flexGrow: 1 }}>
+                {/* Hiển thị thông tin bài làm tạm nếu có */}
+                {assessment.quizType && getSavedQuizState(assessment.id) && (
+                  <Box
+                    sx={{
+                      mb: 1,
+                      p: 1,
+                      bgcolor: "warning.light",
+                      borderRadius: 1,
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                    }}
+                  >
+                    <Timer fontSize="small" color="warning" />
+                    <Typography
+                      variant="body2"
+                      color="warning.dark"
+                      fontWeight="bold"
+                    >
+                      Đang làm dở:
+                    </Typography>
+                    <Typography variant="body2" color="warning.dark">
+                      {
+                        getSavedQuizState(assessment.id).answers.filter(
+                          (a) => a !== undefined && a !== null
+                        ).length
+                      }
+                      /{getSavedQuizState(assessment.id).answers.length} câu,
+                      còn{" "}
+                      {formatTime(
+                        getSavedQuizState(assessment.id).timeRemaining
+                      )}
+                    </Typography>
+                  </Box>
+                )}
                 <Stack
                   direction="row"
                   justifyContent="space-between"
@@ -284,9 +344,11 @@ const Assessment = () => {
                   display="block"
                   sx={{ mt: "auto" }}
                 >
-                  {userAttempts?.some(
-                    (attempt) => attempt.quizId === assessment.id
-                  )
+                  {assessment.quizType && getSavedQuizState(assessment.id)
+                    ? null
+                    : userAttempts?.some(
+                        (attempt) => attempt.quizId === assessment.id
+                      )
                     ? `Hoàn thành: ${formatDateTime(
                         userAttempts.find(
                           (quiz_attempt) =>
@@ -316,12 +378,23 @@ const Assessment = () => {
               </CardContent>
 
               <CardActions>
-                {userAttempts?.some(
-                  (attempt) => attempt.quizId === assessment.id
-                ) ||
-                userSubmissions?.some(
-                  (submission) => submission.assignmentId === assessment.id
-                ) ? (
+                {assessment.quizType && getSavedQuizState(assessment.id) ? (
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    color="warning"
+                    onClick={() =>
+                      navigate(`/assessment/quiz/${assessment.id}`)
+                    }
+                  >
+                    Tiếp tục làm
+                  </Button>
+                ) : userAttempts?.some(
+                    (attempt) => attempt.quizId === assessment.id
+                  ) ||
+                  userSubmissions?.some(
+                    (submission) => submission.assignmentId === assessment.id
+                  ) ? (
                   <Button
                     fullWidth
                     variant="outlined"
