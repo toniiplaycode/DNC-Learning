@@ -187,6 +187,36 @@ const JoinClass = () => {
     }
   };
 
+  // Add effect to handle tab closing
+  useEffect(() => {
+    const handleBeforeUnload = async (e: BeforeUnloadEvent) => {
+      if (isClassActive) {
+        // If class is active, try to mark leave before closing
+        try {
+          if (currentSchedule && currentUser?.userStudentAcademic?.id) {
+            await dispatch(
+              markLeave({
+                scheduleId: currentSchedule.id,
+                studentAcademicId: currentUser.userStudentAcademic.id,
+              })
+            ).unwrap();
+            dispatch(leaveClass());
+          }
+        } catch (err) {
+          console.error("Error marking leave on tab close:", err);
+        }
+      }
+    };
+
+    // Add event listener for tab closing
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    // Cleanup event listener
+    return () => {
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [isClassActive, currentSchedule, currentUser, dispatch]);
+
   const handleJoinClass = async () => {
     try {
       if (!currentSchedule || !currentUser?.userStudentAcademic?.id) {
@@ -244,9 +274,23 @@ const JoinClass = () => {
       // Dispatch join class action
       dispatch(joinClass(currentSchedule));
 
-      // Navigate to external meeting link in a new tab
+      // Navigate to external meeting link in a new tab and store the window reference
       if (currentSchedule?.meetingLink) {
-        window.open(currentSchedule.meetingLink, "_blank");
+        const meetWindow = window.open(currentSchedule.meetingLink, "_blank");
+
+        // Add event listener to detect when the Meet tab is closed
+        if (meetWindow) {
+          const checkWindowClosed = setInterval(() => {
+            if (meetWindow.closed) {
+              clearInterval(checkWindowClosed);
+              // When Meet tab is closed, trigger leave class
+              handleLeaveClass();
+            }
+          }, 1000); // Check every second
+
+          // Cleanup interval when component unmounts
+          return () => clearInterval(checkWindowClosed);
+        }
       }
     } catch (err) {
       console.error("Error joining class:", err);
@@ -285,7 +329,9 @@ const JoinClass = () => {
     const minutes = Math.floor((seconds % 3600) / 60);
     const remainingSeconds = seconds % 60;
 
-    return `${hours > 0 ? `${hours}h ` : ""}${minutes}m ${remainingSeconds}s`;
+    return `${
+      hours > 0 ? `${hours}h ` : ""
+    }${minutes} phút ${remainingSeconds} giây`;
   };
 
   // Calculate class duration in minutes

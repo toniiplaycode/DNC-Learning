@@ -8,8 +8,10 @@ import {
   UpdateDateColumn,
   OneToOne,
   ManyToMany,
+  OneToMany,
 } from 'typeorm';
 import { User } from './User';
+import { SessionAttendance } from './SessionAttendance';
 import { AcademicClass } from './AcademicClass';
 
 // Enum cho trạng thái học tập
@@ -64,4 +66,10 @@ export class UserStudentAcademic {
   )
   @JoinColumn({ name: 'academic_class_id' })
   academicClass: AcademicClass;
+
+  @OneToMany(
+    () => SessionAttendance,
+    (sessionAttendance) => sessionAttendance.studentAcademic,
+  )
+  sessionAttendances: SessionAttendance[];
 }

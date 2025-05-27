@@ -310,6 +310,20 @@ export class UsersService {
       )
       .leftJoinAndSelect('quizAttempt.quiz', 'quiz')
 
+      // Join với bảng session attendances để lấy thông tin điểm danh
+      .leftJoinAndSelect(
+        'studentAcademic.sessionAttendances',
+        'sessionAttendances',
+      )
+      .leftJoinAndSelect(
+        'sessionAttendances.teachingSchedule',
+        'teachingSchedule',
+      )
+      .leftJoinAndSelect(
+        'teachingSchedule.academicClassInstructor',
+        'scheduleInstructor',
+      )
+
       .distinct(true)
       .orderBy({
         'class.className': 'ASC',

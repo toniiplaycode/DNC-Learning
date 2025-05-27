@@ -41,7 +41,7 @@ interface AttendanceTableProps {
   onEditNote: (attendance: any, note: string) => void;
 }
 
-type SortOrder = "asc" | "desc" | "none";
+type SortOrder = "asc" | "desc" | "none" | "rate_desc" | "rate_asc";
 type AttendanceRateFilter = "all" | "high" | "medium" | "low";
 
 const AttendanceTable = ({ schedule, onEditNote }: AttendanceTableProps) => {
@@ -179,11 +179,34 @@ const AttendanceTable = ({ schedule, onEditNote }: AttendanceTableProps) => {
     // Apply sorting
     if (sortOrder !== "none") {
       result.sort((a, b) => {
-        const nameA = a.studentAcademic?.fullName?.toLowerCase() || "";
-        const nameB = b.studentAcademic?.fullName?.toLowerCase() || "";
-        return sortOrder === "asc"
-          ? nameA.localeCompare(nameB)
-          : nameB.localeCompare(nameA);
+        switch (sortOrder) {
+          case "asc":
+            return (
+              a.studentAcademic?.fullName?.toLowerCase() || ""
+            ).localeCompare(b.studentAcademic?.fullName?.toLowerCase() || "");
+          case "desc":
+            return (
+              b.studentAcademic?.fullName?.toLowerCase() || ""
+            ).localeCompare(a.studentAcademic?.fullName?.toLowerCase() || "");
+          case "rate_desc":
+            const rateA =
+              formatAttendanceDuration(a.joinTime, a.leaveTime).duration /
+              totalDurationSeconds;
+            const rateB =
+              formatAttendanceDuration(b.joinTime, b.leaveTime).duration /
+              totalDurationSeconds;
+            return rateB - rateA;
+          case "rate_asc":
+            const rateA2 =
+              formatAttendanceDuration(a.joinTime, a.leaveTime).duration /
+              totalDurationSeconds;
+            const rateB2 =
+              formatAttendanceDuration(b.joinTime, b.leaveTime).duration /
+              totalDurationSeconds;
+            return rateA2 - rateB2;
+          default:
+            return 0;
+        }
       });
     }
 
@@ -204,6 +227,10 @@ const AttendanceTable = ({ schedule, onEditNote }: AttendanceTableProps) => {
         case "asc":
           return "desc";
         case "desc":
+          return "rate_desc";
+        case "rate_desc":
+          return "rate_asc";
+        case "rate_asc":
           return "none";
         default:
           return "none";
@@ -359,21 +386,33 @@ const AttendanceTable = ({ schedule, onEditNote }: AttendanceTableProps) => {
           <TextField
             fullWidth
             size="small"
-            label="Sắp xếp theo tên"
+            label="Sắp xếp"
             value={sortOrder}
             select
             onChange={(e) => setSortOrder(e.target.value as SortOrder)}
             InputProps={{
               startAdornment: (
                 <InputAdornment position="start">
-                  <SortIcon />
+                  <SortIcon
+                    sx={{
+                      transform:
+                        sortOrder === "desc"
+                          ? "rotate(180deg)"
+                          : sortOrder === "rate_desc"
+                          ? "rotate(180deg)"
+                          : "none",
+                      transition: "transform 0.2s",
+                    }}
+                  />
                 </InputAdornment>
               ),
             }}
           >
             <MenuItem value="none">Không sắp xếp</MenuItem>
-            <MenuItem value="asc">A → Z</MenuItem>
-            <MenuItem value="desc">Z → A</MenuItem>
+            <MenuItem value="asc">Tên A → Z</MenuItem>
+            <MenuItem value="desc">Tên Z → A</MenuItem>
+            <MenuItem value="rate_desc">Tỷ lệ tham dự cao nhất</MenuItem>
+            <MenuItem value="rate_asc">Tỷ lệ tham dự thấp nhất</MenuItem>
           </TextField>
         </Grid>
         <Grid item xs={12} md={2}>

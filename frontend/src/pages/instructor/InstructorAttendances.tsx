@@ -29,6 +29,10 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  FormControlLabel,
+  Checkbox,
+  Collapse,
+  CardContent,
 } from "@mui/material";
 import {
   AccessTime,
@@ -44,6 +48,9 @@ import {
   ExpandLess,
   Search,
   EditNote,
+  Email,
+  Notifications,
+  Info,
 } from "@mui/icons-material";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { selectCurrentUser } from "../../features/auth/authSelectors";
@@ -59,9 +66,12 @@ import {
   selectTeachingSchedulesStatus,
 } from "../../features/teaching-schedules/teachingSchedulesSelectors";
 import { fetchTeachingSchedulesByInstructor } from "../../features/teaching-schedules/teachingSchedulesSlice";
+import { updateAttendance } from "../../features/session-attendances/sessionAttendancesSlice";
 import SearchIcon from "@mui/icons-material/Search";
 import EditNoteIcon from "@mui/icons-material/EditNote";
 import AttendanceTable from "./component/AttendanceTable";
+import { toast } from "react-toastify";
+import { createNotification } from "../../features/notifications/notificationsSlice";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -112,6 +122,11 @@ const InstructorAttendances = () => {
   const [openNoteDialog, setOpenNoteDialog] = useState(false);
   const [editingAttendance, setEditingAttendance] = useState<any>(null);
   const [noteValue, setNoteValue] = useState("");
+  const [isUpdatingNote, setIsUpdatingNote] = useState(false);
+  const [noteError, setNoteError] = useState<string | null>(null);
+  const [shouldSendEmail, setShouldSendEmail] = useState(false);
+  const [emailSubject, setEmailSubject] = useState("");
+  const [emailContent, setEmailContent] = useState("");
 
   const classOptions = Array.from(
     new Set(
@@ -304,8 +319,67 @@ const InstructorAttendances = () => {
 
   const handleEditNote = (attendance: any, note: string) => {
     setEditingAttendance(attendance);
-    setNoteValue(note);
+    setNoteValue(note || "");
+    setNoteError(null);
+    setShouldSendEmail(false);
+    setEmailSubject("");
+    setEmailContent("");
     setOpenNoteDialog(true);
+  };
+
+  const handleSaveNote = async () => {
+    if (!editingAttendance || !currentUser?.userInstructor?.id) return;
+
+    try {
+      setIsUpdatingNote(true);
+      setNoteError(null);
+
+      // Update attendance note
+      await dispatch(
+        updateAttendance({
+          id: editingAttendance.id,
+          data: { notes: noteValue },
+        })
+      ).unwrap();
+
+      // Update local state after successful API call
+      const updatedAttendance = {
+        ...editingAttendance,
+        notes: noteValue,
+      };
+      setEditingAttendance(updatedAttendance);
+
+      // Send notification if email option is selected
+      if (shouldSendEmail && emailSubject && emailContent) {
+        const notificationData = {
+          userIds: [
+            editingAttendance.studentAcademic?.user?.id.toString(),
+          ].filter(Boolean),
+          title: emailSubject,
+          content: emailContent,
+          type: "message",
+          sendEmail: true,
+        };
+
+        await dispatch(createNotification(notificationData)).unwrap();
+      }
+
+      // Refresh schedules
+      dispatch(
+        fetchTeachingSchedulesByInstructor(
+          Number(currentUser.userInstructor.id)
+        )
+      );
+
+      toast.success("Cập nhật ghi chú thành công");
+      setOpenNoteDialog(false);
+    } catch (err: any) {
+      setNoteError(
+        err.message || "Không thể cập nhật ghi chú. Vui lòng thử lại sau."
+      );
+    } finally {
+      setIsUpdatingNote(false);
+    }
   };
 
   const renderScheduleList = (schedules: TeachingSchedule[]) => {
@@ -681,35 +755,172 @@ const InstructorAttendances = () => {
 
       <Dialog
         open={openNoteDialog}
-        onClose={() => setOpenNoteDialog(false)}
-        maxWidth="xs"
+        onClose={() => !isUpdatingNote && setOpenNoteDialog(false)}
+        maxWidth="sm"
         fullWidth
+        PaperProps={{
+          sx: {
+            borderRadius: 2,
+          },
+        }}
       >
-        <DialogTitle>Chỉnh sửa ghi chú điểm danh</DialogTitle>
+        <DialogTitle>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <EditNote color="primary" />
+            <Typography variant="h6" fontWeight="bold">
+              Chỉnh sửa ghi chú điểm danh
+            </Typography>
+          </Stack>
+        </DialogTitle>
         <DialogContent>
-          <TextField
-            label="Ghi chú"
-            value={noteValue}
-            onChange={(e) => setNoteValue(e.target.value)}
-            fullWidth
-            multiline
-            minRows={3}
-            autoFocus
-            sx={{ mt: 1 }}
-          />
+          {noteError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {noteError}
+            </Alert>
+          )}
+          <Stack spacing={3} sx={{ mt: 1 }}>
+            <TextField
+              label="Ghi chú"
+              value={noteValue}
+              onChange={(e) => setNoteValue(e.target.value)}
+              fullWidth
+              multiline
+              minRows={3}
+              autoFocus
+              disabled={isUpdatingNote}
+              error={!!noteError}
+              helperText={noteError}
+              InputProps={{
+                sx: {
+                  borderRadius: 2,
+                },
+              }}
+            />
+
+            <Card
+              variant="outlined"
+              sx={{
+                borderRadius: 2,
+                borderColor: shouldSendEmail ? "primary.main" : "divider",
+                transition: "all 0.2s ease",
+                "&:hover": {
+                  borderColor: shouldSendEmail
+                    ? "primary.main"
+                    : "text.secondary",
+                },
+              }}
+            >
+              <CardContent sx={{ p: 2 }}>
+                <FormControlLabel
+                  control={
+                    <Checkbox
+                      checked={shouldSendEmail}
+                      onChange={(e) => setShouldSendEmail(e.target.checked)}
+                      disabled={isUpdatingNote}
+                      color="primary"
+                    />
+                  }
+                  label={
+                    <Stack direction="row" spacing={1} alignItems="center">
+                      <Email color={shouldSendEmail ? "primary" : "action"} />
+                      <Typography
+                        variant="subtitle1"
+                        color={shouldSendEmail ? "primary" : "text.primary"}
+                        fontWeight={shouldSendEmail ? "bold" : "normal"}
+                      >
+                        Gửi thông báo cho sinh viên
+                      </Typography>
+                    </Stack>
+                  }
+                  sx={{ width: "100%", m: 0 }}
+                />
+
+                <Collapse in={shouldSendEmail}>
+                  <Box sx={{ mt: 2, pl: 4 }}>
+                    <Alert
+                      severity="info"
+                      icon={<Info />}
+                      sx={{
+                        mb: 2,
+                        borderRadius: 1,
+                        "& .MuiAlert-icon": {
+                          color: "primary.main",
+                        },
+                      }}
+                    >
+                      Thông báo sẽ được gửi đến sinh viên qua email và hiển thị
+                      trong phần thông báo của hệ thống.
+                    </Alert>
+
+                    <Stack spacing={2}>
+                      <TextField
+                        label="Tiêu đề thông báo"
+                        value={emailSubject}
+                        onChange={(e) => setEmailSubject(e.target.value)}
+                        fullWidth
+                        size="small"
+                        disabled={isUpdatingNote}
+                        placeholder="Ví dụ: Cập nhật điểm danh - Lớp ABC123"
+                        InputProps={{
+                          startAdornment: (
+                            <InputAdornment position="start">
+                              <Notifications fontSize="small" color="action" />
+                            </InputAdornment>
+                          ),
+                          sx: {
+                            borderRadius: 1.5,
+                          },
+                        }}
+                      />
+                      <TextField
+                        label="Nội dung thông báo"
+                        value={emailContent}
+                        onChange={(e) => setEmailContent(e.target.value)}
+                        fullWidth
+                        multiline
+                        minRows={3}
+                        disabled={isUpdatingNote}
+                        placeholder="Nhập nội dung thông báo cho sinh viên..."
+                        InputProps={{
+                          sx: {
+                            borderRadius: 1.5,
+                          },
+                        }}
+                      />
+                    </Stack>
+                  </Box>
+                </Collapse>
+              </CardContent>
+            </Card>
+          </Stack>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setOpenNoteDialog(false)}>Hủy</Button>
+        <DialogActions sx={{ px: 3, pb: 3 }}>
           <Button
-            variant="contained"
-            onClick={() => {
-              if (editingAttendance) {
-                editingAttendance.notes = noteValue;
-              }
-              setOpenNoteDialog(false);
+            onClick={() => setOpenNoteDialog(false)}
+            disabled={isUpdatingNote}
+            sx={{
+              borderRadius: 1.5,
+              px: 2,
             }}
           >
-            Lưu
+            Hủy
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleSaveNote}
+            disabled={
+              isUpdatingNote ||
+              (shouldSendEmail && (!emailSubject || !emailContent))
+            }
+            startIcon={
+              isUpdatingNote ? <CircularProgress size={20} /> : <CheckCircle />
+            }
+            sx={{
+              borderRadius: 1.5,
+              px: 2,
+            }}
+          >
+            {isUpdatingNote ? "Đang lưu..." : "Lưu thay đổi"}
           </Button>
         </DialogActions>
       </Dialog>

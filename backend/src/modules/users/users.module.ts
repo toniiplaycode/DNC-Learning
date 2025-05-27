@@ -23,6 +23,8 @@ import { Course } from 'src/entities/Course';
 import { Enrollment } from 'src/entities/Enrollment';
 import { Category } from 'src/entities/Category';
 import { Notification } from 'src/entities/Notification';
+import { TeachingSchedule } from 'src/entities/TeachingSchedule';
+import { SessionAttendance } from 'src/entities/SessionAttendance';
 
 @Module({
   imports: [
@@ -44,6 +46,8 @@ import { Notification } from 'src/entities/Notification';
       Enrollment,
       Category,
       Notification,
+      TeachingSchedule,
+      SessionAttendance,
     ]),
   ],
   controllers: [UsersController],

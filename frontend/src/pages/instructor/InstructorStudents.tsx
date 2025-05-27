@@ -35,6 +35,7 @@ import {
   Tabs,
   LinearProgress,
   Menu,
+  Link,
 } from "@mui/material";
 import {
   Search,
@@ -54,6 +55,10 @@ import {
   Badge,
   Class,
   Info,
+  EventBusy,
+  Grade,
+  Warning,
+  Settings,
 } from "@mui/icons-material";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import {
@@ -70,6 +75,14 @@ import { fetchCoursesByInstructor } from "../../features/courses/coursesApiSlice
 import { selectCoursesByInstructor } from "../../features/courses/coursesSelector";
 import * as XLSX from "xlsx";
 import EditStudentStatusDialog from "./component/EditStudentStatusDialog";
+import { toast } from "react-toastify";
+import { createNotification } from "../../features/notifications/notificationsSlice";
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
 
 const TabPanel = (props: TabPanelProps) => {
   const { children, value, index, ...other } = props;
@@ -114,10 +127,31 @@ const InstructorStudents = () => {
   // Add new state for dialog tabs
   const [dialogTabValue, setDialogTabValue] = useState(0);
 
+  // Add new state for warning email dialog
+  const [warningEmailDialogOpen, setWarningEmailDialogOpen] = useState(false);
+  const [selectedGradeInfo, setSelectedGradeInfo] = useState<{
+    courseTitle: string;
+    finalGrade: number;
+    studentName: string;
+    studentEmail: string;
+    threshold: number;
+  } | null>(null);
+
+  // Add new state for warning threshold
+  const [warningThreshold, setWarningThreshold] = useState(60);
+  const [thresholdDialogOpen, setThresholdDialogOpen] = useState(false);
+
+  console.log(instructorAcademicStudents);
+
   useEffect(() => {
-    dispatch(fetchStudentsByInstructor(currentUser?.userInstructor?.id));
-    dispatch(fetchCoursesByInstructor(currentUser?.userInstructor?.id));
-    dispatch(fetchAcademicStudentsByInstructor(currentUser.userInstructor.id));
+    if (currentUser?.userInstructor?.id) {
+      const instructorId = parseInt(currentUser.userInstructor.id);
+      if (!isNaN(instructorId)) {
+        dispatch(fetchStudentsByInstructor(instructorId));
+        dispatch(fetchCoursesByInstructor(instructorId));
+        dispatch(fetchAcademicStudentsByInstructor(instructorId));
+      }
+    }
   }, [dispatch, currentUser]);
 
   const handleStatusFilterChange = (event: any) => {
@@ -179,26 +213,22 @@ const InstructorStudents = () => {
   // Thu thập các khóa học mà giảng viên đang giảng dạy
   const courseOptions = React.useMemo(() => {
     const uniqueCourses = new Map<string, string>();
-
-    // Thêm tùy chọn "Tất cả"
     uniqueCourses.set("Tất cả", "Tất cả");
 
-    // Thu thập các khóa học từ instructorCourses thay vì từ dữ liệu sinh viên
     instructorCourses.forEach((course) => {
       if (course.id && course.title) {
-        uniqueCourses.set(course.id, course.title);
+        uniqueCourses.set(course.id.toString(), course.title);
       }
     });
 
     return Array.from(uniqueCourses.entries()).map(([id, title]) => ({
-      id: id,
+      id,
       name: title,
     }));
   }, [instructorCourses]);
 
   // Modify the filtered students logic to handle both types
   const filteredStudents = React.useMemo(() => {
-    // Use different source based on tab
     const sourceStudents =
       tabValue === "student_academic"
         ? instructorAcademicStudents
@@ -214,14 +244,14 @@ const InstructorStudents = () => {
         // Filter by class/course
         if (filterClassId !== "Tất cả") {
           if (tabValue === "student_academic") {
-            if (
-              student.userStudentAcademic?.academicClassId !== filterClassId
-            ) {
+            const studentClassId =
+              student.userStudentAcademic?.academicClassId?.toString();
+            if (studentClassId !== filterClassId) {
               return false;
             }
           } else {
             const isInCourse = student.enrollments?.some(
-              (enrollment) => enrollment.courseId === filterClassId
+              (enrollment) => enrollment.courseId?.toString() === filterClassId
             );
             if (!isInCourse) {
               return false;
@@ -413,13 +443,55 @@ const InstructorStudents = () => {
   const handleStatusUpdateSuccess = () => {
     if (!currentUser?.userInstructor?.id || !selectedStudent) return;
 
-    if (selectedStudent.role === "student_academic") {
-      dispatch(
-        fetchAcademicStudentsByInstructor(currentUser.userInstructor.id)
-      );
-    } else {
-      dispatch(fetchStudentsByInstructor(currentUser.userInstructor.id));
+    const instructorId = parseInt(currentUser.userInstructor.id);
+    if (!isNaN(instructorId)) {
+      if (selectedStudent.role === "student_academic") {
+        dispatch(fetchAcademicStudentsByInstructor(instructorId));
+      } else {
+        dispatch(fetchStudentsByInstructor(instructorId));
+      }
     }
+  };
+
+  // Update the handleSendWarningEmail function
+  const handleSendWarningEmail = async () => {
+    if (!selectedGradeInfo || !selectedStudent) return;
+
+    try {
+      const notificationData = {
+        userIds: [selectedStudent.id],
+        title:
+          selectedGradeInfo.finalGrade < selectedGradeInfo.threshold
+            ? "Cảnh báo điểm số thấp"
+            : "Thông báo điểm số",
+        content:
+          selectedGradeInfo.finalGrade < selectedGradeInfo.threshold
+            ? `Điểm số của bạn trong khóa học "${selectedGradeInfo.courseTitle}" hiện tại là ${selectedGradeInfo.finalGrade}/100, dưới ngưỡng cảnh báo ${selectedGradeInfo.threshold}/100. Vui lòng liên hệ với giảng viên để được hỗ trợ cải thiện điểm số.`
+            : `Điểm số của bạn trong khóa học "${selectedGradeInfo.courseTitle}" hiện tại là ${selectedGradeInfo.finalGrade}/100.`,
+        type: "message",
+      };
+
+      await dispatch(createNotification(notificationData)).unwrap();
+
+      toast.success(
+        selectedGradeInfo.finalGrade < selectedGradeInfo.threshold
+          ? "Đã gửi email cảnh báo điểm số thành công"
+          : "Đã gửi thông báo điểm số thành công"
+      );
+
+      // Close dialog after sending
+      setWarningEmailDialogOpen(false);
+      setSelectedGradeInfo(null);
+    } catch (error) {
+      console.error("Error sending grade notification:", error);
+      toast.error("Có lỗi xảy ra khi gửi thông báo. Vui lòng thử lại sau.");
+    }
+  };
+
+  // Add handler for updating threshold
+  const handleUpdateThreshold = (newThreshold: number) => {
+    setWarningThreshold(newThreshold);
+    setThresholdDialogOpen(false);
   };
 
   return (
@@ -733,6 +805,9 @@ const InstructorStudents = () => {
                 <Tab label="Thông tin cá nhân" />
                 <Tab label="Khóa học" />
                 <Tab label="Điểm số" />
+                {selectedStudent?.role === "student_academic" && (
+                  <Tab label="Điểm danh" />
+                )}
               </Tabs>
 
               <TabPanel value={dialogTabValue} index={0}>
@@ -1073,15 +1148,45 @@ const InstructorStudents = () => {
                       )}
                     </div>
                   ) : (
-                    <Typography
-                      color="text.secondary"
-                      align="center"
-                      sx={{ py: 3 }}
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        py: 8,
+                        px: 2,
+                        textAlign: "center",
+                      }}
                     >
-                      Chưa có khóa học nào
-                    </Typography>
+                      <School
+                        sx={{
+                          fontSize: 64,
+                          color: "text.secondary",
+                          mb: 2,
+                          opacity: 0.5,
+                        }}
+                      />
+                      <Typography
+                        variant="h6"
+                        color="text.secondary"
+                        gutterBottom
+                        sx={{ fontWeight: "medium" }}
+                      >
+                        Chưa có khóa học
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ maxWidth: 400 }}
+                      >
+                        Sinh viên chưa được đăng ký vào bất kỳ khóa học nào.
+                        Thông tin khóa học sẽ được hiển thị tại đây khi sinh
+                        viên được thêm vào các khóa học.
+                      </Typography>
+                    </Box>
                   )
-                ) : // Show regular enrollment courses (existing code)
+                ) : // Show regular enrollment courses
                 selectedStudent?.enrollments?.length > 0 ? (
                   <div>
                     {/* Tiêu đề phần */}
@@ -1220,13 +1325,43 @@ const InstructorStudents = () => {
                     ))}
                   </div>
                 ) : (
-                  <Typography
-                    color="text.secondary"
-                    align="center"
-                    sx={{ py: 3 }}
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      py: 8,
+                      px: 2,
+                      textAlign: "center",
+                    }}
                   >
-                    Chưa có khóa học nào
-                  </Typography>
+                    <School
+                      sx={{
+                        fontSize: 64,
+                        color: "text.secondary",
+                        mb: 2,
+                        opacity: 0.5,
+                      }}
+                    />
+                    <Typography
+                      variant="h6"
+                      color="text.secondary"
+                      gutterBottom
+                      sx={{ fontWeight: "medium" }}
+                    >
+                      Chưa có khóa học
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ maxWidth: 400 }}
+                    >
+                      Học viên chưa đăng ký tham gia bất kỳ khóa học nào. Thông
+                      tin khóa học sẽ được hiển thị tại đây khi học viên đăng ký
+                      các khóa học.
+                    </Typography>
+                  </Box>
                 )}
               </TabPanel>
 
@@ -1234,9 +1369,79 @@ const InstructorStudents = () => {
                 {selectedStudent?.role === "student_academic" ? (
                   selectedStudent?.userGrades?.length > 0 ? (
                     <Card sx={{ p: 3 }}>
-                      <Typography variant="h6" fontWeight="bold" gutterBottom>
-                        Bảng điểm sinh viên
-                      </Typography>
+                      <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        alignItems="center"
+                        sx={{ mb: 2 }}
+                      >
+                        <Typography variant="h6" fontWeight="bold">
+                          Bảng điểm sinh viên
+                        </Typography>
+                        <Stack direction="row" spacing={1}>
+                          <Button
+                            variant="outlined"
+                            color="primary"
+                            startIcon={<Settings />}
+                            onClick={() => setThresholdDialogOpen(true)}
+                            size="small"
+                          >
+                            Ngưỡng cảnh báo: {warningThreshold}/100
+                          </Button>
+                          {(() => {
+                            let totalWeightedScore = 0;
+                            let totalWeight = 0;
+
+                            selectedStudent.userGrades.forEach((grade) => {
+                              const score = parseFloat(grade.score);
+                              const maxScore = parseFloat(grade.maxScore);
+                              const weight = parseFloat(grade.weight);
+
+                              const weightedScore =
+                                (score / maxScore) * 100 * weight;
+                              totalWeightedScore += weightedScore;
+                              totalWeight += weight;
+                            });
+
+                            const finalGrade =
+                              totalWeight > 0
+                                ? parseFloat(
+                                    (totalWeightedScore / totalWeight).toFixed(
+                                      2
+                                    )
+                                  )
+                                : 0;
+
+                            return (
+                              <Button
+                                variant="outlined"
+                                color={
+                                  finalGrade < warningThreshold
+                                    ? "warning"
+                                    : "primary"
+                                }
+                                startIcon={<Warning />}
+                                onClick={() => {
+                                  setSelectedGradeInfo({
+                                    courseTitle: "Tất cả các môn học",
+                                    finalGrade,
+                                    studentName:
+                                      selectedStudent.userStudentAcademic
+                                        ?.fullName || "",
+                                    studentEmail: selectedStudent.email || "",
+                                    threshold: warningThreshold,
+                                  });
+                                  setWarningEmailDialogOpen(true);
+                                }}
+                              >
+                                {finalGrade < warningThreshold
+                                  ? "Gửi cảnh báo điểm số"
+                                  : "Gửi thông báo điểm số"}
+                              </Button>
+                            );
+                          })()}
+                        </Stack>
+                      </Stack>
 
                       <Typography
                         variant="caption"
@@ -1342,13 +1547,43 @@ const InstructorStudents = () => {
                       })()}
                     </Card>
                   ) : (
-                    <Typography
-                      color="text.secondary"
-                      align="center"
-                      sx={{ py: 3 }}
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        py: 8,
+                        px: 2,
+                        textAlign: "center",
+                      }}
                     >
-                      Chưa có thông tin điểm
-                    </Typography>
+                      <Grade
+                        sx={{
+                          fontSize: 64,
+                          color: "text.secondary",
+                          mb: 2,
+                          opacity: 0.5,
+                        }}
+                      />
+                      <Typography
+                        variant="h6"
+                        color="text.secondary"
+                        gutterBottom
+                        sx={{ fontWeight: "medium" }}
+                      >
+                        Chưa có thông tin điểm
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ maxWidth: 400 }}
+                      >
+                        Sinh viên chưa có bất kỳ bản ghi điểm nào trong hệ
+                        thống. Thông tin điểm số sẽ được hiển thị tại đây khi
+                        giảng viên cập nhật điểm cho sinh viên.
+                      </Typography>
+                    </Box>
                   )
                 ) : // Existing code for regular students
                 selectedStudent?.enrollments?.some(
@@ -1388,13 +1623,52 @@ const InstructorStudents = () => {
 
                       return (
                         <Card key={enrollment.course?.id} sx={{ mb: 2, p: 3 }}>
-                          <Typography
-                            variant="h6"
-                            fontWeight="bold"
-                            gutterBottom
+                          <Stack
+                            direction="row"
+                            justifyContent="space-between"
+                            alignItems="center"
                           >
-                            {enrollment.course?.title}
-                          </Typography>
+                            <Typography variant="h6" fontWeight="bold">
+                              {enrollment.course?.title}
+                            </Typography>
+                          </Stack>
+
+                          <Stack direction="row" spacing={1} sx={{ py: 1 }}>
+                            <Button
+                              variant="outlined"
+                              color="primary"
+                              startIcon={<Settings />}
+                              onClick={() => setThresholdDialogOpen(true)}
+                              size="small"
+                            >
+                              Ngưỡng cảnh báo: {warningThreshold}/100
+                            </Button>
+                            <Button
+                              variant="outlined"
+                              color={
+                                finalGrade < warningThreshold
+                                  ? "warning"
+                                  : "primary"
+                              }
+                              startIcon={<Warning />}
+                              onClick={() => {
+                                setSelectedGradeInfo({
+                                  courseTitle: enrollment.course?.title || "",
+                                  finalGrade,
+                                  studentName:
+                                    selectedStudent.userStudent?.fullName || "",
+                                  studentEmail: selectedStudent.email || "",
+                                  threshold: warningThreshold,
+                                });
+                                setWarningEmailDialogOpen(true);
+                              }}
+                            >
+                              {finalGrade < warningThreshold
+                                ? "Gửi cảnh báo điểm số"
+                                : "Gửi thông báo điểm số"}
+                            </Button>
+                          </Stack>
+
                           <Typography
                             variant="caption"
                             color="text.secondary"
@@ -1484,15 +1758,302 @@ const InstructorStudents = () => {
                       );
                     })
                 ) : (
-                  <Typography
-                    color="text.secondary"
-                    align="center"
-                    sx={{ py: 3 }}
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: "column",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      py: 8,
+                      px: 2,
+                      textAlign: "center",
+                    }}
                   >
-                    Chưa có thông tin điểm
-                  </Typography>
+                    <Grade
+                      sx={{
+                        fontSize: 64,
+                        color: "text.secondary",
+                        mb: 2,
+                        opacity: 0.5,
+                      }}
+                    />
+                    <Typography
+                      variant="h6"
+                      color="text.secondary"
+                      gutterBottom
+                      sx={{ fontWeight: "medium" }}
+                    >
+                      Chưa có thông tin điểm
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ maxWidth: 400 }}
+                    >
+                      Học viên chưa có bất kỳ bản ghi điểm nào trong hệ thống.
+                      Thông tin điểm số sẽ được hiển thị tại đây khi giảng viên
+                      cập nhật điểm cho học viên.
+                    </Typography>
+                  </Box>
                 )}
               </TabPanel>
+
+              {selectedStudent?.role === "student_academic" && (
+                <TabPanel value={dialogTabValue} index={3}>
+                  {selectedStudent?.userStudentAcademic?.sessionAttendances
+                    ?.length > 0 ? (
+                    <Card sx={{ p: 3 }}>
+                      <Typography variant="h6" fontWeight="bold" gutterBottom>
+                        Lịch sử điểm danh
+                      </Typography>
+
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        display="block"
+                        gutterBottom
+                      >
+                        Cập nhật: {new Date().toLocaleDateString("vi-VN")}
+                      </Typography>
+
+                      <Divider sx={{ my: 2 }} />
+
+                      {selectedStudent.userStudentAcademic.sessionAttendances
+                        .sort(
+                          (a, b) =>
+                            new Date(b.createdAt).getTime() -
+                            new Date(a.createdAt).getTime()
+                        )
+                        .map((attendance) => (
+                          <Card key={attendance.id} sx={{ mb: 2 }}>
+                            <CardContent>
+                              <Stack spacing={2}>
+                                <Stack
+                                  direction="row"
+                                  justifyContent="space-between"
+                                  alignItems="center"
+                                >
+                                  <Typography variant="h6">
+                                    {attendance.teachingSchedule?.title}
+                                  </Typography>
+                                  <Chip
+                                    label={
+                                      attendance.status === "present"
+                                        ? "Có mặt"
+                                        : attendance.status === "absent"
+                                        ? "Vắng mặt"
+                                        : attendance.status === "late"
+                                        ? "Đi muộn"
+                                        : "Không xác định"
+                                    }
+                                    color={
+                                      attendance.status === "present"
+                                        ? "success"
+                                        : attendance.status === "absent"
+                                        ? "error"
+                                        : attendance.status === "late"
+                                        ? "warning"
+                                        : "default"
+                                    }
+                                    size="small"
+                                  />
+                                </Stack>
+
+                                <Stack spacing={1}>
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                  >
+                                    Thời gian:{" "}
+                                    {new Date(
+                                      attendance.teachingSchedule?.startTime
+                                    ).toLocaleString("vi-VN")}{" "}
+                                    -{" "}
+                                    {new Date(
+                                      attendance.teachingSchedule?.endTime
+                                    ).toLocaleString("vi-VN")}
+                                  </Typography>
+
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                  >
+                                    Thời gian tham gia:{" "}
+                                    {new Date(
+                                      attendance.joinTime
+                                    ).toLocaleString("vi-VN")}{" "}
+                                    -{" "}
+                                    {new Date(
+                                      attendance.leaveTime
+                                    ).toLocaleString("vi-VN")}
+                                  </Typography>
+
+                                  <Typography
+                                    variant="body2"
+                                    color="text.secondary"
+                                  >
+                                    Thời lượng tham gia:{" "}
+                                    {attendance.durationMinutes} phút
+                                  </Typography>
+
+                                  {attendance.notes && (
+                                    <Typography
+                                      variant="body2"
+                                      color="text.secondary"
+                                    >
+                                      Ghi chú: {attendance.notes}
+                                    </Typography>
+                                  )}
+
+                                  {attendance.teachingSchedule?.meetingLink && (
+                                    <Typography
+                                      variant="body2"
+                                      color="text.secondary"
+                                    >
+                                      Link buổi học:{" "}
+                                      <Link
+                                        href={
+                                          attendance.teachingSchedule
+                                            .meetingLink
+                                        }
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                      >
+                                        {
+                                          attendance.teachingSchedule
+                                            .meetingLink
+                                        }
+                                      </Link>
+                                    </Typography>
+                                  )}
+                                </Stack>
+
+                                <Box sx={{ mt: 1 }}>
+                                  <LinearProgress
+                                    variant="determinate"
+                                    value={
+                                      (attendance.durationMinutes /
+                                        ((new Date(
+                                          attendance.teachingSchedule?.endTime
+                                        ).getTime() -
+                                          new Date(
+                                            attendance.teachingSchedule?.startTime
+                                          ).getTime()) /
+                                          (1000 * 60))) *
+                                      100
+                                    }
+                                    sx={{
+                                      height: 8,
+                                      borderRadius: 1,
+                                      bgcolor: "grey.200",
+                                      "& .MuiLinearProgress-bar": {
+                                        bgcolor:
+                                          attendance.status === "present"
+                                            ? "success.main"
+                                            : attendance.status === "late"
+                                            ? "warning.main"
+                                            : "error.main",
+                                      },
+                                    }}
+                                  />
+                                </Box>
+                              </Stack>
+                            </CardContent>
+                          </Card>
+                        ))}
+
+                      {/* Tính và hiển thị tỷ lệ điểm danh */}
+                      {(() => {
+                        const attendances =
+                          selectedStudent.userStudentAcademic
+                            .sessionAttendances;
+                        const totalSessions = attendances.length;
+                        const presentSessions = attendances.filter(
+                          (a) => a.status === "present" || a.status === "late"
+                        ).length;
+                        const attendanceRate =
+                          (presentSessions / totalSessions) * 100;
+
+                        return (
+                          <>
+                            <Divider sx={{ my: 2 }} />
+                            <Typography variant="subtitle1" fontWeight="bold">
+                              Tỷ lệ điểm danh:{" "}
+                              <Box component="span" fontWeight="bold">
+                                {attendanceRate.toFixed(1)}%
+                              </Box>
+                            </Typography>
+                            <Box sx={{ mt: 2 }}>
+                              <LinearProgress
+                                variant="determinate"
+                                value={attendanceRate}
+                                sx={{
+                                  height: 8,
+                                  borderRadius: 1,
+                                  bgcolor: "grey.200",
+                                  "& .MuiLinearProgress-bar": {
+                                    bgcolor:
+                                      attendanceRate >= 80
+                                        ? "success.main"
+                                        : attendanceRate >= 60
+                                        ? "warning.main"
+                                        : "error.main",
+                                  },
+                                }}
+                              />
+                            </Box>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              sx={{ mt: 1 }}
+                            >
+                              {presentSessions}/{totalSessions} buổi học
+                            </Typography>
+                          </>
+                        );
+                      })()}
+                    </Card>
+                  ) : (
+                    <Box
+                      sx={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: "center",
+                        justifyContent: "center",
+                        py: 8,
+                        px: 2,
+                        textAlign: "center",
+                      }}
+                    >
+                      <EventBusy
+                        sx={{
+                          fontSize: 64,
+                          color: "text.secondary",
+                          mb: 2,
+                          opacity: 0.5,
+                        }}
+                      />
+                      <Typography
+                        variant="h6"
+                        color="text.secondary"
+                        gutterBottom
+                        sx={{ fontWeight: "medium" }}
+                      >
+                        Chưa có thông tin điểm danh
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{ maxWidth: 400 }}
+                      >
+                        Sinh viên chưa có bất kỳ bản ghi điểm danh nào trong hệ
+                        thống. Thông tin điểm danh sẽ được hiển thị tại đây khi
+                        sinh viên tham gia các buổi học.
+                      </Typography>
+                    </Box>
+                  )}
+                </TabPanel>
+              )}
             </Box>
           )}
         </DialogContent>
@@ -1510,6 +2071,159 @@ const InstructorStudents = () => {
           onSuccess={handleStatusUpdateSuccess}
         />
       )}
+
+      {/* Add Threshold Setting Dialog */}
+      <Dialog
+        open={thresholdDialogOpen}
+        onClose={() => setThresholdDialogOpen(false)}
+        maxWidth="xs"
+        fullWidth
+      >
+        <DialogTitle>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Settings color="primary" />
+            <Typography variant="h6">Cài đặt ngưỡng cảnh báo</Typography>
+          </Stack>
+        </DialogTitle>
+        <DialogContent>
+          <Stack spacing={2} sx={{ mt: 1 }}>
+            <Typography variant="body2" color="text.secondary">
+              Điểm số dưới ngưỡng này sẽ được đánh dấu là cần cảnh báo và gửi
+              email thông báo cho sinh viên.
+            </Typography>
+            <TextField
+              label="Ngưỡng điểm cảnh báo"
+              type="number"
+              value={warningThreshold}
+              onChange={(e) => {
+                const value = parseInt(e.target.value);
+                if (value >= 0 && value <= 100) {
+                  setWarningThreshold(value);
+                }
+              }}
+              inputProps={{
+                min: 0,
+                max: 100,
+                step: 1,
+              }}
+              fullWidth
+              helperText="Nhập giá trị từ 0 đến 100"
+            />
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setThresholdDialogOpen(false)}>Hủy</Button>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => handleUpdateThreshold(warningThreshold)}
+          >
+            Lưu cài đặt
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Update Warning Email Dialog */}
+      <Dialog
+        open={warningEmailDialogOpen}
+        onClose={() => {
+          setWarningEmailDialogOpen(false);
+          setSelectedGradeInfo(null);
+        }}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>
+          <Stack direction="row" spacing={1} alignItems="center">
+            <Warning
+              color={
+                selectedGradeInfo &&
+                selectedGradeInfo.finalGrade < selectedGradeInfo.threshold
+                  ? "warning"
+                  : "primary"
+              }
+            />
+            <Typography variant="h6">
+              {selectedGradeInfo &&
+              selectedGradeInfo.finalGrade < selectedGradeInfo.threshold
+                ? "Gửi cảnh báo điểm số"
+                : "Gửi thông báo điểm số"}
+            </Typography>
+          </Stack>
+        </DialogTitle>
+        <DialogContent>
+          {selectedGradeInfo && (
+            <Stack spacing={2} sx={{ mt: 1 }}>
+              <Typography>
+                Bạn sắp gửi email{" "}
+                {selectedGradeInfo.finalGrade < selectedGradeInfo.threshold
+                  ? "cảnh báo"
+                  : "thông báo"}{" "}
+                điểm số cho:
+              </Typography>
+              <Box sx={{ pl: 2 }}>
+                <Typography variant="body2" color="text.secondary">
+                  Sinh viên: {selectedGradeInfo.studentName}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Email: {selectedGradeInfo.studentEmail}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Khóa học: {selectedGradeInfo.courseTitle}
+                </Typography>
+                <Typography
+                  variant="body2"
+                  color={
+                    selectedGradeInfo.finalGrade < selectedGradeInfo.threshold
+                      ? "error"
+                      : "text.secondary"
+                  }
+                  sx={{ mt: 1 }}
+                >
+                  Điểm số hiện tại: {selectedGradeInfo.finalGrade}/100
+                  {selectedGradeInfo.finalGrade <
+                    selectedGradeInfo.threshold && (
+                    <Typography component="span" color="error" sx={{ ml: 1 }}>
+                      (Dưới ngưỡng cảnh báo {selectedGradeInfo.threshold}/100)
+                    </Typography>
+                  )}
+                </Typography>
+              </Box>
+              <Typography variant="body2" color="text.secondary">
+                {selectedGradeInfo.finalGrade < selectedGradeInfo.threshold
+                  ? "Email cảnh báo sẽ được gửi đến sinh viên với nội dung thông báo về điểm số thấp và đề xuất các biện pháp cải thiện."
+                  : "Email thông báo sẽ được gửi đến sinh viên với nội dung thông báo về điểm số hiện tại."}
+              </Typography>
+            </Stack>
+          )}
+        </DialogContent>
+        <DialogActions>
+          <Button
+            onClick={() => {
+              setWarningEmailDialogOpen(false);
+              setSelectedGradeInfo(null);
+            }}
+          >
+            Hủy
+          </Button>
+          <Button
+            variant="contained"
+            color={
+              selectedGradeInfo &&
+              selectedGradeInfo.finalGrade < selectedGradeInfo.threshold
+                ? "warning"
+                : "primary"
+            }
+            startIcon={<Email />}
+            onClick={handleSendWarningEmail}
+          >
+            {selectedGradeInfo &&
+            selectedGradeInfo.finalGrade < selectedGradeInfo.threshold
+              ? "Gửi email cảnh báo"
+              : "Gửi email thông báo"}
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

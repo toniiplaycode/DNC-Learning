@@ -37,6 +37,7 @@ export const createNotification = createAsyncThunk(
   async (data: any, { rejectWithValue }) => {
     try {
       const response = await api.post("/notifications", data);
+      console.log(response);
       return response.data;
     } catch (error: any) {
       return rejectWithValue(
