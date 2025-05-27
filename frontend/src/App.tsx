@@ -53,6 +53,8 @@ import JoinClass from "./pages/student/teaching-schedules/JoinClass";
 import TeachingSchedules from "./pages/student/teaching-schedules/TeachingSchedules";
 import InstructorAttendances from "./pages/instructor/InstructorAttendances";
 import AdminCertificates from "./pages/admin/AdminCertificates";
+import ForgotPassword from "./pages/student/auth/ForgotPassword";
+import ResetPassword from "./pages/student/auth/ResetPassword";
 
 const App = () => {
   const navigate = useNavigate();
@@ -61,6 +63,16 @@ const App = () => {
   useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const token = params.get("token");
+    const code = params.get("code");
+    const emailHash = params.get("email");
+
+    // Nếu là token reset password (có code và emailHash)
+    if (code && emailHash) {
+      // Không xử lý gì cả, để ResetPassword component xử lý
+      return;
+    }
+
+    // Nếu là token đăng nhập
     if (token) {
       localStorage.setItem("token", token);
       // Xóa token khỏi URL
@@ -97,6 +109,8 @@ const App = () => {
           <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/enrolled-courses" element={<EnrolledCourses />} />
           <Route path="/profile" element={<ProfileAccount />} />
           <Route path="/courses" element={<Courses />} />

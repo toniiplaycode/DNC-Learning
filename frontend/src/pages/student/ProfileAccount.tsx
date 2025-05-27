@@ -1,4 +1,10 @@
-import React, { useEffect, useState, useCallback, useRef } from "react";
+import React, {
+  useEffect,
+  useState,
+  useCallback,
+  useRef,
+  useMemo,
+} from "react";
 import {
   Box,
   Grid,
@@ -30,6 +36,11 @@ import {
   Pagination,
   FormControlLabel,
   Switch,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  InputAdornment,
 } from "@mui/material";
 import {
   Email,
@@ -54,6 +65,8 @@ import {
   Payment,
   ReceiptLong,
   Info,
+  Visibility,
+  VisibilityOff,
 } from "@mui/icons-material";
 import CustomContainer from "../../components/common/CustomContainer";
 import CertificateDetail from "../../components/student/profile/CertificateDetail";
@@ -80,13 +93,18 @@ import {
   UserStudentAcademic,
   UserRole,
 } from "../../types/user.types";
-import { updateStudentProfile } from "../../features/users/usersApiSlice";
+import {
+  updateStudentProfile,
+  updateUser,
+  changePassword,
+} from "../../features/users/usersApiSlice";
 import { useNavigate } from "react-router-dom";
 import { fetchUserById } from "../../features/users/usersApiSlice";
 import { fetchUserCourseProgress } from "../../features/course-progress/courseProgressSlice";
 import { selectUserCourseProgress } from "../../features/course-progress/courseProgressSelectors";
 import { fetchUserPayments } from "../../features/payments/paymentsSlice";
 import { selectUserPayments } from "../../features/payments/paymentsSelectors";
+import { uploadImageToCloudinary } from "../../utils/uploadImage";
 
 type Gender = "male" | "female" | "other";
 
@@ -127,6 +145,135 @@ interface FormData {
   academicYear: string;
 }
 
+interface ChangePasswordForm {
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
+}
+
+// Tách ChangePasswordDialog thành component riêng
+const ChangePasswordDialog = React.memo(
+  ({
+    open,
+    onClose,
+    onSubmit,
+    error,
+    formData,
+    onFormChange,
+    showCurrentPassword,
+    showNewPassword,
+    showConfirmPassword,
+    onTogglePassword,
+  }: {
+    open: boolean;
+    onClose: () => void;
+    onSubmit: () => void;
+    error: string | null;
+    formData: ChangePasswordForm;
+    onFormChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    showCurrentPassword: boolean;
+    showNewPassword: boolean;
+    showConfirmPassword: boolean;
+    onTogglePassword: (field: "current" | "new" | "confirm") => void;
+  }) => {
+    const handleClose = useCallback(() => {
+      onClose();
+    }, [onClose]);
+
+    return (
+      <Dialog open={open} onClose={handleClose} maxWidth="sm" fullWidth>
+        <DialogTitle>Đổi mật khẩu</DialogTitle>
+        <DialogContent>
+          <Stack spacing={3} sx={{ mt: 1 }}>
+            <TextField
+              fullWidth
+              label="Mật khẩu hiện tại"
+              type={showCurrentPassword ? "text" : "password"}
+              name="currentPassword"
+              value={formData.currentPassword}
+              onChange={onFormChange}
+              error={!!error}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => onTogglePassword("current")}
+                      edge="end"
+                    >
+                      {showCurrentPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <TextField
+              fullWidth
+              label="Mật khẩu mới"
+              type={showNewPassword ? "text" : "password"}
+              name="newPassword"
+              value={formData.newPassword}
+              onChange={onFormChange}
+              error={!!error}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => onTogglePassword("new")}
+                      edge="end"
+                    >
+                      {showNewPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+            <TextField
+              fullWidth
+              label="Xác nhận mật khẩu mới"
+              type={showConfirmPassword ? "text" : "password"}
+              name="confirmPassword"
+              value={formData.confirmPassword}
+              onChange={onFormChange}
+              error={!!error}
+              InputProps={{
+                endAdornment: (
+                  <InputAdornment position="end">
+                    <IconButton
+                      onClick={() => onTogglePassword("confirm")}
+                      edge="end"
+                    >
+                      {showConfirmPassword ? <VisibilityOff /> : <Visibility />}
+                    </IconButton>
+                  </InputAdornment>
+                ),
+              }}
+            />
+            {error && (
+              <Typography color="error" variant="body2">
+                {error}
+              </Typography>
+            )}
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleClose}>Hủy</Button>
+          <Button
+            onClick={onSubmit}
+            variant="contained"
+            disabled={
+              !formData.currentPassword ||
+              !formData.newPassword ||
+              !formData.confirmPassword
+            }
+          >
+            Đổi mật khẩu
+          </Button>
+        </DialogActions>
+      </Dialog>
+    );
+  }
+);
+
 const ProfileAccount: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
@@ -159,6 +306,21 @@ const ProfileAccount: React.FC = () => {
   const [itemsPerPage, setItemsPerPage] = useState(5);
   const [showAllItems, setShowAllItems] = useState(false);
 
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  // Add these states
+  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [passwordForm, setPasswordForm] = useState<ChangePasswordForm>({
+    currentPassword: "",
+    newPassword: "",
+    confirmPassword: "",
+  });
+
   useEffect(() => {
     if (currentUser) {
       setLoadingGrades(true);
@@ -182,9 +344,6 @@ const ProfileAccount: React.FC = () => {
   }, [dispatch, currentUser?.id]);
 
   console.log(userPayments);
-
-  // Thêm state cho modal đổi mật khẩu
-  const [changePasswordOpen, setChangePasswordOpen] = useState(false);
 
   // Thêm state cho dialog chứng chỉ
   const [selectedCertificate, setSelectedCertificate] = useState<any>(null);
@@ -276,9 +435,42 @@ const ProfileAccount: React.FC = () => {
     );
   };
 
-  const handleAvatarChange = (file: File) => {
-    // Xử lý upload avatar
-    // Sau này sẽ gọi API để upload file và cập nhật avatar_url
+  const handleAvatarChange = async (file: File) => {
+    if (!currentUser?.id) return;
+
+    try {
+      setIsUploading(true);
+      setUploadError(null);
+
+      // Upload image to Cloudinary
+      const imageUrl = await uploadImageToCloudinary(file);
+
+      // Update user profile with new avatar URL
+      const userData = {
+        avatarUrl: imageUrl,
+      };
+
+      await dispatch(
+        updateUser({
+          userId: currentUser.id,
+          userData,
+        })
+      ).unwrap();
+
+      // Refresh user data
+      dispatch(fetchUserById(currentUser.id));
+
+      // Show success message
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 3000);
+    } catch (error) {
+      console.error("Error uploading avatar:", error);
+      setUploadError(
+        error instanceof Error ? error.message : "Lỗi khi tải lên ảnh đại diện"
+      );
+    } finally {
+      setIsUploading(false);
+    }
   };
 
   const handleFormChange = useCallback(
@@ -427,6 +619,111 @@ const ProfileAccount: React.FC = () => {
     setPage(1);
   }, [paymentFilter]);
 
+  // Memoize handlers
+  const handlePasswordFormChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const { name, value } = e.target;
+      setPasswordForm((prev) => ({
+        ...prev,
+        [name]: value,
+      }));
+    },
+    []
+  );
+
+  const handleTogglePassword = useCallback(
+    (field: "current" | "new" | "confirm") => {
+      switch (field) {
+        case "current":
+          setShowCurrentPassword((prev) => !prev);
+          break;
+        case "new":
+          setShowNewPassword((prev) => !prev);
+          break;
+        case "confirm":
+          setShowConfirmPassword((prev) => !prev);
+          break;
+      }
+    },
+    []
+  );
+
+  const handleClosePasswordDialog = useCallback(() => {
+    setChangePasswordOpen(false);
+    setPasswordError(null);
+    setPasswordForm({
+      currentPassword: "",
+      newPassword: "",
+      confirmPassword: "",
+    });
+  }, []);
+
+  const handlePasswordChange = useCallback(async () => {
+    if (!currentUser?.id) return;
+
+    // Reset error
+    setPasswordError(null);
+
+    // Validate passwords
+    if (passwordForm.newPassword !== passwordForm.confirmPassword) {
+      setPasswordError("Mật khẩu mới không khớp");
+      return;
+    }
+
+    if (passwordForm.newPassword.length < 6) {
+      setPasswordError("Mật khẩu mới phải có ít nhất 6 ký tự");
+      return;
+    }
+
+    try {
+      await dispatch(
+        changePassword({
+          userId: currentUser.id,
+          data: {
+            currentPassword: passwordForm.currentPassword,
+            newPassword: passwordForm.newPassword,
+            confirmPassword: passwordForm.confirmPassword,
+          },
+        })
+      ).unwrap();
+
+      // Close dialog and show success message
+      handleClosePasswordDialog();
+      setShowAlert(true);
+      setTimeout(() => setShowAlert(false), 3000);
+    } catch (error: any) {
+      setPasswordError(error.message || "Lỗi khi đổi mật khẩu");
+    }
+  }, [currentUser?.id, passwordForm, dispatch, handleClosePasswordDialog]);
+
+  // Memoize dialog props
+  const dialogProps = useMemo(
+    () => ({
+      open: changePasswordOpen,
+      onClose: handleClosePasswordDialog,
+      onSubmit: handlePasswordChange,
+      error: passwordError,
+      formData: passwordForm,
+      onFormChange: handlePasswordFormChange,
+      showCurrentPassword,
+      showNewPassword,
+      showConfirmPassword,
+      onTogglePassword: handleTogglePassword,
+    }),
+    [
+      changePasswordOpen,
+      handleClosePasswordDialog,
+      handlePasswordChange,
+      passwordError,
+      passwordForm,
+      handlePasswordFormChange,
+      showCurrentPassword,
+      showNewPassword,
+      showConfirmPassword,
+      handleTogglePassword,
+    ]
+  );
+
   return (
     <CustomContainer>
       <Box>
@@ -448,12 +745,37 @@ const ProfileAccount: React.FC = () => {
                     mb: 2,
                   }}
                 >
-                  <AvatarUpload
-                    currentAvatar={
-                      currentUser?.avatarUrl || "/src/assets/avatar.png"
-                    }
-                    onAvatarChange={handleAvatarChange}
-                  />
+                  <Box sx={{ position: "relative" }}>
+                    <AvatarUpload
+                      currentAvatar={
+                        currentUser?.avatarUrl || "/src/assets/avatar.png"
+                      }
+                      onAvatarChange={handleAvatarChange}
+                    />
+                    {isUploading && (
+                      <Box
+                        sx={{
+                          position: "absolute",
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          bottom: 0,
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          bgcolor: "rgba(0, 0, 0, 0.5)",
+                          borderRadius: "50%",
+                        }}
+                      >
+                        <CircularProgress size={40} color="primary" />
+                      </Box>
+                    )}
+                  </Box>
+                  {uploadError && (
+                    <Typography color="error" variant="caption" sx={{ mt: 1 }}>
+                      {uploadError}
+                    </Typography>
+                  )}
                   <Typography variant="h5" gutterBottom>
                     {currentUser?.role === "student"
                       ? currentUser?.userStudent?.fullName
@@ -2244,6 +2566,9 @@ const ProfileAccount: React.FC = () => {
           certificate={selectedCertificate}
         />
       )}
+
+      {/* Use memoized dialog component */}
+      <ChangePasswordDialog {...dialogProps} />
     </CustomContainer>
   );
 };

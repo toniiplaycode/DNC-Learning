@@ -11,12 +11,21 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from '../../entities/User';
 import { UserStudent } from '../../entities/UserStudent';
 import { GoogleStrategy } from './google.strategy';
+import { EmailService } from './services/email.service';
 
 @Module({
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy, GoogleStrategy],
+  providers: [
+    AuthService,
+    LocalStrategy,
+    JwtStrategy,
+    GoogleStrategy,
+    EmailService,
+  ],
   imports: [
-    ConfigModule.forRoot(),
+    ConfigModule.forRoot({
+      isGlobal: true,
+    }),
     UsersModule,
     PassportModule, // module cung cấp các phương thức xác thực token
     TypeOrmModule.forFeature([User, UserStudent]),

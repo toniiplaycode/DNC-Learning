@@ -149,3 +149,41 @@ export const refreshToken = createAsyncThunk("auth/refreshToken", async (_) => {
     return error.response?.data || "Không thể refresh token";
   }
 });
+
+// Thêm các API endpoint cho quên mật khẩu và đặt lại mật khẩu
+export const forgotPassword = async (email: string) => {
+  try {
+    const response = await api.post("/auth/forgot-password", { email });
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message ||
+      "Có lỗi xảy ra khi gửi email đặt lại mật khẩu";
+    toast.error(message);
+    throw new Error(message);
+  }
+};
+
+export const resetPassword = async ({
+  emailHash,
+  resetCode,
+  password,
+}: {
+  emailHash: string;
+  resetCode: string;
+  password: string;
+}) => {
+  try {
+    const response = await api.post("/auth/reset-password", {
+      emailHash,
+      resetCode,
+      password,
+    });
+    return response.data;
+  } catch (error: any) {
+    const message =
+      error.response?.data?.message || "Có lỗi xảy ra khi đặt lại mật khẩu";
+    toast.error(message);
+    throw new Error(message);
+  }
+};

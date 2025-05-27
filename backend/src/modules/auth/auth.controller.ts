@@ -10,6 +10,7 @@ import {
   HttpStatus,
   Req,
   Res,
+  BadRequestException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { UsersService } from '../users/users.service';
@@ -75,5 +76,41 @@ export class AuthController {
     return res.redirect(
       `${process.env.JAVASCRIPT_ORIGINS}?token=${result.token}`,
     );
+  }
+
+  @Post('forgot-password')
+  @HttpCode(HttpStatus.OK)
+  async forgotPassword(@Body() { email }: { email: string }) {
+    if (!email) {
+      throw new BadRequestException('Email is required');
+    }
+    return this.authService.forgotPassword(email);
+  }
+
+  @Post('reset-password')
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(
+    @Body()
+    {
+      emailHash,
+      resetCode,
+      password,
+    }: {
+      emailHash: string;
+      resetCode: string;
+      password: string;
+    },
+  ) {
+    if (!emailHash || !resetCode || !password) {
+      throw new BadRequestException(
+        'Email hash, reset code and password are required',
+      );
+    }
+    if (password.length < 6) {
+      throw new BadRequestException(
+        'Password must be at least 6 characters long',
+      );
+    }
+    return this.authService.resetPassword(emailHash, resetCode, password);
   }
 }

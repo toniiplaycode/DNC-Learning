@@ -3,6 +3,8 @@ import {
   UnauthorizedException,
   ConflictException,
   BadRequestException,
+  NotFoundException,
+  Logger,
 } from '@nestjs/common';
 import { UsersService } from '../users/users.service';
 import { JwtService } from '@nestjs/jwt';
@@ -12,9 +14,20 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, DataSource } from 'typeorm';
 import { UserStudent } from '../../entities/UserStudent';
 import * as bcrypt from 'bcrypt';
+import { EmailService } from './services/email.service';
+import { ConfigService } from '@nestjs/config';
+import * as crypto from 'crypto';
+
+// Note: Cần cài đặt @nestjs-modules/mailer và nodemailer:
+// npm install @nestjs-modules/mailer nodemailer
+// npm install -D @types/nodemailer
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+  // Lưu trữ tạm thời mã reset và thời gian hết hạn
+  private resetCodes = new Map<string, { code: string; expiresAt: Date }>();
+
   constructor(
     private userService: UsersService,
     private jwtService: JwtService,
@@ -23,6 +36,8 @@ export class AuthService {
     @InjectRepository(UserStudent)
     private userStudentRepository: Repository<UserStudent>,
     private dataSource: DataSource,
+    private emailService: EmailService,
+    private configService: ConfigService,
   ) {}
 
   // dùng để tạo token cho người dùng đã đăng nhập
@@ -184,5 +199,130 @@ export class AuthService {
       token: this.jwtService.sign(payload),
       user,
     };
+  }
+
+  async forgotPassword(email: string) {
+    // Tìm user theo email
+    const user = await this.userService.findByEmail(email);
+    if (!user) {
+      // Không trả về lỗi để tránh email enumeration attack
+      return {
+        message:
+          'If your email is registered, you will receive a password reset code',
+      };
+    }
+
+    // Tạo mã reset ngẫu nhiên 6 chữ số
+    const resetCode = crypto.randomInt(100000, 999999).toString();
+    // Mã hóa email để dùng làm key
+    const emailHash = crypto.createHash('sha256').update(email).digest('hex');
+
+    // Lưu mã reset với thời hạn 15 phút
+    const expiresAt = new Date();
+    expiresAt.setMinutes(expiresAt.getMinutes() + 15);
+    this.resetCodes.set(emailHash, { code: resetCode, expiresAt });
+
+    // Lấy FRONTEND_URL từ ConfigService
+    const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+    if (!frontendUrl) {
+      this.logger.error(
+        'FRONTEND_URL is not configured in environment variables',
+      );
+      throw new BadRequestException('Server configuration error');
+    }
+
+    // Tạo reset URL với mã reset
+    const resetUrl = `${frontendUrl}/reset-password?code=${resetCode}&email=${emailHash}`;
+    this.logger.log(`Generated reset code for ${email}`);
+
+    try {
+      // Lấy thông tin chi tiết user để có tên đầy đủ
+      const userDetails = await this.userRepository.findOne({
+        where: { id: user.id },
+        relations: ['userStudent', 'userInstructor'],
+      });
+
+      const userName =
+        userDetails?.userStudent?.fullName ||
+        userDetails?.userInstructor?.fullName ||
+        user.username;
+
+      // Sử dụng EmailService để gửi email với mã reset
+      await this.emailService.sendResetPasswordEmail(
+        user.email,
+        userName,
+        resetUrl,
+        resetCode, // Thêm mã reset vào email
+      );
+
+      return {
+        message:
+          'If your email is registered, you will receive a password reset code',
+      };
+    } catch (error) {
+      this.logger.error(
+        `Failed to send reset password email to ${email}:`,
+        error,
+      );
+      throw new BadRequestException('Failed to send reset password email');
+    }
+  }
+
+  async resetPassword(
+    emailHash: string,
+    resetCode: string,
+    newPassword: string,
+  ) {
+    try {
+      // Kiểm tra mã reset
+      const resetData = this.resetCodes.get(emailHash);
+      if (!resetData) {
+        throw new BadRequestException('Invalid or expired reset code');
+      }
+
+      // Kiểm tra thời hạn
+      if (new Date() > resetData.expiresAt) {
+        this.resetCodes.delete(emailHash);
+        throw new BadRequestException('Reset code has expired');
+      }
+
+      // Kiểm tra mã reset
+      if (resetCode !== resetData.code) {
+        throw new BadRequestException('Invalid reset code');
+      }
+
+      // Tìm user theo email hash
+      const users = await this.userRepository.find();
+      const user = users.find(
+        (u) =>
+          crypto.createHash('sha256').update(u.email).digest('hex') ===
+          emailHash,
+      );
+
+      if (!user) {
+        throw new NotFoundException('User not found');
+      }
+
+      // Hash mật khẩu mới
+      const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+      // Cập nhật mật khẩu
+      await this.userRepository.update(user.id, {
+        password: hashedPassword,
+      });
+
+      // Xóa mã reset đã sử dụng
+      this.resetCodes.delete(emailHash);
+
+      return { message: 'Password has been reset successfully' };
+    } catch (error) {
+      if (
+        error instanceof BadRequestException ||
+        error instanceof NotFoundException
+      ) {
+        throw error;
+      }
+      throw new BadRequestException('Failed to reset password');
+    }
   }
 }
