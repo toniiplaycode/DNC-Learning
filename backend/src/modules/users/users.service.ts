@@ -144,42 +144,59 @@ export class UsersService {
     return this.userRepository.manager.transaction(
       async (transactionalEntityManager) => {
         try {
+          // Find the user first
+          const user = await transactionalEntityManager.findOne(User, {
+            where: { id: updateData.userId },
+            relations: ['userStudentAcademic'],
+          });
+
+          if (!user) {
+            throw new Error('User not found');
+          }
+
+          if (!user.userStudentAcademic) {
+            throw new Error('User is not a student academic');
+          }
+
           // Update user information
-          const user = await transactionalEntityManager.update(
+          await transactionalEntityManager.update(
             User,
-            { id: updateData.user.id },
+            { id: updateData.userId },
             {
-              username: updateData.user.username,
               email: updateData.user.email,
               phone: updateData.user.phone,
             },
           );
 
           // Update student academic information
-          const studentAcademic = await transactionalEntityManager.update(
+          await transactionalEntityManager.update(
             UserStudentAcademic,
-            { id: updateData.userStudentAcademic.id },
+            { userId: updateData.userId },
             {
-              fullName: updateData.userStudentAcademic.fullName,
-              studentCode: updateData.userStudentAcademic.studentCode,
-              academicYear: updateData.userStudentAcademic.academicYear,
-              status: updateData.userStudentAcademic.status,
+              fullName: updateData.studentAcademic.fullName,
             },
           );
 
-          // Return updated data
-          return updateData;
+          // Fetch and return updated user data
+          const updatedUser = await transactionalEntityManager.findOne(User, {
+            where: { id: updateData.userId },
+            relations: ['userStudentAcademic'],
+          });
+
+          return updatedUser;
         } catch (error) {
           // Check for specific errors
           if (error.code === '23505') {
             if (error.detail.includes('email')) {
               throw new Error('Email already exists');
             }
-            if (error.detail.includes('studentCode')) {
-              throw new Error('Student code already exists');
+            if (error.detail.includes('phone')) {
+              throw new Error('Phone number already exists');
             }
           }
-          throw new Error(`Failed to update student: ${error.message}`);
+          throw new Error(
+            `Failed to update student academic: ${error.message}`,
+          );
         }
       },
     );

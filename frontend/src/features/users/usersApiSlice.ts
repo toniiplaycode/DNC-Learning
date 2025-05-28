@@ -287,7 +287,12 @@ export const changePassword = createAsyncThunk(
     try {
       const response = await api.patch(
         `/users/${userId}/change-password`,
-        data
+        data,
+        {
+          headers: {
+            Authorization: undefined, // Skip auth header for this request
+          },
+        }
       );
       return response.data;
     } catch (error: any) {

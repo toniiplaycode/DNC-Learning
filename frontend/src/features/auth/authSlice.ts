@@ -43,6 +43,16 @@ const authSlice = createSlice({
       state.isAuthenticated = true;
       state.status = "succeeded";
     },
+    updateUserInfo: (state, action: PayloadAction<User>) => {
+      // Preserve authentication state
+      const currentToken = state.token;
+      const currentAuthState = state.isAuthenticated;
+
+      state.user = action.payload;
+      state.token = currentToken;
+      state.isAuthenticated = currentAuthState;
+      state.status = "succeeded";
+    },
     clearCredentials: (state) => {
       state.user = null;
       state.token = null;
@@ -136,7 +146,11 @@ const authSlice = createSlice({
   },
 });
 
-export const { resetAuthState, setCredentials, clearCredentials } =
-  authSlice.actions;
+export const {
+  resetAuthState,
+  setCredentials,
+  clearCredentials,
+  updateUserInfo,
+} = authSlice.actions;
 
 export default authSlice.reducer;

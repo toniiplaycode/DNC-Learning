@@ -107,12 +107,21 @@ export class UsersController {
   }
 
   @Patch(':userId/change-password')
-  // @UseGuards(JwtAuthGuard)
   async changePassword(
     @Param('userId', ParseIntPipe) userId: number,
     @Body() changePasswordDto: ChangePasswordDto,
   ) {
-    return this.usersService.changePassword(userId, changePasswordDto);
+    try {
+      return await this.usersService.changePassword(userId, changePasswordDto);
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        error.message || 'Failed to change password',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
   }
 
   @Patch(':userId/instructor-profile')
