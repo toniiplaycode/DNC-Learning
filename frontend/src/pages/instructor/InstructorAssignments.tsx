@@ -597,34 +597,51 @@ const InstructorAssignments = () => {
       [
         "STT",
         "Họ và tên",
-        "Mã sinh viên",
+        "Mã học viên/sinh viên",
         "Bài tập",
         "Lớp/Khóa học",
         "Ngày nộp",
         "Trạng thái",
+        "Điểm số",
+        "Trọng số",
+        "Phản hồi",
       ],
     ];
 
     // Thêm dữ liệu sinh viên
     filteredSubmissions.forEach((submission, index) => {
+      // Tìm điểm tương ứng nếu có
+      const matchingGrade = instructorGrades.find(
+        (grade) => grade.assignmentSubmissionId === submission.id
+      );
+
+      // Xác định mã học viên/sinh viên
+      const studentCode =
+        submission.user?.userStudentAcademic?.studentCode ||
+        submission.user?.userStudent?.id ||
+        "-";
+
       fullData.push([
-        index + 1,
-        submission.user.userStudentAcademic?.fullName ||
-          submission.user.userStudent?.fullName,
-        submission.user.userStudentAcademic?.studentCode || "-",
-        submission.assignment.title,
-        submission.assignment.academicClass?.className
-          ? `Lớp: ${submission.assignment.academicClass?.className} - ${submission.assignment.academicClass?.classCode}`
-          : `Khóa học: ${submission.assignment.lesson?.section?.course?.title}`,
+        String(index + 1), // Convert to string to avoid type error
+        submission.user?.userStudentAcademic?.fullName ||
+          submission.user?.userStudent?.fullName ||
+          "-",
+        studentCode,
+        submission.assignment?.title || "-",
+        submission.assignment?.academicClass?.className
+          ? `Lớp: ${submission.assignment.academicClass.className} - ${submission.assignment.academicClass.classCode}`
+          : `Khóa học: ${
+              submission.assignment?.lesson?.section?.course?.title || "-"
+            }`,
         formatDateTime(submission.submittedAt),
-        // Find grade if exists
-        instructorGrades.some(
-          (grade) => grade.assignmentSubmissionId === submission.id
-        )
+        matchingGrade
           ? "Đã chấm"
           : submission.status === "late"
           ? "Nộp muộn"
           : "Đã nộp",
+        matchingGrade ? Number(matchingGrade.score).toFixed(1) : "-",
+        matchingGrade ? Number(matchingGrade.weight).toFixed(1) : "-",
+        matchingGrade?.feedback || "-",
       ]);
     });
 
@@ -634,7 +651,7 @@ const InstructorAssignments = () => {
     // Gộp các ô tiêu đề
     if (!worksheet["!merges"]) worksheet["!merges"] = [];
     worksheet["!merges"].push(
-      { s: { r: 0, c: 0 }, e: { r: 0, c: 6 } } // Gộp hàng đầu tiên từ cột A đến G
+      { s: { r: 0, c: 0 }, e: { r: 0, c: 9 } } // Gộp hàng đầu tiên từ cột A đến J
     );
 
     // Thiết lập độ rộng cột
@@ -646,6 +663,9 @@ const InstructorAssignments = () => {
       { wch: 40 }, // Lớp/Khóa học
       { wch: 20 }, // Ngày nộp
       { wch: 15 }, // Trạng thái
+      { wch: 10 }, // Điểm số
+      { wch: 10 }, // Trọng số
+      { wch: 30 }, // Phản hồi
     ];
     worksheet["!cols"] = columnWidths;
 

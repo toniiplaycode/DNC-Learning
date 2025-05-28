@@ -1535,14 +1535,16 @@ const ChatBox = () => {
                 </Box>
               }
             />
-            <Tab
-              label={
-                <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                  <School fontSize="small" />
-                  <span>Chat nhóm</span>
-                </Box>
-              }
-            />
+            {currentUser?.role === "student_academic" && (
+              <Tab
+                label={
+                  <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                    <School fontSize="small" />
+                    <span>Chat nhóm</span>
+                  </Box>
+                }
+              />
+            )}
           </Tabs>
 
           {/* Content based on active tab */}
