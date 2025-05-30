@@ -2,11 +2,9 @@
 
 <div align='center'>
 
-
 <!-- Logo -->
 
 <img src='https://github.com/user-attachments/assets/2d72d588-ea32-4ba8-86e2-33dbd6c78391' alt='Platform Logo' width='200'/>
-
 
 <!-- Demo Link -->
 
@@ -15,7 +13,6 @@
 [![Documentation](https://img.shields.io/badge/Docs-Read%20More-blue)]([DOCS_URL])
 
 </div>
-
 
 ## 🖼️ Platform Showcase
 
@@ -53,7 +50,6 @@
 
 </div>
 
-
 ## 📱 Quick Links
 
 - [Live Demo]([DEMO_URL]) - Experience the platform firsthand
@@ -64,12 +60,12 @@
 
 - [Support]([SUPPORT_URL]) - Get help and support
 
-
 A comprehensive hybrid learning platform that combines the features of a Course Marketplace and a Learning Management System (LMS), designed to support both commercial online courses and academic education.
 
 ## 🌟 Platform Overview
 
 ### 🏪 Marketplace Features
+
 - **Course Marketplace**: Platform for instructors to sell their courses
   - Course listing and discovery
   - Flexible pricing models
@@ -80,6 +76,7 @@ A comprehensive hybrid learning platform that combines the features of a Course 
   - Marketing tools for instructors
 
 ### 🎓 LMS Features
+
 - **Academic Learning Management**: Comprehensive tools for educational institutions
   - Academic class management
   - Student enrollment and tracking
@@ -89,6 +86,7 @@ A comprehensive hybrid learning platform that combines the features of a Course 
   - Institutional analytics
 
 ### 🤖 AI-Powered Learning Assistant
+
 - **Smart Chatbot**: OpenAI-powered chatbot for instant student support
   - Natural language understanding for student queries
   - Context-aware responses based on course content
@@ -98,6 +96,7 @@ A comprehensive hybrid learning platform that combines the features of a Course 
   - Course content explanations
 
 ### 📝 AI-Enhanced Quiz System
+
 - **Intelligent Quiz Generation**: OpenAI integration for quiz creation
   - Automatic question generation from course content
   - Multiple question types (multiple choice, true/false)
@@ -107,8 +106,11 @@ A comprehensive hybrid learning platform that combines the features of a Course 
   - Adaptive learning paths based on quiz results
 
 ## 👥 User Roles & Management
+
 ### Marketplace Users
+
 - **Instructors**: Create and sell courses
+
   - Course creation and management
   - Student engagement tools
   - Revenue tracking
@@ -123,7 +125,9 @@ A comprehensive hybrid learning platform that combines the features of a Course 
   - Course reviews and ratings
 
 ### LMS Users
+
 - **Academic Instructors**: Manage academic classes
+
   - Class management
   - Student assessment
   - Grade management
@@ -131,6 +135,7 @@ A comprehensive hybrid learning platform that combines the features of a Course 
   - Academic reporting
 
 - **Academic Students**: Participate in formal education
+
   - Class enrollment
   - Assignment submission
   - Grade tracking
@@ -145,7 +150,9 @@ A comprehensive hybrid learning platform that combines the features of a Course 
   - Platform maintenance
 
 ## 💰 Revenue Model
+
 - **Marketplace Revenue**
+
   - Course sales commission
   - Premium instructor features
   - Featured course listings
@@ -160,7 +167,9 @@ A comprehensive hybrid learning platform that combines the features of a Course 
   - Support and training
 
 ## 📚 Content Management
+
 - **Marketplace Content**
+
   - Course creation tools
   - Content monetization
   - Marketing materials
@@ -175,6 +184,7 @@ A comprehensive hybrid learning platform that combines the features of a Course 
   - Academic standards compliance
 
 ## 🔄 System Integration
+
 - OpenAI API integration for AI features
 - Payment gateway integration
 - Social media platforms
@@ -182,7 +192,9 @@ A comprehensive hybrid learning platform that combines the features of a Course 
 - Analytics and reporting systems
 
 ## 📈 Analytics & Reporting
+
 - **Marketplace Analytics**
+
   - Sales performance
   - Course popularity
   - Student engagement
@@ -197,6 +209,7 @@ A comprehensive hybrid learning platform that combines the features of a Course 
   - Institutional metrics
 
 ## 🛠 Technical Requirements
+
 - MySQL Database (8.0+)
 - UTF-8 Character Support
 - Secure File Storage
@@ -205,7 +218,9 @@ A comprehensive hybrid learning platform that combines the features of a Course 
 - Payment Gateway Integration
 
 ## 📝 Database Structure
+
 The system uses a comprehensive database structure supporting both marketplace and LMS features:
+
 - User management (users, user_students, user_instructors, user_admins)
 - Course management (courses, course_sections, course_lessons)
 - Academic management (academic_classes, academic_class_courses)
@@ -215,7 +230,9 @@ The system uses a comprehensive database structure supporting both marketplace a
 - Payment processing (payments, enrollments)
 
 ## 🔄 System Updates
+
 The system is regularly updated with:
+
 - New marketplace features
 - Enhanced LMS capabilities
 - AI feature improvements

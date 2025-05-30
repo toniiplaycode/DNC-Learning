@@ -1,0 +1,5 @@
+Để đảm bảo tính khoa học và chính xác hơn, tôi sẽ điều chỉnh lại tỷ lệ ký tự/câu hỏi dựa trên các nghiên cứu về độ dài câu hỏi trắc nghiệm:
+Theo nghiên cứu của Haladyna (2004) và Rodriguez (2005), một câu hỏi trắc nghiệm chất lượng thường cần:
+Phần dẫn (stem): 15-20 từ (khoảng 100-150 ký tự)
+4 lựa chọn (options): mỗi lựa chọn 5-15 từ (khoảng 150-200 ký tự)
+Tổng cộng: khoảng 250-350 ký tự cho một câu hỏi hoàn chỉnh
