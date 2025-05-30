@@ -41,7 +41,7 @@ img_descriptions = {
     'Chi tiết nội dung học làm bài tập.png': 'Màn hình hiển thị chi tiết một bài tập trong nội dung học, bao gồm yêu cầu, hướng dẫn, tài liệu tham khảo và nút nộp bài. Học viên có thể đọc kỹ yêu cầu, tải tài liệu, làm bài và nộp trực tiếp trên hệ thống.',
     'Chi tiết khóa học.png': 'Màn hình hiển thị chi tiết khóa học: mô tả, mục tiêu, nội dung, bài tập, trắc nghiệm, tài liệu, và thông tin giảng viên, xem đánh giá khóa học',
     'Chi tiết diễn đàn.png': 'Màn hình hiển thị chi tiết một chủ đề thảo luận trong diễn đàn, bao gồm nội dung chủ đề, các bình luận, phản hồi từ học viên, sinh viên và giảng viên. Người dùng có thể đăng bài mới, trả lời, trích dẫn, và nhận thông báo khi có phản hồi mới. Chức năng này tạo môi trường trao đổi học thuật sôi nổi, giúp học viên và sinh viên giải đáp thắc mắc và học hỏi lẫn nhau.',
-    'Hộp thoại chat.png': 'Màn hình chat cho phép đổi trực tiếp với người dùng (học viên, giảng viên, quản trị viên), hỗ trợ giải đáp thắc mắc, xử lý sự cố, gửi thông báo khẩn cấp và lưu trữ lịch sử trò chuyện.',
+    'Hộp thoại chat.png': 'Màn hình chat cho phép đổi trực tiếp với người dùng (học viên, giảng viên, quản trị viên), hỗ trợ giải đáp thắc mắc, xử lý sự cố, gửi thông báo khẩn cấp và lưu trữ lịch sử trò chuyện. Tính năng chat nhóm lớp cho phép giao tiếp giữa các thành viên trong lớp học, chia sẻ thông tin và tài liệu học tập. Người dùng có thể gửi file (tài liệu, hình ảnh, video) và sử dụng emoji để tăng tính tương tác và sinh động trong cuộc trò chuyện.',
     'Giao diện chatbot.png': 'Màn hình trò chuyện với chatbot hỗ trợ học tập, cho phép học viên và sinh viên đặt câu hỏi, tìm kiếm tài liệu, nhận hướng dẫn sử dụng hệ thống hoặc giải đáp thắc mắc về bài học.',
     # 'Các lớp học trực tuyến.png': 'Màn hình tổng hợp các lớp học trực tuyến đang diễn ra hoặc sắp tới. Học viên có thể xem lịch học, tham gia lớp qua liên kết trực tuyến, nhận thông báo nhắc lịch và xem lại video ghi hình nếu có.',
     # 'Các khóa học tham gia.png': 'Màn hình hiển thị danh sách các khóa học mà học viên đã đăng ký hoặc đang tham gia. Người dùng có thể xem thông tin chi tiết từng khóa học, truy cập vào nội dung bài học, kiểm tra tiến độ hoàn thành, nhận thông báo từ giảng viên và tham gia các hoạt động học tập như bài tập, trắc nghiệm, diễn đàn thảo luận. Chức năng này giúp học viên quản lý và theo dõi quá trình học tập của mình một cách chủ động.',
@@ -60,9 +60,9 @@ img_descriptions = {
     'Quản lý điểm danh.png': 'Màn hình cho phép giảng viên điểm danh học viên trong từng buổi học, theo dõi lịch sử điểm danh, xuất báo cáo chuyên cần, gửi cảnh báo cho học viên vắng mặt nhiều lần. Chức năng này giúp nâng cao ý thức học tập, đảm bảo sự tham gia đầy đủ của học viên.',
     'Quản lý lịch dạy (hộp thoại).png': 'Màn hình hộp thoại cho phép giảng viên tạo mới, chỉnh sửa, xóa các buổi học, thiết lập lịch dạy, tạo link Google Meet, gửi thông báo nhắc lịch cho học viên.',
     'Quản lý lịch dạy.png': 'Màn hình tổng quan về lịch dạy của giảng viên, hiển thị chi tiết các buổi học, lớp học, thời gian, nội dung giảng dạy. Giảng viên có thể xem, lọc, tìm kiếm lịch dạy theo tuần, tháng, xuất lịch ra file và nhận thông báo nhắc lịch.',
-    'Hộp thoại chat.png': 'Màn hình chat cho phép giảng viên trao đổi trực tiếp với người dùng (học viên, sinh viên và quản trị viên), hỗ trợ giải đáp thắc mắc, xử lý sự cố, và lưu trữ lịch sử trò chuyện.',
+    'Hộp thoại chat.png': 'Màn hình chat cho phép giảng viên trao đổi trực tiếp với người dùng (học viên, sinh viên và quản trị viên), hỗ trợ giải đáp thắc mắc, xử lý sự cố, và lưu trữ lịch sử trò chuyện. Tính năng chat nhóm lớp cho phép giao tiếp giữa giảng viên và các thành viên trong lớp học, chia sẻ thông tin và tài liệu học tập. Người dùng có thể gửi file (tài liệu, hình ảnh, video) và sử dụng emoji để tăng tính tương tác và sinh động trong cuộc trò chuyện.',
     'Quản lý bài tập (thêm bài cho lớp học thuật).png': 'Màn hình cho phép giảng viên tạo mới bài tập cho từng lớp học thuật, thiết lập yêu cầu, thời hạn nộp, đính kèm tài liệu hướng dẫn, phân loại bài tập theo mức độ khó, chủ đề. Giảng viên có thể gửi thông báo giao bài tập đến học viên.',
-    'Quản lý bài trắc nghiệm (thêm bài cho lớp học thuật).png': 'Màn hình cho phép giảng viên tạo mới bài trắc nghiệm cho lớp học thuật (thêm thủ công hoặc tải file trắc nghiệm có sẵn các câu hỏi đúng theo mẫu định sẵn), thiết lập câu hỏi, đáp án, thời gian làm bài, phân loại theo chủ đề, mức độ. Giảng viên có thể xem trước bài trắc nghiệm, gửi thông báo cho học viên.',
+    'Quản lý bài trắc nghiệm (thêm bài cho lớp học thuật).png': 'Màn hình cho phép giảng viên tạo mới bài trắc nghiệm cho lớp học thuật (thêm thủ công, tải file trắc nghiệm có sẵn các câu hỏi đúng theo mẫu định sẵn, hoặc sử dụng AI để tự động tạo trắc nghiệm dựa trên tài liệu tải lên), thiết lập câu hỏi, đáp án, thời gian làm bài, phân loại theo chủ đề, mức độ. Hệ thống AI hỗ trợ tạo số lượng câu hỏi trắc nghiệm theo yêu cầu, đồng thời đưa ra số câu hỏi tối đa có thể tạo dựa trên nội dung và độ dài của tài liệu tải lên. Lưu ý, tài liệu không nên quá ngắn để đảm bảo đủ dữ liệu tạo câu hỏi. Giảng viên có thể xem trước bài trắc nghiệm, gửi thông báo cho học viên.',
     'Quản lý bài trắc nghiệm (xem bài làm).png': 'Màn hình cho phép giảng viên xem chi tiết bài làm và điểm đạt được trắc nghiệm của từng học viên hoặc sinh viên.',
     # 'Quản lý bài trắc nghiệm (xem theo lớp).png': 'Màn hình cho phép giảng viên xem tổng hợp kết quả bài trắc nghiệm theo từng lớp, so sánh điểm số, phân tích thống kê, phát hiện học viên cần hỗ trợ thêm.',
     'Quản lý bài trắc nghiệm.png': 'Màn hình tổng quan về quản lý bài trắc nghiệm, cho phép giảng viên tạo mới, chỉnh sửa, xóa, phân loại, xuất kết quả, thống kê điểm số và gửi thông báo cho học viên.',
@@ -80,7 +80,7 @@ img_descriptions = {
     'Quản lý học viên/sinh viên 2.png': 'Màn hình bổ sung cho quản lý học viên/sinh viên, hỗ trợ các nghiệp vụ nâng cao như phân tích học lực, đề xuất hỗ trợ cá nhân.',
     'Quản lý học viên/sinh viên.png': 'Màn hình này cho phép người dùng (giảng viên hoặc giảng viên) thực hiện đầy đủ các nghiệp vụ liên quan đến quản lý học viên/sinh viên trong hệ thống. Người dùng có thể xem danh sách học viên, tìm kiếm, lọc theo lớp, khóa học hoặc trạng thái học tập. Ngoài ra, màn hình còn hỗ trợ thêm mới học viên, chỉnh sửa thông tin cá nhân, xóa học viên khỏi hệ thống, cũng như truy cập vào chi tiết từng học viên để xem tiến độ học tập, điểm số, lịch sử tham gia các khóa học và các cảnh báo học vụ nếu có. Chức năng này giúp đảm bảo việc quản lý học viên được thực hiện một cách toàn diện, minh bạch và thuận tiện cho các bên liên quan.',
     'Quản lý nội dung khóa học (hộp thoại bài tập).png': 'Màn hình hộp thoại cho phép giảng viên quản lý, thêm mới, chỉnh sửa, xóa bài tập trong nội dung khóa học, đính kèm tài liệu hướng dẫn, phân loại bài tập.',
-    'Quản lý nội dung khóa học (hộp thoại trắc nghiệm).png': 'Màn hình hộp thoại cho phép giảng viên quản lý, thêm mới (thêm thủ công hoặc tải file docx có sẵn các câu hỏi trắc nghiệm theo mẫu định sẵn), chỉnh sửa, xóa bài trắc nghiệm trong nội dung khóa học, thiết lập câu hỏi, đáp án.',
+    'Quản lý nội dung khóa học (hộp thoại trắc nghiệm).png': 'Màn hình hộp thoại cho phép giảng viên quản lý, thêm mới (thêm thủ công, tải file docx có sẵn các câu hỏi trắc nghiệm theo mẫu định sẵn, hoặc sử dụng AI để tự động tạo trắc nghiệm dựa trên tài liệu tải lên), chỉnh sửa, xóa bài trắc nghiệm trong nội dung khóa học, thiết lập câu hỏi, đáp án. Hệ thống AI hỗ trợ tạo số lượng câu hỏi trắc nghiệm theo yêu cầu, đồng thời đưa ra số câu hỏi tối đa có thể tạo dựa trên nội dung và độ dài của tài liệu tải lên. Lưu ý, tài liệu không nên quá ngắn so với số lượng câu hỏi muốn tạo.',
     # 'Quản lý nội dung khóa học (bài tập và trắc nghiệm).png': 'Màn hình cho phép giảng viên quản lý tổng hợp các bài tập và trắc nghiệm trong từng khóa học, theo dõi tiến độ hoàn thành của học viên.',
     # 'Quản lý nội dung khóa học (tài liệu).png': 'Màn hình cho phép giảng viên quản lý, thêm mới, chỉnh sửa, xóa tài liệu học tập, phân loại tài liệu theo chủ đề, gửi thông báo khi có tài liệu mới.',
     'Quản lý nội dung khóa học (thêm tài liệu).png': 'Màn hình cho phép giảng viên thêm mới tài liệu học tập vào khóa học, đính kèm file, mô tả chi tiết, phân loại tài liệu.',
@@ -99,7 +99,7 @@ img_descriptions = {
     'Quản lý thanh toán.png': 'Màn hình tổng quan về quản lý thanh toán học phí, cho phép quản trị viên theo dõi doanh thu, các khoản thu/chi, xuất báo cáo tài chính, kiểm soát các khoản phí phát sinh và đảm bảo minh bạch tài chính trong hệ thống.',
     'Danh mục (hộp thoại).png': 'Màn hình hộp thoại cho phép quản trị viên tạo mới, chỉnh sửa, xóa các danh mục khóa học, phân loại chuyên ngành, thiết lập phân loại, đảm bảo hệ thống danh mục luôn cập nhật, khoa học.',
     'Danh mục.png': 'Màn hình tổng quan về quản lý danh mục khóa học, cho phép xem, tìm kiếm, lọc, chỉnh sửa, xuất báo cáo danh mục, hỗ trợ tổ chức hệ thống khóa học hợp lý.',
-    'Hộp thoại chat.png': 'Màn hình chat cho phép quản trị viên trao đổi trực tiếp với người dùng (học viên, sinh viên, giảng viên), hỗ trợ giải đáp thắc mắc, xử lý sự cố, và lưu trữ lịch sử trò chuyện.',
+    'Hộp thoại chat.png': 'Màn hình chat cho phép quản trị viên trao đổi trực tiếp với người dùng (học viên, sinh viên, giảng viên), hỗ trợ giải đáp thắc mắc, xử lý sự cố, và lưu trữ lịch sử trò chuyện. Chia sẻ thông tin và tài liệu quan trọng. Người dùng có thể gửi file (tài liệu, hình ảnh, video) và sử dụng emoji để tăng tính tương tác và sinh động trong cuộc trò chuyện.',
     'Quản lý lớp học thuật (thêm sinh viên).png': 'Màn hình cho phép quản trị viên thêm sinh viên vào lớp học thuật, tìm kiếm, lọc, gửi thông báo mời tham gia lớp.',
     # 'Quản lý lớp học thuật (xem danh sách).png': 'Màn hình cho phép quản trị viên xem danh sách lớp học, số lượng sinh viên, giảng viên phụ trách, tiến độ học tập của từng lớp.',
     'Quản lý lớp học thuật (phân công).png': 'Màn hình cho phép quản trị viên phân công giảng viên cho từng lớp học thuật, gửi thông báo phân công.',
@@ -130,10 +130,12 @@ if 'hinh' not in [s.name for s in styles]:
 
 # Tạo style 'mota' cho đoạn mô tả
 if 'mota' not in [s.name for s in styles]:
-    mota_style = styles.add_style('mota', WD_STYLE_TYPE.PARAGRAPH)
-    mota_style.base_style = styles['Normal']
+    mota_style = styles['Normal']
+    mota_style.font.name = 'Times New Roman'
+    mota_style.font.size = Pt(13)
     mota_style.paragraph_format.first_line_indent = Inches(0.5)  # 1.27cm = 0.5 inches
     mota_style.paragraph_format.space_after = Pt(12)
+    mota_style.paragraph_format.alignment = WD_ALIGN_PARAGRAPH.JUSTIFY
 
 # Thêm heading chương 5
 doc.add_heading('Chương 5. Giao diện hệ thống', level=0)
@@ -276,7 +278,11 @@ for folder, group_code, group_title in img_groups:
         # Thêm heading mục 5.x.y là heading 3
         doc.add_heading(f'{group_code}.{idx} {name.capitalize()}', level=3)
         img_path = os.path.join(folder, img_file)
-        doc.add_picture(img_path, width=Inches(5.5))
+        # Thêm hình vào đoạn văn bản và căn giữa
+        p = doc.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        run = p.add_run()
+        run.add_picture(img_path, width=Inches(5.5))
         caption = doc.add_paragraph(f'Hình {group_code}.{idx} {name.capitalize()}', style='hinh')
         caption.alignment = WD_ALIGN_PARAGRAPH.CENTER
         # Thêm mô tả chức năng
