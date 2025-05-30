@@ -2,9 +2,10 @@
 
 <div align='center'>
 
+
 <!-- Logo -->
 
-<img src='[LOGO_URL]' alt='Platform Logo' width='200'/>
+<img src='https://github.com/user-attachments/assets/2d72d588-ea32-4ba8-86e2-33dbd6c78391' alt='Platform Logo' width='200'/>
 
 
 <!-- Demo Link -->
