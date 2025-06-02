@@ -270,7 +270,11 @@ const CourseDetail: React.FC = () => {
               label={`${currentCourse?.enrollments?.length || 0} học viên`}
               variant="outlined"
             />
-            <Chip icon={<Star />} label={averageRating} variant="outlined" />
+            <Chip
+              icon={<Star />}
+              label={averageRating.toFixed(2)}
+              variant="outlined"
+            />
             {currentCourse?.for && currentCourse.for !== "both" && (
               <Chip
                 color={currentCourse.for === "student" ? "info" : "primary"}

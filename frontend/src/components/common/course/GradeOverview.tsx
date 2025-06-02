@@ -8,6 +8,7 @@ import {
   Stack,
   LinearProgress,
 } from "@mui/material";
+import { Grade as GradeIcon } from "@mui/icons-material";
 import { fetchUserCourseGrades } from "../../../features/user-grades/userGradesSlice";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { useParams } from "react-router-dom";
@@ -15,6 +16,8 @@ import { selectUserCourseGrades } from "../../../features/user-grades/userGrades
 import { GradeType, UserGrade } from "../../../types/user-grade.types";
 import { format } from "date-fns";
 import { selectCurrentUser } from "../../../features/auth/authSelectors";
+import EmptyState from "../EmptyState";
+
 const GradeOverview: React.FC = () => {
   const dispatch = useAppDispatch();
   const { id } = useParams();
@@ -54,7 +57,7 @@ const GradeOverview: React.FC = () => {
 
   // Calculate overall grade
   const totalWeight = userCourseGrades.reduce(
-    (acc, grade) => acc + Number(grade.weight),
+    (acc: number, grade: UserGrade) => acc + Number(grade.weight),
     0
   );
 
@@ -68,6 +71,24 @@ const GradeOverview: React.FC = () => {
   const overallPercentage =
     totalWeight > 0 ? (weightedScore / totalWeight) * 100 : 0;
 
+  if (!userCourseGrades || userCourseGrades.length === 0) {
+    return (
+      <Box>
+        <Typography variant="h6" gutterBottom>
+          Điểm tổng kết
+        </Typography>
+        <EmptyState
+          icon={<GradeIcon />}
+          title="Chưa có điểm số"
+          description="Bạn chưa có bất kỳ điểm số nào được ghi nhận. Điểm số sẽ xuất hiện sau khi bạn hoàn thành các bài tập và bài kiểm tra."
+          iconColor="info.main"
+          iconBgColor="info.light"
+          height={250}
+        />
+      </Box>
+    );
+  }
+
   return (
     <Box>
       <Typography variant="h6" gutterBottom>
@@ -75,12 +96,42 @@ const GradeOverview: React.FC = () => {
       </Typography>
 
       {/* Overall Grade Summary */}
-      <Card sx={{ mb: 3 }}>
+      <Card
+        sx={{
+          mb: 3,
+          transition: "all 0.3s ease-in-out",
+          "&:hover": {
+            boxShadow: (theme) => `0 4px 20px ${theme.palette.primary.main}10`,
+            transform: "translateY(-2px)",
+          },
+        }}
+      >
         <CardContent>
           <Grid container spacing={2} alignItems="center">
             <Grid item xs={12} sm={6}>
-              <Typography variant="h4" color="primary">
+              <Typography
+                variant="h4"
+                color="primary"
+                sx={{
+                  fontWeight: 600,
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                }}
+              >
                 {overallPercentage.toFixed(1)}%
+                <GradeIcon
+                  sx={{
+                    fontSize: 32,
+                    opacity: 0.8,
+                    color:
+                      overallPercentage >= 80
+                        ? "success.main"
+                        : overallPercentage >= 60
+                        ? "warning.main"
+                        : "error.main",
+                  }}
+                />
               </Typography>
               <Typography variant="body1" color="text.secondary">
                 Điểm trung bình
@@ -91,7 +142,19 @@ const GradeOverview: React.FC = () => {
                 <LinearProgress
                   variant="determinate"
                   value={overallPercentage}
-                  sx={{ height: 10, borderRadius: 1 }}
+                  sx={{
+                    height: 10,
+                    borderRadius: 1,
+                    bgcolor: "grey.200",
+                    "& .MuiLinearProgress-bar": {
+                      bgcolor:
+                        overallPercentage >= 80
+                          ? "success.main"
+                          : overallPercentage >= 60
+                          ? "warning.main"
+                          : "error.main",
+                    },
+                  }}
                 />
               </Box>
             </Grid>
@@ -103,12 +166,23 @@ const GradeOverview: React.FC = () => {
         Chi tiết điểm số
       </Typography>
       <Stack spacing={2}>
-        {userCourseGrades.map((grade) => (
-          <Card key={grade.id} variant="outlined">
+        {userCourseGrades.map((grade: UserGrade) => (
+          <Card
+            key={grade.id}
+            variant="outlined"
+            sx={{
+              transition: "all 0.3s ease-in-out",
+              "&:hover": {
+                boxShadow: (theme) =>
+                  `0 4px 20px ${theme.palette.primary.main}10`,
+                transform: "translateY(-2px)",
+              },
+            }}
+          >
             <CardContent>
               <Grid container spacing={2} alignItems="center">
                 <Grid item xs={12} sm={6}>
-                  <Typography variant="subtitle1">
+                  <Typography variant="subtitle1" fontWeight={500}>
                     {getGradeTitle(grade)}
                   </Typography>
                   <Typography variant="body2" color="text.secondary">
@@ -117,7 +191,19 @@ const GradeOverview: React.FC = () => {
                 </Grid>
                 <Grid item xs={12} sm={3}>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Typography variant="h6" color="primary">
+                    <Typography
+                      variant="h6"
+                      color={
+                        (Number(grade.score) / Number(grade.maxScore)) * 100 >=
+                        80
+                          ? "success.main"
+                          : (Number(grade.score) / Number(grade.maxScore)) *
+                              100 >=
+                            60
+                          ? "warning.main"
+                          : "error.main"
+                      }
+                    >
                       {grade.score}/{grade.maxScore}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
@@ -129,12 +215,38 @@ const GradeOverview: React.FC = () => {
                   <LinearProgress
                     variant="determinate"
                     value={(Number(grade.score) / Number(grade.maxScore)) * 100}
-                    sx={{ height: 8, borderRadius: 1 }}
+                    sx={{
+                      height: 8,
+                      borderRadius: 1,
+                      bgcolor: "grey.200",
+                      "& .MuiLinearProgress-bar": {
+                        bgcolor:
+                          (Number(grade.score) / Number(grade.maxScore)) *
+                            100 >=
+                          80
+                            ? "success.main"
+                            : (Number(grade.score) / Number(grade.maxScore)) *
+                                100 >=
+                              60
+                            ? "warning.main"
+                            : "error.main",
+                      },
+                    }}
                   />
                 </Grid>
                 {grade.feedback && (
                   <Grid item xs={12}>
-                    <Typography variant="body2" color="text.secondary">
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{
+                        p: 1,
+                        bgcolor: "grey.50",
+                        borderRadius: 1,
+                        border: "1px solid",
+                        borderColor: "divider",
+                      }}
+                    >
                       Nhận xét: {grade.feedback}
                     </Typography>
                   </Grid>

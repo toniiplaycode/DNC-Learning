@@ -180,9 +180,10 @@ export interface CreateQuestionData {
 }
 
 export interface SubmitQuizData {
-  attemptId: number;
+  questionIds: number[];
   responses: {
     questionId: number;
     selectedOptionId?: number;
   }[];
+  attemptId: number;
 }

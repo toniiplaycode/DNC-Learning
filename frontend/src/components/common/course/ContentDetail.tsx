@@ -247,7 +247,7 @@ const ContentDetail = ({ content }: { content: any }) => {
               dueDate: currentLessonAssignment?.dueDate,
               linkDocumentRequired:
                 currentLessonAssignment?.linkDocumentRequired,
-              maxFileSize: 10,
+              maxFileSize: 100,
               allowedFileTypes: [
                 ".pdf",
                 ".doc",

@@ -285,7 +285,7 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
             };
 
             if (notificationData.userIds.length > 0) {
-              await dispatch(createNotification(notificationData));
+              dispatch(createNotification(notificationData));
             }
 
             // Refresh course data and quizzes

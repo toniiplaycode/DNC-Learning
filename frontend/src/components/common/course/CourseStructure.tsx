@@ -313,6 +313,17 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
                           ? `${lesson.duration} phút`
                           : lesson.content
                       }
+                      secondaryTypographyProps={{
+                        sx: {
+                          display: "-webkit-box",
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: "vertical",
+                          overflow: "hidden",
+                          textOverflow: "ellipsis",
+                          lineHeight: "1.4em",
+                          maxHeight: "2.8em",
+                        },
+                      }}
                     />
                     {!locked && (
                       <Tooltip

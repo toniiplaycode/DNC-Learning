@@ -24,6 +24,7 @@ import {
   School,
   QuestionAnswer,
   DoNotTouch,
+  CheckCircle,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import CustomContainer from "../../../components/common/CustomContainer";
@@ -70,7 +71,7 @@ const Assessment = () => {
     }
   }, [currentAuthUser, dispatch]);
 
-  console.log(userAttempts);
+  console.log(quizzesByStudentAcademic);
 
   // Filter assessments when dependencies change
   useEffect(() => {
@@ -242,9 +243,19 @@ const Assessment = () => {
                   sx={{ mb: 2 }}
                 >
                   {assessment.quizType ? (
-                    <Quiz color="primary" />
+                    <Stack direction="row" spacing={1}>
+                      <Quiz color="primary" />
+                      <Typography variant="body2" color="text.secondary">
+                        Bài Trắc nghiệm
+                      </Typography>
+                    </Stack>
                   ) : (
-                    <Assignment color="primary" />
+                    <Stack direction="row" spacing={1}>
+                      <Assignment color="info" />
+                      <Typography variant="body2" color="text.secondary">
+                        Bài Tập
+                      </Typography>
+                    </Stack>
                   )}
                 </Stack>
 
@@ -282,6 +293,16 @@ const Assessment = () => {
                       <QuestionAnswer fontSize="small" color="action" />
                       <Typography variant="body2" color="text.secondary">
                         {assessment.questions?.length} câu hỏi
+                      </Typography>
+                    </Stack>
+                  )}
+
+                  {assessment.quizType && (
+                    <Stack direction="row" spacing={1}>
+                      <CheckCircle fontSize="small" color="action" />
+                      <Typography variant="body2" color="text.secondary">
+                        Số lần làm tối đa:{" "}
+                        {assessment.attemptsAllowed || "Không giới hạn"}
                       </Typography>
                     </Stack>
                   )}

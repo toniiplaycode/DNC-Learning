@@ -343,7 +343,7 @@ const DialogAddInstructor = ({
           <Box sx={{ display: "flex", justifyContent: "center", mb: 3 }}>
             <Box sx={{ position: "relative" }}>
               <Avatar
-                src={avatar || "/src/assets/avatar.png"}
+                src={avatar || "/src/assets/logo-not-text.png"}
                 sx={{ width: 100, height: 100 }}
               />
               <input

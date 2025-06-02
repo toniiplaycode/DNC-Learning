@@ -59,6 +59,8 @@ import {
   VisibilityOff,
   Favorite,
   Assessment as AssessmentIcon,
+  EmojiEvents as EmojiEventsIcon,
+  Grade as GradeIcon,
 } from "@mui/icons-material";
 import CustomContainer from "../../components/common/CustomContainer";
 import CertificateDetail from "../../components/student/profile/CertificateDetail";
@@ -101,6 +103,7 @@ import { uploadImageToCloudinary } from "../../utils/uploadImage";
 import { setCredentials, updateUserInfo } from "../../features/auth/authSlice";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
+import EmptyState from "../../components/common/EmptyState";
 
 type Gender = "male" | "female" | "other";
 
@@ -918,14 +921,11 @@ const LearningTab = React.memo(
                 </ListItem>
               ))
             ) : (
-              <Typography
-                variant="body1"
-                textAlign="center"
-                color="text.secondary"
-                py={2}
-              >
-                Bạn chưa có môn học nào
-              </Typography>
+              <EmptyState
+                icon={<SchoolIcon />}
+                title="Chưa có môn học nào"
+                description="Bạn chưa được đăng ký vào bất kỳ môn học nào. Hãy liên hệ với giảng viên hoặc quản trị viên để được hỗ trợ."
+              />
             )
           ) : Array.isArray(userProgress) && userProgress.length > 0 ? (
             userProgress.map((enrollment: any) => (
@@ -1030,14 +1030,11 @@ const LearningTab = React.memo(
               </ListItem>
             ))
           ) : (
-            <Typography
-              variant="body1"
-              textAlign="center"
-              color="text.secondary"
-              py={2}
-            >
-              Bạn chưa có khóa học nào
-            </Typography>
+            <EmptyState
+              icon={<MenuBookIcon />}
+              title="Chưa có khóa học nào"
+              description="Bạn chưa đăng ký khóa học nào. Hãy khám phá các khóa học có sẵn và bắt đầu học ngay hôm nay!"
+            />
           )}
         </List>
       </Box>
@@ -1095,14 +1092,12 @@ const LearningTab = React.memo(
                 ))}
               </List>
             ) : (
-              <Typography
-                variant="body1"
-                textAlign="center"
-                color="text.secondary"
-                py={2}
-              >
-                Bạn chưa có chứng chỉ nào
-              </Typography>
+              <EmptyState
+                icon={<EmojiEventsIcon />}
+                title="Chưa có chứng chỉ nào"
+                description="Bạn chưa đạt được chứng chỉ nào. Hãy hoàn thành các khóa học để nhận chứng chỉ!"
+                height={250}
+              />
             )}
           </Box>
         </>
@@ -1393,14 +1388,11 @@ const GradesTab = React.memo(
             })
           )
         ) : (
-          <Typography
-            variant="body1"
-            textAlign="center"
-            color="text.secondary"
-            py={3}
-          >
-            Chưa có thông tin điểm
-          </Typography>
+          <EmptyState
+            icon={<GradeIcon />}
+            title="Chưa có thông tin điểm"
+            description="Bạn chưa có bất kỳ điểm số nào được ghi nhận. Điểm số sẽ xuất hiện sau khi bạn hoàn thành các bài tập và bài kiểm tra."
+          />
         )}
       </Box>
     </Stack>
@@ -1762,78 +1754,11 @@ const PaymentsTab = React.memo(
               </Box>
             </Box>
           ) : (
-            <Box
-              sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
-                justifyContent: "center",
-                py: 6,
-                px: 3,
-                bgcolor: "background.paper",
-                borderRadius: 2,
-                border: "1px dashed",
-                borderColor: "divider",
-                maxWidth: 400,
-                mx: "auto",
-                my: 2,
-              }}
-            >
-              <Box
-                sx={{
-                  position: "relative",
-                  mb: 3,
-                  "&::after": {
-                    content: '""',
-                    position: "absolute",
-                    top: "50%",
-                    left: "50%",
-                    transform: "translate(-50%, -50%)",
-                    width: 80,
-                    height: 80,
-                    borderRadius: "50%",
-                    bgcolor: "primary.light",
-                    opacity: 0.1,
-                    animation: "pulse 2s infinite",
-                  },
-                  "@keyframes pulse": {
-                    "0%": {
-                      transform: "translate(-50%, -50%) scale(1)",
-                      opacity: 0.1,
-                    },
-                    "50%": {
-                      transform: "translate(-50%, -50%) scale(1.2)",
-                      opacity: 0.2,
-                    },
-                    "100%": {
-                      transform: "translate(-50%, -50%) scale(1)",
-                      opacity: 0.1,
-                    },
-                  },
-                }}
-              >
-                <ReceiptLong
-                  sx={{ fontSize: 60, color: "primary.main", opacity: 0.8 }}
-                />
-              </Box>
-              <Typography
-                variant="h6"
-                color="text.primary"
-                gutterBottom
-                sx={{ fontWeight: 500, textAlign: "center" }}
-              >
-                Chưa có giao dịch thanh toán
-              </Typography>
-              <Typography
-                variant="body2"
-                color="text.secondary"
-                textAlign="center"
-                sx={{ maxWidth: 300, mb: 3 }}
-              >
-                Bạn chưa thực hiện bất kỳ giao dịch thanh toán nào. Các giao
-                dịch sẽ xuất hiện ở đây sau khi bạn thanh toán khóa học.
-              </Typography>
-            </Box>
+            <EmptyState
+              icon={<ReceiptLong />}
+              title="Chưa có giao dịch thanh toán"
+              description="Bạn chưa thực hiện bất kỳ giao dịch thanh toán nào. Các giao dịch sẽ xuất hiện ở đây sau khi bạn thanh toán khóa học."
+            />
           )}
         </Box>
       </Stack>
@@ -2333,7 +2258,8 @@ const ProfileAccount: React.FC = () => {
                   <Box sx={{ position: "relative" }}>
                     <AvatarUpload
                       currentAvatar={
-                        currentUser?.avatarUrl || "/src/assets/avatar.png"
+                        currentUser?.avatarUrl ||
+                        "/src/assets/logo-not-text.png"
                       }
                       onAvatarChange={handleAvatarChange}
                     />

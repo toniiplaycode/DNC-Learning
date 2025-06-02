@@ -16,6 +16,7 @@ import {
   IconButton,
   SelectChangeEvent,
   Avatar,
+  Button,
 } from "@mui/material";
 import CustomContainer from "../../components/common/CustomContainer";
 import CardCourse from "../../components/common/CardCourse";
@@ -32,7 +33,7 @@ import { selectCurrentUser } from "../../features/auth/authSelectors";
 import { fetchStudentAcademicCourses } from "../../features/users/usersApiSlice";
 import { selectStudentAcademicCourses } from "../../features/users/usersSelectors";
 import { useNavigate } from "react-router-dom";
-import { FilterList, Clear, Search } from "@mui/icons-material";
+import { FilterList, Clear, Search, MenuBook } from "@mui/icons-material";
 
 const calculateTotalLessons = (course: any) => {
   if (!course || !course.sections) return 0;
@@ -440,15 +441,60 @@ const EnrolledCourses: React.FC = () => {
           <Paper
             elevation={0}
             sx={{
-              p: 4,
+              p: 6,
               textAlign: "center",
-              bgcolor: (theme) => theme.palette.background.default,
+              bgcolor: "background.paper",
               border: "1px dashed",
               borderColor: "divider",
               borderRadius: 2,
+              maxWidth: 600,
+              mx: "auto",
+              my: 4,
             }}
           >
-            <Typography variant="h6" color="text.secondary" py={2}>
+            <Box
+              sx={{
+                position: "relative",
+                mb: 3,
+                "&::after": {
+                  content: '""',
+                  position: "absolute",
+                  top: "50%",
+                  left: "50%",
+                  transform: "translate(-50%, -50%)",
+                  width: 100,
+                  height: 100,
+                  borderRadius: "50%",
+                  bgcolor: "primary.light",
+                  opacity: 0.1,
+                  animation: "pulse 2s infinite",
+                },
+                "@keyframes pulse": {
+                  "0%": {
+                    transform: "translate(-50%, -50%) scale(1)",
+                    opacity: 0.1,
+                  },
+                  "50%": {
+                    transform: "translate(-50%, -50%) scale(1.2)",
+                    opacity: 0.2,
+                  },
+                  "100%": {
+                    transform: "translate(-50%, -50%) scale(1)",
+                    opacity: 0.1,
+                  },
+                },
+              }}
+            >
+              <MenuBook
+                sx={{ fontSize: 80, color: "primary.main", opacity: 0.8 }}
+              />
+            </Box>
+            <Typography
+              variant="h5"
+              color="text.primary"
+              gutterBottom
+              sx={{ fontWeight: 500 }}
+            >
               {instructorFilter ||
               progressFilter[0] > 0 ||
               progressFilter[1] < 100 ||
@@ -456,17 +502,55 @@ const EnrolledCourses: React.FC = () => {
                 ? "Không tìm thấy khóa học nào với bộ lọc hiện tại"
                 : "Bạn chưa có khóa học nào"}
             </Typography>
+            <Typography
+              variant="body1"
+              color="text.secondary"
+              sx={{ mb: 3, maxWidth: 400, mx: "auto" }}
+            >
+              {instructorFilter ||
+              progressFilter[0] > 0 ||
+              progressFilter[1] < 100 ||
+              searchQuery
+                ? "Hãy thử điều chỉnh bộ lọc hoặc tìm kiếm với từ khóa khác để tìm khóa học phù hợp với bạn."
+                : "Khám phá các khóa học mới và bắt đầu hành trình học tập của bạn ngay hôm nay."}
+            </Typography>
             {(instructorFilter ||
               progressFilter[0] > 0 ||
               progressFilter[1] < 100 ||
               searchQuery) && (
-              <Chip
-                label="Xóa bộ lọc"
-                onClick={clearFilters}
-                color="primary"
-                sx={{ mt: 1 }}
-              />
+              <Stack direction="row" spacing={2} justifyContent="center">
+                <Button
+                  variant="outlined"
+                  color="primary"
+                  onClick={clearFilters}
+                  startIcon={<Clear />}
+                >
+                  Xóa bộ lọc
+                </Button>
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => navigate("/courses")}
+                  startIcon={<MenuBook />}
+                >
+                  Xem tất cả khóa học
+                </Button>
+              </Stack>
             )}
+            {!instructorFilter &&
+              progressFilter[0] === 0 &&
+              progressFilter[1] === 100 &&
+              !searchQuery && (
+                <Button
+                  variant="contained"
+                  color="primary"
+                  onClick={() => navigate("/courses")}
+                  startIcon={<MenuBook />}
+                  sx={{ mt: 2 }}
+                >
+                  Khám phá khóa học
+                </Button>
+              )}
           </Paper>
         )}
       </Box>

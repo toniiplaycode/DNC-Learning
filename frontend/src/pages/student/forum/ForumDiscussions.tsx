@@ -71,17 +71,48 @@ const ForumDiscussions = () => {
   };
 
   // Filter forums based on search query and active tab
-  const filteredForums = forums.filter((forum) => {
-    if (forum.status !== "active") return false;
-    const matchesSearch =
-      forum.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      forum.description?.toLowerCase().includes(searchQuery.toLowerCase());
+  const filteredForums = forums
+    .filter((forum) => {
+      if (forum.status !== "active") return false;
+      const matchesSearch =
+        forum.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        forum.description?.toLowerCase().includes(searchQuery.toLowerCase());
 
-    if (tabValue === 0) return matchesSearch; // All forums
-    if (tabValue === 3) return matchesSearch && forum.isLiked; // Liked by you
+      if (!matchesSearch) return false;
 
-    return matchesSearch;
-  });
+      switch (tabValue) {
+        case 0: // Tất cả
+          return true;
+        case 1: // Mới nhất
+        case 2: // Cũ nhất
+          return true;
+        case 3: // Phổ biến
+          return (forum.likeCount || 0) + (forum.replyCount || 0) > 0;
+        case 4: // Đã thích
+          return forum.isLiked;
+        default:
+          return true;
+      }
+    })
+    .sort((a, b) => {
+      // Sắp xếp theo tab
+      switch (tabValue) {
+        case 1: // Mới nhất
+          return (
+            new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          );
+        case 2: // Cũ nhất
+          return (
+            new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+          );
+        case 3: // Phổ biến
+          const aScore = (a.likeCount || 0) + (a.replyCount || 0);
+          const bScore = (b.likeCount || 0) + (b.replyCount || 0);
+          return bScore - aScore;
+        default:
+          return 0;
+      }
+    });
 
   // Tính toán các chỉ số để hiển thị cho trang hiện tại
   const totalPages = Math.ceil(filteredForums.length / itemsPerPage);
@@ -165,6 +196,7 @@ const ForumDiscussions = () => {
         >
           <Tab label="Tất cả" />
           <Tab label="Mới nhất" />
+          <Tab label="Cũ nhất" />
           <Tab label="Phổ biến" />
           <Tab label="Đã thích" />
         </Tabs>

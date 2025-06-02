@@ -55,6 +55,7 @@ import InstructorAttendances from "./pages/instructor/InstructorAttendances";
 import AdminCertificates from "./pages/admin/AdminCertificates";
 import ForgotPassword from "./pages/student/auth/ForgotPassword";
 import ResetPassword from "./pages/student/auth/ResetPassword";
+import NotFound from "./components/common/NotFound";
 
 const App = () => {
   const navigate = useNavigate();
@@ -191,6 +192,9 @@ const App = () => {
           <Route path="/admin/reviews" element={<AdminReviews />} />
           <Route path="/admin/settings" element={<AdminSettings />} />
         </Route>
+
+        {/* 404 - Catch all route */}
+        <Route path="*" element={<NotFound />} />
       </Routes>
     </>
   );

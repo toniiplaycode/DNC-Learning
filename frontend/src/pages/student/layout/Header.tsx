@@ -477,7 +477,7 @@ const Header = () => {
             }}
           >
             {/* Nút Làm kiểm tra */}
-            {currentUser && (
+            {currentUser && currentUser.role === "student_academic" && (
               <Button
                 variant="contained"
                 color="secondary"
@@ -503,7 +503,7 @@ const Header = () => {
               </Button>
             )}
 
-            {currentUser && (
+            {currentUser && currentUser.role === "student_academic" && (
               <Button
                 variant="contained"
                 startIcon={<CalendarMonth sx={{ fontSize: 16 }} />}
@@ -624,7 +624,9 @@ const Header = () => {
                         0.6
                       )}`,
                     }}
-                    src={currentUser.avatarUrl || "/src/assets/avatar.png"}
+                    src={
+                      currentUser.avatarUrl || "/src/assets/logo-not-text.png"
+                    }
                   />
                   <Box
                     sx={{
@@ -799,7 +801,9 @@ const Header = () => {
               <Box sx={{ px: 2, py: 3 }}>
                 <Stack direction="row" spacing={2} alignItems="center">
                   <Avatar
-                    src={currentUser.avatarUrl || "/src/assets/avatar.png"}
+                    src={
+                      currentUser.avatarUrl || "/src/assets/logo-not-text.png"
+                    }
                     sx={{
                       width: 56,
                       height: 56,

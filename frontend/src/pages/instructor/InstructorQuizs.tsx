@@ -1229,13 +1229,13 @@ const InstructorQuizs = () => {
             <DialogContent dividers>
               <Box sx={{ p: 2 }}>
                 <Grid container spacing={3} sx={{ mb: 3 }}>
-                  <Grid item xs={12} md={4}>
+                  <Grid item xs={12} md={3}>
                     <Box textAlign="center">
                       <Typography variant="subtitle1" gutterBottom>
                         Điểm số
                       </Typography>
                       <Typography
-                        variant="h3"
+                        variant="h4"
                         color={
                           Number(selectedAttempt.score) >=
                           selectedQuiz.passingScore
@@ -1251,7 +1251,42 @@ const InstructorQuizs = () => {
                       </Typography>
                     </Box>
                   </Grid>
-                  <Grid item xs={12} md={4}>
+                  <Grid item xs={12} md={3}>
+                    <Box textAlign="center">
+                      <Typography variant="subtitle1" gutterBottom>
+                        Số câu đúng
+                      </Typography>
+                      <Typography
+                        variant="h4"
+                        color="primary"
+                        fontWeight="bold"
+                      >
+                        {
+                          selectedAttempt.responses.filter(
+                            (r) => Number(r.score) > 0
+                          ).length
+                        }
+                        /{selectedAttempt.responses.length}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Tổng số câu hỏi
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} md={3}>
+                    <Box textAlign="center">
+                      <Typography variant="subtitle1" gutterBottom>
+                        Thời gian làm bài
+                      </Typography>
+                      <Typography variant="h4">
+                        {formatDuration(
+                          selectedAttempt.startTime,
+                          selectedAttempt.endTime
+                        )}
+                      </Typography>
+                    </Box>
+                  </Grid>
+                  <Grid item xs={12} md={3}>
                     <Box textAlign="center">
                       <Typography variant="subtitle1" gutterBottom>
                         Trạng thái
@@ -1271,19 +1306,6 @@ const InstructorQuizs = () => {
                         }
                         sx={{ mt: 1 }}
                       />
-                    </Box>
-                  </Grid>
-                  <Grid item xs={12} md={4}>
-                    <Box textAlign="center">
-                      <Typography variant="subtitle1" gutterBottom>
-                        Thời gian làm bài
-                      </Typography>
-                      <Typography variant="h5">
-                        {formatDuration(
-                          selectedAttempt.startTime,
-                          selectedAttempt.endTime
-                        )}
-                      </Typography>
                     </Box>
                   </Grid>
                 </Grid>

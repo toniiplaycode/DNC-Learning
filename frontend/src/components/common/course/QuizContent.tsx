@@ -19,7 +19,10 @@ import {
   DialogActions,
   DialogContentText,
 } from "@mui/material";
-import { Quiz as QuizIcon } from "@mui/icons-material";
+import {
+  LocalConvenienceStoreOutlined,
+  Quiz as QuizIcon,
+} from "@mui/icons-material";
 import {
   Timer,
   CheckCircle,

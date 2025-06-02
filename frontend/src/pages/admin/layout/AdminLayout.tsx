@@ -318,7 +318,7 @@ const AdminLayout = () => {
               >
                 <Avatar
                   alt="Admin User"
-                  src="/src/assets/avatar.png"
+                  src="/src/assets/logo-not-text.png"
                   sx={{
                     width: 35,
                     height: 35,
