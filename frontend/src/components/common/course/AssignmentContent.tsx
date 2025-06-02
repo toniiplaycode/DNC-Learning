@@ -48,6 +48,7 @@ import { useAppSelector } from "../../../app/hooks";
 import {
   createSubmission,
   fetchSubmissionsByAssignment,
+  fetchUserSubmissions,
 } from "../../../features/assignment-submissions/assignmentSubmissionsSlice";
 import { selectAssignmentSubmissions } from "../../../features/assignment-submissions/assignmentSubmissionsSelectors";
 import { formatDateTime } from "../../../utils/formatters";
@@ -269,6 +270,7 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
 
       await dispatch(createSubmission(submissionData));
       await dispatch(fetchAssignmentByCourse(Number(id)));
+      await dispatch(fetchUserSubmissions());
       dispatch(
         fetchSubmissionsByAssignment(Number(assignmentData.assignmentId))
       );

@@ -44,6 +44,12 @@ import {
   selectUserProgress,
 } from "../../../features/course-progress/courseProgressSelectors";
 import { UserRole } from "../../../types/user.types";
+import { fetchUserAttempts } from "../../../features/quizzes/quizzesSlice";
+import { selectUserAttempts } from "../../../features/quizzes/quizzesSelectors";
+import { toast } from "react-toastify";
+import { fetchUserSubmissions } from "../../../features/assignment-submissions/assignmentSubmissionsSlice";
+import { selectUserSubmissions } from "../../../features/assignment-submissions/assignmentSubmissionsSelectors";
+
 interface TabPanelProps {
   children?: React.ReactNode;
   value: number;
@@ -91,6 +97,8 @@ const CourseContent = () => {
   const courseProgress = useAppSelector(selectCourseProgress);
   const userEnrollments = useAppSelector(selectUserEnrollments);
   const studentAcademicCourses = useAppSelector(selectStudentAcademicCourses);
+  const userQuizAttempts = useAppSelector(selectUserAttempts);
+  const userSubmissions = useAppSelector(selectUserSubmissions);
   const courseProgressDetail = useAppSelector(selectCourseProgressDetail);
   const userProgress = useAppSelector(selectUserProgress);
   const [activeTab, setActiveTab] = useState(0);
@@ -119,6 +127,8 @@ const CourseContent = () => {
     dispatch(fetchUserEnrollments(Number(currentUser?.id)));
     dispatch(fetchStudentAcademicCourses(currentUser?.id));
     dispatch(fetchUserProgress(Number(currentUser?.id)));
+    dispatch(fetchUserAttempts(Number(currentUser?.id)));
+    dispatch(fetchUserSubmissions());
   }, [dispatch, currentUser, navigate, hasAccess, courseId]);
 
   useEffect(() => {
@@ -132,6 +142,12 @@ const CourseContent = () => {
   }, [dispatch, courseId, currentUser]);
 
   const handleLessonClick = (id: string) => {
+    // Scroll to top smoothly
+    window.scrollTo({
+      top: 0,
+      behavior: "smooth",
+    });
+
     let selectedLesson = null;
 
     course?.sections?.forEach((section) => {
@@ -160,6 +176,95 @@ const CourseContent = () => {
     if (!currentUser) return;
 
     try {
+      // Find the lesson in course sections
+      let currentLesson = null;
+      let currentSectionIndex = -1;
+      let currentLessonIndex = -1;
+      let hasQuizBefore = false;
+      let hasAssignmentBefore = false;
+      let quizCompleted = false;
+      let assignmentCompleted = false;
+
+      course?.sections?.forEach((section, sectionIdx) => {
+        section.lessons.forEach((lesson, lessonIdx) => {
+          if (lesson.id === lessonId) {
+            currentLesson = lesson;
+            currentSectionIndex = sectionIdx;
+            currentLessonIndex = lessonIdx;
+          }
+        });
+      });
+
+      if (!currentLesson) return;
+
+      // Check if this is a quiz lesson
+      if (currentLesson.contentType === "quiz") {
+        // Find quiz attempt for this lesson
+        const quizAttempt = userQuizAttempts?.find(
+          (attempt) => attempt.quiz.lessonId === lessonId
+        );
+
+        // Only allow marking as completed if quiz is completed
+        if (!quizAttempt || quizAttempt.status !== "completed") {
+          toast.warning(
+            "Bạn cần hoàn thành bài kiểm tra này trước khi đánh dấu hoàn thành!"
+          );
+          return;
+        }
+        quizCompleted = true;
+      }
+      // Check if this is an assignment lesson
+      else if (currentLesson.contentType === "assignment") {
+        // Find assignment submission for this lesson
+        const assignmentSubmission = userSubmissions?.find(
+          (submission) => submission.assignment.lessonId === lessonId
+        );
+
+        // Only allow marking as completed if assignment is submitted
+        if (!assignmentSubmission) {
+          toast.warning(
+            "Bạn cần nộp bài tập này trước khi đánh dấu hoàn thành!"
+          );
+          return;
+        }
+        assignmentCompleted = true;
+      } else {
+        // For non-quiz/assignment lessons, check if there's a quiz or assignment before this lesson
+        // that needs to be completed first
+        const allLessons = course?.sections?.flatMap((s) => s.lessons) || [];
+        const currentLessonIndex = allLessons.findIndex(
+          (l) => l.id === lessonId
+        );
+
+        // Look for quiz/assignment lessons before current lesson
+        for (let i = 0; i < currentLessonIndex; i++) {
+          const lesson = allLessons[i];
+          if (lesson.contentType === "quiz") {
+            hasQuizBefore = true;
+            // Check if quiz is completed
+            const quizAttempt = userQuizAttempts?.find(
+              (attempt) => attempt.quiz.lessonId === lesson.id
+            );
+            if (!quizAttempt || quizAttempt.status !== "completed") {
+              toast.warning(
+                "Bạn cần hoàn thành bài kiểm tra trắc nghiệm trước đó để tiếp tục!"
+              );
+              return;
+            }
+          } else if (lesson.contentType === "assignment") {
+            hasAssignmentBefore = true;
+            // Check if assignment is submitted
+            const assignmentSubmission = userSubmissions?.find(
+              (submission) => submission.assignment.lessonId === lesson.id
+            );
+            if (!assignmentSubmission) {
+              toast.warning("Bạn cần nộp bài tập trước đó để tiếp tục!");
+              return;
+            }
+          }
+        }
+      }
+
       // Find the progress record for this lesson
       const hasCompleted = userProgress?.some(
         (progress) => Number(progress.lessonId) == Number(lessonId)
@@ -187,6 +292,7 @@ const CourseContent = () => {
       }
     } catch (error) {
       console.error("Error marking lesson as completed:", error);
+      toast.error("Có lỗi xảy ra khi đánh dấu hoàn thành bài học!");
     }
   };
 
