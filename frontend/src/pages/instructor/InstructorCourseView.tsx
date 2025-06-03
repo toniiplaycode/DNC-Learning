@@ -27,11 +27,14 @@ import {
   TableChart,
   TextSnippet,
   Slideshow,
+  MenuBook,
+  VideoCall,
 } from "@mui/icons-material";
 import { useParams } from "react-router-dom";
 
 import ContentDocuments from "../../components/common/course/ContentDocuments";
 import ContentDetail from "../../components/common/course/ContentDetail";
+import EmptyState from "../../components/common/EmptyState";
 
 import CourseStructure from "../../components/instructor/course/CourseStructure";
 import DialogAddEditLesson from "../../components/instructor/course/DialogAddEditLesson";
@@ -422,25 +425,28 @@ const InstructorCourseView = () => {
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <People color="action" />
                     <Typography>
-                      {courseData?.enrollments.length} học viên
+                      {courseData?.enrollments?.length || 0} học viên
                     </Typography>
                   </Box>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <Star sx={{ color: "warning.main" }} />
                     <Typography>
-                      {courseData?.reviews.length > 0
-                        ? `${courseData?.reviews[0].rating} (${courseData?.reviews.length} đánh giá)`
+                      {courseData?.reviews?.length > 0
+                        ? `${courseData?.reviews[0]?.rating || 0} (${
+                            courseData?.reviews?.length
+                          } đánh giá)`
                         : "Chưa có đánh giá"}
                     </Typography>
                   </Box>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                     <PlayCircle color="action" />
                     <Typography>
-                      {courseData?.sections.length} phần (
-                      {courseData?.sections.reduce(
-                        (total, section) => total + section.lessons.length,
+                      {courseData?.sections?.length || 0} phần (
+                      {courseData?.sections?.reduce(
+                        (total, section) =>
+                          total + (section?.lessons?.length || 0),
                         0
-                      )}{" "}
+                      ) || 0}{" "}
                       bài học)
                     </Typography>
                   </Box>
@@ -500,10 +506,14 @@ const InstructorCourseView = () => {
             </Box>
 
             <TabPanel value={tabValue} index={0}>
-              {selectedContent && (
-                <>
-                  <ContentDetail content={selectedContent} />
-                </>
+              {selectedContent ? (
+                <ContentDetail content={selectedContent} />
+              ) : (
+                <EmptyState
+                  icon={<VideoCall />}
+                  title="Chưa có nội dung bài học"
+                  description="Hãy thêm nội dung bài học đầu tiên để bắt đầu xây dựng khóa học của bạn"
+                />
               )}
             </TabPanel>
 
@@ -525,10 +535,30 @@ const InstructorCourseView = () => {
                   Thêm tài liệu
                 </Button>
               </Box>
-              <ContentDocuments
-                handleOpenEditDocumentModal={handleOpenEditDocumentModal}
-                isInstructor={true}
-              />
+              {courseData?.sections?.some((section) =>
+                section.lessons?.some((lesson) =>
+                  [
+                    "pdf",
+                    "docx",
+                    "xlsx",
+                    "txt",
+                    "slide",
+                    "code",
+                    "link",
+                  ].includes(lesson.contentType)
+                )
+              ) ? (
+                <ContentDocuments
+                  handleOpenEditDocumentModal={handleOpenEditDocumentModal}
+                  isInstructor={true}
+                />
+              ) : (
+                <EmptyState
+                  icon={<Description />}
+                  title="Chưa có tài liệu nào"
+                  description="Hãy thêm tài liệu đầu tiên để chia sẻ tài nguyên học tập với học viên"
+                />
+              )}
             </TabPanel>
 
             <TabPanel value={tabValue} index={2}>
@@ -558,11 +588,23 @@ const InstructorCourseView = () => {
                   </Button>
                 </Stack>
               </Box>
-              <CourseQuizAssignment
-                onEditQuiz={handleOpenEditQuizModal}
-                onEditAssignment={handleOpenEditAssignmentModal}
-                isInstructor={true}
-              />
+              {courseData?.sections?.some((section) =>
+                section.lessons?.some((lesson) =>
+                  ["quiz", "assignment"].includes(lesson.contentType)
+                )
+              ) ? (
+                <CourseQuizAssignment
+                  onEditQuiz={handleOpenEditQuizModal}
+                  onEditAssignment={handleOpenEditAssignmentModal}
+                  isInstructor={true}
+                />
+              ) : (
+                <EmptyState
+                  icon={<MenuBook />}
+                  title="Chưa có bài trắc nghiệm hoặc bài tập nào"
+                  description="Hãy thêm bài trắc nghiệm hoặc bài tập đầu tiên để đánh giá kiến thức của học viên"
+                />
+              )}
             </TabPanel>
           </Card>
         </Grid>

@@ -412,7 +412,7 @@ const DialogAddEditDocument: React.FC<DialogAddEditDocumentProps> = ({
           </FormControl>
 
           {/* Chọn section */}
-          <FormControl fullWidth required>
+          <FormControl fullWidth required error={!documentForm.courseSectionId}>
             <InputLabel>Chọn phần học</InputLabel>
             <Select
               value={documentForm.courseSectionId || ""}
@@ -420,23 +420,21 @@ const DialogAddEditDocument: React.FC<DialogAddEditDocumentProps> = ({
               onChange={(e) =>
                 setDocumentForm({
                   ...documentForm,
-                  courseSectionId: e.target.value
-                    ? Number(e.target.value)
-                    : undefined,
+                  courseSectionId: Number(e.target.value),
                 })
               }
             >
-              <MenuItem value="">Không thuộc phần học nào</MenuItem>
               {sortedSections.map((section) => (
                 <MenuItem key={section.id} value={section.id}>
                   {section.title}
                 </MenuItem>
               ))}
             </Select>
-            <FormHelperText>
-              Nếu tài liệu không thuộc phần học cụ thể, chọn "Không thuộc phần
-              học nào"
-            </FormHelperText>
+            {!documentForm.courseSectionId && (
+              <FormHelperText error>
+                Vui lòng chọn phần học cho tài liệu
+              </FormHelperText>
+            )}
           </FormControl>
 
           {/* Tải lên file */}

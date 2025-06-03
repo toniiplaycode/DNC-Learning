@@ -6,6 +6,7 @@ import {
   Edit,
   ExpandLess,
   Delete,
+  MenuBook,
 } from "@mui/icons-material";
 import {
   Button,
@@ -32,6 +33,7 @@ import { fetchCourseById } from "../../../features/courses/coursesApiSlice";
 import { toast } from "react-toastify";
 import { useParams } from "react-router-dom";
 import { deleteCourseLesson } from "../../../features/course-lessons/courseLessonsApiSlice";
+import EmptyState from "../../../components/common/EmptyState";
 
 interface CourseStructureProps {
   sections: any[];
@@ -154,154 +156,178 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
             </Button>
           </Box>
           <Stack spacing={2}>
-            {transformedSections.map((section: any) => (
-              <Box key={section.id}>
-                <Stack
-                  direction="row"
-                  justifyContent="space-between"
-                  alignItems="center"
-                  onClick={() => handleToggleSection(section.id)}
-                  sx={{
-                    cursor: "pointer",
-                    "&:hover": { bgcolor: "action.hover" },
-                    py: 2,
-                  }}
-                >
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    {expandedSections.includes(section.id) ? (
-                      <ExpandLess />
-                    ) : (
-                      <ExpandMore />
-                    )}
-                    <Box
-                      sx={{
-                        display: "flex",
-                        flexDirection: "column",
-                      }}
-                    >
-                      <Typography variant="h6" sx={{ ml: 1 }}>
-                        Phần {section.orderNumber} - {section.title}
-                      </Typography>
+            {!sections || sections.length === 0 ? (
+              <EmptyState
+                icon={<MenuBook />}
+                title="Chưa có nội dung khóa học"
+                description="Hãy thêm phần học đầu tiên để bắt đầu xây dựng khóa học của bạn"
+              />
+            ) : (
+              transformedSections.map((section: any) => (
+                <Box key={section.id}>
+                  <Stack
+                    direction="row"
+                    justifyContent="space-between"
+                    alignItems="center"
+                    onClick={() => handleToggleSection(section.id)}
+                    sx={{
+                      cursor: "pointer",
+                      "&:hover": { bgcolor: "action.hover" },
+                      py: 2,
+                    }}
+                  >
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
+                      {expandedSections.includes(section.id) ? (
+                        <ExpandLess />
+                      ) : (
+                        <ExpandMore />
+                      )}
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexDirection: "column",
+                        }}
+                      >
+                        <Typography variant="h6" sx={{ ml: 1 }}>
+                          Phần {section.orderNumber} - {section.title}
+                        </Typography>
 
-                      <Typography variant="h9" sx={{ ml: 1, mt: 0.5 }}>
-                        {section.description}
-                      </Typography>
+                        <Typography
+                          variant="body2"
+                          sx={{
+                            ml: 1,
+                            mt: 0.5,
+                            display: "-webkit-box",
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: "vertical",
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            lineHeight: "1.2em",
+                            maxHeight: "2.4em",
+                          }}
+                        >
+                          {section.description}
+                        </Typography>
+                      </Box>
                     </Box>
-                  </Box>
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <IconButton
-                      size="small"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleEditSection(section.id);
-                      }}
-                    >
-                      <Edit fontSize="small" />
-                    </IconButton>
-                    <Tooltip title="Xóa phần học">
+                    <Box sx={{ display: "flex", alignItems: "center" }}>
                       <IconButton
-                        edge="end"
+                        size="small"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleDeleteSectionClick(section.id);
+                          handleEditSection(section.id);
                         }}
-                        size="small"
-                        sx={{ color: "error.main" }}
                       >
-                        <Delete fontSize="small" />
+                        <Edit fontSize="small" />
                       </IconButton>
-                    </Tooltip>
-                  </Box>
-                </Stack>
+                      <Tooltip title="Xóa phần học">
+                        <IconButton
+                          edge="end"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteSectionClick(section.id);
+                          }}
+                          size="small"
+                          sx={{ color: "error.main" }}
+                        >
+                          <Delete fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </Box>
+                  </Stack>
 
-                {expandedSections.includes(section.id) && (
-                  <List disablePadding>
-                    {section.contents.map((content: any) => (
+                  {expandedSections.includes(section.id) && (
+                    <List disablePadding>
+                      {section.contents.map((content: any) => (
+                        <ListItem
+                          key={content.id}
+                          component="div"
+                          onClick={() => handleContentClick(content.original)}
+                          sx={{
+                            pl: 4,
+                            cursor: "pointer",
+                            "&:hover": {
+                              bgcolor: "action.hover",
+                            },
+                            bgcolor:
+                              selectedContent?.id === content.id
+                                ? "action.selected"
+                                : "inherit",
+                          }}
+                        >
+                          <ListItemIcon>
+                            {content.completed ? (
+                              <CheckCircle color="success" />
+                            ) : (
+                              getContentIcon(content.type, content.fileType)
+                            )}
+                          </ListItemIcon>
+                          <ListItemText
+                            primary={content.title}
+                            secondary={
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                {content.duration
+                                  ? `${content.duration}`
+                                  : content.type}
+                              </Typography>
+                            }
+                          />
+                          <Box onClick={(e) => e.stopPropagation()}>
+                            <IconButton
+                              size="small"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleOpenEditContentModal(content.original);
+                              }}
+                              sx={{
+                                opacity: 0.6,
+                                "&:hover": { opacity: 1 },
+                              }}
+                            >
+                              <Edit fontSize="small" />
+                            </IconButton>
+                          </Box>
+                          <Tooltip title="Xóa nội dung">
+                            <IconButton
+                              edge="end"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteContentClick(content.id);
+                              }}
+                              size="small"
+                              sx={{ color: "error.main" }}
+                            >
+                              <Delete fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        </ListItem>
+                      ))}
                       <ListItem
-                        key={content.id}
                         component="div"
-                        onClick={() => handleContentClick(content.original)}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleOpenAddContentModal(section.id);
+                        }}
                         sx={{
                           pl: 4,
+                          color: "primary.main",
                           cursor: "pointer",
-                          "&:hover": {
-                            bgcolor: "action.hover",
-                          },
-                          bgcolor:
-                            selectedContent?.id === content.id
-                              ? "action.selected"
-                              : "inherit",
+                          "&:hover": { bgcolor: "action.hover" },
                         }}
                       >
                         <ListItemIcon>
-                          {content.completed ? (
-                            <CheckCircle color="success" />
-                          ) : (
-                            getContentIcon(content.type, content.fileType)
-                          )}
+                          <Add color="primary" />
                         </ListItemIcon>
-                        <ListItemText
-                          primary={content.title}
-                          secondary={
-                            <Typography variant="body2" color="text.secondary">
-                              {content.duration
-                                ? `${content.duration}`
-                                : content.type}
-                            </Typography>
-                          }
-                        />
-                        <Box onClick={(e) => e.stopPropagation()}>
-                          <IconButton
-                            size="small"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOpenEditContentModal(content.original);
-                            }}
-                            sx={{
-                              opacity: 0.6,
-                              "&:hover": { opacity: 1 },
-                            }}
-                          >
-                            <Edit fontSize="small" />
-                          </IconButton>
-                        </Box>
-                        <Tooltip title="Xóa nội dung">
-                          <IconButton
-                            edge="end"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleDeleteContentClick(content.id);
-                            }}
-                            size="small"
-                            sx={{ color: "error.main" }}
-                          >
-                            <Delete fontSize="small" />
-                          </IconButton>
-                        </Tooltip>
+                        <ListItemText primary="Thêm nội dung mới" />
                       </ListItem>
-                    ))}
-                    <ListItem
-                      component="div"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleOpenAddContentModal(section.id);
-                      }}
-                      sx={{
-                        pl: 4,
-                        color: "primary.main",
-                        cursor: "pointer",
-                        "&:hover": { bgcolor: "action.hover" },
-                      }}
-                    >
-                      <ListItemIcon>
-                        <Add color="primary" />
-                      </ListItemIcon>
-                      <ListItemText primary="Thêm nội dung mới" />
-                    </ListItem>
-                  </List>
-                )}
-              </Box>
-            ))}
+                    </List>
+                  )}
+                </Box>
+              ))
+            )}
           </Stack>
         </CardContent>
       </Card>

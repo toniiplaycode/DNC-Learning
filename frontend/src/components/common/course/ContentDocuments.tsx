@@ -29,6 +29,7 @@ import {
   TextSnippet,
   LinkOff,
   Edit,
+  MenuBook,
 } from "@mui/icons-material";
 import {
   deleteDocument,
@@ -38,6 +39,7 @@ import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { useParams } from "react-router-dom";
 import { selectCourseDocuments } from "../../../features/documents/documentsSelectors";
 import { toast } from "react-toastify";
+import EmptyState from "../EmptyState";
 
 interface ContentDocumentsProps {
   isInstructor?: boolean;
@@ -321,6 +323,14 @@ const ContentDocuments: React.FC<ContentDocumentsProps> = ({
   return (
     <Box>
       <List sx={{ bgcolor: "background.paper" }}>
+        {documentsCourse.length === 0 && (
+          <EmptyState
+            icon={<MenuBook />}
+            title="Chưa có tài liệu nào"
+            description="Hãy thêm tài liệu đầu tiên để bắt đầu học tập"
+          />
+        )}
+
         {getSortedSections(groupDocumentsBySection(documentsCourse))
           .filter(([, group]) => group.section || group.documents.length > 0)
           .map(([sectionId, { section, documents }]) => (

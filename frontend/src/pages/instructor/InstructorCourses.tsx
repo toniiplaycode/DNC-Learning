@@ -766,7 +766,7 @@ const InstructorCourses = () => {
             sx={{ mr: 1, color: "text.secondary" }}
             fontSize="small"
           />
-          Xem khóa học
+          Xem và chỉnh sửa nội dung
         </MenuItem>
 
         <MenuItem

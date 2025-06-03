@@ -83,6 +83,14 @@ import { fetchStudentsByAcademicClass } from "../../../features/users/usersApiSl
 import { createNotification } from "../../../features/notifications/notificationsSlice";
 import { selectGeneratedQuiz } from "../../../features/quizzes/quizzesSelectors";
 import { io, Socket } from "socket.io-client";
+import {
+  Document,
+  Paragraph,
+  TextRun,
+  HeadingLevel,
+  AlignmentType,
+  Packer,
+} from "docx";
 
 // Định nghĩa kiểu QuizOption
 interface QuizOption {
@@ -156,6 +164,64 @@ interface QuizProgress {
   message?: string;
 }
 
+// Add this function before the DialogAddEditQuiz component
+async function generateQuizDocx(
+  questions: QuizQuestion[],
+  quizTitle: string
+): Promise<Blob> {
+  const doc = new Document({
+    sections: [
+      {
+        properties: {},
+        children: [
+          new Paragraph({
+            text: "BÀI TRẮC NGHIỆM",
+            heading: HeadingLevel.HEADING_1,
+            alignment: AlignmentType.CENTER,
+          }),
+          new Paragraph({
+            text: `Tiêu đề: ${quizTitle}`,
+            heading: HeadingLevel.HEADING_2,
+          }),
+          new Paragraph({ text: "" }), // Spacing
+          ...questions
+            .map((q, index) => [
+              new Paragraph({
+                text: `Câu ${index + 1} (${q.points} điểm): ${q.questionText}`,
+                heading: HeadingLevel.HEADING_3,
+              }),
+              ...q.options.map((opt, optIndex) => {
+                const optionLetter = String.fromCharCode(65 + optIndex); // A, B, C, D, ...
+                return new Paragraph({
+                  text: `${optionLetter}. ${opt.optionText}${
+                    opt.isCorrect ? " (Đáp án đúng)" : ""
+                  }`,
+                  spacing: { before: 100, after: 100 },
+                });
+              }),
+              q.correctExplanation
+                ? new Paragraph({
+                    text: `Giải thích: ${q.correctExplanation}`,
+                    italics: true,
+                    spacing: { before: 200, after: 200 },
+                  })
+                : new Paragraph({ text: "" }),
+              new Paragraph({ text: "" }), // Spacing between questions
+            ])
+            .flat(),
+          new Paragraph({ text: "" }), // Final spacing
+          new Paragraph({
+            text: "Lưu ý: Các câu hỏi có thể được sử dụng để làm bài offline. Đáp án đúng được đánh dấu trong ngoặc đơn.",
+            italics: true,
+          }),
+        ],
+      },
+    ],
+  });
+
+  return Packer.toBlob(doc);
+}
+
 const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
   open,
   onClose,
@@ -219,6 +285,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
 
   // State cho câu hỏi quiz
   const [questions, setQuestions] = useState<QuizQuestion[]>([]);
+  console.log(questions);
   const [currentQuestion, setCurrentQuestion] = useState<QuizQuestion>({
     questionText: "",
     questionType: QuestionType.MULTIPLE_CHOICE,
@@ -1326,6 +1393,37 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                     onChange={handleFileUpload}
                   />
                 </Button>
+                {questions.length > 0 && (
+                  <Button
+                    onClick={async () => {
+                      try {
+                        const blob = await generateQuizDocx(
+                          questions,
+                          quizForm.title || "Bài trắc nghiệm"
+                        );
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement("a");
+                        a.href = url;
+                        a.download = `${quizForm.title || "bai-trac-nghiem"}-${
+                          new Date().toISOString().split("T")[0]
+                        }.docx`;
+                        document.body.appendChild(a);
+                        a.click();
+                        document.body.removeChild(a);
+                        URL.revokeObjectURL(url);
+                        toast.success("Đã tải xuống file câu hỏi thành công!");
+                      } catch (error) {
+                        console.error("Error generating quiz file:", error);
+                        toast.error("Có lỗi khi tạo file câu hỏi");
+                      }
+                    }}
+                    variant="outlined"
+                    color="success"
+                    startIcon={<Download />}
+                  >
+                    Tải {questions.length} câu hỏi
+                  </Button>
+                )}
                 <Button
                   onClick={async () => {
                     try {
@@ -1333,7 +1431,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                       const url = URL.createObjectURL(blob);
                       const a = document.createElement("a");
                       a.href = url;
-                      a.download = "mau-cau-hoi-quiz.docx"; // Changed extension to .docx
+                      a.download = "mau-cau-hoi-quiz.docx";
                       document.body.appendChild(a);
                       a.click();
                       document.body.removeChild(a);
@@ -1489,7 +1587,8 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                 }}
               >
                 <Typography color="text.secondary">
-                  Chưa có câu hỏi nào. Hãy thêm câu hỏi cho Bài trắc nghiệm.
+                  Hãy thêm câu hỏi cho Bài trắc nghiệm. Tải mẫu định dạng để
+                  thêm câu hỏi nếu tải lên file câu hỏi.
                 </Typography>
               </Box>
             )}

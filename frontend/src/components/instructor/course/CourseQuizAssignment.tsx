@@ -30,6 +30,8 @@ import {
   Check,
   Shuffle,
   HelpOutline,
+  MenuBook,
+  Assignment as AssignmentIcon,
 } from "@mui/icons-material";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { selectAllQuizzes } from "../../../features/quizzes/quizzesSelectors";
@@ -47,6 +49,7 @@ import {
 } from "../../../features/assignments/assignmentsSlice";
 import { selectAssignmentsCourse } from "../../../features/assignments/assignmentsSelectors";
 import { formatDateTime } from "../../../utils/formatters";
+import EmptyState from "../../common/EmptyState";
 
 interface AssignmentItem {
   id: number;
@@ -279,11 +282,11 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
             ))}
           </List>
         ) : (
-          <Box sx={{ textAlign: "center", py: 4 }}>
-            <Typography color="text.secondary">
-              Chưa có Bài trắc nghiệm nào
-            </Typography>
-          </Box>
+          <EmptyState
+            icon={<MenuBook />}
+            title="Chưa có Bài trắc nghiệm nào"
+            description="Hãy thêm Bài trắc nghiệm đầu tiên để bắt đầu đánh giá kiến thức của học viên"
+          />
         )}
       </TabPanel>
 
@@ -383,9 +386,11 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
             ))}
           </List>
         ) : (
-          <Box sx={{ textAlign: "center", py: 4 }}>
-            <Typography color="text.secondary">Chưa có bài tập nào</Typography>
-          </Box>
+          <EmptyState
+            icon={<AssignmentIcon />}
+            title="Chưa có bài tập nào"
+            description="Hãy thêm bài tập đầu tiên để bắt đầu giao bài tập cho học viên"
+          />
         )}
       </TabPanel>
 

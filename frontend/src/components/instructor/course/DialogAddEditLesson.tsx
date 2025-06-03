@@ -592,61 +592,81 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
             </Box>
           )}
 
-          <Typography>
-            {uploadedFileUrl
-              ? "File đã tải lên hoặc nhập URL khác"
-              : "Nhập URL (nếu không tải lên file)"}
-          </Typography>
+          {/* URL or Quiz/Assignment Message */}
+          {contentForm.contentType === "quiz" ||
+          contentForm.contentType === "assignment" ? (
+            <Box
+              sx={{
+                p: 2,
+                bgcolor: "primary.main",
+                borderRadius: 1,
+                color: "white",
+              }}
+            >
+              <Typography variant="body1" gutterBottom>
+                Sau khi thêm nội dung này, hãy chuyển qua tab "BÀI TRẮC
+                NGHIỆM/BÀI TẬP" để thêm chi tiết{" "}
+                {contentForm.contentType === "quiz"
+                  ? "bài trắc nghiệm"
+                  : "bài tập"}
+                .
+              </Typography>
+            </Box>
+          ) : (
+            <>
+              <Typography>
+                {uploadedFileUrl
+                  ? "File đã tải lên hoặc nhập URL khác"
+                  : "Nhập URL (nếu không tải lên file)"}
+              </Typography>
 
-          {/* URL trực tiếp */}
-          <TextField
-            label={`URL ${
-              contentForm.contentType === "video"
-                ? "video"
-                : contentForm.contentType === "slide"
-                ? "slide"
-                : contentForm.contentType === "txt"
-                ? "văn bản"
-                : contentForm.contentType === "docx"
-                ? "tài liệu Word"
-                : contentForm.contentType === "pdf"
-                ? "tài liệu PDF"
-                : contentForm.contentType === "xlsx"
-                ? "bảng tính Excel"
-                : contentForm.contentType === "quiz"
-                ? "bài trắc nghiệm"
-                : contentForm.contentType === "assignment"
-                ? "bài tập"
-                : "nội dung"
-            }`}
-            fullWidth
-            value={contentForm.contentUrl}
-            onChange={(e) =>
-              setContentForm({ ...contentForm, contentUrl: e.target.value })
-            }
-            placeholder="https://example.com/content"
-            helperText={
-              contentForm.contentType === "video" ||
-              contentForm.contentType === "slide" ||
-              contentForm.contentType === "txt" ||
-              contentForm.contentType === "docx" ||
-              contentForm.contentType === "pdf" ||
-              contentForm.contentType === "xlsx"
-                ? "Có thể để trống nếu bạn tải file lên trực tiếp"
-                : "Nhập URL đến nội dung"
-            }
-            required={
-              !selectedFile ||
-              !(
-                contentForm.contentType === "video" ||
-                contentForm.contentType === "slide" ||
-                contentForm.contentType === "txt" ||
-                contentForm.contentType === "docx" ||
-                contentForm.contentType === "pdf" ||
-                contentForm.contentType === "xlsx"
-              )
-            }
-          />
+              {/* URL trực tiếp */}
+              <TextField
+                label={`URL ${
+                  contentForm.contentType === "video"
+                    ? "video"
+                    : contentForm.contentType === "slide"
+                    ? "slide"
+                    : contentForm.contentType === "txt"
+                    ? "văn bản"
+                    : contentForm.contentType === "docx"
+                    ? "tài liệu Word"
+                    : contentForm.contentType === "pdf"
+                    ? "tài liệu PDF"
+                    : contentForm.contentType === "xlsx"
+                    ? "bảng tính Excel"
+                    : "nội dung"
+                }`}
+                fullWidth
+                value={contentForm.contentUrl}
+                onChange={(e) =>
+                  setContentForm({ ...contentForm, contentUrl: e.target.value })
+                }
+                placeholder="https://example.com/content"
+                helperText={
+                  contentForm.contentType === "video" ||
+                  contentForm.contentType === "slide" ||
+                  contentForm.contentType === "txt" ||
+                  contentForm.contentType === "docx" ||
+                  contentForm.contentType === "pdf" ||
+                  contentForm.contentType === "xlsx"
+                    ? "Có thể để trống nếu bạn tải file lên trực tiếp"
+                    : "Nhập URL đến nội dung"
+                }
+                required={
+                  !selectedFile ||
+                  !(
+                    contentForm.contentType === "video" ||
+                    contentForm.contentType === "slide" ||
+                    contentForm.contentType === "txt" ||
+                    contentForm.contentType === "docx" ||
+                    contentForm.contentType === "pdf" ||
+                    contentForm.contentType === "xlsx"
+                  )
+                }
+              />
+            </>
+          )}
 
           {/* Vị trí bài học */}
           <FormControl fullWidth>
