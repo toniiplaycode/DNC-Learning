@@ -83,6 +83,9 @@ import { Major } from './entities/Major';
 import { Program } from './entities/Program';
 import { ProgramCourse } from './entities/ProgramCourse';
 import { FacultyModule } from './modules/faculties/faculty.module';
+import { MajorModule } from './modules/majors/major.module';
+import { ProgramModule } from './modules/programs/program.module';
+import { ProgramCourseModule } from './modules/program-courses/program-course.module';
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -182,6 +185,9 @@ import { FacultyModule } from './modules/faculties/faculty.module';
     OpenAIModule,
     GroupMessagesModule,
     FacultyModule,
+    MajorModule,
+    ProgramModule,
+    ProgramCourseModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthMiddleware, InstructorMiddleware],

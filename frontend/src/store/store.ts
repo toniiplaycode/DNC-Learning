@@ -29,6 +29,9 @@ import activeClassReducer from "../features/teaching-schedules/activeClassSlice"
 import sessionAttendancesReducer from "../features/session-attendances/sessionAttendancesSlice";
 import groupMessagesReducer from "../features/group-messages/groupMessagesSlice";
 import facultiesReducer from "../features/faculties/facultiesSlice";
+import majorsReducer from "../features/majors/majorsSlice";
+import programsReducer from "../features/programs/programsSlice";
+import programCoursesReducer from "../features/program-courses/programCoursesSlice";
 
 export const store = configureStore({
   reducer: {
@@ -62,6 +65,9 @@ export const store = configureStore({
     sessionAttendances: sessionAttendancesReducer,
     groupMessages: groupMessagesReducer,
     faculties: facultiesReducer,
+    majors: majorsReducer,
+    programs: programsReducer,
+    programCourses: programCoursesReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
