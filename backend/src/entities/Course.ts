@@ -15,6 +15,7 @@ import { Review } from './Review';
 import { Enrollment } from './Enrollment';
 import { Certificate } from './Certificate';
 import { UserGrade } from './UserGrade';
+import { ProgramCourse } from './ProgramCourse';
 
 @Entity('courses')
 export class Course {
@@ -105,4 +106,7 @@ export class Course {
 
   @OneToMany(() => UserGrade, (userGrade) => userGrade.course)
   userGrades: UserGrade[];
+
+  @OneToMany(() => ProgramCourse, (programCourse) => programCourse.course)
+  programCourses: ProgramCourse[];
 }

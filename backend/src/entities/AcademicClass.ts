@@ -5,12 +5,16 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
   OneToMany,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { Assignment } from './Assignment';
 import { Quiz } from './Quiz';
 import { UserStudentAcademic } from './UserStudentAcademic';
 import { AcademicClassInstructor } from './AcademicClassInstructor';
 import { AcademicClassCourse } from './AcademicClassCourse';
+import { Major } from './Major';
+import { Program } from './Program';
 
 export enum AcademicClassStatus {
   ACTIVE = 'active',
@@ -35,6 +39,12 @@ export class AcademicClass {
     length: 255,
   })
   className: string;
+
+  @Column({ name: 'major_id' })
+  majorId: number;
+
+  @Column({ name: 'program_id' })
+  programId: number;
 
   @Column({
     length: 20,
@@ -79,4 +89,12 @@ export class AcademicClass {
     (classCourse) => classCourse.academicClass,
   )
   classCourses: AcademicClassCourse[];
+
+  @ManyToOne(() => Major)
+  @JoinColumn({ name: 'major_id' })
+  major: Major;
+
+  @ManyToOne(() => Program)
+  @JoinColumn({ name: 'program_id' })
+  program: Program;
 }

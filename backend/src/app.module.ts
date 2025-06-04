@@ -78,7 +78,11 @@ import { SessionAttendancesModule } from './modules/session-attendances/session-
 import { OpenAIModule } from './modules/openai/openai.module';
 import { GroupMessagesModule } from './modules/group-messages/group-messages.module';
 import { GroupMessage } from './entities/GroupMessage';
-
+import { Faculty } from './entities/Faculty';
+import { Major } from './entities/Major';
+import { Program } from './entities/Program';
+import { ProgramCourse } from './entities/ProgramCourse';
+import { FacultyModule } from './modules/faculties/faculty.module';
 @Module({
   imports: [
     ConfigModule.forRoot(),
@@ -137,6 +141,10 @@ import { GroupMessage } from './entities/GroupMessage';
           SessionAttendance,
           Payment,
           GroupMessage,
+          Faculty,
+          Major,
+          Program,
+          ProgramCourse,
         ],
       }),
       inject: [ConfigService],
@@ -173,6 +181,7 @@ import { GroupMessage } from './entities/GroupMessage';
     SessionAttendancesModule,
     OpenAIModule,
     GroupMessagesModule,
+    FacultyModule,
   ],
   controllers: [AppController],
   providers: [AppService, AuthMiddleware, InstructorMiddleware],
