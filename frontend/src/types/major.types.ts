@@ -1,3 +1,8 @@
+export enum MajorStatus {
+  ACTIVE = "active",
+  INACTIVE = "inactive",
+}
+
 export interface Major {
   id: number;
   code: string;
@@ -9,15 +14,16 @@ export interface Major {
 }
 
 export interface CreateMajorDto {
-  code: string;
-  name: string;
-  description?: string;
   facultyId: number;
+  majorCode: string;
+  majorName: string;
+  description?: string;
+  status?: MajorStatus;
 }
 
 export interface UpdateMajorDto {
-  code?: string;
-  name?: string;
+  majorCode?: string;
+  majorName?: string;
   description?: string;
-  facultyId?: number;
+  status?: MajorStatus;
 }

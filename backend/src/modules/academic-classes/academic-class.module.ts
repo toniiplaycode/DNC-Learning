@@ -7,7 +7,8 @@ import { AcademicClassesService } from './academic-class.service';
 import { UserStudentAcademic } from 'src/entities/UserStudentAcademic';
 import { AcademicClassCourse } from 'src/entities/AcademicClassCourse';
 import { UserInstructor } from 'src/entities/UserInstructor';
-import { UserStudent } from 'src/entities/UserStudent';
+import { Major } from '../../entities/Major';
+import { Program } from '../../entities/Program';
 
 @Module({
   imports: [
@@ -17,7 +18,8 @@ import { UserStudent } from 'src/entities/UserStudent';
       AcademicClassInstructor,
       UserStudentAcademic,
       UserInstructor,
-      UserStudent,
+      Major,
+      Program,
     ]),
   ],
   controllers: [AcademicClassesController],

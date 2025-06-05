@@ -67,6 +67,16 @@ interface Semester {
   label: string; // Format: "Học kỳ T YYYY" (ví dụ: "Học kỳ 1 2025")
 }
 
+interface ClassData {
+  id?: number;
+  classCode: string;
+  className: string;
+  semester: string;
+  status: AcademicClassStatus;
+  majorId: string;
+  programId: string;
+}
+
 const InstructorStudentsAcademic = () => {
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector(selectCurrentUser);
@@ -96,6 +106,7 @@ const InstructorStudentsAcademic = () => {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
   const [academicYearFilter, setAcademicYearFilter] = useState("all");
   const [termFilter, setTermFilter] = useState("all");
+  const [majorFilter, setMajorFilter] = useState("all");
 
   useEffect(() => {
     dispatch(fetchClassInstructorById(Number(currentUser?.userInstructor?.id)));
@@ -270,15 +281,12 @@ const InstructorStudentsAcademic = () => {
     setPage(0);
   };
 
-  const handleAddClass = async (classData: {
-    classCode: string;
-    className: string;
-    semester: string;
-    status: AcademicClassStatus;
-  }) => {
+  const handleAddClass = async (classData: ClassData) => {
     const newClassData = {
       ...classData,
       instructorId: currentUser?.userInstructor?.id,
+      majorId: Number(classData.majorId),
+      programId: Number(classData.programId),
     };
     try {
       await dispatch(createAcademicClass(newClassData)).unwrap();
@@ -292,15 +300,18 @@ const InstructorStudentsAcademic = () => {
     }
   };
 
-  const handleEditClass = async (classData: {
-    id: number;
-    classCode: string;
-    className: string;
-    semester: string;
-    status: AcademicClassStatus;
-  }) => {
+  const handleEditClass = async (classData: ClassData) => {
+    if (!classData.id) {
+      toast.error("Không tìm thấy ID lớp học!");
+      return;
+    }
     try {
-      await dispatch(updateAcademicClass(classData)).unwrap();
+      const updateData = {
+        ...classData,
+        majorId: Number(classData.majorId),
+        programId: Number(classData.programId),
+      };
+      await dispatch(updateAcademicClass(updateData)).unwrap();
       toast.success("Cập nhật lớp học thành công!");
       setOpenAddClass(false);
       dispatch(
@@ -366,13 +377,19 @@ const InstructorStudentsAcademic = () => {
         studentCount <= 20) ||
       (studentCountFilter === "20+" && studentCount > 20);
 
+    const matchesMajor =
+      majorFilter === "all" ||
+      classInstructor.academicClass.major?.id === majorFilter ||
+      classInstructor.academicClass.major?.id === Number(majorFilter);
+
     return (
       matchesSearch &&
       matchesYear &&
       matchesTerm &&
       matchesSemester &&
       matchesStatus &&
-      matchesStudentCount
+      matchesStudentCount &&
+      matchesMajor
     );
   });
 
@@ -420,6 +437,16 @@ const InstructorStudentsAcademic = () => {
     );
   };
 
+  // Lấy danh sách ngành hiện có từ dữ liệu lớp học
+  const availableMajors = Array.from(
+    new Map(
+      (currentClassInstructor || [])
+        .map((ci) => ci.academicClass.major)
+        .filter(Boolean)
+        .map((major) => [major.id, major])
+    ).values()
+  );
+
   return (
     <Box sx={{ p: 3 }}>
       {/* Header Section */}
@@ -466,6 +493,22 @@ const InstructorStudentsAcademic = () => {
               ),
             }}
           />
+
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel>Ngành</InputLabel>
+            <Select
+              value={majorFilter}
+              label="Ngành"
+              onChange={(e) => setMajorFilter(e.target.value)}
+            >
+              <MenuItem value="all">Tất cả ngành</MenuItem>
+              {availableMajors.map((major) => (
+                <MenuItem key={major.id} value={major.id}>
+                  {major.majorName}
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
 
           <FormControl size="small" sx={{ minWidth: 150 }}>
             <InputLabel>Năm học</InputLabel>
@@ -614,6 +657,8 @@ const InstructorStudentsAcademic = () => {
             <TableRow sx={{ bgcolor: "grey.50" }}>
               <TableCell>Tên Lớp</TableCell>
               <TableCell>Mã Lớp</TableCell>
+              <TableCell>Ngành</TableCell>
+              <TableCell>Chương trình đào tạo</TableCell>
               <TableCell>Học Kỳ</TableCell>
               <TableCell>Số Sinh Viên</TableCell>
               <TableCell>Số Khóa học</TableCell>
@@ -624,7 +669,7 @@ const InstructorStudentsAcademic = () => {
           <TableBody>
             {filteredClasses?.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={6} align="center">
+                <TableCell colSpan={9} align="center">
                   Không tìm thấy lớp học nào phù hợp với điều kiện tìm kiếm
                 </TableCell>
               </TableRow>
@@ -643,6 +688,26 @@ const InstructorStudentsAcademic = () => {
                   </TableCell>
                   <TableCell>
                     {classInstructor.academicClass.classCode}
+                  </TableCell>
+                  <TableCell>
+                    <Box>
+                      <Typography variant="body2" fontWeight="medium">
+                        {classInstructor.academicClass.major?.majorName}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {classInstructor.academicClass.major?.majorCode}
+                      </Typography>
+                    </Box>
+                  </TableCell>
+                  <TableCell>
+                    <Box>
+                      <Typography variant="body2" fontWeight="medium">
+                        {classInstructor.academicClass.program?.programName}
+                      </Typography>
+                      <Typography variant="caption" color="text.secondary">
+                        {classInstructor.academicClass.program?.programCode}
+                      </Typography>
+                    </Box>
                   </TableCell>
                   <TableCell>
                     {classInstructor.academicClass.semester}

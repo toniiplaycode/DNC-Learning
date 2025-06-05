@@ -56,6 +56,7 @@ import AdminCertificates from "./pages/admin/AdminCertificates";
 import ForgotPassword from "./pages/student/auth/ForgotPassword";
 import ResetPassword from "./pages/student/auth/ResetPassword";
 import NotFound from "./components/common/NotFound";
+import AdminTrainingSystem from "./pages/admin/AdminTrainingSystem";
 
 const App = () => {
   const navigate = useNavigate();
@@ -175,7 +176,8 @@ const App = () => {
 
         {/* Admin routes */}
         <Route element={<AdminLayout />}>
-          <Route path="/admin" element={<AdminCourses />} />
+          <Route path="/admin" element={<AdminTrainingSystem />} />
+          <Route path="/admin/courses" element={<AdminCourses />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin/instructors" element={<AdminInstructors />} />
           <Route path="/admin/students" element={<AdminStudents />} />

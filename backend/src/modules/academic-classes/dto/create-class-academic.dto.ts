@@ -1,4 +1,4 @@
-import { IsString, IsEnum, Length, Matches } from 'class-validator';
+import { IsString, IsEnum, IsInt, Length, Matches, Min } from 'class-validator';
 import { AcademicClassStatus } from '../../../entities/AcademicClass';
 
 export class CreateAcademicClassDto {
@@ -9,6 +9,14 @@ export class CreateAcademicClassDto {
   @IsString()
   @Length(1, 255)
   className: string;
+
+  @IsInt()
+  @Min(1)
+  majorId: number;
+
+  @IsInt()
+  @Min(1)
+  programId: number;
 
   @IsString()
   @Length(5, 20)

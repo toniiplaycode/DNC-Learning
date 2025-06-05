@@ -1,10 +1,4 @@
-import {
-  IsString,
-  IsEnum,
-  IsOptional,
-  Length,
-  IsNumber,
-} from 'class-validator';
+import { IsString, IsEnum, IsOptional, IsNumber } from 'class-validator';
 import { MajorStatus } from '../../../entities/Major';
 
 export class CreateMajorDto {
@@ -12,11 +6,9 @@ export class CreateMajorDto {
   facultyId: number;
 
   @IsString()
-  @Length(2, 50)
   majorCode: string;
 
   @IsString()
-  @Length(1, 255)
   majorName: string;
 
   @IsString()

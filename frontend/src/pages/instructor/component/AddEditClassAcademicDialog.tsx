@@ -16,6 +16,11 @@ import {
 import { School } from "@mui/icons-material";
 import { useState, useEffect } from "react";
 import { AcademicClassStatus } from "../../../types/academic-class.types";
+import { fetchMajors } from "../../../features/majors/majorsSlice";
+import { fetchPrograms } from "../../../features/programs/programsSlice";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
+import { selectAllMajors } from "../../../features/majors/majorsSelectors";
+import { selectAllPrograms } from "../../../features/programs/programsSelectors";
 
 // Thêm interface cho học kỳ
 interface Semester {
@@ -32,6 +37,8 @@ interface AddEditClassAcademicDialogProps {
     className: string;
     semester: string;
     status: AcademicClassStatus;
+    majorId: string;
+    programId: string;
   } | null;
   onSubmit: (classData: {
     id?: number;
@@ -39,6 +46,8 @@ interface AddEditClassAcademicDialogProps {
     className: string;
     semester: string;
     status: AcademicClassStatus;
+    majorId: string;
+    programId: string;
   }) => void;
   existingSemesters?: string[]; // Thêm prop để nhận danh sách học kỳ hiện có
 }
@@ -50,17 +59,28 @@ export const AddEditClassAcademicDialog = ({
   onSubmit,
   existingSemesters = [], // Mặc định là mảng rỗng
 }: AddEditClassAcademicDialogProps) => {
+  const dispatch = useAppDispatch();
+  const majors = useAppSelector(selectAllMajors);
+  const programs = useAppSelector(selectAllPrograms);
   const [formData, setFormData] = useState({
     id: initialData?.id || 0,
     classCode: initialData?.classCode || "",
     className: initialData?.className || "",
     semester: initialData?.semester || "",
     status: initialData?.status || AcademicClassStatus.ACTIVE,
+    majorId: initialData?.majorId || "",
+    programId: initialData?.programId || "",
   });
 
   // State cho danh sách học kỳ
   const [semesters, setSemesters] = useState<Semester[]>([]);
   const [currentYear] = useState(new Date().getFullYear());
+  const [filteredPrograms, setFilteredPrograms] = useState(programs);
+
+  useEffect(() => {
+    dispatch(fetchMajors({}));
+    dispatch(fetchPrograms({}));
+  }, [semesters]);
 
   // Hàm tạo danh sách học kỳ
   const generateSemesters = (startYear: number, endYear: number) => {
@@ -99,6 +119,23 @@ export const AddEditClassAcademicDialog = ({
     setSemesters(uniqueSemesters);
   }, [existingSemesters, currentYear]);
 
+  // Filter programs when major changes
+  useEffect(() => {
+    if (formData.majorId) {
+      const filtered = programs.filter(
+        (p) => String(p.majorId) === formData.majorId
+      );
+      setFilteredPrograms(filtered);
+      // Reset programId if current selection is not in filtered list
+      if (!filtered.some((p) => String(p.id) === formData.programId)) {
+        setFormData((prev) => ({ ...prev, programId: "" }));
+      }
+    } else {
+      setFilteredPrograms([]);
+      setFormData((prev) => ({ ...prev, programId: "" }));
+    }
+  }, [formData.majorId, programs]);
+
   // Reset form khi dialog mở/đóng hoặc initialData thay đổi
   useEffect(() => {
     if (initialData) {
@@ -108,6 +145,8 @@ export const AddEditClassAcademicDialog = ({
         className: initialData.className,
         semester: initialData.semester,
         status: initialData.status,
+        majorId: initialData.majorId,
+        programId: initialData.programId,
       });
     } else {
       setFormData({
@@ -116,6 +155,8 @@ export const AddEditClassAcademicDialog = ({
         className: "",
         semester: "",
         status: AcademicClassStatus.ACTIVE,
+        majorId: "",
+        programId: "",
       });
     }
   }, [initialData, open]);
@@ -159,6 +200,39 @@ export const AddEditClassAcademicDialog = ({
             }
             required
           />
+          <FormControl fullWidth required>
+            <InputLabel>Ngành học</InputLabel>
+            <Select
+              value={formData.majorId}
+              label="Ngành học"
+              onChange={(e) =>
+                setFormData({ ...formData, majorId: e.target.value })
+              }
+            >
+              {majors.map((major) => (
+                <MenuItem key={major.id} value={String(major.id)}>
+                  {major.majorName} ({major.majorCode})
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+          <FormControl fullWidth required>
+            <InputLabel>Chương trình đào tạo</InputLabel>
+            <Select
+              value={formData.programId}
+              label="Chương trình đào tạo"
+              onChange={(e) =>
+                setFormData({ ...formData, programId: e.target.value })
+              }
+              disabled={!formData.majorId}
+            >
+              {filteredPrograms.map((program) => (
+                <MenuItem key={program.id} value={String(program.id)}>
+                  {program.programName} ({program.programCode})
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
           <FormControl fullWidth required>
             <InputLabel>Học kỳ</InputLabel>
             <Select
@@ -207,7 +281,9 @@ export const AddEditClassAcademicDialog = ({
             !formData.classCode ||
             !formData.className ||
             !formData.semester ||
-            !formData.status
+            !formData.status ||
+            !formData.majorId ||
+            !formData.programId
           }
         >
           {isEditing ? "Cập nhật" : "Thêm lớp"}

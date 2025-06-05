@@ -10,11 +10,23 @@ export interface AcademicClass {
   className: string;
   semester: string;
   status: AcademicClassStatus;
+  majorId: number;
+  programId: number;
   createdAt: Date;
   updatedAt: Date;
   studentsAcademic?: any[];
   instructors?: any[];
   classCourses?: any[];
+  major?: {
+    id: number;
+    majorCode: string;
+    majorName: string;
+  };
+  program?: {
+    id: number;
+    programCode: string;
+    programName: string;
+  };
 }
 
 export interface CreateAcademicClassDto {
@@ -22,6 +34,8 @@ export interface CreateAcademicClassDto {
   className: string;
   semester: string;
   status: AcademicClassStatus;
+  majorId: number;
+  programId: number;
 }
 
 export interface UpdateAcademicClassDto

@@ -56,6 +56,7 @@ import {
   CalendarToday,
   AccountCircle,
   VerifiedUser,
+  PlayLessonOutlined,
 } from "@mui/icons-material";
 import { fetchMessagesByUser } from "../../../features/messages/messagesSlice";
 import { selectAllMessages } from "../../../features/messages/messagesSelector";
@@ -185,7 +186,12 @@ const AdminLayout = () => {
   };
 
   const menuItems = [
-    { text: "Khóa học", icon: <School />, path: "/admin" },
+    {
+      text: "Hệ thống đào tạo",
+      icon: <School />,
+      path: "/admin",
+    },
+    { text: "Khóa học", icon: <PlayLessonOutlined />, path: "/admin/courses" },
     { text: "Giảng viên", icon: <People />, path: "/admin/instructors" },
     { text: "Học viên/sinh viên", icon: <People />, path: "/admin/students" },
     {

@@ -108,7 +108,12 @@ export class AcademicClassInstructorsService {
 
   async findAll(): Promise<ClassInstructorResponseDto[]> {
     const assignments = await this.academicClassInstructorRepository.find({
-      relations: ['academicClass', 'instructor'],
+      relations: [
+        'academicClass',
+        'instructor',
+        'academicClass.major',
+        'academicClass.program',
+      ],
     });
 
     return assignments.map((assignment) =>
@@ -119,7 +124,12 @@ export class AcademicClassInstructorsService {
   async findByClassId(classId: number): Promise<ClassInstructorResponseDto[]> {
     const assignments = await this.academicClassInstructorRepository.find({
       where: { classId },
-      relations: ['academicClass', 'instructor'],
+      relations: [
+        'academicClass',
+        'instructor',
+        'academicClass.major',
+        'academicClass.program',
+      ],
     });
 
     return assignments.map((assignment) =>
@@ -137,6 +147,8 @@ export class AcademicClassInstructorsService {
         'instructor',
         'academicClass.studentsAcademic',
         'academicClass.studentsAcademic.user',
+        'academicClass.major',
+        'academicClass.program',
       ],
     });
 
@@ -148,7 +160,12 @@ export class AcademicClassInstructorsService {
   async findOne(id: number): Promise<ClassInstructorResponseDto> {
     const assignment = await this.academicClassInstructorRepository.findOne({
       where: { id },
-      relations: ['academicClass', 'instructor'],
+      relations: [
+        'academicClass',
+        'instructor',
+        'academicClass.major',
+        'academicClass.program',
+      ],
     });
 
     if (!assignment) {
