@@ -144,9 +144,15 @@ export class UsersService {
     return this.userRepository.manager.transaction(
       async (transactionalEntityManager) => {
         try {
+          // Get userId from either format
+          const userId = updateData.userId || updateData.user?.id;
+          if (!userId) {
+            throw new Error('User ID is required');
+          }
+
           // Find the user first
           const user = await transactionalEntityManager.findOne(User, {
-            where: { id: updateData.userId },
+            where: { id: userId },
             relations: ['userStudentAcademic'],
           });
 
@@ -158,10 +164,17 @@ export class UsersService {
             throw new Error('User is not a student academic');
           }
 
+          // Get student academic data from either format
+          const studentAcademicData =
+            updateData.studentAcademic || updateData.userStudentAcademic;
+          if (!studentAcademicData) {
+            throw new Error('Student academic data is required');
+          }
+
           // Update user information
           await transactionalEntityManager.update(
             User,
-            { id: updateData.userId },
+            { id: userId },
             {
               email: updateData.user.email,
               phone: updateData.user.phone,
@@ -171,15 +184,18 @@ export class UsersService {
           // Update student academic information
           await transactionalEntityManager.update(
             UserStudentAcademic,
-            { userId: updateData.userId },
+            { userId: userId },
             {
-              fullName: updateData.studentAcademic.fullName,
+              fullName: studentAcademicData.fullName,
+              studentCode: studentAcademicData.studentCode,
+              academicYear: studentAcademicData.academicYear,
+              status: studentAcademicData.status,
             },
           );
 
           // Fetch and return updated user data
           const updatedUser = await transactionalEntityManager.findOne(User, {
-            where: { id: updateData.userId },
+            where: { id: userId },
             relations: ['userStudentAcademic'],
           });
 
@@ -192,6 +208,9 @@ export class UsersService {
             }
             if (error.detail.includes('phone')) {
               throw new Error('Phone number already exists');
+            }
+            if (error.detail.includes('student_code')) {
+              throw new Error('Student code already exists');
             }
           }
           throw new Error(

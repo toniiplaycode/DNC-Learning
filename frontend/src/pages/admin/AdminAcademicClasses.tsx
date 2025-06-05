@@ -69,6 +69,10 @@ import {
   deleteStudentAcademic,
 } from "../../features/users/usersApiSlice";
 import * as XLSX from "xlsx";
+import { fetchMajors } from "../../features/majors/majorsSlice";
+import { fetchPrograms } from "../../features/programs/programsSlice";
+import { selectAllMajors } from "../../features/majors/majorsSelectors";
+import { selectAllPrograms } from "../../features/programs/programsSelectors";
 
 interface FormData {
   id?: number;
@@ -77,29 +81,13 @@ interface FormData {
   semester: string;
   status: AcademicClassStatus;
   instructorId: number;
+  majorId: string;
+  programId: string;
 }
 
 interface AssignInstructorFormData {
   instructorIds: number[];
 }
-
-interface StudentData {
-  user: {
-    username: string;
-    email: string;
-    password: string;
-    role: string;
-    phone?: string;
-  };
-  userStudentAcademic: {
-    academicClassId: string;
-    studentCode: string;
-    fullName: string;
-    academicYear: string;
-  };
-}
-
-// Thêm interface cho học kỳ
 interface Semester {
   value: string; // Format: "YYYYT" (ví dụ: "20251" cho học kỳ 1 năm 2025)
   label: string; // Format: "Học kỳ T YYYY" (ví dụ: "Học kỳ 1 2025")
@@ -109,6 +97,8 @@ const AdminAcademicClasses: React.FC = () => {
   const dispatch = useAppDispatch();
   const academicClasses = useAppSelector(selectAllAcademicClasses);
   const instructors = useAppSelector(selectAllInstructors);
+  const majors = useAppSelector(selectAllMajors);
+  const programs = useAppSelector(selectAllPrograms);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -122,12 +112,15 @@ const AdminAcademicClasses: React.FC = () => {
   const [selectedClass, setSelectedClass] = useState<AcademicClass | null>(
     null
   );
+  const [filteredPrograms, setFilteredPrograms] = useState(programs);
   const [formData, setFormData] = useState<FormData>({
     classCode: "",
     className: "",
     semester: "",
     status: AcademicClassStatus.ACTIVE,
     instructorId: 0,
+    majorId: "",
+    programId: "",
   });
 
   const [openAssignDialog, setOpenAssignDialog] = useState(false);
@@ -164,9 +157,13 @@ const AdminAcademicClasses: React.FC = () => {
   const [semesters, setSemesters] = useState<Semester[]>([]);
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
+  const [majorFilter, setMajorFilter] = useState<string>("all");
+
   useEffect(() => {
     dispatch(fetchAcademicClasses());
     dispatch(fetchInstructors());
+    dispatch(fetchMajors({}));
+    dispatch(fetchPrograms({}));
   }, [dispatch]);
 
   // Hàm tạo danh sách học kỳ
@@ -330,12 +327,16 @@ const AdminAcademicClasses: React.FC = () => {
           instructorAssignment?.instructor?.id === instructorFilter
       );
 
+    const matchesMajor =
+      majorFilter === "all" || String(academicClass.majorId) === majorFilter;
+
     return (
       matchesSearch &&
       matchesYear &&
       matchesTerm &&
       matchesStatus &&
-      matchesInstructor
+      matchesInstructor &&
+      matchesMajor
     );
   });
 
@@ -386,6 +387,8 @@ const AdminAcademicClasses: React.FC = () => {
         semester: cls.semester,
         status: cls.status,
         instructorId: cls.instructors?.[0]?.instructorId || 0,
+        majorId: String(cls.majorId),
+        programId: String(cls.programId),
       });
     } else {
       setSelectedClass(null);
@@ -395,6 +398,8 @@ const AdminAcademicClasses: React.FC = () => {
         semester: "",
         status: AcademicClassStatus.ACTIVE,
         instructorId: 0,
+        majorId: "",
+        programId: "",
       });
     }
     setOpenDialog(true);
@@ -411,6 +416,8 @@ const AdminAcademicClasses: React.FC = () => {
             className: formData.className,
             semester: formData.semester,
             status: formData.status,
+            majorId: Number(formData.majorId),
+            programId: Number(formData.programId),
           })
         ).unwrap();
         toast.success("Cập nhật lớp học thành công!");
@@ -423,6 +430,8 @@ const AdminAcademicClasses: React.FC = () => {
             semester: formData.semester,
             status: formData.status,
             instructorId: formData.instructorId,
+            majorId: Number(formData.majorId),
+            programId: Number(formData.programId),
           })
         ).unwrap();
         toast.success("Thêm lớp học thành công!");
@@ -446,32 +455,38 @@ const AdminAcademicClasses: React.FC = () => {
     setPage(0);
   };
 
-  const handleAddStudents = async (students) => {
+  const handleAddStudents = async (students: any[]) => {
     try {
-      await dispatch(createManyStudentsAcademic(students)).then((response) => {
-        if (response.error) {
-          toast.error("Không đúng định dạng thêm hoặc sinh viên đã tồn tại !");
-        } else {
-          toast.success("Thêm sinh viên thành công!");
+      const response = await dispatch(
+        createManyStudentsAcademic(students)
+      ).unwrap();
+      if (response.error) {
+        toast.error("Không đúng định dạng thêm hoặc sinh viên đã tồn tại !");
+      } else {
+        toast.success("Thêm sinh viên thành công!");
+        // Refresh the class data to get updated student list
+        const updatedClass = await dispatch(fetchAcademicClasses()).unwrap();
+        const updatedSelectedClass = updatedClass.find(
+          (c) => c.id === selectedClassForStudents?.id
+        );
+        if (updatedSelectedClass) {
+          setSelectedClassForStudents(updatedSelectedClass);
         }
-      });
-
-      // Refresh the class data
-      await dispatch(fetchAcademicClasses()).unwrap();
-
-      setOpenAddStudents(false);
+        setOpenAddStudents(false);
+      }
     } catch (error) {
       console.error("Error adding students:", error);
+      toast.error("Có lỗi xảy ra khi thêm sinh viên!");
     }
   };
 
-  const handleEditStudent = (student) => {
+  const handleEditStudent = (student: any) => {
     if (!student) return null;
     setSelectedStudent(student);
     setOpenEditStudent(true);
   };
 
-  const handleUpdateStudent = async (updatedStudent) => {
+  const handleUpdateStudent = async (updatedStudent: any) => {
     try {
       await dispatch(
         updateStudentAcademic({
@@ -491,8 +506,14 @@ const AdminAcademicClasses: React.FC = () => {
         })
       ).unwrap();
 
-      // Refresh the class data
-      await dispatch(fetchAcademicClasses()).unwrap();
+      // Refresh the class data to get updated student list
+      const updatedClass = await dispatch(fetchAcademicClasses()).unwrap();
+      const updatedSelectedClass = updatedClass.find(
+        (c) => c.id === selectedClassForStudents?.id
+      );
+      if (updatedSelectedClass) {
+        setSelectedClassForStudents(updatedSelectedClass);
+      }
       setOpenEditStudent(false);
       setSelectedStudent(null);
       toast.success("Cập nhật thông tin sinh viên thành công!");
@@ -503,11 +524,17 @@ const AdminAcademicClasses: React.FC = () => {
     }
   };
 
-  const handleDeleteStudent = async (student) => {
+  const handleDeleteStudent = async (student: any) => {
     try {
       await dispatch(deleteStudentAcademic(student.user.id)).unwrap();
-      // Refresh the class data
-      await dispatch(fetchAcademicClasses()).unwrap();
+      // Refresh the class data to get updated student list
+      const updatedClass = await dispatch(fetchAcademicClasses()).unwrap();
+      const updatedSelectedClass = updatedClass.find(
+        (c) => c.id === selectedClassForStudents?.id
+      );
+      if (updatedSelectedClass) {
+        setSelectedClassForStudents(updatedSelectedClass);
+      }
       toast.success("Xóa sinh viên thành công!");
     } catch (error) {
       toast.error("Có lỗi xảy ra khi xóa sinh viên!");
@@ -522,6 +549,7 @@ const AdminAcademicClasses: React.FC = () => {
   const handleConfirmDeleteStudent = async () => {
     if (!studentToDelete) return;
     await handleDeleteStudent(studentToDelete);
+    await dispatch(fetchAcademicClasses()).unwrap();
     setOpenDeleteStudentDialog(false);
     setStudentToDelete(null);
   };
@@ -568,6 +596,23 @@ const AdminAcademicClasses: React.FC = () => {
     );
   }
 
+  // Add effect to filter programs when major changes
+  useEffect(() => {
+    if (formData.majorId) {
+      const filtered = programs.filter(
+        (p) => String(p.majorId) === formData.majorId
+      );
+      setFilteredPrograms(filtered);
+      // Reset programId if current selection is not in filtered list
+      if (!filtered.some((p) => String(p.id) === formData.programId)) {
+        setFormData((prev) => ({ ...prev, programId: "" }));
+      }
+    } else {
+      setFilteredPrograms([]);
+      setFormData((prev) => ({ ...prev, programId: "" }));
+    }
+  }, [formData.majorId, programs]);
+
   return (
     <Box>
       <Box sx={{ mb: 3, display: "flex", justifyContent: "space-between" }}>
@@ -600,6 +645,23 @@ const AdminAcademicClasses: React.FC = () => {
                 ),
               }}
             />
+          </Grid>
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth>
+              <InputLabel>Ngành</InputLabel>
+              <Select
+                value={majorFilter}
+                label="Ngành"
+                onChange={(e) => setMajorFilter(e.target.value)}
+              >
+                <MenuItem value="all">Tất cả ngành</MenuItem>
+                {majors.map((major) => (
+                  <MenuItem key={major.id} value={String(major.id)}>
+                    {major.majorName} ({major.majorCode})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
           </Grid>
           <Grid item xs={12} sm={6} md={3}>
             <FormControl fullWidth>
@@ -752,6 +814,15 @@ const AdminAcademicClasses: React.FC = () => {
                 size="small"
               />
             )}
+            {majorFilter !== "all" && (
+              <Chip
+                label={`Ngành: ${
+                  majors.find((m) => String(m.id) === majorFilter)?.majorName
+                }`}
+                onDelete={() => setMajorFilter("all")}
+                size="small"
+              />
+            )}
           </Stack>
         </Box>
       </Paper>
@@ -768,6 +839,8 @@ const AdminAcademicClasses: React.FC = () => {
             <TableRow>
               <TableCell>Mã lớp</TableCell>
               <TableCell>Tên lớp</TableCell>
+              <TableCell>Ngành</TableCell>
+              <TableCell>Chương trình</TableCell>
               <TableCell>Học kỳ</TableCell>
               <TableCell>Phân công giảng viên</TableCell>
               <TableCell>Số sinh viên</TableCell>
@@ -782,6 +855,26 @@ const AdminAcademicClasses: React.FC = () => {
               <TableRow key={academicClass.id}>
                 <TableCell>{academicClass.classCode}</TableCell>
                 <TableCell>{academicClass.className}</TableCell>
+                <TableCell>
+                  {academicClass.major?.majorName || "N/A"}
+                  <Typography
+                    variant="caption"
+                    display="block"
+                    color="text.secondary"
+                  >
+                    {academicClass.major?.majorCode}
+                  </Typography>
+                </TableCell>
+                <TableCell>
+                  {academicClass.program?.programName || "N/A"}
+                  <Typography
+                    variant="caption"
+                    display="block"
+                    color="text.secondary"
+                  >
+                    {academicClass.program?.programCode}
+                  </Typography>
+                </TableCell>
                 <TableCell>{academicClass.semester}</TableCell>
                 <TableCell>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
@@ -790,7 +883,7 @@ const AdminAcademicClasses: React.FC = () => {
                         size="small"
                         onClick={() => handleOpenAssignDialog(academicClass.id)}
                       >
-                        <PersonAdd fontSize="small" />
+                        <PersonAdd color="primary" fontSize="small" />
                       </IconButton>
                     </Tooltip>
                     <Box>
@@ -930,6 +1023,39 @@ const AdminAcademicClasses: React.FC = () => {
               required
             />
             <FormControl fullWidth required>
+              <InputLabel>Ngành học</InputLabel>
+              <Select
+                value={formData.majorId}
+                label="Ngành học"
+                onChange={(e) =>
+                  setFormData({ ...formData, majorId: e.target.value })
+                }
+              >
+                {majors.map((major) => (
+                  <MenuItem key={major.id} value={String(major.id)}>
+                    {major.majorName} ({major.majorCode})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth required>
+              <InputLabel>Chương trình đào tạo</InputLabel>
+              <Select
+                value={formData.programId}
+                label="Chương trình đào tạo"
+                onChange={(e) =>
+                  setFormData({ ...formData, programId: e.target.value })
+                }
+                disabled={!formData.majorId}
+              >
+                {filteredPrograms.map((program) => (
+                  <MenuItem key={program.id} value={String(program.id)}>
+                    {program.programName} ({program.programCode})
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+            <FormControl fullWidth required>
               <InputLabel>Học kỳ</InputLabel>
               <Select
                 value={formData.semester}
@@ -1001,6 +1127,8 @@ const AdminAcademicClasses: React.FC = () => {
               !formData.className ||
               !formData.semester ||
               !formData.status ||
+              !formData.majorId ||
+              !formData.programId ||
               (!selectedClass && !formData.instructorId)
             }
           >
@@ -1042,7 +1170,7 @@ const AdminAcademicClasses: React.FC = () => {
                           key={value}
                           avatar={
                             <Avatar
-                              src={instructor.avatarUrl}
+                              src={instructor.user.avatarUrl}
                               alt={instructor.fullName}
                               sx={{ width: 24, height: 24 }}
                             >
@@ -1068,7 +1196,7 @@ const AdminAcademicClasses: React.FC = () => {
                   <MenuItem key={instructor.id} value={instructor.id}>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                       <Avatar
-                        src={instructor.avatarUrl}
+                        src={instructor.user.avatarUrl}
                         alt={instructor.fullName}
                         sx={{ width: 32, height: 32 }}
                       >

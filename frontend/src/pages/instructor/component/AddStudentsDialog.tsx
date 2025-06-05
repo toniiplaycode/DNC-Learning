@@ -23,6 +23,7 @@ import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 import DeleteIcon from "@mui/icons-material/Delete";
 import DownloadIcon from "@mui/icons-material/Download";
 import * as XLSX from "xlsx";
+import { AcademicClass } from "../../../types/academic-class.types";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -56,14 +57,34 @@ interface FormattedStudentData {
     phone?: string;
   };
   userStudentAcademic: {
-    academicClassId: string;
+    academicClassId: number;
     studentCode: string;
     fullName: string;
     academicYear: string;
   };
 }
 
-export const AddStudentsDialog = ({ open, onClose, classData, onSubmit }) => {
+interface AddStudentsDialogProps {
+  open: boolean;
+  onClose: () => void;
+  classData: {
+    id: number;
+    academicClass: AcademicClass;
+  };
+  onSubmit: (students: FormattedStudentData[]) => void;
+}
+
+interface ValidationError {
+  row: number;
+  errors: string[];
+}
+
+export const AddStudentsDialog = ({
+  open,
+  onClose,
+  classData,
+  onSubmit,
+}: AddStudentsDialogProps) => {
   const [tabValue, setTabValue] = useState(0);
   const [singleStudent, setSingleStudent] = useState<StudentData>({
     studentCode: "",
@@ -72,8 +93,8 @@ export const AddStudentsDialog = ({ open, onClose, classData, onSubmit }) => {
     phone: "",
     academicYear: "K71", // Default value
   });
-  const [importedStudents, setImportedStudents] = useState([]);
-  const [errors, setErrors] = useState([]);
+  const [importedStudents, setImportedStudents] = useState<StudentData[]>([]);
+  const [errors, setErrors] = useState<ValidationError[]>([]);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
@@ -97,7 +118,7 @@ export const AddStudentsDialog = ({ open, onClose, classData, onSubmit }) => {
         phone: student.phone,
       },
       userStudentAcademic: {
-        academicClassId: classData.id,
+        academicClassId: classData.academicClass.id,
         studentCode: student.studentCode,
         fullName: student.fullName,
         academicYear: student.academicYear,
@@ -106,7 +127,15 @@ export const AddStudentsDialog = ({ open, onClose, classData, onSubmit }) => {
   };
 
   const handleSingleStudentSubmit = () => {
-    const formattedStudent = formatStudentForSubmission(singleStudent);
+    // Trim all fields before submission
+    const trimmedStudent = {
+      studentCode: singleStudent.studentCode.trim(),
+      fullName: singleStudent.fullName.trim(),
+      email: singleStudent.email.trim(),
+      phone: singleStudent.phone.trim(),
+      academicYear: singleStudent.academicYear.trim(),
+    };
+    const formattedStudent = formatStudentForSubmission(trimmedStudent);
     onSubmit([formattedStudent]);
     setSingleStudent({
       studentCode: "",
@@ -117,8 +146,10 @@ export const AddStudentsDialog = ({ open, onClose, classData, onSubmit }) => {
     });
   };
 
-  const handleFileUpload = (event) => {
-    const file = event.target.files[0];
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
     const reader = new FileReader();
 
     reader.onload = (e) => {
@@ -128,11 +159,11 @@ export const AddStudentsDialog = ({ open, onClose, classData, onSubmit }) => {
       const jsonData = XLSX.utils.sheet_to_json(firstSheet);
 
       const formattedData = jsonData.map((row: any) => ({
-        studentCode: row["Mã sinh viên"],
-        fullName: row["Họ và tên"],
-        email: row["Email"],
-        phone: row["Số điện thoại"],
-        academicYear: row["Khóa"] || "K71",
+        studentCode: String(row["Mã sinh viên"] || "").trim(),
+        fullName: String(row["Họ và tên"] || "").trim(),
+        email: String(row["Email"] || "").trim(),
+        phone: String(row["Số điện thoại"] || "").trim(),
+        academicYear: String(row["Khóa"] || "K71").trim(),
       }));
 
       setImportedStudents(formattedData);
@@ -153,12 +184,12 @@ export const AddStudentsDialog = ({ open, onClose, classData, onSubmit }) => {
         if (!student.email) errors.push("Thiếu email");
 
         // Format validations
-        const studentCodeRegex = /^SV\d{6}$/;
+        const studentCodeRegex = /^SV\d{6,}$/;
         if (
           student.studentCode &&
           !studentCodeRegex.test(student.studentCode)
         ) {
-          errors.push("Mã sinh viên không hợp lệ (VD: SV202501)");
+          errors.push("Mã sinh viên không hợp lệ (VD: SV202501, SV20250101)");
         }
 
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -176,7 +207,7 @@ export const AddStudentsDialog = ({ open, onClose, classData, onSubmit }) => {
 
         return errors.length > 0 ? { row: index + 1, errors } : null;
       })
-      .filter(Boolean);
+      .filter((error): error is ValidationError => error !== null);
 
     setErrors(newErrors);
   };
@@ -184,7 +215,7 @@ export const AddStudentsDialog = ({ open, onClose, classData, onSubmit }) => {
   const downloadTemplate = () => {
     const template = [
       {
-        "Mã sinh viên": "SV202501",
+        "Mã sinh viên": "SV20250101",
         "Họ và tên": "Nguyễn Văn A",
         Email: "example@gmail.com",
         "Số điện thoại": "0123456789",
@@ -198,8 +229,22 @@ export const AddStudentsDialog = ({ open, onClose, classData, onSubmit }) => {
     XLSX.writeFile(wb, "template_import_students.xlsx");
   };
 
+  const handleClose = () => {
+    setErrors([]);
+    setImportedStudents([]);
+    setSingleStudent({
+      studentCode: "",
+      fullName: "",
+      email: "",
+      phone: "",
+      academicYear: "K71",
+    });
+    setTabValue(0);
+    onClose();
+  };
+
   return (
-    <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
+    <Dialog open={open} onClose={handleClose} maxWidth="md" fullWidth>
       <DialogTitle>
         <Typography variant="h6">
           Thêm sinh viên vào lớp {classData?.academicClass.className}
@@ -230,17 +275,20 @@ export const AddStudentsDialog = ({ open, onClose, classData, onSubmit }) => {
               onChange={(e) =>
                 setSingleStudent({
                   ...singleStudent,
-                  studentCode: e.target.value,
+                  studentCode: e.target.value.trim(),
                 })
               }
               required
-              helperText="Định dạng: SV + 6 số (VD: SV202501)"
+              helperText="Định dạng: SV + ít nhất 6 số (VD: SV202501, SV20250101)"
             />
             <TextField
               label="Họ và tên"
               value={singleStudent.fullName}
               onChange={(e) =>
-                setSingleStudent({ ...singleStudent, fullName: e.target.value })
+                setSingleStudent({
+                  ...singleStudent,
+                  fullName: e.target.value.trim(),
+                })
               }
               required
             />
@@ -249,7 +297,10 @@ export const AddStudentsDialog = ({ open, onClose, classData, onSubmit }) => {
               type="email"
               value={singleStudent.email}
               onChange={(e) =>
-                setSingleStudent({ ...singleStudent, email: e.target.value })
+                setSingleStudent({
+                  ...singleStudent,
+                  email: e.target.value.trim(),
+                })
               }
               required
             />
@@ -257,7 +308,10 @@ export const AddStudentsDialog = ({ open, onClose, classData, onSubmit }) => {
               label="Số điện thoại"
               value={singleStudent.phone}
               onChange={(e) =>
-                setSingleStudent({ ...singleStudent, phone: e.target.value })
+                setSingleStudent({
+                  ...singleStudent,
+                  phone: e.target.value.trim(),
+                })
               }
             />
             <TextField
@@ -266,7 +320,7 @@ export const AddStudentsDialog = ({ open, onClose, classData, onSubmit }) => {
               onChange={(e) =>
                 setSingleStudent({
                   ...singleStudent,
-                  academicYear: e.target.value,
+                  academicYear: e.target.value.trim(),
                 })
               }
               required
@@ -368,13 +422,14 @@ export const AddStudentsDialog = ({ open, onClose, classData, onSubmit }) => {
       </DialogContent>
 
       <DialogActions>
-        <Button onClick={onClose}>Hủy</Button>
+        <Button onClick={handleClose}>Hủy</Button>
         {tabValue === 1 && (
           <Button
             variant="contained"
-            onClick={() =>
-              onSubmit(importedStudents.map(formatStudentForSubmission))
-            }
+            onClick={() => {
+              onSubmit(importedStudents.map(formatStudentForSubmission));
+              handleClose();
+            }}
             disabled={importedStudents.length === 0 || errors.length > 0}
           >
             Thêm {importedStudents.length} sinh viên

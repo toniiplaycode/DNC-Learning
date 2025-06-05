@@ -94,6 +94,7 @@ import {
   updateProgramCourse,
   deleteProgramCourse,
 } from "../../features/program-courses/programCoursesSlice";
+import { format } from "date-fns";
 
 interface Course {
   id: string;
@@ -1094,7 +1095,8 @@ const AdminTrainingSystem: React.FC = () => {
                               >
                                 <GroupIcon color="primary" />
                                 <Typography>
-                                  Chương trình đào tạo
+                                  Chương trình đào tạo -{" "}
+                                  {format(new Date(program.createdAt), "yyyy")}
                                   {renderAddButton("course", program.id)}
                                 </Typography>
                               </Box>
