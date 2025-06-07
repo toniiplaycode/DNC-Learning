@@ -9,6 +9,7 @@ import {
 interface AcademicClassesState {
   academicClasses: AcademicClass[];
   currentClass: AcademicClass | null;
+  programCourses: any[];
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
 }
@@ -16,6 +17,7 @@ interface AcademicClassesState {
 const initialState: AcademicClassesState = {
   academicClasses: [],
   currentClass: null,
+  programCourses: [],
   status: "idle",
   error: null,
 };
@@ -95,6 +97,23 @@ export const deleteAcademicClass = createAsyncThunk(
   }
 );
 
+// Fetch program courses for a class
+export const fetchClassProgramCourses = createAsyncThunk(
+  "academicClasses/fetchProgramCourses",
+  async (classId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get(
+        `/academic-classes/${classId}/program-courses`
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Failed to fetch program courses"
+      );
+    }
+  }
+);
+
 const academicClassesSlice = createSlice({
   name: "academicClasses",
   initialState,
@@ -107,6 +126,9 @@ const academicClassesSlice = createSlice({
     },
     clearError: (state) => {
       state.error = null;
+    },
+    clearProgramCourses: (state) => {
+      state.programCourses = [];
     },
   },
   extraReducers: (builder) => {
@@ -188,9 +210,23 @@ const academicClassesSlice = createSlice({
       .addCase(deleteAcademicClass.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
+      })
+      // Fetch program courses
+      .addCase(fetchClassProgramCourses.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchClassProgramCourses.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.programCourses = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchClassProgramCourses.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
       });
   },
 });
 
-export const { resetState, clearError } = academicClassesSlice.actions;
+export const { resetState, clearError, clearProgramCourses } =
+  academicClassesSlice.actions;
 export default academicClassesSlice.reducer;

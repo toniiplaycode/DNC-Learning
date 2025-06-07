@@ -9,6 +9,7 @@ import { AcademicClassCourse } from 'src/entities/AcademicClassCourse';
 import { UserInstructor } from 'src/entities/UserInstructor';
 import { Major } from '../../entities/Major';
 import { Program } from '../../entities/Program';
+import { ProgramCourse } from 'src/entities/ProgramCourse';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { Program } from '../../entities/Program';
       UserInstructor,
       Major,
       Program,
+      ProgramCourse,
     ]),
   ],
   controllers: [AcademicClassesController],

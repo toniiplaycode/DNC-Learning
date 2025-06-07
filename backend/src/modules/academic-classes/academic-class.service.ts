@@ -14,6 +14,7 @@ import { UserStudentAcademic } from '../../entities/UserStudentAcademic';
 import { AcademicClassCourse } from '../../entities/AcademicClassCourse';
 import { Major } from '../../entities/Major';
 import { Program } from '../../entities/Program';
+import { ProgramCourse } from '../../entities/ProgramCourse';
 
 @Injectable()
 export class AcademicClassesService {
@@ -32,6 +33,8 @@ export class AcademicClassesService {
     private readonly majorRepo: Repository<Major>,
     @InjectRepository(Program)
     private readonly programRepo: Repository<Program>,
+    @InjectRepository(ProgramCourse)
+    private readonly programCourseRepo: Repository<ProgramCourse>,
   ) {}
 
   async create(createDto: CreateAcademicClassDto, instructorId: number) {
@@ -69,6 +72,22 @@ export class AcademicClassesService {
         });
         await transactionalEntityManager.save(classInstructor);
 
+        // Get all courses from the program
+        const programCourses = await this.programCourseRepo.find({
+          where: { programId: createDto.programId },
+        });
+
+        // Create AcademicClassCourse entries for each program course
+        if (programCourses.length > 0) {
+          const academicClassCourses = programCourses.map((programCourse) =>
+            this.academicClassCourseRepo.create({
+              classId: savedClass.id,
+              courseId: programCourse.courseId,
+            }),
+          );
+          await transactionalEntityManager.save(academicClassCourses);
+        }
+
         // Return class with relations
         return transactionalEntityManager.findOne(AcademicClass, {
           where: { id: savedClass.id },
@@ -76,6 +95,7 @@ export class AcademicClassesService {
             'studentsAcademic',
             'instructors',
             'classCourses',
+            'classCourses.course',
             'major',
             'program',
           ],
@@ -119,6 +139,26 @@ export class AcademicClassesService {
     return academicClass;
   }
 
+  async getClassProgramCourses(id: number) {
+    // First get the academic class to ensure it exists and get its program
+    const academicClass = await this.academicClassRepo.findOne({
+      where: { id },
+      relations: ['program'],
+    });
+
+    if (!academicClass) {
+      throw new NotFoundException(`Academic class with ID ${id} not found`);
+    }
+
+    // Get all program courses for this program
+    const programCourses = await this.programCourseRepo.find({
+      where: { programId: academicClass.programId },
+      relations: ['course'],
+    });
+
+    return programCourses;
+  }
+
   async update(id: number, updateDto: UpdateAcademicClassDto) {
     const academicClass = await this.findOne(id);
 
@@ -160,13 +200,15 @@ export class AcademicClassesService {
         // Find the class first to ensure it exists
         const academicClass = await this.findOne(id);
 
-        // Delete instructor associations first (foreign key constraint)
-        await transactionalEntityManager
-          .createQueryBuilder()
-          .delete()
-          .from(AcademicClassInstructor)
-          .where('classId = :classId', { classId: id })
-          .execute();
+        // Delete class courses first (foreign key constraint)
+        await transactionalEntityManager.delete(AcademicClassCourse, {
+          classId: id,
+        });
+
+        // Delete instructor associations
+        await transactionalEntityManager.delete(AcademicClassInstructor, {
+          classId: id,
+        });
 
         // Delete the academic class
         return transactionalEntityManager.remove(AcademicClass, academicClass);

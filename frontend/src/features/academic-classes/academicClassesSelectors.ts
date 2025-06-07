@@ -11,6 +11,8 @@ export const selectAcademicClassesStatus = (state: RootState) =>
   state.academicClasses.status;
 export const selectAcademicClassesError = (state: RootState) =>
   state.academicClasses.error;
+export const selectProgramCourses = (state: RootState) =>
+  state.academicClasses.programCourses;
 
 export const selectAcademicClassById = (classId: number) =>
   createSelector(

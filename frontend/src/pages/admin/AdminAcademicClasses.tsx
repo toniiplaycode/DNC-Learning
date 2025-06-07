@@ -31,6 +31,9 @@ import {
   Avatar,
   TablePagination,
   Stack,
+  Menu,
+  ListItemIcon,
+  ListItemText,
 } from "@mui/material";
 import {
   Add,
@@ -42,6 +45,8 @@ import {
   PersonAdd,
   People,
   Class as ClassIcon,
+  MenuBook,
+  MoreVert,
 } from "@mui/icons-material";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import { format } from "date-fns";
@@ -56,6 +61,7 @@ import { selectAllAcademicClasses } from "../../features/academic-classes/academ
 import {
   AcademicClass,
   AcademicClassStatus,
+  AcademicClassInstructor,
 } from "../../types/academic-class.types";
 import { selectAllInstructors } from "../../features/user_instructors/instructorsSelectors";
 import { fetchInstructors } from "../../features/user_instructors/instructorsApiSlice";
@@ -73,6 +79,10 @@ import { fetchMajors } from "../../features/majors/majorsSlice";
 import { fetchPrograms } from "../../features/programs/programsSlice";
 import { selectAllMajors } from "../../features/majors/majorsSelectors";
 import { selectAllPrograms } from "../../features/programs/programsSelectors";
+import { UserInstructor } from "../../types/user.types";
+import { fetchProgramCourses } from "../../features/program-courses/programCoursesSlice";
+import { selectAllProgramCourses } from "../../features/program-courses/programCoursesSelectors";
+import { deleteTeachingSchedulesByInstructorAssignment } from "../../features/teaching-schedules/teachingSchedulesSlice";
 
 interface FormData {
   id?: number;
@@ -93,9 +103,17 @@ interface Semester {
   label: string; // Format: "Học kỳ T YYYY" (ví dụ: "Học kỳ 1 2025")
 }
 
+interface AcademicClassWithRelations extends AcademicClass {
+  instructors?: (AcademicClassInstructor & {
+    instructor?: UserInstructor;
+  })[];
+}
+
 const AdminAcademicClasses: React.FC = () => {
   const dispatch = useAppDispatch();
-  const academicClasses = useAppSelector(selectAllAcademicClasses);
+  const academicClasses = useAppSelector(
+    selectAllAcademicClasses
+  ) as AcademicClassWithRelations[];
   const instructors = useAppSelector(selectAllInstructors);
   const majors = useAppSelector(selectAllMajors);
   const programs = useAppSelector(selectAllPrograms);
@@ -158,6 +176,16 @@ const AdminAcademicClasses: React.FC = () => {
   const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 
   const [majorFilter, setMajorFilter] = useState<string>("all");
+
+  const [openProgramCoursesDialog, setOpenProgramCoursesDialog] =
+    useState(false);
+  const [selectedClassForCourses, setSelectedClassForCourses] =
+    useState<AcademicClass | null>(null);
+  const programCourses = useAppSelector(selectAllProgramCourses);
+
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [selectedClassForMenu, setSelectedClassForMenu] =
+    useState<AcademicClass | null>(null);
 
   useEffect(() => {
     dispatch(fetchAcademicClasses());
@@ -225,15 +253,9 @@ const AdminAcademicClasses: React.FC = () => {
 
     // Kiểm tra điều kiện xóa
     const studentCount = academicClass.studentsAcademic?.length || 0;
-    const courseCount = academicClass.classCourses?.length || 0;
 
     if (studentCount > 0) {
       toast.error("Không thể xóa lớp học vì vẫn còn sinh viên!");
-      return;
-    }
-
-    if (courseCount > 0) {
-      toast.error("Không thể xóa lớp học vì vẫn còn khóa học!");
       return;
     }
 
@@ -277,16 +299,53 @@ const AdminAcademicClasses: React.FC = () => {
   const handleAssignInstructors = async () => {
     if (selectedClassId) {
       try {
+        // Kiểm tra xem có lịch giảng dạy nào đang sử dụng phân công này không
+        const currentAssignments =
+          academicClasses.find((c) => c.id === selectedClassId)?.instructors ||
+          [];
+        const newInstructorIds = assignFormData.instructorIds.map((id) =>
+          Number(id)
+        );
+        const removedAssignments = currentAssignments.filter(
+          (assignment) => !newInstructorIds.includes(assignment.instructorId)
+        );
+
+        console.log("removedAssignments", removedAssignments);
+
+        // if (removedAssignments.length > 0) {
+        //   // Xóa các lịch giảng dạy liên quan trước khi xóa phân công
+        //   for (const assignment of removedAssignments) {
+        //     try {
+        //       // Gọi API xóa các lịch giảng dạy liên quan
+        //       await dispatch(
+        //         deleteTeachingSchedulesByInstructorAssignment({
+        //           academicClassInstructorId: assignment.id,
+        //           instructorId: assignment.instructorId,
+        //         })
+        //       ).unwrap();
+        //     } catch (err) {
+        //       console.error(
+        //         `Error deleting teaching schedules for assignment ${assignment.id}:`,
+        //         err
+        //       );
+        //       // Tiếp tục với các phân công khác nếu có lỗi
+        //     }
+        //   }
+        // }
+
         await dispatch(
           createClassInstructor({
             classId: selectedClassId,
-            instructorIds: assignFormData.instructorIds.map((id) => Number(id)),
+            instructorIds: newInstructorIds,
           })
         ).unwrap();
         await dispatch(fetchAcademicClasses());
+        toast.success("Phân công giảng viên thành công!");
         handleCloseAssignDialog();
-      } catch (err) {
-        console.error("Error assigning instructors:", err);
+      } catch (err: any) {
+        toast.error(
+          "Có lỗi xảy ra khi phân công giảng viên hoặc có lịch dạy liên quan!"
+        );
       }
     }
   };
@@ -302,43 +361,48 @@ const AdminAcademicClasses: React.FC = () => {
   };
 
   // Cập nhật hàm filter
-  const filteredClasses = academicClasses.filter((academicClass) => {
-    const matchesSearch =
-      academicClass.className
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase()) ||
-      academicClass.classCode.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredClasses = academicClasses.filter(
+    (academicClass: AcademicClassWithRelations) => {
+      const matchesSearch =
+        academicClass.className
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase()) ||
+        academicClass.classCode
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase());
 
-    const semester = academicClass.semester;
-    const year = semester.substring(0, 4);
-    const term = semester.substring(4);
+      const semester = academicClass.semester;
+      const year = semester.substring(0, 4);
+      const term = semester.substring(4);
 
-    const matchesYear =
-      academicYearFilter === "all" || year === academicYearFilter;
-    const matchesTerm = termFilter === "all" || term === termFilter;
+      const matchesYear =
+        academicYearFilter === "all" || year === academicYearFilter;
+      const matchesTerm = termFilter === "all" || term === termFilter;
 
-    const matchesStatus =
-      statusFilter === "all" || academicClass.status === statusFilter;
+      const matchesStatus =
+        statusFilter === "all" || academicClass.status === statusFilter;
 
-    const matchesInstructor =
-      instructorFilter === "all" ||
-      academicClass.instructors?.some(
-        (instructorAssignment) =>
-          instructorAssignment?.instructor?.id === instructorFilter
-      );
+      const matchesInstructor =
+        instructorFilter === "all" ||
+        academicClass.instructors?.some((instructorAssignment) => {
+          const instructorId = Number(instructorAssignment?.instructor?.id);
+          const filterId = Number(instructorFilter);
+          return instructorId === filterId;
+        });
 
-    const matchesMajor =
-      majorFilter === "all" || String(academicClass.majorId) === majorFilter;
+      const matchesMajor =
+        majorFilter === "all" || String(academicClass.majorId) === majorFilter;
 
-    return (
-      matchesSearch &&
-      matchesYear &&
-      matchesTerm &&
-      matchesStatus &&
-      matchesInstructor &&
-      matchesMajor
-    );
-  });
+      const result =
+        matchesSearch &&
+        matchesYear &&
+        matchesTerm &&
+        matchesStatus &&
+        matchesInstructor &&
+        matchesMajor;
+      return result;
+    }
+  );
 
   // Pagination calculation
   const startIndex = page * rowsPerPage;
@@ -439,7 +503,6 @@ const AdminAcademicClasses: React.FC = () => {
       setOpenDialog(false);
       dispatch(fetchAcademicClasses());
     } catch (error: any) {
-      console.error("Error saving class:", error);
       toast.error(error?.message || "Có lỗi xảy ra khi lưu lớp học!");
     }
   };
@@ -475,7 +538,6 @@ const AdminAcademicClasses: React.FC = () => {
         setOpenAddStudents(false);
       }
     } catch (error) {
-      console.error("Error adding students:", error);
       toast.error("Có lỗi xảy ra khi thêm sinh viên!");
     }
   };
@@ -613,6 +675,36 @@ const AdminAcademicClasses: React.FC = () => {
     }
   }, [formData.majorId, programs]);
 
+  const handleOpenProgramCourses = async (academicClass: AcademicClass) => {
+    setSelectedClassForCourses(academicClass);
+    try {
+      await dispatch(
+        fetchProgramCourses({ programId: academicClass.programId })
+      ).unwrap();
+      setOpenProgramCoursesDialog(true);
+    } catch (error) {
+      toast.error("Không thể tải danh sách môn học!");
+    }
+  };
+
+  const handleCloseProgramCourses = () => {
+    setOpenProgramCoursesDialog(false);
+    setSelectedClassForCourses(null);
+  };
+
+  const handleOpenMenu = (
+    event: React.MouseEvent<HTMLElement>,
+    academicClass: AcademicClass
+  ) => {
+    setAnchorEl(event.currentTarget);
+    setSelectedClassForMenu(academicClass);
+  };
+
+  const handleCloseMenu = () => {
+    setAnchorEl(null);
+    setSelectedClassForMenu(null);
+  };
+
   return (
     <Box>
       <Box sx={{ mb: 3, display: "flex", justifyContent: "space-between" }}>
@@ -744,7 +836,18 @@ const AdminAcademicClasses: React.FC = () => {
                 <MenuItem value="all">Tất cả giảng viên</MenuItem>
                 {instructors.map((instructor) => (
                   <MenuItem key={instructor.id} value={instructor.id}>
-                    {instructor.fullName} - {instructor.professionalTitle}
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      {instructor.user?.avatarUrl && (
+                        <Avatar
+                          src={instructor.user.avatarUrl}
+                          alt={instructor.fullName}
+                          sx={{ width: 24, height: 24 }}
+                        />
+                      )}
+                      <Typography noWrap>
+                        {instructor.fullName} - {instructor.professionalTitle}
+                      </Typography>
+                    </Box>
                   </MenuItem>
                 ))}
               </Select>
@@ -878,22 +981,11 @@ const AdminAcademicClasses: React.FC = () => {
                 <TableCell>{academicClass.semester}</TableCell>
                 <TableCell>
                   <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                    <Tooltip title="Phân công giảng viên">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleOpenAssignDialog(academicClass.id)}
-                      >
-                        <PersonAdd color="primary" fontSize="small" />
-                      </IconButton>
-                    </Tooltip>
                     <Box>
                       {academicClass.instructors?.map((instructor) => (
                         <Box key={instructor.id} sx={{ mb: 1 }}>
                           <Typography variant="body2">
                             {instructor?.instructor?.fullName || "N/A"}
-                          </Typography>
-                          <Typography variant="caption" color="text.secondary">
-                            {instructor?.instructor?.professionalTitle || "N/A"}
                           </Typography>
                         </Box>
                       ))}
@@ -917,32 +1009,83 @@ const AdminAcademicClasses: React.FC = () => {
                   })}
                 </TableCell>
                 <TableCell>
-                  <Box sx={{ display: "flex", gap: 1 }}>
-                    <Tooltip title="Xem danh sách sinh viên">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleOpenStudentList(academicClass)}
-                      >
-                        <People />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Chỉnh sửa">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleEdit(academicClass.id)}
-                      >
-                        <Edit />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Xóa">
-                      <IconButton
-                        size="small"
-                        onClick={() => handleDelete(academicClass.id)}
-                      >
-                        <Delete />
-                      </IconButton>
-                    </Tooltip>
-                  </Box>
+                  <IconButton
+                    size="small"
+                    onClick={(e) => handleOpenMenu(e, academicClass)}
+                  >
+                    <MoreVert />
+                  </IconButton>
+                  <Menu
+                    anchorEl={anchorEl}
+                    open={Boolean(anchorEl)}
+                    onClose={handleCloseMenu}
+                    onClick={handleCloseMenu}
+                    PaperProps={{
+                      sx: {
+                        boxShadow: "0px 0px 5px 0px rgba(168, 168, 168, 0.1)",
+                      },
+                    }}
+                  >
+                    <MenuItem
+                      onClick={() =>
+                        handleOpenAssignDialog(selectedClassForMenu!.id)
+                      }
+                    >
+                      <ListItemIcon>
+                        <PersonAdd
+                          fontSize="small"
+                          sx={{ color: "success.main" }}
+                        />
+                      </ListItemIcon>
+                      <ListItemText>Phân công giảng viên</ListItemText>
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() =>
+                        handleOpenStudentList(selectedClassForMenu!)
+                      }
+                    >
+                      <ListItemIcon>
+                        <People
+                          fontSize="small"
+                          sx={{ color: "primary.main" }}
+                        />
+                      </ListItemIcon>
+                      <ListItemText>Xem danh sách sinh viên</ListItemText>
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() =>
+                        handleOpenProgramCourses(selectedClassForMenu!)
+                      }
+                    >
+                      <ListItemIcon>
+                        <MenuBook
+                          fontSize="small"
+                          sx={{ color: "info.main" }}
+                        />
+                      </ListItemIcon>
+                      <ListItemText>
+                        Xem môn học trong chương trình
+                      </ListItemText>
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() => handleEdit(selectedClassForMenu!.id)}
+                    >
+                      <ListItemIcon>
+                        <Edit fontSize="small" sx={{ color: "warning.main" }} />
+                      </ListItemIcon>
+                      <ListItemText>Chỉnh sửa</ListItemText>
+                    </MenuItem>
+                    <MenuItem
+                      onClick={() => handleDelete(selectedClassForMenu!.id)}
+                    >
+                      <ListItemIcon>
+                        <Delete fontSize="small" sx={{ color: "error.main" }} />
+                      </ListItemIcon>
+                      <ListItemText sx={{ color: "error.main" }}>
+                        Xóa
+                      </ListItemText>
+                    </MenuItem>
+                  </Menu>
                 </TableCell>
               </TableRow>
             ))}
@@ -971,9 +1114,8 @@ const AdminAcademicClasses: React.FC = () => {
           }}
         >
           <Typography variant="body2" color="text.secondary">
-            Hiển thị {startIndex + 1}-
-            {Math.min(endIndex, filteredClasses.length)}
-            trên tổng số {filteredClasses.length} lớp học
+            Hiển thị {startIndex + 1}- trên tổng số {filteredClasses.length} lớp
+            học
           </Typography>
           <Pagination
             count={totalPages}
@@ -1109,7 +1251,20 @@ const AdminAcademicClasses: React.FC = () => {
                 >
                   {instructors?.map((instructor) => (
                     <MenuItem key={instructor.id} value={instructor.id}>
-                      {instructor.fullName} - {instructor.professionalTitle}
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                      >
+                        {instructor.user?.avatarUrl && (
+                          <Avatar
+                            src={instructor.user.avatarUrl}
+                            alt={instructor.fullName}
+                            sx={{ width: 24, height: 24 }}
+                          />
+                        )}
+                        <Typography noWrap>
+                          {instructor.fullName} - {instructor.professionalTitle}
+                        </Typography>
+                      </Box>
                     </MenuItem>
                   ))}
                 </Select>
@@ -1147,6 +1302,10 @@ const AdminAcademicClasses: React.FC = () => {
         <DialogTitle>Phân công giảng viên</DialogTitle>
         <DialogContent>
           <Box sx={{ mt: 2 }}>
+            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+              Lưu ý: Khi thay đổi phân công giảng viên, các lịch giảng dạy liên
+              quan sẽ bị xóa.
+            </Typography>
             <FormControl fullWidth>
               <InputLabel>Giảng viên</InputLabel>
               <Select
@@ -1170,7 +1329,7 @@ const AdminAcademicClasses: React.FC = () => {
                           key={value}
                           avatar={
                             <Avatar
-                              src={instructor.user.avatarUrl}
+                              src={instructor.user?.avatarUrl}
                               alt={instructor.fullName}
                               sx={{ width: 24, height: 24 }}
                             >
@@ -1194,22 +1353,17 @@ const AdminAcademicClasses: React.FC = () => {
               >
                 {instructors.map((instructor) => (
                   <MenuItem key={instructor.id} value={instructor.id}>
-                    <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
-                      <Avatar
-                        src={instructor.user.avatarUrl}
-                        alt={instructor.fullName}
-                        sx={{ width: 32, height: 32 }}
-                      >
-                        {instructor.fullName[0]}
-                      </Avatar>
-                      <Box>
-                        <Typography variant="body1">
-                          {instructor.fullName}
-                        </Typography>
-                        <Typography variant="caption" color="text.secondary">
-                          {instructor.professionalTitle}
-                        </Typography>
-                      </Box>
+                    <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                      {instructor.user?.avatarUrl && (
+                        <Avatar
+                          src={instructor.user.avatarUrl}
+                          alt={instructor.fullName}
+                          sx={{ width: 24, height: 24 }}
+                        />
+                      )}
+                      <Typography noWrap>
+                        {instructor.fullName} - {instructor.professionalTitle}
+                      </Typography>
                     </Box>
                   </MenuItem>
                 ))}
@@ -1521,6 +1675,136 @@ const AdminAcademicClasses: React.FC = () => {
           >
             Xóa
           </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Dialog hiển thị danh sách môn học */}
+      <Dialog
+        open={openProgramCoursesDialog}
+        onClose={handleCloseProgramCourses}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle>
+          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
+            <Avatar sx={{ bgcolor: "primary.light" }}>
+              <MenuBook />
+            </Avatar>
+            <Box>
+              <Typography variant="h6">
+                Danh sách môn học -{" "}
+                {selectedClassForCourses?.program?.programName}
+              </Typography>
+              <Typography variant="subtitle2" color="text.secondary">
+                Mã chương trình: {selectedClassForCourses?.program?.programCode}
+              </Typography>
+            </Box>
+          </Box>
+        </DialogTitle>
+        <DialogContent>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Mã môn học</TableCell>
+                  <TableCell>Tên môn học</TableCell>
+                  <TableCell>Mô tả</TableCell>
+                  <TableCell>Số tín chỉ</TableCell>
+                  <TableCell>Loại môn học</TableCell>
+                  <TableCell>Trình độ</TableCell>
+                  <TableCell>Đối tượng</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {programCourses.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={7} align="center">
+                      Không có môn học nào trong chương trình
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  programCourses.map((programCourse) => (
+                    <TableRow key={programCourse.id}>
+                      <TableCell>{programCourse.course?.id}</TableCell>
+                      <TableCell>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          {programCourse.course?.thumbnailUrl && (
+                            <Box
+                              component="img"
+                              src={programCourse.course.thumbnailUrl}
+                              alt={programCourse.course.title}
+                              sx={{ width: 40, height: 40, objectFit: "cover" }}
+                            />
+                          )}
+                          <Typography variant="body2" noWrap>
+                            {programCourse.course?.title}
+                          </Typography>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Typography
+                          variant="body2"
+                          noWrap
+                          sx={{ maxWidth: 200 }}
+                        >
+                          {programCourse.course?.description}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>{programCourse.credits}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={
+                            programCourse.isMandatory ? "Bắt buộc" : "Tự chọn"
+                          }
+                          color={
+                            programCourse.isMandatory ? "primary" : "secondary"
+                          }
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={
+                            programCourse.course?.level === "beginner"
+                              ? "Cơ bản"
+                              : programCourse.course?.level === "intermediate"
+                              ? "Trung cấp"
+                              : "Nâng cao"
+                          }
+                          color={
+                            programCourse.course?.level === "beginner"
+                              ? "success"
+                              : programCourse.course?.level === "intermediate"
+                              ? "warning"
+                              : "error"
+                          }
+                          size="small"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={
+                            programCourse.course?.for === "student"
+                              ? "Sinh viên"
+                              : programCourse.course?.for === "instructor"
+                              ? "Giảng viên"
+                              : "Tất cả"
+                          }
+                          color="info"
+                          size="small"
+                        />
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseProgramCourses}>Đóng</Button>
         </DialogActions>
       </Dialog>
     </Box>

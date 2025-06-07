@@ -5,9 +5,19 @@ import { ProgramCourseController } from './program-course.controller';
 import { ProgramCourse } from '../../entities/ProgramCourse';
 import { Program } from '../../entities/Program';
 import { Course } from '../../entities/Course';
+import { AcademicClass } from '../../entities/AcademicClass';
+import { AcademicClassCourse } from 'src/entities/AcademicClassCourse';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ProgramCourse, Program, Course])],
+  imports: [
+    TypeOrmModule.forFeature([
+      ProgramCourse,
+      Program,
+      Course,
+      AcademicClass,
+      AcademicClassCourse,
+    ]),
+  ],
   controllers: [ProgramCourseController],
   providers: [ProgramCourseService],
   exports: [ProgramCourseService],

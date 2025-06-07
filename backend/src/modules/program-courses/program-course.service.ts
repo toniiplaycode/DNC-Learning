@@ -10,6 +10,9 @@ import { CreateProgramCourseDto } from './dto/create-program-course.dto';
 import { UpdateProgramCourseDto } from './dto/update-program-course.dto';
 import { Program } from '../../entities/Program';
 import { Course } from '../../entities/Course';
+import { AcademicClass } from '../../entities/AcademicClass';
+import { AcademicClassCourse } from '../../entities/AcademicClassCourse';
+import { In } from 'typeorm';
 
 @Injectable()
 export class ProgramCourseService {
@@ -20,6 +23,10 @@ export class ProgramCourseService {
     private programRepository: Repository<Program>,
     @InjectRepository(Course)
     private courseRepository: Repository<Course>,
+    @InjectRepository(AcademicClass)
+    private academicClassRepository: Repository<AcademicClass>,
+    @InjectRepository(AcademicClassCourse)
+    private academicClassCourseRepository: Repository<AcademicClassCourse>,
   ) {}
 
   async create(createDto: CreateProgramCourseDto): Promise<ProgramCourse> {
@@ -54,8 +61,30 @@ export class ProgramCourseService {
       throw new BadRequestException('Course is already in this program');
     }
 
+    // Create the program course
     const programCourse = this.programCourseRepository.create(createDto);
-    return this.programCourseRepository.save(programCourse);
+    const savedProgramCourse =
+      await this.programCourseRepository.save(programCourse);
+
+    // Find all academic classes belonging to this program
+    const academicClasses = await this.academicClassRepository.find({
+      where: { programId: createDto.programId },
+    });
+
+    // Create AcademicClassCourse entries for each academic class
+    const academicClassCourses = academicClasses.map((academicClass) =>
+      this.academicClassCourseRepository.create({
+        classId: academicClass.id,
+        courseId: createDto.courseId,
+      }),
+    );
+
+    // Save all academic class courses
+    if (academicClassCourses.length > 0) {
+      await this.academicClassCourseRepository.save(academicClassCourses);
+    }
+
+    return savedProgramCourse;
   }
 
   async findAll(): Promise<ProgramCourse[]> {
@@ -139,6 +168,22 @@ export class ProgramCourseService {
 
   async remove(id: number): Promise<void> {
     const programCourse = await this.findOne(id);
+
+    // Find all academic classes in this program
+    const academicClasses = await this.academicClassRepository.find({
+      where: { programId: programCourse.programId },
+      select: ['id'],
+    });
+
+    // Delete all related AcademicClassCourse entries
+    if (academicClasses.length > 0) {
+      await this.academicClassCourseRepository.delete({
+        courseId: programCourse.courseId,
+        classId: In(academicClasses.map((ac) => ac.id)),
+      });
+    }
+
+    // Delete the ProgramCourse
     await this.programCourseRepository.remove(programCourse);
   }
 
@@ -154,6 +199,22 @@ export class ProgramCourseService {
         `Program course with program ID ${programId} and course ID ${courseId} not found`,
       );
     }
+
+    // Find all academic classes in this program
+    const academicClasses = await this.academicClassRepository.find({
+      where: { programId },
+      select: ['id'],
+    });
+
+    // Delete all related AcademicClassCourse entries
+    if (academicClasses.length > 0) {
+      await this.academicClassCourseRepository.delete({
+        courseId,
+        classId: In(academicClasses.map((ac) => ac.id)),
+      });
+    }
+
+    // Delete the ProgramCourse
     await this.programCourseRepository.remove(programCourse);
   }
 }

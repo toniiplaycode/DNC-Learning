@@ -188,6 +188,40 @@ export const fetchTeachingSchedulesByStudent = createAsyncThunk(
   }
 );
 
+export const deleteTeachingSchedulesByInstructorAssignment = createAsyncThunk(
+  "teachingSchedules/deleteByInstructorAssignment",
+  async (
+    {
+      academicClassInstructorId,
+      instructorId,
+    }: { academicClassInstructorId: number; instructorId: number },
+    { rejectWithValue }
+  ) => {
+    try {
+      // Lấy danh sách lịch giảng dạy của phân công này
+      const response = await api.get(
+        `/teaching-schedules?academicClassInstructorId=${academicClassInstructorId}`
+      );
+      const schedules = response.data;
+
+      // Chỉ xóa các lịch giảng dạy của giảng viên bị xóa
+      const deletedSchedules = [];
+      for (const schedule of schedules) {
+        if (schedule.academicClassInstructor?.instructorId === instructorId) {
+          await api.delete(`/teaching-schedules/${schedule.id}`);
+          deletedSchedules.push(schedule.id);
+        }
+      }
+
+      return { academicClassInstructorId, instructorId, deletedSchedules };
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message || "Không thể xóa lịch giảng dạy"
+      );
+    }
+  }
+);
+
 // Initial state
 const initialState: TeachingScheduleState = {
   teachingSchedules: [],
@@ -468,7 +502,52 @@ const teachingSchedulesSlice = createSlice({
       .addCase(fetchTeachingSchedulesByStudent.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
-      });
+      })
+
+      // Delete by instructor assignment
+      .addCase(
+        deleteTeachingSchedulesByInstructorAssignment.pending,
+        (state) => {
+          state.status = "loading";
+        }
+      )
+      .addCase(
+        deleteTeachingSchedulesByInstructorAssignment.fulfilled,
+        (state, action) => {
+          state.status = "succeeded";
+          const { academicClassInstructorId, instructorId, deletedSchedules } =
+            action.payload;
+
+          // Xóa khỏi các mảng
+          state.teachingSchedules = state.teachingSchedules.filter(
+            (schedule) => !deletedSchedules.includes(schedule.id)
+          );
+
+          state.classSchedules = state.classSchedules.filter(
+            (schedule) => !deletedSchedules.includes(schedule.id)
+          );
+
+          state.instructorSchedules = state.instructorSchedules.filter(
+            (schedule) => !deletedSchedules.includes(schedule.id)
+          );
+
+          if (
+            state.currentSchedule?.academicClassInstructorId ===
+            academicClassInstructorId
+          ) {
+            state.currentSchedule = null;
+          }
+
+          state.error = null;
+        }
+      )
+      .addCase(
+        deleteTeachingSchedulesByInstructorAssignment.rejected,
+        (state, action) => {
+          state.status = "failed";
+          state.error = action.payload as string;
+        }
+      );
   },
 });
 

@@ -2292,11 +2292,11 @@ const ProfileAccount: React.FC = () => {
                       ? currentUser?.userStudent?.fullName
                       : currentUser?.userStudentAcademic?.fullName}
                   </Typography>
-                  <Typography variant="subtitle1" color="primary" gutterBottom>
+                  <Typography variant="h6" color="primary" gutterBottom>
                     {currentUser?.role === UserRole.STUDENT
                       ? "Mã học viên"
                       : "Mã sinh viên"}
-                    :
+                    :{" "}
                     {currentUser?.role === UserRole.STUDENT
                       ? currentUser?.userStudent?.id
                       : currentUser?.userStudentAcademic?.studentCode}

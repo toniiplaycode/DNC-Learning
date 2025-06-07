@@ -38,6 +38,11 @@ export class AcademicClassesController {
     return this.academicClassesService.findOne(id);
   }
 
+  @Get(':id/program-courses')
+  getClassProgramCourses(@Param('id', ParseIntPipe) id: number) {
+    return this.academicClassesService.getClassProgramCourses(id);
+  }
+
   @Put(':id')
   update(
     @Param('id', ParseIntPipe) id: number,

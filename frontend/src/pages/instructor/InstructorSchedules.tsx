@@ -222,6 +222,27 @@ const InstructorSchedules = () => {
   const handleSaveSchedule = async (event: React.FormEvent) => {
     event.preventDefault();
 
+    // Kiểm tra các trường bắt buộc
+    if (!formData.title?.trim()) {
+      toast.error("Vui lòng nhập tiêu đề lịch dạy");
+      return;
+    }
+
+    if (!formData.startTime) {
+      toast.error("Vui lòng chọn thời gian bắt đầu");
+      return;
+    }
+
+    if (!formData.endTime) {
+      toast.error("Vui lòng chọn thời gian kết thúc");
+      return;
+    }
+
+    if (!formData.meetingLink?.trim()) {
+      toast.error("Vui lòng nhập link phòng học");
+      return;
+    }
+
     // Kiểm tra thời gian
     if (formData.startTime && formData.endTime) {
       const startTime = new Date(formData.startTime);
@@ -245,13 +266,8 @@ const InstructorSchedules = () => {
       }
     }
 
-    if (
-      !currentUser?.userInstructor?.id ||
-      !formData.title ||
-      !formData.startTime ||
-      !formData.endTime
-    ) {
-      toast.error("Vui lòng điền đầy đủ thông tin");
+    if (!currentUser?.userInstructor?.id) {
+      toast.error("Không tìm thấy thông tin giảng viên");
       return;
     }
 
@@ -296,7 +312,7 @@ const InstructorSchedules = () => {
           type: "schedule",
         };
 
-        await dispatch(createNotification(notificationData));
+        dispatch(createNotification(notificationData));
 
         toast.success("Tạo lịch dạy mới thành công");
       }
@@ -1618,11 +1634,16 @@ const InstructorSchedules = () => {
             <Stack spacing={2.5} sx={{ pt: 1 }}>
               {/* Select lớp học - chỉ hiển thị khi tạo mới */}
               {!editingSchedule ? (
-                <FormControl fullWidth variant="outlined" sx={{ mb: 2 }}>
+                <FormControl
+                  fullWidth
+                  variant="outlined"
+                  sx={{ mb: 2 }}
+                  required
+                >
                   <InputLabel>Lớp học</InputLabel>
                   <Select
                     name="academicClassInstructorId"
-                    label="Lớp học"
+                    label="Lớp học *"
                     value={formData.academicClassInstructorId || ""}
                     onChange={handleSelectChange}
                     required
@@ -1685,6 +1706,10 @@ const InstructorSchedules = () => {
                 InputProps={{
                   sx: { borderRadius: 1.5 },
                 }}
+                error={!formData.title?.trim()}
+                helperText={
+                  !formData.title?.trim() ? "Tiêu đề không được để trống" : ""
+                }
               />
               <TextField
                 label="Mô tả"
@@ -1694,10 +1719,17 @@ const InstructorSchedules = () => {
                 rows={3}
                 value={formData.description || ""}
                 onChange={handleFormChange}
+                required
                 variant="outlined"
                 InputProps={{
                   sx: { borderRadius: 1.5 },
                 }}
+                error={!formData.description?.trim()}
+                helperText={
+                  !formData.description?.trim()
+                    ? "Mô tả không được để trống"
+                    : ""
+                }
               />
               <TextField
                 label="Ngày và giờ bắt đầu"
@@ -1713,18 +1745,15 @@ const InstructorSchedules = () => {
                 inputProps={{
                   step: 300, // 5 phút
                 }}
-                helperText="Định dạng: HH:mm - dd/MM/yyyy"
+                error={!formData.startTime}
+                helperText={
+                  !formData.startTime
+                    ? "Vui lòng chọn thời gian bắt đầu"
+                    : "Định dạng: HH:mm - dd/MM/yyyy"
+                }
                 variant="outlined"
                 InputProps={{
                   sx: { borderRadius: 1.5 },
-                }}
-                FormHelperTextProps={{
-                  sx: {
-                    fontSize: "0.75rem",
-                    color: "text.secondary",
-                    mt: 0.5,
-                    ml: 0.5,
-                  },
                 }}
               />
               <TextField
@@ -1740,28 +1769,25 @@ const InstructorSchedules = () => {
                 }}
                 inputProps={{
                   step: 300, // 5 phút
-                  min: formData.startTime || undefined, // Set min time to start time
+                  min: formData.startTime || undefined,
                 }}
-                error={!!timeError}
-                helperText={timeError || "Định dạng: HH:mm - dd/MM/yyyy"}
+                error={!!timeError || !formData.endTime}
+                helperText={
+                  timeError ||
+                  (!formData.endTime
+                    ? "Vui lòng chọn thời gian kết thúc"
+                    : "Định dạng: HH:mm - dd/MM/yyyy")
+                }
                 variant="outlined"
                 InputProps={{
                   sx: { borderRadius: 1.5 },
                 }}
-                FormHelperTextProps={{
-                  sx: {
-                    fontSize: "0.75rem",
-                    color: timeError ? "error.main" : "text.secondary",
-                    mt: 0.5,
-                    ml: 0.5,
-                  },
-                }}
               />
-              <FormControl fullWidth variant="outlined">
+              <FormControl fullWidth variant="outlined" required>
                 <InputLabel>Trạng thái</InputLabel>
                 <Select
                   name="status"
-                  label="Trạng thái"
+                  label="Trạng thái *"
                   value={formData.status || ScheduleStatus.SCHEDULED}
                   onChange={handleSelectChange}
                   required
@@ -1786,6 +1812,7 @@ const InstructorSchedules = () => {
                 placeholder="https://meet.google.com/xxx-xxxx-xxx"
                 value={formData.meetingLink || ""}
                 onChange={handleFormChange}
+                required
                 variant="outlined"
                 InputProps={{
                   sx: { borderRadius: 1.5 },
@@ -1793,9 +1820,15 @@ const InstructorSchedules = () => {
                     <VideoCall sx={{ mr: 1, color: "primary.main" }} />
                   ),
                 }}
+                error={!formData.meetingLink?.trim()}
+                helperText={
+                  !formData.meetingLink?.trim()
+                    ? "Link phòng học không được để trống"
+                    : ""
+                }
               />
               <TextField
-                label="ID phòng học"
+                label="ID phòng học (không bắt buộc)"
                 name="meetingId"
                 fullWidth
                 placeholder="123-456-789"
@@ -1807,7 +1840,7 @@ const InstructorSchedules = () => {
                 }}
               />
               <TextField
-                label="Mật khẩu phòng học"
+                label="Mật khẩu phòng học (không bắt buộc)"
                 name="meetingPassword"
                 fullWidth
                 placeholder="abcdef"
