@@ -5,6 +5,7 @@ import { AcademicClassCourse } from "../../types/academic-class-course.types";
 interface AcademicClassCoursesState {
   classCourses: AcademicClassCourse[];
   currentClassCourses: AcademicClassCourse | null;
+  classCoursesByClassId: AcademicClassCourse[];
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
 }
@@ -12,6 +13,7 @@ interface AcademicClassCoursesState {
 const initialState: AcademicClassCoursesState = {
   classCourses: [],
   currentClassCourses: null,
+  classCoursesByClassId: [],
   status: "idle",
   error: null,
 };
@@ -117,7 +119,7 @@ const academicClassCoursesSlice = createSlice({
       })
       .addCase(fetchCoursesByClassId.fulfilled, (state, action) => {
         state.status = "succeeded";
-        state.classCourses = action.payload;
+        state.classCoursesByClassId = action.payload;
         state.error = null;
       })
       .addCase(fetchCoursesByClassId.rejected, (state, action) => {

@@ -108,6 +108,8 @@ const InstructorStudentsAcademic = () => {
   const [termFilter, setTermFilter] = useState("all");
   const [majorFilter, setMajorFilter] = useState("all");
 
+  console.log(classCourses);
+
   useEffect(() => {
     dispatch(fetchClassInstructorById(Number(currentUser?.userInstructor?.id)));
     dispatch(fetchClassCourses());

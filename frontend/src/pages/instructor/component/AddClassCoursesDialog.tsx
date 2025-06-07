@@ -22,8 +22,12 @@ import {
   fetchClassCourses,
   createAcademicClassCourses,
   deleteAcademicClassCourse,
+  fetchCoursesByClassId,
 } from "../../../features/academic-class-courses/academicClassCoursesSlice";
-import { selectAllClassCourses } from "../../../features/academic-class-courses/academicClassCoursesSelectors";
+import {
+  selectAllClassCourses,
+  selectClassCoursesByClassId,
+} from "../../../features/academic-class-courses/academicClassCoursesSelectors";
 import { toast } from "react-toastify";
 import { createNotification } from "../../../features/notifications/notificationsSlice";
 import { selectProgramCourses } from "../../../features/academic-classes/academicClassesSelectors";
@@ -45,6 +49,7 @@ export const AddClassCoursesDialog = ({
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector(selectCurrentUser);
   const classCourses = useAppSelector(selectAllClassCourses);
+  const classCoursesByClassId = useAppSelector(selectClassCoursesByClassId);
   const programCourses = useAppSelector(selectProgramCourses);
   const [selectedCourses, setSelectedCourses] = useState<number[]>([]);
   const [initialExistingCourses, setInitialExistingCourses] = useState<
@@ -67,6 +72,29 @@ export const AddClassCoursesDialog = ({
     };
   });
 
+  // Phân loại khóa học của giảng viên khác
+  const otherInstructorsCourses = classCoursesByClassId
+    .filter(
+      (course) =>
+        // Lọc ra khóa học không thuộc về giảng viên hiện tại
+        !coursesByInstructor.some((c) => c.id === course.id) &&
+        // Và không thuộc chương trình đào tạo
+        !programCourses.some((pc) => pc.courseId === course.id) &&
+        // Và đã được gán cho lớp
+        initialExistingCourses.includes(course.id)
+    )
+    .reduce((acc, course) => {
+      const instructorId = course.instructor.id;
+      if (!acc[instructorId]) {
+        acc[instructorId] = {
+          instructor: course.instructor,
+          courses: [],
+        };
+      }
+      acc[instructorId].courses.push(course);
+      return acc;
+    }, {} as Record<string, { instructor: any; courses: any[] }>);
+
   const instructorNonProgramCourses = coursesByInstructor
     .filter((course) => !programCoursesMap.has(course.id))
     .map((course) => ({
@@ -81,6 +109,7 @@ export const AddClassCoursesDialog = ({
       );
       dispatch(fetchClassCourses());
       dispatch(fetchClassProgramCourses(Number(classData?.academicClass?.id)));
+      dispatch(fetchCoursesByClassId(Number(classData?.academicClass?.id)));
 
       const existing = classCourses
         .filter((cc) => cc.classId === classData?.academicClass?.id)
@@ -173,7 +202,8 @@ export const AddClassCoursesDialog = ({
   const renderCourseList = (
     courses: any[],
     title: string,
-    isProgramCourse: boolean
+    isProgramCourse: boolean,
+    isViewOnly: boolean = false
   ) => (
     <Box sx={{ mt: 3 }}>
       <Typography variant="subtitle1" sx={{ mb: 2, color: "text.secondary" }}>
@@ -277,6 +307,7 @@ export const AddClassCoursesDialog = ({
               borderColor: "divider",
               borderRadius: 1,
               bgcolor: "background.paper",
+              opacity: isViewOnly ? 0.7 : 1,
             }}
           >
             <FormControlLabel
@@ -284,6 +315,7 @@ export const AddClassCoursesDialog = ({
                 <Checkbox
                   checked={selectedCourses.includes(course.id)}
                   onChange={() => handleToggleCourse(course.id)}
+                  disabled={isViewOnly}
                 />
               }
               label={
@@ -375,10 +407,41 @@ export const AddClassCoursesDialog = ({
           "Khóa học trong chương trình đào tạo",
           true
         )}
+
         {renderCourseList(
           instructorNonProgramCourses,
-          "Khóa học ngoài chương trình đào tạo",
+          "Khóa học của bạn",
           false
+        )}
+
+        {Object.entries(otherInstructorsCourses).map(
+          ([instructorId, { instructor, courses }]) => (
+            <Box key={instructorId} sx={{ mt: 4 }}>
+              <Box
+                sx={{ display: "flex", alignItems: "center", gap: 1, mb: 2 }}
+              >
+                <Avatar
+                  src={instructor.avatarUrl}
+                  alt={instructor.fullName}
+                  sx={{ width: 32, height: 32 }}
+                />
+                <Box>
+                  <Typography variant="subtitle2">
+                    {instructor.fullName}
+                  </Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {instructor.professionalTitle}
+                  </Typography>
+                </Box>
+              </Box>
+              {renderCourseList(
+                courses,
+                "Khóa học đã thêm vào lớp",
+                false,
+                true
+              )}
+            </Box>
+          )
         )}
       </DialogContent>
       <DialogActions>

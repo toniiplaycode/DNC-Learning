@@ -8,6 +8,9 @@ export const selectAcademicClassCoursesState = (state: RootState) =>
 export const selectAllClassCourses = (state: RootState) =>
   state.academicClassCourses.classCourses;
 
+export const selectClassCoursesByClassId = (state: RootState) =>
+  state.academicClassCourses.classCoursesByClassId;
+
 export const selectClassCoursesStatus = (state: RootState) =>
   state.academicClassCourses.status;
 
