@@ -14,6 +14,8 @@ export interface ProgramCourse {
   course?: Course;
   createdAt: string;
   updatedAt: string;
+  start_time?: string | null;
+  end_time?: string | null;
 }
 
 export interface CreateProgramCourseDto {
@@ -24,6 +26,8 @@ export interface CreateProgramCourseDto {
   practice?: number;
   theory?: number;
   isMandatory?: boolean;
+  start_time?: string;
+  end_time?: string;
 }
 
 export interface UpdateProgramCourseDto {
@@ -31,5 +35,7 @@ export interface UpdateProgramCourseDto {
   semester?: number;
   practice?: number;
   theory?: number;
+  start_time?: string;
+  end_time?: string;
   isMandatory?: boolean;
 }

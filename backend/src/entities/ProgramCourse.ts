@@ -56,6 +56,12 @@ export class ProgramCourse {
   })
   isMandatory: boolean;
 
+  @Column({ type: 'date' })
+  start_time: Date;
+
+  @Column({ type: 'date' })
+  end_time: Date;
+
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
 

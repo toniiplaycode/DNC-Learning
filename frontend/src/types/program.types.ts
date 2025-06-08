@@ -29,6 +29,8 @@ export interface ProgramCourse {
   practice: number;
   theory: number;
   isMandatory: boolean;
+  start_time?: string;
+  end_time?: string;
   createdAt: string;
   updatedAt: string;
   course?: Course;

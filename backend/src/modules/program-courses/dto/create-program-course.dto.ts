@@ -5,7 +5,9 @@ import {
   IsString,
   Min,
   Max,
+  IsDate,
 } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class CreateProgramCourseDto {
   @IsInt()
@@ -39,4 +41,14 @@ export class CreateProgramCourseDto {
   @IsBoolean()
   @IsOptional()
   isMandatory?: boolean;
+
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  start_time?: Date;
+
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  end_time?: Date;
 }

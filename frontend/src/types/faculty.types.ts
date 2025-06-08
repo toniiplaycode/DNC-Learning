@@ -40,6 +40,8 @@ export interface ProgramCourse {
   isMandatory: boolean;
   createdAt: string;
   updatedAt: string;
+  start_time?: string;
+  end_time?: string;
   course?: Course;
 }
 

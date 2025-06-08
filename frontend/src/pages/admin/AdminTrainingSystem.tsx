@@ -275,6 +275,8 @@ const AdminTrainingSystem: React.FC = () => {
     semester: number;
     practice: number;
     theory: number;
+    start_time?: Date | null;
+    end_time?: Date | null;
   }>({
     courseId: 0,
     credits: 3,
@@ -282,6 +284,8 @@ const AdminTrainingSystem: React.FC = () => {
     semester: 1,
     practice: 0,
     theory: 0,
+    start_time: null,
+    end_time: null,
   });
   const [editProgramCourse, setEditProgramCourse] = useState<{
     id: number;
@@ -290,6 +294,8 @@ const AdminTrainingSystem: React.FC = () => {
     semester: number;
     practice: number;
     theory: number;
+    start_time?: Date | null;
+    end_time?: Date | null;
   }>({
     id: 0,
     credits: 3,
@@ -297,6 +303,8 @@ const AdminTrainingSystem: React.FC = () => {
     semester: 1,
     practice: 0,
     theory: 0,
+    start_time: null,
+    end_time: null,
   });
   const [expandedSemesters, setExpandedSemesters] = useState<
     Record<string, boolean>
@@ -309,7 +317,7 @@ const AdminTrainingSystem: React.FC = () => {
             program.programCourses.map((pc) => pc.semester)
           );
           semesters.forEach((semester) => {
-            initialState[`${program.id}-${semester}`] = true;
+            initialState[`${program.id}-${semester}`] = false;
           });
         });
       });
@@ -332,14 +340,25 @@ const AdminTrainingSystem: React.FC = () => {
     parentId?: string,
     data?: any
   ) => {
-    if (type === "faculty" && data) {
-      const faculty = faculties.find((f) => f.id === data.id);
-      if (faculty) {
-        setEditFaculty({
-          facultyCode: faculty.facultyCode,
-          facultyName: faculty.facultyName,
-          description: faculty.description || "",
-          status: faculty.status as FacultyStatus,
+    if (type === "faculty") {
+      if (data) {
+        // Edit mode
+        const faculty = faculties.find((f) => f.id === data.id);
+        if (faculty) {
+          setEditFaculty({
+            facultyCode: faculty.facultyCode,
+            facultyName: faculty.facultyName,
+            description: faculty.description || "",
+            status: faculty.status as FacultyStatus,
+          });
+        }
+      } else {
+        // Create mode
+        setNewFaculty({
+          facultyCode: "",
+          facultyName: "",
+          description: "",
+          status: FacultyStatus.ACTIVE,
         });
       }
     } else if (type === "major") {
@@ -358,10 +377,13 @@ const AdminTrainingSystem: React.FC = () => {
         }
       } else {
         // Create mode
-        setNewMajor((prev) => ({
-          ...prev,
+        setNewMajor({
           facultyId: Number(parentId),
-        }));
+          majorCode: "",
+          majorName: "",
+          description: "",
+          status: MajorStatus.ACTIVE,
+        });
       }
     } else if (type === "program") {
       if (data) {
@@ -382,32 +404,58 @@ const AdminTrainingSystem: React.FC = () => {
         }
       } else {
         // Create mode
-        setNewProgram((prev) => ({
-          ...prev,
+        setNewProgram({
           majorId: Number(parentId),
-        }));
+          programCode: "",
+          programName: "",
+          description: "",
+          totalCredits: 0,
+          durationYears: 4,
+          status: ProgramStatus.ACTIVE,
+        });
       }
-    } else if (type === "course" && data) {
-      // Edit mode for program course
-      const programCourse = faculties
-        .find((f) =>
-          f.majors.some((m) => m.programs.some((p) => p.id === parentId))
-        )
-        ?.majors.find((m) => m.programs.some((p) => p.id === parentId))
-        ?.programs.find((p) => p.id === parentId)
-        ?.programCourses.find((pc) => pc.id === data.id);
+    } else if (type === "course") {
+      if (data) {
+        // Edit mode for program course
+        const programCourse = faculties
+          .find((f) =>
+            f.majors.some((m) => m.programs.some((p) => p.id === parentId))
+          )
+          ?.majors.find((m) => m.programs.some((p) => p.id === parentId))
+          ?.programs.find((p) => p.id === parentId)
+          ?.programCourses.find((pc) => pc.id === data.id);
 
-      if (programCourse) {
-        setEditProgramCourse({
-          id: Number(programCourse.id),
-          credits: programCourse.credits,
-          isMandatory: programCourse.isMandatory,
-          semester: programCourse.semester,
-          practice: programCourse.practice,
-          theory: programCourse.theory,
+        if (programCourse) {
+          setEditProgramCourse({
+            id: Number(programCourse.id),
+            credits: programCourse.credits,
+            isMandatory: programCourse.isMandatory,
+            semester: programCourse.semester,
+            practice: programCourse.practice,
+            theory: programCourse.theory,
+            start_time: programCourse.start_time
+              ? new Date(programCourse.start_time)
+              : null,
+            end_time: programCourse.end_time
+              ? new Date(programCourse.end_time)
+              : null,
+          });
+        }
+      } else {
+        // Create mode
+        setNewCourse({
+          courseId: 0,
+          credits: 3,
+          isMandatory: true,
+          semester: dialogState.semester || 1,
+          practice: 0,
+          theory: 0,
+          start_time: null,
+          end_time: null,
         });
       }
     }
+
     setDialogState({
       open: true,
       type,
@@ -444,6 +492,7 @@ const AdminTrainingSystem: React.FC = () => {
             status: FacultyStatus.ACTIVE,
           });
         }
+        toast.success("Thêm khoa thành công");
         dispatch(fetchFaculties());
         handleCloseDialog();
       } catch (error) {
@@ -471,6 +520,7 @@ const AdminTrainingSystem: React.FC = () => {
             status: MajorStatus.ACTIVE,
           });
         }
+        toast.success("Thêm ngành thành công");
         dispatch(fetchFaculties());
         handleCloseDialog();
       } catch (error: any) {
@@ -500,6 +550,7 @@ const AdminTrainingSystem: React.FC = () => {
             status: ProgramStatus.ACTIVE,
           });
         }
+        toast.success("Thêm chương trình thành công");
         dispatch(fetchFaculties());
         handleCloseDialog();
       } catch (error: any) {
@@ -518,6 +569,8 @@ const AdminTrainingSystem: React.FC = () => {
                 semester: editProgramCourse.semester,
                 practice: editProgramCourse.practice,
                 theory: editProgramCourse.theory,
+                start_time: editProgramCourse.start_time,
+                end_time: editProgramCourse.end_time,
               },
             })
           ).unwrap();
@@ -533,6 +586,8 @@ const AdminTrainingSystem: React.FC = () => {
               semester: newCourse.semester,
               practice: newCourse.practice,
               theory: newCourse.theory,
+              start_time: newCourse.start_time,
+              end_time: newCourse.end_time,
             })
           ).unwrap();
           // Reset form
@@ -543,6 +598,8 @@ const AdminTrainingSystem: React.FC = () => {
             semester: 1,
             practice: 0,
             theory: 0,
+            start_time: null,
+            end_time: null,
           });
           toast.success("Thêm môn học thành công");
         }
@@ -1022,9 +1079,7 @@ const AdminTrainingSystem: React.FC = () => {
     return (
       <TableContainer component={Paper}>
         <Box sx={{ p: 2, display: "flex", alignItems: "center", gap: 1 }}>
-          <Typography sx={{ color: "primary.main", fontWeight: "bold" }}>
-            Thêm mới khoa
-          </Typography>
+          <Typography sx={{ fontWeight: "bold" }}>Thêm mới khoa</Typography>
           {renderAddButton("faculty")}
         </Box>
         <Table>
@@ -1034,7 +1089,7 @@ const AdminTrainingSystem: React.FC = () => {
               <TableCell>Mã</TableCell>
               <TableCell>Tên</TableCell>
               <TableCell>Mô tả</TableCell>
-              <TableCell>Trạng thái</TableCell>
+              <TableCell>Thông tin</TableCell>
               <TableCell>Thao tác</TableCell>
             </TableRow>
           </TableHead>
@@ -1045,7 +1100,7 @@ const AdminTrainingSystem: React.FC = () => {
                   <TableCell>
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <SchoolIcon color="primary" />
-                      <Typography>Khoa</Typography>
+                      <Typography sx={{ fontWeight: "bold" }}>Khoa</Typography>
                       {renderAddButton("major", faculty.id)}
                     </Box>
                   </TableCell>
@@ -1090,7 +1145,9 @@ const AdminTrainingSystem: React.FC = () => {
                             }}
                           >
                             <MenuBookIcon color="primary" />
-                            <Typography>Ngành</Typography>
+                            <Typography sx={{ fontWeight: "bold" }}>
+                              Ngành
+                            </Typography>
                             {renderAddButton("program", major.id)}
                           </Box>
                         </TableCell>
@@ -1142,14 +1199,15 @@ const AdminTrainingSystem: React.FC = () => {
                                 }}
                               >
                                 <GroupIcon color="primary" />
-                                <Typography>
+                                <Typography sx={{ fontWeight: "bold" }}>
                                   Chương trình đào tạo
+                                  <br />
                                   <Typography
                                     variant="caption"
-                                    sx={{ ml: 1 }}
                                     color="text.secondary"
                                   >
-                                    ({program.programCourses.length} môn học)
+                                    ( {program.programCourses.length} môn học -{" "}
+                                    {calculateProgramCredits(program)} tín chỉ )
                                   </Typography>
                                 </Typography>
                                 <Tooltip title="Thêm môn học mới">
@@ -1183,16 +1241,32 @@ const AdminTrainingSystem: React.FC = () => {
                               </Typography>
                             </TableCell>
                             <TableCell>
-                              <Chip
-                                size="small"
-                                icon={getStatusIcon(program.status)}
-                                label={
-                                  program.status === "active"
-                                    ? "Đang áp dụng"
-                                    : "Không áp dụng"
-                                }
-                                color={getStatusColor(program.status)}
-                              />
+                              <Stack direction="row" spacing={1}>
+                                <Chip
+                                  size="small"
+                                  icon={getStatusIcon(program.status)}
+                                  label={
+                                    program.status === "active"
+                                      ? "Đang áp dụng"
+                                      : "Không áp dụng"
+                                  }
+                                  color={getStatusColor(program.status)}
+                                />
+                                <Chip
+                                  size="small"
+                                  icon={<SchoolIcon fontSize="small" />}
+                                  label={`${program.totalCredits} tín chỉ tối đa`}
+                                  color="primary"
+                                  variant="outlined"
+                                />
+                                <Chip
+                                  size="small"
+                                  icon={<CalendarMonthIcon fontSize="small" />}
+                                  label={`${program.durationYears} năm học`}
+                                  color="info"
+                                  variant="outlined"
+                                />
+                              </Stack>
                             </TableCell>
                             <TableCell>
                               {renderActionButtons(
@@ -1245,17 +1319,50 @@ const AdminTrainingSystem: React.FC = () => {
     });
   };
 
+  const calculateSemesterDates = (courses: ProgramCourse[]) => {
+    const validDates = courses.filter(
+      (course) => course.start_time && course.end_time
+    );
+    if (validDates.length === 0) return null;
+
+    const startDates = validDates.map((course) => new Date(course.start_time!));
+    const endDates = validDates.map((course) => new Date(course.end_time!));
+
+    const semesterStart = new Date(
+      Math.min(...startDates.map((date) => date.getTime()))
+    );
+    const semesterEnd = new Date(
+      Math.max(...endDates.map((date) => date.getTime()))
+    );
+
+    return { semesterStart, semesterEnd };
+  };
+
+  const calculateSemesterCredits = (courses: ProgramCourse[]) => {
+    return courses.reduce((total, course) => total + course.credits, 0);
+  };
+
+  const calculateProgramCredits = (program: Program) => {
+    return program.programCourses.reduce(
+      (total, course) => total + course.credits,
+      0
+    );
+  };
+
   const renderProgramCourses = (program: Program) => {
     const groupedCourses = groupCoursesBySemester(program.programCourses);
     const semesters = Object.keys(groupedCourses).sort(
       (a, b) => Number(a) - Number(b)
     );
+    const totalActualCredits = calculateProgramCredits(program);
 
     return (
       <>
         {semesters.map((semester) => {
           const semesterKey = `${program.id}-${semester}`;
-          const isExpanded = expandedSemesters[semesterKey] ?? true;
+          const isExpanded = expandedSemesters[semesterKey] ?? false;
+          const semesterCourses = groupedCourses[Number(semester)];
+          const totalCredits = calculateSemesterCredits(semesterCourses);
 
           return (
             <React.Fragment key={`semester-${semester}`}>
@@ -1293,7 +1400,6 @@ const AdminTrainingSystem: React.FC = () => {
                     <CalendarMonthIcon color="primary" />
                     <Typography
                       variant="subtitle2"
-                      color="primary"
                       sx={{
                         fontWeight: "bold",
                         userSelect: "none",
@@ -1306,14 +1412,42 @@ const AdminTrainingSystem: React.FC = () => {
                         color="text.secondary"
                         sx={{ ml: 1 }}
                       >
-                        ({groupedCourses[Number(semester)].length} môn học)
+                        ( {semesterCourses.length} môn học - {totalCredits} tín
+                        chỉ )
                       </Typography>
+                      {(() => {
+                        const semesterDates =
+                          calculateSemesterDates(semesterCourses);
+                        if (semesterDates) {
+                          return (
+                            <Typography
+                              variant="caption"
+                              color="text.secondary"
+                              sx={{
+                                display: "block",
+                                mt: 0.5,
+                              }}
+                            >
+                              {format(
+                                semesterDates.semesterStart,
+                                "dd/MM/yyyy"
+                              )}{" "}
+                              -{" "}
+                              {format(semesterDates.semesterEnd, "dd/MM/yyyy")}
+                            </Typography>
+                          );
+                        }
+                        return null;
+                      })()}
                     </Typography>
                     <Tooltip title={`Thêm môn học cho học kỳ ${semester}`}>
                       <IconButton
                         size="small"
                         onClick={(e) => {
                           e.stopPropagation();
+                          const semesterDates =
+                            calculateSemesterDates(semesterCourses);
+
                           const dialogState: DialogState = {
                             open: true,
                             type: "course",
@@ -1321,9 +1455,18 @@ const AdminTrainingSystem: React.FC = () => {
                             semester: Number(semester),
                           };
                           setDialogState(dialogState);
+
+                          // Set giá trị mới cho newCourse, bao gồm cả ngày bắt đầu và kết thúc
                           setNewCourse((prev) => ({
                             ...prev,
                             semester: Number(semester),
+                            // Nếu có ngày của học kỳ, sử dụng ngày đó, nếu không thì giữ nguyên null
+                            start_time: semesterDates
+                              ? semesterDates.semesterStart
+                              : null,
+                            end_time: semesterDates
+                              ? semesterDates.semesterEnd
+                              : null,
                           }));
                         }}
                         sx={{ ml: 1 }}
@@ -1335,7 +1478,7 @@ const AdminTrainingSystem: React.FC = () => {
                 </TableCell>
               </TableRow>
               {isExpanded &&
-                groupedCourses[Number(semester)].map((pc: ProgramCourse) => (
+                semesterCourses.map((pc: ProgramCourse) => (
                   <TableRow key={pc.id}>
                     <TableCell>
                       <Box
@@ -1383,6 +1526,26 @@ const AdminTrainingSystem: React.FC = () => {
                     </TableCell>
                     <TableCell>
                       <Stack direction="row" spacing={1}>
+                        {pc.start_time && pc.end_time && (
+                          <Chip
+                            size="small"
+                            icon={<CalendarMonthIcon fontSize="small" />}
+                            label={`${format(
+                              new Date(pc.start_time),
+                              "dd/MM/yyyy"
+                            )} - ${format(
+                              new Date(pc.end_time),
+                              "dd/MM/yyyy"
+                            )}`}
+                            color="info"
+                            sx={{
+                              "& .MuiChip-label": {
+                                fontSize: "0.75rem",
+                                whiteSpace: "nowrap",
+                              },
+                            }}
+                          />
+                        )}
                         <Chip
                           size="small"
                           label={`${pc.credits} tín chỉ`}
@@ -1857,7 +2020,13 @@ const AdminTrainingSystem: React.FC = () => {
                                 <Typography
                                   variant="caption"
                                   color="text.secondary"
-                                  sx={{ display: "block", mt: 0.5 }}
+                                  sx={{
+                                    display: "block",
+                                    mt: 0.5,
+                                    whiteSpace: "nowrap",
+                                    overflow: "hidden",
+                                    textOverflow: "ellipsis",
+                                  }}
                                 >
                                   {course.description}
                                 </Typography>
@@ -2087,6 +2256,101 @@ const AdminTrainingSystem: React.FC = () => {
                         </Select>
                       </FormControl>
                     </Grid>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        label="Ngày bắt đầu"
+                        type="date"
+                        fullWidth
+                        value={
+                          isEdit
+                            ? editProgramCourse.start_time
+                                ?.toISOString()
+                                .split("T")[0]
+                            : newCourse.start_time
+                                ?.toISOString()
+                                .split("T")[0] || ""
+                        }
+                        onChange={(e) => {
+                          const value = e.target.value
+                            ? new Date(e.target.value)
+                            : null;
+                          if (isEdit) {
+                            setEditProgramCourse((prev) => ({
+                              ...prev,
+                              start_time: value,
+                            }));
+                          } else {
+                            setNewCourse((prev) => ({
+                              ...prev,
+                              start_time: value,
+                            }));
+                          }
+                        }}
+                        required
+                        error={
+                          isEdit
+                            ? !editProgramCourse.start_time
+                            : !newCourse.start_time
+                        }
+                        helperText={
+                          isEdit
+                            ? !editProgramCourse.start_time
+                              ? "Vui lòng chọn ngày bắt đầu"
+                              : ""
+                            : !newCourse.start_time
+                            ? "Vui lòng chọn ngày bắt đầu"
+                            : ""
+                        }
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        label="Ngày kết thúc"
+                        type="date"
+                        fullWidth
+                        value={
+                          isEdit
+                            ? editProgramCourse.end_time
+                                ?.toISOString()
+                                .split("T")[0]
+                            : newCourse.end_time?.toISOString().split("T")[0] ||
+                              ""
+                        }
+                        onChange={(e) => {
+                          const value = e.target.value
+                            ? new Date(e.target.value)
+                            : null;
+                          if (isEdit) {
+                            setEditProgramCourse((prev) => ({
+                              ...prev,
+                              end_time: value,
+                            }));
+                          } else {
+                            setNewCourse((prev) => ({
+                              ...prev,
+                              end_time: value,
+                            }));
+                          }
+                        }}
+                        required
+                        error={
+                          isEdit
+                            ? !editProgramCourse.end_time
+                            : !newCourse.end_time
+                        }
+                        helperText={
+                          isEdit
+                            ? !editProgramCourse.end_time
+                              ? "Vui lòng chọn ngày kết thúc"
+                              : ""
+                            : !newCourse.end_time
+                            ? "Vui lòng chọn ngày kết thúc"
+                            : ""
+                        }
+                        InputLabelProps={{ shrink: true }}
+                      />
+                    </Grid>
                   </Grid>
                 </Box>
               </>
@@ -2116,10 +2380,14 @@ const AdminTrainingSystem: React.FC = () => {
                 : type === "course"
                 ? isEdit
                   ? editProgramCourse.credits < 1 ||
-                    editProgramCourse.credits > 10
+                    editProgramCourse.credits > 10 ||
+                    !editProgramCourse.start_time ||
+                    !editProgramCourse.end_time
                   : !newCourse.courseId ||
                     newCourse.credits < 1 ||
-                    newCourse.credits > 10
+                    newCourse.credits > 10 ||
+                    !newCourse.start_time ||
+                    !newCourse.end_time
                 : false
             }
           >
@@ -2198,7 +2466,7 @@ const AdminTrainingSystem: React.FC = () => {
       <Tooltip title="Chỉnh sửa">
         <IconButton
           size="small"
-          onClick={() => handleOpenDialog(type, parentId)}
+          onClick={() => handleOpenDialog(type, parentId, { id })}
         >
           <EditIcon fontSize="small" />
         </IconButton>
