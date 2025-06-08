@@ -150,6 +150,9 @@ export class ProgramService {
     programId: number,
     courseId: number,
     credits: number,
+    semester: number = 1,
+    practice: number = 0,
+    theory: number = 0,
     isMandatory: boolean = true,
   ): Promise<ProgramCourse> {
     const program = await this.findOne(programId);
@@ -174,6 +177,9 @@ export class ProgramService {
       programId,
       courseId,
       credits,
+      semester,
+      practice,
+      theory,
       isMandatory,
     });
 

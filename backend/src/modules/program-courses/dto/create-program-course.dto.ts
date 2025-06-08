@@ -21,6 +21,21 @@ export class CreateProgramCourseDto {
   @Max(10)
   credits: number;
 
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  semester?: number;
+
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  practice?: number;
+
+  @IsInt()
+  @Min(0)
+  @IsOptional()
+  theory?: number;
+
   @IsBoolean()
   @IsOptional()
   isMandatory?: boolean;

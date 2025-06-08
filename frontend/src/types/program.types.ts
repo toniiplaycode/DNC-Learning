@@ -25,6 +25,9 @@ export interface ProgramCourse {
   programId: number;
   courseId: number;
   credits: number;
+  semester: number;
+  practice: number;
+  theory: number;
   isMandatory: boolean;
   createdAt: string;
   updatedAt: string;
@@ -59,10 +62,16 @@ export interface UpdateProgramDto {
 
 export interface AddCourseToProgramDto {
   credits: number;
+  semester: number;
+  practice: number;
+  theory: number;
   isMandatory: boolean;
 }
 
 export interface UpdateProgramCourseDto {
-  credits: number;
-  isMandatory: boolean;
+  credits?: number;
+  semester?: number;
+  practice?: number;
+  theory?: number;
+  isMandatory?: boolean;
 }

@@ -32,6 +32,7 @@ import {
 } from "@mui/material";
 import {
   ExpandMore as ExpandMoreIcon,
+  ExpandLess as ExpandLessIcon,
   School as SchoolIcon,
   Book as BookIcon,
   MenuBook as MenuBookIcon,
@@ -47,6 +48,7 @@ import {
   BookOnline as BookOnlineIcon,
   GroupWork as GroupWorkIcon,
   PlayCircle,
+  CalendarMonth as CalendarMonthIcon,
 } from "@mui/icons-material";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import {
@@ -120,6 +122,9 @@ interface ProgramCourse {
   programId: string;
   courseId: string;
   credits: number;
+  semester: number;
+  practice: number;
+  theory: number;
   isMandatory: boolean;
   createdAt: string;
   updatedAt: string;
@@ -168,6 +173,7 @@ interface DialogState {
   type: "faculty" | "major" | "program" | "course" | "delete";
   parentId?: string;
   data?: any;
+  semester?: number;
 }
 
 const getStatusColor = (status: string) => {
@@ -266,19 +272,49 @@ const AdminTrainingSystem: React.FC = () => {
     courseId: number;
     credits: number;
     isMandatory: boolean;
+    semester: number;
+    practice: number;
+    theory: number;
   }>({
     courseId: 0,
     credits: 3,
     isMandatory: true,
+    semester: 1,
+    practice: 0,
+    theory: 0,
   });
   const [editProgramCourse, setEditProgramCourse] = useState<{
     id: number;
     credits: number;
     isMandatory: boolean;
+    semester: number;
+    practice: number;
+    theory: number;
   }>({
     id: 0,
     credits: 3,
     isMandatory: true,
+    semester: 1,
+    practice: 0,
+    theory: 0,
+  });
+  const [expandedSemesters, setExpandedSemesters] = useState<
+    Record<string, boolean>
+  >(() => {
+    const initialState: Record<string, boolean> = {};
+    faculties.forEach((faculty) => {
+      faculty.majors.forEach((major) => {
+        major.programs.forEach((program) => {
+          const semesters = new Set(
+            program.programCourses.map((pc) => pc.semester)
+          );
+          semesters.forEach((semester) => {
+            initialState[`${program.id}-${semester}`] = true;
+          });
+        });
+      });
+    });
+    return initialState;
   });
 
   useEffect(() => {
@@ -366,6 +402,9 @@ const AdminTrainingSystem: React.FC = () => {
           id: Number(programCourse.id),
           credits: programCourse.credits,
           isMandatory: programCourse.isMandatory,
+          semester: programCourse.semester,
+          practice: programCourse.practice,
+          theory: programCourse.theory,
         });
       }
     }
@@ -476,6 +515,9 @@ const AdminTrainingSystem: React.FC = () => {
               updateDto: {
                 credits: editProgramCourse.credits,
                 isMandatory: editProgramCourse.isMandatory,
+                semester: editProgramCourse.semester,
+                practice: editProgramCourse.practice,
+                theory: editProgramCourse.theory,
               },
             })
           ).unwrap();
@@ -488,6 +530,9 @@ const AdminTrainingSystem: React.FC = () => {
               courseId: newCourse.courseId,
               credits: newCourse.credits,
               isMandatory: newCourse.isMandatory,
+              semester: newCourse.semester,
+              practice: newCourse.practice,
+              theory: newCourse.theory,
             })
           ).unwrap();
           // Reset form
@@ -495,6 +540,9 @@ const AdminTrainingSystem: React.FC = () => {
             courseId: 0,
             credits: 3,
             isMandatory: true,
+            semester: 1,
+            practice: 0,
+            theory: 0,
           });
           toast.success("Thêm môn học thành công");
         }
@@ -1095,10 +1143,26 @@ const AdminTrainingSystem: React.FC = () => {
                               >
                                 <GroupIcon color="primary" />
                                 <Typography>
-                                  Chương trình đào tạo -{" "}
-                                  {format(new Date(program.createdAt), "yyyy")}
-                                  {renderAddButton("course", program.id)}
+                                  Chương trình đào tạo
+                                  <Typography
+                                    variant="caption"
+                                    sx={{ ml: 1 }}
+                                    color="text.secondary"
+                                  >
+                                    ({program.programCourses.length} môn học)
+                                  </Typography>
                                 </Typography>
+                                <Tooltip title="Thêm môn học mới">
+                                  <IconButton
+                                    size="small"
+                                    onClick={() =>
+                                      handleOpenDialog("course", program.id)
+                                    }
+                                    sx={{ ml: 1 }}
+                                  >
+                                    <AddIcon fontSize="small" color="primary" />
+                                  </IconButton>
+                                </Tooltip>
                               </Box>
                             </TableCell>
                             <TableCell>{program.programCode}</TableCell>
@@ -1138,76 +1202,7 @@ const AdminTrainingSystem: React.FC = () => {
                               )}
                             </TableCell>
                           </TableRow>
-                          {program.programCourses.map((pc) => (
-                            <TableRow key={pc.id}>
-                              <TableCell>
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 1,
-                                    pl: 12,
-                                  }}
-                                >
-                                  <PlayCircle color="primary" />
-                                  <Typography>Môn học</Typography>
-                                </Box>
-                              </TableCell>
-                              <TableCell>{pc.course.id}</TableCell>
-                              <TableCell>
-                                <Box
-                                  sx={{
-                                    display: "flex",
-                                    alignItems: "center",
-                                    gap: 2,
-                                  }}
-                                >
-                                  <Box
-                                    component="img"
-                                    src={pc.course.thumbnailUrl}
-                                    alt={pc.course.title}
-                                    sx={{
-                                      width: 40,
-                                      height: 40,
-                                      objectFit: "cover",
-                                      borderRadius: 1,
-                                      border: "1px solid",
-                                      borderColor: "divider",
-                                    }}
-                                  />
-                                  <Typography>{pc.course.title}</Typography>
-                                </Box>
-                              </TableCell>
-                              <TableCell>
-                                <Typography noWrap sx={{ maxWidth: 300 }}>
-                                  {pc.course.description}
-                                </Typography>
-                              </TableCell>
-                              <TableCell>
-                                <Stack direction="row" spacing={1}>
-                                  <Chip
-                                    size="small"
-                                    label={`${pc.credits} tín chỉ`}
-                                    color="primary"
-                                  />
-                                  <Chip
-                                    size="small"
-                                    label={
-                                      pc.isMandatory ? "Bắt buộc" : "Tự chọn"
-                                    }
-                                    color={pc.isMandatory ? "error" : "success"}
-                                  />
-                                </Stack>
-                              </TableCell>
-                              <TableCell>
-                                {renderActionButtons(
-                                  "course",
-                                  pc.id,
-                                  program.id
-                                )}
-                              </TableCell>
-                            </TableRow>
-                          ))}
+                          {renderProgramCourses(program)}
                         </React.Fragment>
                       ))}
                     </React.Fragment>
@@ -1217,6 +1212,203 @@ const AdminTrainingSystem: React.FC = () => {
           </TableBody>
         </Table>
       </TableContainer>
+    );
+  };
+
+  const groupCoursesBySemester = (
+    programCourses: ProgramCourse[]
+  ): Record<number, ProgramCourse[]> => {
+    // Sắp xếp môn học theo học kỳ
+    const sortedCourses = [...programCourses].sort(
+      (a, b) => a.semester - b.semester
+    );
+
+    // Nhóm môn học theo học kỳ
+    const groupedCourses = sortedCourses.reduce((acc, course) => {
+      const semester = course.semester;
+      if (!acc[semester]) {
+        acc[semester] = [];
+      }
+      acc[semester].push(course);
+      return acc;
+    }, {} as Record<number, ProgramCourse[]>);
+
+    return groupedCourses;
+  };
+
+  const toggleSemester = (programId: string, semester: number) => {
+    const key = `${programId}-${semester}`;
+    setExpandedSemesters((prev) => {
+      const newState = { ...prev };
+      newState[key] = !(prev[key] ?? true);
+      return newState;
+    });
+  };
+
+  const renderProgramCourses = (program: Program) => {
+    const groupedCourses = groupCoursesBySemester(program.programCourses);
+    const semesters = Object.keys(groupedCourses).sort(
+      (a, b) => Number(a) - Number(b)
+    );
+
+    return (
+      <>
+        {semesters.map((semester) => {
+          const semesterKey = `${program.id}-${semester}`;
+          const isExpanded = expandedSemesters[semesterKey] ?? true;
+
+          return (
+            <React.Fragment key={`semester-${semester}`}>
+              <TableRow
+                sx={{
+                  backgroundColor: alpha("#e3f2fd", 0.3),
+                  "&:hover": { backgroundColor: alpha("#e3f2fd", 0.4) },
+                }}
+              >
+                <TableCell colSpan={6}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 1,
+                      pl: 12,
+                      cursor: "pointer",
+                    }}
+                    onClick={() => toggleSemester(program.id, Number(semester))}
+                  >
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggleSemester(program.id, Number(semester));
+                      }}
+                      sx={{ mr: -1 }}
+                    >
+                      {isExpanded ? (
+                        <ExpandLessIcon fontSize="small" color="primary" />
+                      ) : (
+                        <ExpandMoreIcon fontSize="small" color="primary" />
+                      )}
+                    </IconButton>
+                    <CalendarMonthIcon color="primary" />
+                    <Typography
+                      variant="subtitle2"
+                      color="primary"
+                      sx={{
+                        fontWeight: "bold",
+                        userSelect: "none",
+                        "&:hover": { opacity: 0.8 },
+                      }}
+                    >
+                      Học kỳ {semester}
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ ml: 1 }}
+                      >
+                        ({groupedCourses[Number(semester)].length} môn học)
+                      </Typography>
+                    </Typography>
+                    <Tooltip title={`Thêm môn học cho học kỳ ${semester}`}>
+                      <IconButton
+                        size="small"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const dialogState: DialogState = {
+                            open: true,
+                            type: "course",
+                            parentId: program.id,
+                            semester: Number(semester),
+                          };
+                          setDialogState(dialogState);
+                          setNewCourse((prev) => ({
+                            ...prev,
+                            semester: Number(semester),
+                          }));
+                        }}
+                        sx={{ ml: 1 }}
+                      >
+                        <AddIcon fontSize="small" color="primary" />
+                      </IconButton>
+                    </Tooltip>
+                  </Box>
+                </TableCell>
+              </TableRow>
+              {isExpanded &&
+                groupedCourses[Number(semester)].map((pc: ProgramCourse) => (
+                  <TableRow key={pc.id}>
+                    <TableCell>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1,
+                          pl: 12,
+                          ml: "60px",
+                        }}
+                      >
+                        <PlayCircle color="primary" />
+                        <Typography>Môn học</Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>{pc.course.id}</TableCell>
+                    <TableCell>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 2,
+                        }}
+                      >
+                        <Box
+                          component="img"
+                          src={pc.course.thumbnailUrl}
+                          alt={pc.course.title}
+                          sx={{
+                            width: 40,
+                            height: 40,
+                            objectFit: "cover",
+                            borderRadius: 1,
+                            border: "1px solid",
+                            borderColor: "divider",
+                          }}
+                        />
+                        <Typography>{pc.course.title}</Typography>
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Typography noWrap sx={{ maxWidth: 300 }}>
+                        {pc.course.description}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Stack direction="row" spacing={1}>
+                        <Chip
+                          size="small"
+                          label={`${pc.credits} tín chỉ`}
+                          color="primary"
+                        />
+                        <Chip
+                          size="small"
+                          label={`LT: ${pc.theory} | TH: ${pc.practice}`}
+                          color="secondary"
+                        />
+                        <Chip
+                          size="small"
+                          label={pc.isMandatory ? "Bắt buộc" : "Tự chọn"}
+                          color={pc.isMandatory ? "error" : "success"}
+                        />
+                      </Stack>
+                    </TableCell>
+                    <TableCell>
+                      {renderActionButtons("course", pc.id, program.id)}
+                    </TableCell>
+                  </TableRow>
+                ))}
+            </React.Fragment>
+          );
+        })}
+      </>
     );
   };
 
@@ -1599,7 +1791,7 @@ const AdminTrainingSystem: React.FC = () => {
                     </Typography>
                   </Paper>
                 ) : (
-                  <FormControl fullWidth>
+                  <FormControl fullWidth sx={{ mb: 2 }}>
                     <InputLabel>Môn học</InputLabel>
                     <Select
                       value={newCourse.courseId || ""}
@@ -1683,77 +1875,220 @@ const AdminTrainingSystem: React.FC = () => {
                   </FormControl>
                 )}
 
-                <TextField
-                  label="Số tín chỉ"
-                  type="number"
-                  fullWidth
-                  value={isEdit ? editProgramCourse.credits : newCourse.credits}
-                  onChange={(e) => {
-                    const value = Number(e.target.value);
-                    if (value >= 1 && value <= 10) {
-                      if (isEdit) {
-                        setEditProgramCourse((prev) => ({
-                          ...prev,
-                          credits: value,
-                        }));
-                      } else {
-                        setNewCourse((prev) => ({
-                          ...prev,
-                          credits: value,
-                        }));
-                      }
-                    }
-                  }}
-                  required
-                  error={
-                    (isEdit ? editProgramCourse.credits : newCourse.credits) <
-                      1 ||
-                    (isEdit ? editProgramCourse.credits : newCourse.credits) >
-                      10
-                  }
-                  helperText={
-                    (isEdit ? editProgramCourse.credits : newCourse.credits) <
-                      1 ||
-                    (isEdit ? editProgramCourse.credits : newCourse.credits) >
-                      10
-                      ? "Số tín chỉ phải từ 1 đến 10"
-                      : ""
-                  }
-                  InputProps={{ inputProps: { min: 1, max: 10 } }}
-                />
-
-                <FormControl fullWidth>
-                  <InputLabel>Loại môn học</InputLabel>
-                  <Select
-                    value={
-                      (
-                        isEdit
-                          ? editProgramCourse.isMandatory
-                          : newCourse.isMandatory
-                      )
-                        ? "true"
-                        : "false"
-                    }
-                    label="Loại môn học"
-                    onChange={(e) => {
-                      const value = e.target.value === "true";
-                      if (isEdit) {
-                        setEditProgramCourse((prev) => ({
-                          ...prev,
-                          isMandatory: value,
-                        }));
-                      } else {
-                        setNewCourse((prev) => ({
-                          ...prev,
-                          isMandatory: value,
-                        }));
-                      }
-                    }}
-                  >
-                    <MenuItem value="true">Bắt buộc</MenuItem>
-                    <MenuItem value="false">Tự chọn</MenuItem>
-                  </Select>
-                </FormControl>
+                <Box sx={{ mt: 2 }}>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        label="Số tín chỉ"
+                        type="number"
+                        fullWidth
+                        value={
+                          isEdit ? editProgramCourse.credits : newCourse.credits
+                        }
+                        onChange={(e) => {
+                          const value = Number(e.target.value);
+                          if (value >= 1 && value <= 10) {
+                            if (isEdit) {
+                              setEditProgramCourse((prev) => ({
+                                ...prev,
+                                credits: value,
+                              }));
+                            } else {
+                              setNewCourse((prev) => ({
+                                ...prev,
+                                credits: value,
+                              }));
+                            }
+                          }
+                        }}
+                        required
+                        error={
+                          (isEdit
+                            ? editProgramCourse.credits
+                            : newCourse.credits) < 1 ||
+                          (isEdit
+                            ? editProgramCourse.credits
+                            : newCourse.credits) > 10
+                        }
+                        helperText={
+                          (isEdit
+                            ? editProgramCourse.credits
+                            : newCourse.credits) < 1 ||
+                          (isEdit
+                            ? editProgramCourse.credits
+                            : newCourse.credits) > 10
+                            ? "Số tín chỉ phải từ 1 đến 10"
+                            : ""
+                        }
+                        InputProps={{ inputProps: { min: 1, max: 10 } }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        label="Học kỳ"
+                        type="number"
+                        fullWidth
+                        value={
+                          isEdit
+                            ? editProgramCourse.semester
+                            : newCourse.semester
+                        }
+                        onChange={(e) => {
+                          const value = Number(e.target.value);
+                          if (value >= 1 && value <= 15) {
+                            if (isEdit) {
+                              setEditProgramCourse((prev) => ({
+                                ...prev,
+                                semester: value,
+                              }));
+                            } else {
+                              setNewCourse((prev) => ({
+                                ...prev,
+                                semester: value,
+                              }));
+                            }
+                          }
+                        }}
+                        required
+                        error={
+                          (isEdit
+                            ? editProgramCourse.semester
+                            : newCourse.semester) < 1 ||
+                          (isEdit
+                            ? editProgramCourse.semester
+                            : newCourse.semester) > 15
+                        }
+                        helperText={
+                          (isEdit
+                            ? editProgramCourse.semester
+                            : newCourse.semester) < 1 ||
+                          (isEdit
+                            ? editProgramCourse.semester
+                            : newCourse.semester) > 15
+                            ? "Học kỳ phải từ 1 đến 15"
+                            : ""
+                        }
+                        InputProps={{ inputProps: { min: 1, max: 15 } }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        label="Số tiết lý thuyết"
+                        type="number"
+                        fullWidth
+                        value={
+                          isEdit ? editProgramCourse.theory : newCourse.theory
+                        }
+                        onChange={(e) => {
+                          const value = Number(e.target.value);
+                          if (value >= 0) {
+                            if (isEdit) {
+                              setEditProgramCourse((prev) => ({
+                                ...prev,
+                                theory: value,
+                              }));
+                            } else {
+                              setNewCourse((prev) => ({
+                                ...prev,
+                                theory: value,
+                              }));
+                            }
+                          }
+                        }}
+                        required
+                        error={
+                          (isEdit
+                            ? editProgramCourse.theory
+                            : newCourse.theory) < 0
+                        }
+                        helperText={
+                          (isEdit
+                            ? editProgramCourse.theory
+                            : newCourse.theory) < 0
+                            ? "Số tiết lý thuyết không được âm"
+                            : ""
+                        }
+                        InputProps={{ inputProps: { min: 0 } }}
+                      />
+                    </Grid>
+                    <Grid item xs={12} md={6}>
+                      <TextField
+                        label="Số tiết thực hành"
+                        type="number"
+                        fullWidth
+                        value={
+                          isEdit
+                            ? editProgramCourse.practice
+                            : newCourse.practice
+                        }
+                        onChange={(e) => {
+                          const value = Number(e.target.value);
+                          if (value >= 0) {
+                            if (isEdit) {
+                              setEditProgramCourse((prev) => ({
+                                ...prev,
+                                practice: value,
+                              }));
+                            } else {
+                              setNewCourse((prev) => ({
+                                ...prev,
+                                practice: value,
+                              }));
+                            }
+                          }
+                        }}
+                        required
+                        error={
+                          (isEdit
+                            ? editProgramCourse.practice
+                            : newCourse.practice) < 0
+                        }
+                        helperText={
+                          (isEdit
+                            ? editProgramCourse.practice
+                            : newCourse.practice) < 0
+                            ? "Số tiết thực hành không được âm"
+                            : ""
+                        }
+                        InputProps={{ inputProps: { min: 0 } }}
+                      />
+                    </Grid>
+                    <Grid item xs={12}>
+                      <FormControl fullWidth>
+                        <InputLabel>Loại môn học</InputLabel>
+                        <Select
+                          value={
+                            (
+                              isEdit
+                                ? editProgramCourse.isMandatory
+                                : newCourse.isMandatory
+                            )
+                              ? "true"
+                              : "false"
+                          }
+                          label="Loại môn học"
+                          onChange={(e) => {
+                            const value = e.target.value === "true";
+                            if (isEdit) {
+                              setEditProgramCourse((prev) => ({
+                                ...prev,
+                                isMandatory: value,
+                              }));
+                            } else {
+                              setNewCourse((prev) => ({
+                                ...prev,
+                                isMandatory: value,
+                              }));
+                            }
+                          }}
+                        >
+                          <MenuItem value="true">Bắt buộc</MenuItem>
+                          <MenuItem value="false">Tự chọn</MenuItem>
+                        </Select>
+                      </FormControl>
+                    </Grid>
+                  </Grid>
+                </Box>
               </>
             )}
           </Stack>
@@ -1863,7 +2198,7 @@ const AdminTrainingSystem: React.FC = () => {
       <Tooltip title="Chỉnh sửa">
         <IconButton
           size="small"
-          onClick={() => handleOpenDialog(type, parentId, { id })}
+          onClick={() => handleOpenDialog(type, parentId)}
         >
           <EditIcon fontSize="small" />
         </IconButton>

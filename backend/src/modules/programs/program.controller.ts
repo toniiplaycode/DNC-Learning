@@ -56,12 +56,18 @@ export class ProgramController {
     @Param('programId', ParseIntPipe) programId: number,
     @Param('courseId', ParseIntPipe) courseId: number,
     @Body('credits') credits: number,
+    @Body('semester') semester: number = 1,
+    @Body('practice') practice: number = 0,
+    @Body('theory') theory: number = 0,
     @Body('isMandatory') isMandatory: boolean = true,
   ) {
     return this.programService.addCourseToProgram(
       programId,
       courseId,
       credits,
+      semester,
+      practice,
+      theory,
       isMandatory,
     );
   }

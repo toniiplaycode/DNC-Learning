@@ -34,6 +34,9 @@ export interface ProgramCourse {
   programId: number;
   courseId: number;
   credits: number;
+  semester: number;
+  practice: number;
+  theory: number;
   isMandatory: boolean;
   createdAt: string;
   updatedAt: string;

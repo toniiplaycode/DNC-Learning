@@ -6,6 +6,9 @@ export interface ProgramCourse {
   programId: number;
   courseId: number;
   credits: number;
+  semester: number;
+  practice: number;
+  theory: number;
   isMandatory: boolean;
   program?: Program;
   course?: Course;
@@ -17,10 +20,16 @@ export interface CreateProgramCourseDto {
   programId: number;
   courseId: number;
   credits: number;
+  semester?: number;
+  practice?: number;
+  theory?: number;
   isMandatory?: boolean;
 }
 
 export interface UpdateProgramCourseDto {
   credits?: number;
+  semester?: number;
+  practice?: number;
+  theory?: number;
   isMandatory?: boolean;
 }

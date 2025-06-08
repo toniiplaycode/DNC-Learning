@@ -28,6 +28,27 @@ export class ProgramCourse {
   credits: number;
 
   @Column({
+    type: 'int',
+    default: 1,
+    comment: 'Học kỳ của môn học',
+  })
+  semester: number;
+
+  @Column({
+    type: 'int',
+    default: 0,
+    comment: 'Số tiết thực hành',
+  })
+  practice: number;
+
+  @Column({
+    type: 'int',
+    default: 0,
+    comment: 'Số tiết lý thuyết',
+  })
+  theory: number;
+
+  @Column({
     name: 'is_mandatory',
     type: 'boolean',
     default: true,
