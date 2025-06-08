@@ -1,7 +1,11 @@
-import { IsOptional, IsString, IsEnum } from 'class-validator';
+import { IsOptional, IsString, IsEnum, IsNumber } from 'class-validator';
 import { VerificationStatus } from '../../../entities/UserInstructor';
 
 export class UpdateInstructorDto {
+  @IsOptional()
+  @IsNumber()
+  facultyId?: number;
+
   @IsOptional()
   @IsString()
   fullName?: string;

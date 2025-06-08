@@ -59,6 +59,8 @@ import {
   fetchInstructors,
   deleteInstructor,
 } from "../../features/user_instructors/instructorsApiSlice";
+import { fetchFaculties } from "../../features/faculties/facultiesSlice";
+import { selectAllFaculties } from "../../features/faculties/facultiesSelectors";
 import { toast } from "react-toastify";
 
 const AdminInstructors = () => {
@@ -67,7 +69,7 @@ const AdminInstructors = () => {
   const instructors = useAppSelector(selectAllInstructors);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [specializationFilter, setSpecializationFilter] = useState("all");
+  const [facultyFilter, setFacultyFilter] = useState("all");
   const [page, setPage] = useState(1);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const [selectedInstructor, setSelectedInstructor] = useState<number | null>(
@@ -81,11 +83,13 @@ const AdminInstructors = () => {
   const [openEditDialog, setOpenEditDialog] = useState(false);
   const [selectedInstructorData, setSelectedInstructorData] =
     useState<any>(null);
+  const faculties = useAppSelector(selectAllFaculties);
 
   const rowsPerPage = 10;
 
   useEffect(() => {
     dispatch(fetchInstructors());
+    dispatch(fetchFaculties());
   }, [dispatch]);
 
   // Handle menu open/close
@@ -217,10 +221,12 @@ const AdminInstructors = () => {
       false;
     const matchesStatus =
       statusFilter === "all" || instructor.verificationStatus === statusFilter;
-    const matchesSpecialization =
-      specializationFilter === "all" ||
-      instructor.specialization === specializationFilter;
-    return matchesSearch && matchesStatus && matchesSpecialization;
+    const matchesFaculty =
+      facultyFilter === "all" ||
+      (facultyFilter === "freelance" && !instructor.faculty) ||
+      instructor.faculty?.facultyName === facultyFilter;
+
+    return matchesSearch && matchesStatus && matchesFaculty;
   });
 
   // Paginate
@@ -280,6 +286,7 @@ const AdminInstructors = () => {
           website: instructor.website,
           verificationDocuments: instructor.verificationDocuments,
           verificationStatus: instructor.verificationStatus,
+          facultyId: instructor.facultyId?.toString() || "",
         },
       });
       setOpenEditDialog(true);
@@ -297,7 +304,7 @@ const AdminInstructors = () => {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Grid container spacing={2}>
-            <Grid item xs={12} md={3.5}>
+            <Grid item xs={12} md={4}>
               <TextField
                 fullWidth
                 label="Tìm kiếm giảng viên"
@@ -311,6 +318,24 @@ const AdminInstructors = () => {
                   ),
                 }}
               />
+            </Grid>
+            <Grid item xs={12} md={3}>
+              <FormControl fullWidth>
+                <InputLabel>Khoa</InputLabel>
+                <Select
+                  value={facultyFilter}
+                  label="Khoa"
+                  onChange={(e) => setFacultyFilter(e.target.value)}
+                >
+                  <MenuItem value="all">Tất cả khoa</MenuItem>
+                  <MenuItem value="freelance">Giảng viên tự do</MenuItem>
+                  {faculties.map((faculty) => (
+                    <MenuItem key={faculty.id} value={faculty.facultyName}>
+                      {faculty.facultyName}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
             </Grid>
             <Grid item xs={12} md={3}>
               <FormControl fullWidth>
@@ -328,25 +353,7 @@ const AdminInstructors = () => {
                 </Select>
               </FormControl>
             </Grid>
-            <Grid item xs={12} md={3}>
-              <FormControl fullWidth>
-                <InputLabel>Chuyên môn</InputLabel>
-                <Select
-                  value={specializationFilter}
-                  label="Chuyên môn"
-                  onChange={(e) => setSpecializationFilter(e.target.value)}
-                >
-                  <MenuItem value="all">Tất cả chuyên môn</MenuItem>
-                  {specializations.map((specialization) => (
-                    <MenuItem key={specialization} value={specialization}>
-                      {specialization}
-                    </MenuItem>
-                  ))}
-                </Select>
-              </FormControl>
-            </Grid>
-
-            <Grid item xs={12} md={2.5}>
+            <Grid item xs={12} md={2}>
               <Button
                 variant="contained"
                 startIcon={<Add />}
@@ -367,6 +374,7 @@ const AdminInstructors = () => {
             <TableRow>
               <TableCell>Giảng viên</TableCell>
               <TableCell>Thông tin liên hệ</TableCell>
+              <TableCell>Khoa</TableCell>
               <TableCell>Chuyên môn</TableCell>
               <TableCell>Thống kê</TableCell>
               <TableCell>Trạng thái</TableCell>
@@ -420,6 +428,26 @@ const AdminInstructors = () => {
                   </Stack>
                 </TableCell>
                 <TableCell>
+                  {instructor.facultyId ? (
+                    <Chip
+                      label={
+                        faculties.find((f) => f.id === instructor.facultyId)
+                          ?.facultyName
+                      }
+                      size="small"
+                      color="primary"
+                      variant="outlined"
+                    />
+                  ) : (
+                    <Chip
+                      label="Giảng viên tự do"
+                      size="small"
+                      color="default"
+                      variant="outlined"
+                    />
+                  )}
+                </TableCell>
+                <TableCell>
                   <Stack spacing={0.5}>
                     <Typography variant="body2">
                       {instructor.specialization}
@@ -439,13 +467,17 @@ const AdminInstructors = () => {
                     </Typography>
                     <Box sx={{ display: "flex", alignItems: "center" }}>
                       <Rating
-                        value={parseFloat(instructor.averageRating)}
+                        value={
+                          instructor.averageRating
+                            ? parseFloat(instructor.averageRating)
+                            : 0
+                        }
                         precision={0.5}
                         size="small"
                         readOnly
                       />
                       <Typography variant="body2" sx={{ ml: 1 }}>
-                        ({instructor.totalReviews})
+                        ({instructor.totalReviews || 0})
                       </Typography>
                     </Box>
                   </Stack>

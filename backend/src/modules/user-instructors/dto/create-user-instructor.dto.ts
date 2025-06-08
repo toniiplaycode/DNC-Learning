@@ -13,6 +13,10 @@ export class CreateUserInstructorDto {
   @IsNumber()
   userId: number;
 
+  @IsOptional()
+  @IsNumber()
+  facultyId?: number;
+
   @IsNotEmpty()
   @IsString()
   fullName: string;

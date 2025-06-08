@@ -12,6 +12,7 @@ export interface CreateInstructorData {
     avatarUrl?: string;
   };
   instructor: {
+    facultyId?: number;
     fullName: string;
     professionalTitle?: string;
     specialization?: string;

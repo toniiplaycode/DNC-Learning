@@ -24,6 +24,7 @@ export interface UpdateInstructorData {
   linkedinProfile?: string;
   website?: string;
   verificationStatus?: VerificationStatus;
+  facultyId?: number | null;
 }
 
 export interface UpdateInstructorProfileData {

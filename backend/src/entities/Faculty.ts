@@ -7,6 +7,7 @@ import {
   OneToMany,
 } from 'typeorm';
 import { Major } from './Major';
+import { UserInstructor } from './UserInstructor';
 
 export enum FacultyStatus {
   ACTIVE = 'active',
@@ -54,4 +55,7 @@ export class Faculty {
 
   @OneToMany(() => Major, (major) => major.faculty)
   majors: Major[];
+
+  @OneToMany(() => UserInstructor, (userInstructor) => userInstructor.faculty)
+  userInstructors: UserInstructor[];
 }

@@ -18,6 +18,11 @@ export interface Instructor {
   paymentInfo?: any;
   verificationStatus: "pending" | "verified" | "rejected";
   verificationDocuments?: string;
+  facultyId?: number;
+  faculty?: {
+    id: number;
+    facultyName: string;
+  };
   createdAt: string;
   updatedAt: string;
   user?: {
@@ -56,6 +61,7 @@ export interface CreateInstructorRequest {
     website?: string;
     verificationDocuments?: string;
     verificationStatus?: VerificationStatus;
+    facultyId?: number | null;
   };
 }
 

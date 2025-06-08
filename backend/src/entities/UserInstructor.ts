@@ -14,6 +14,7 @@ import { Course } from './Course';
 import { UserGrade } from './UserGrade';
 import { Document } from './Document';
 import { AcademicClassInstructor } from './AcademicClassInstructor';
+import { Faculty } from './Faculty';
 
 export enum VerificationStatus {
   PENDING = 'pending',
@@ -28,6 +29,9 @@ export class UserInstructor {
 
   @Column({ name: 'user_id', nullable: true })
   userId: number;
+
+  @Column({ name: 'faculty_id', type: 'bigint', nullable: true })
+  facultyId: number;
 
   @Column({ name: 'full_name', length: 100 })
   fullName: string;
@@ -97,4 +101,8 @@ export class UserInstructor {
     (classInstructor) => classInstructor.instructor,
   )
   academicClasses: AcademicClassInstructor[];
+
+  @ManyToOne(() => Faculty)
+  @JoinColumn({ name: 'faculty_id' })
+  faculty: Faculty;
 }

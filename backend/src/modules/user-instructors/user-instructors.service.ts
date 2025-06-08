@@ -1,10 +1,15 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  ConflictException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import {
   UserInstructor,
   VerificationStatus,
 } from '../../entities/UserInstructor';
+import { Faculty } from '../../entities/Faculty';
 import { CreateUserInstructorDto } from './dto/create-user-instructor.dto';
 import { UpdateUserInstructorDto } from './dto/update-user-instructor.dto';
 import { UsersService } from '../users/users.service';
@@ -14,6 +19,8 @@ export class UserInstructorsService {
   constructor(
     @InjectRepository(UserInstructor)
     private userInstructorRepository: Repository<UserInstructor>,
+    @InjectRepository(Faculty)
+    private facultyRepository: Repository<Faculty>,
     private usersService: UsersService,
   ) {}
 
@@ -23,6 +30,7 @@ export class UserInstructorsService {
       const instructors = await this.userInstructorRepository.find({
         relations: {
           user: true,
+          faculty: true,
         },
         select: {
           user: {
@@ -31,6 +39,9 @@ export class UserInstructorsService {
             email: true,
             phone: true,
             avatarUrl: true,
+          },
+          faculty: {
+            facultyName: true,
           },
         },
       });
@@ -83,6 +94,7 @@ export class UserInstructorsService {
         where: { id },
         relations: {
           user: true,
+          faculty: true,
           courses: {
             category: true,
             sections: {
@@ -98,6 +110,9 @@ export class UserInstructorsService {
             email: true,
             phone: true,
             avatarUrl: true,
+          },
+          faculty: {
+            facultyName: true,
           },
         },
       });
@@ -147,6 +162,7 @@ export class UserInstructorsService {
       where: { userId },
       relations: {
         user: true,
+        faculty: true,
       },
     });
 
@@ -162,35 +178,62 @@ export class UserInstructorsService {
   async create(
     createUserInstructorDto: CreateUserInstructorDto,
   ): Promise<UserInstructor> {
-    // Kiểm tra xem user có tồn tại không
+    const { facultyId, ...instructorData } = createUserInstructorDto;
+
+    // Verify user exists
     await this.usersService.findById(createUserInstructorDto.userId);
 
-    // Kiểm tra xem user đã là instructor chưa
+    // Check if user is already an instructor
     const existingInstructor = await this.userInstructorRepository.findOne({
       where: { userId: createUserInstructorDto.userId },
     });
 
     if (existingInstructor) {
-      throw new Error(
-        `User với ID ${createUserInstructorDto.userId} đã là giảng viên`,
+      throw new ConflictException(
+        `User with ID ${createUserInstructorDto.userId} is already an instructor`,
       );
     }
 
-    const newInstructor = this.userInstructorRepository.create(
-      createUserInstructorDto,
-    );
-    return this.userInstructorRepository.save(newInstructor);
+    // Verify faculty exists if facultyId is provided
+    if (facultyId) {
+      const faculty = await this.facultyRepository.findOne({
+        where: { id: facultyId },
+      });
+      if (!faculty) {
+        throw new NotFoundException(`Faculty with ID ${facultyId} not found`);
+      }
+    }
+
+    const instructor = this.userInstructorRepository.create({
+      ...instructorData,
+      facultyId,
+    });
+
+    return this.userInstructorRepository.save(instructor);
   }
 
   async update(
     id: number,
     updateUserInstructorDto: UpdateUserInstructorDto,
   ): Promise<UserInstructor> {
+    const { facultyId, ...updateData } = updateUserInstructorDto;
+
     const instructor = await this.findOne(id);
+    if (!instructor) {
+      throw new NotFoundException(`Instructor with ID ${id} not found`);
+    }
 
-    // Cập nhật thông tin
-    Object.assign(instructor, updateUserInstructorDto);
+    // Verify faculty exists if facultyId is provided
+    if (facultyId) {
+      const faculty = await this.facultyRepository.findOne({
+        where: { id: facultyId },
+      });
+      if (!faculty) {
+        throw new NotFoundException(`Faculty with ID ${facultyId} not found`);
+      }
+    }
 
+    Object.assign(instructor, { ...updateData, facultyId });
     return this.userInstructorRepository.save(instructor);
   }
 

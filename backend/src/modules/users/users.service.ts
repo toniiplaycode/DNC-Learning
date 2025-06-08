@@ -749,6 +749,7 @@ export class UsersService {
       // 2. Create instructor profile
       const newInstructor = this.userInstructorRepository.create({
         userId: savedUser.id,
+        facultyId: data.instructor.facultyId,
         fullName: data.instructor.fullName,
         professionalTitle: data.instructor.professionalTitle,
         specialization: data.instructor.specialization,

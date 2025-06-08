@@ -24,7 +24,7 @@ import {
 } from "@mui/material";
 import { Close, PhotoCamera, Save } from "@mui/icons-material";
 import { UserRole, UserStatus } from "../../../types/user";
-import { useAppDispatch } from "../../../app/hooks";
+import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import {
   createInstructor,
   CreateInstructorRequest,
@@ -34,6 +34,8 @@ import {
 import { toast } from "react-toastify";
 import { VerificationStatus } from "../../../types/user-instructor.types";
 import { updateInstructorProfile } from "../../../features/users/usersApiSlice";
+import { fetchFaculties } from "../../../features/faculties/facultiesSlice";
+import { selectAllFaculties } from "../../../features/faculties/facultiesSelectors";
 
 interface DialogAddInstructorProps {
   open: boolean;
@@ -61,6 +63,7 @@ interface DialogAddInstructorProps {
       website?: string;
       verificationDocuments?: string;
       verificationStatus: VerificationStatus;
+      facultyId: string;
     };
   };
 }
@@ -72,6 +75,7 @@ const DialogAddInstructor = ({
   instructorData,
 }: DialogAddInstructorProps) => {
   const dispatch = useAppDispatch();
+  const faculties = useAppSelector(selectAllFaculties);
   const [avatar, setAvatar] = useState<string | null>(
     instructorData?.user?.avatarUrl || null
   );
@@ -97,12 +101,16 @@ const DialogAddInstructor = ({
     website: "",
     verificationDocuments: "",
     verificationStatus: VerificationStatus.VERIFIED,
+    facultyId: "",
   });
 
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // Initialize form data when in edit mode
+  useEffect(() => {
+    dispatch(fetchFaculties());
+  }, [dispatch]);
+
   useEffect(() => {
     if (editMode && instructorData) {
       setFormData({
@@ -124,6 +132,7 @@ const DialogAddInstructor = ({
         verificationDocuments:
           instructorData.instructor.verificationDocuments || "",
         verificationStatus: instructorData.instructor.verificationStatus,
+        facultyId: instructorData.instructor.facultyId || "",
       });
       setAvatar(instructorData.user.avatarUrl || null);
     }
@@ -236,6 +245,8 @@ const DialogAddInstructor = ({
               verificationDocuments:
                 formData.verificationDocuments || undefined,
               verificationStatus: formData.verificationStatus,
+              facultyId:
+                formData.facultyId === "" ? null : Number(formData.facultyId),
             },
           };
 
@@ -270,6 +281,8 @@ const DialogAddInstructor = ({
               verificationDocuments:
                 formData.verificationDocuments || undefined,
               verificationStatus: formData.verificationStatus,
+              facultyId:
+                formData.facultyId === "" ? null : Number(formData.facultyId),
             },
           };
 
@@ -309,6 +322,7 @@ const DialogAddInstructor = ({
       website: "",
       verificationDocuments: "",
       verificationStatus: VerificationStatus.VERIFIED,
+      facultyId: "",
     });
     setAvatar(null);
     setErrors({});
@@ -372,7 +386,32 @@ const DialogAddInstructor = ({
             </Box>
           </Box>
 
-          <Grid spacing={2} mb={2}>
+          <Grid item xs={12}>
+            <FormControl fullWidth>
+              <InputLabel>Khoa</InputLabel>
+              <Select
+                name="facultyId"
+                value={formData.facultyId}
+                onChange={handleSelectChange}
+                label="Khoa"
+              >
+                <MenuItem value="">
+                  <em>Giảng viên tự do</em>
+                </MenuItem>
+                {faculties.map((faculty) => (
+                  <MenuItem key={faculty.id} value={faculty.id}>
+                    {faculty.facultyName}
+                  </MenuItem>
+                ))}
+              </Select>
+              <FormHelperText>
+                Chọn khoa nếu giảng viên thuộc khoa, để trống nếu là giảng viên
+                tự do
+              </FormHelperText>
+            </FormControl>
+          </Grid>
+
+          <Grid spacing={2} my={2}>
             <FormControl fullWidth>
               <InputLabel>Trạng thái xác minh</InputLabel>
               <Select

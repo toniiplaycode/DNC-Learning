@@ -47,6 +47,7 @@ import {
   Close,
   Group,
   BarChart,
+  Business,
 } from "@mui/icons-material";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { selectAllInstructors } from "../../../features/user_instructors/instructorsSelectors";
@@ -221,6 +222,19 @@ const DialogInstructorDetail = ({
                       <ListItemText
                         primary="Số điện thoại"
                         secondary={instructor.user?.phone}
+                      />
+                    </ListItem>
+                    <ListItem>
+                      <ListItemIcon>
+                        <Business />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary="Khoa"
+                        secondary={
+                          instructor.faculty
+                            ? instructor.faculty.facultyName
+                            : "Giảng viên tự do"
+                        }
                       />
                     </ListItem>
                     <ListItem>
