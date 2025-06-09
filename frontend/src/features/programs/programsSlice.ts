@@ -11,6 +11,7 @@ import {
 interface ProgramsState {
   programs: Program[];
   currentProgram: Program | null;
+  studentAcademicProgram: Program | null;
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
 }
@@ -18,6 +19,7 @@ interface ProgramsState {
 const initialState: ProgramsState = {
   programs: [],
   currentProgram: null,
+  studentAcademicProgram: null,
   status: "idle",
   error: null,
 };
@@ -184,6 +186,24 @@ export const updateProgramCourse = createAsyncThunk(
   }
 );
 
+// Fetch student academic program
+export const fetchStudentAcademicProgram = createAsyncThunk(
+  "programs/fetchStudentAcademicProgram",
+  async (studentAcademicId: number, { rejectWithValue }) => {
+    try {
+      const response = await api.get(
+        `/programs/student-academic/${studentAcademicId}`
+      );
+      return response.data;
+    } catch (error: any) {
+      return rejectWithValue(
+        error.response?.data?.message ||
+          "Failed to fetch student academic program"
+      );
+    }
+  }
+);
+
 const programsSlice = createSlice({
   name: "programs",
   initialState,
@@ -191,6 +211,7 @@ const programsSlice = createSlice({
     resetState: (state) => {
       state.programs = [];
       state.currentProgram = null;
+      state.studentAcademicProgram = null;
       state.status = "idle";
       state.error = null;
     },
@@ -346,6 +367,19 @@ const programsSlice = createSlice({
         state.error = null;
       })
       .addCase(updateProgramCourse.rejected, (state, action) => {
+        state.status = "failed";
+        state.error = action.payload as string;
+      })
+      // Fetch student academic program
+      .addCase(fetchStudentAcademicProgram.pending, (state) => {
+        state.status = "loading";
+      })
+      .addCase(fetchStudentAcademicProgram.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.studentAcademicProgram = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchStudentAcademicProgram.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
       });

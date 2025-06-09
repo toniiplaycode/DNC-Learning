@@ -49,6 +49,7 @@ import {
   GroupWork as GroupWorkIcon,
   PlayCircle,
   CalendarMonth as CalendarMonthIcon,
+  FileDownload as FileDownloadIcon,
 } from "@mui/icons-material";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import {
@@ -97,6 +98,7 @@ import {
   deleteProgramCourse,
 } from "../../features/program-courses/programCoursesSlice";
 import { format } from "date-fns";
+import * as XLSX from "xlsx";
 
 interface Course {
   id: string;
@@ -951,10 +953,173 @@ const AdminTrainingSystem: React.FC = () => {
     });
   };
 
+  const handleExportExcel = () => {
+    const filteredData = filterData();
+    const excelData: any[][] = [];
+
+    // Add header
+    excelData.push(["HỆ THỐNG ĐÀO TẠO", "", "", "", "", "", "", ""]);
+
+    // Add timestamp
+    excelData.push([
+      `Ngày xuất: ${format(new Date(), "dd/MM/yyyy HH:mm:ss")}`,
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+    ]);
+
+    // Add empty row
+    excelData.push([]);
+
+    filteredData.forEach((faculty) => {
+      // Add faculty info
+      excelData.push([
+        "Khoa",
+        faculty.facultyCode,
+        faculty.facultyName,
+        faculty.description || "",
+        faculty.status === "active" ? "Đang hoạt động" : "Không hoạt động",
+        "",
+        "",
+        "",
+      ]);
+
+      faculty.majors?.forEach((major) => {
+        // Add major info
+        excelData.push([
+          "Ngành",
+          major.majorCode,
+          major.majorName,
+          major.description || "",
+          major.status === "active" ? "Đang hoạt động" : "Không hoạt động",
+          "",
+          "",
+          "",
+        ]);
+
+        major.programs?.forEach((program) => {
+          // Add program info
+          excelData.push([
+            "Chương trình đào tạo",
+            program.programCode,
+            program.programName,
+            program.description || "",
+            program.status === "active" ? "Đang áp dụng" : "Không áp dụng",
+            `${program.totalCredits} tín chỉ`,
+            `${program.durationYears} năm học`,
+            "",
+          ]);
+
+          // Group courses by semester
+          const groupedCourses = groupCoursesBySemester(program.programCourses);
+          const semesters = Object.keys(groupedCourses).sort(
+            (a, b) => Number(a) - Number(b)
+          );
+
+          semesters.forEach((semester) => {
+            const semesterCourses = groupedCourses[Number(semester)];
+            const totalCredits = calculateSemesterCredits(semesterCourses);
+            const semesterDates = calculateSemesterDates(semesterCourses);
+
+            // Add semester info
+            excelData.push([
+              `Học kỳ ${semester}`,
+              `${semesterCourses.length} môn học`,
+              `${totalCredits} tín chỉ`,
+              semesterDates
+                ? `${format(
+                    semesterDates.semesterStart,
+                    "dd/MM/yyyy"
+                  )} - ${format(semesterDates.semesterEnd, "dd/MM/yyyy")}`
+                : "",
+              "",
+              "",
+              "",
+              "",
+            ]);
+
+            // Add course headers
+            excelData.push([
+              "Mã môn",
+              "Tên môn",
+              "Số tín chỉ",
+              "Lý thuyết",
+              "Thực hành",
+              "Bắt buộc",
+              "Thời gian bắt đầu",
+              "Thời gian kết thúc",
+            ]);
+
+            // Add course details
+            semesterCourses.forEach((pc) => {
+              excelData.push([
+                pc.course.id,
+                pc.course.title,
+                pc.credits,
+                pc.theory,
+                pc.practice,
+                pc.isMandatory ? "Có" : "Không",
+                pc.start_time
+                  ? format(new Date(pc.start_time), "dd/MM/yyyy")
+                  : "",
+                pc.end_time ? format(new Date(pc.end_time), "dd/MM/yyyy") : "",
+              ]);
+            });
+
+            // Add empty row after each semester
+            excelData.push([]);
+          });
+
+          // Add empty row after each program
+          excelData.push([]);
+        });
+
+        // Add empty row after each major
+        excelData.push([]);
+      });
+
+      // Add empty row after each faculty
+      excelData.push([]);
+    });
+
+    // Create worksheet
+    const ws = XLSX.utils.aoa_to_sheet(excelData);
+
+    // Set column widths
+    const colWidths = [
+      { wch: 20 }, // Type
+      { wch: 15 }, // Code
+      { wch: 40 }, // Name
+      { wch: 50 }, // Description
+      { wch: 15 }, // Status
+      { wch: 15 }, // Credits
+      { wch: 15 }, // Duration
+      { wch: 20 }, // Dates
+    ];
+    ws["!cols"] = colWidths;
+
+    // Create workbook
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Hệ thống đào tạo");
+
+    // Generate filename with current date
+    const fileName = `he-thong-dao-tao-${format(
+      new Date(),
+      "yyyy-MM-dd"
+    )}.xlsx`;
+
+    // Save file
+    XLSX.writeFile(wb, fileName);
+  };
+
   const renderSearchBar = () => (
     <Box sx={{ mb: 3 }}>
       <Grid container spacing={2} alignItems="center">
-        <Grid item xs={12} md={4}>
+        <Grid item xs={12} md={3}>
           <TextField
             fullWidth
             placeholder="Tìm kiếm theo tên, mã, mô tả..."
@@ -1044,6 +1209,19 @@ const AdminTrainingSystem: React.FC = () => {
               <MenuItem value="course">Môn học</MenuItem>
             </Select>
           </FormControl>
+        </Grid>
+        <Grid item xs={12} md={1}>
+          <Tooltip title="Tải Excel">
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleExportExcel}
+              fullWidth
+              startIcon={<FileDownloadIcon />}
+            >
+              Excel
+            </Button>
+          </Tooltip>
         </Grid>
       </Grid>
     </Box>
@@ -1968,73 +2146,75 @@ const AdminTrainingSystem: React.FC = () => {
                       required
                       error={!newCourse.courseId}
                     >
-                      {courses.map((course) => {
-                        const isCourseAdded = existingProgramCourses.includes(
-                          course.id
-                        );
-                        return (
-                          <MenuItem
-                            key={course.id}
-                            value={course.id}
-                            disabled={isCourseAdded}
-                            sx={{
-                              "&.Mui-disabled": {
-                                color: isCourseAdded ? "red" : "inherit",
-                              },
-                              py: 1,
-                            }}
-                          >
-                            <Box
+                      {courses
+                        .filter((course) => course.for !== "student")
+                        .map((course) => {
+                          const isCourseAdded = existingProgramCourses.includes(
+                            course.id
+                          );
+                          return (
+                            <MenuItem
+                              key={course.id}
+                              value={course.id}
+                              disabled={isCourseAdded}
                               sx={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: 2,
-                                width: "100%",
+                                "&.Mui-disabled": {
+                                  color: isCourseAdded ? "red" : "inherit",
+                                },
+                                py: 1,
                               }}
                             >
                               <Box
-                                component="img"
-                                src={course.thumbnailUrl}
-                                alt={course.title}
                                 sx={{
-                                  width: 40,
-                                  height: 40,
-                                  objectFit: "cover",
-                                  borderRadius: 1,
-                                  border: "1px solid",
-                                  borderColor: "divider",
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: 2,
+                                  width: "100%",
                                 }}
-                              />
-                              <Box sx={{ flex: 1 }}>
-                                <Typography>
-                                  {course.title}{" "}
-                                  {isCourseAdded && (
-                                    <Typography
-                                      variant="caption"
-                                      sx={{ ml: 1 }}
-                                    >
-                                      Đã được thêm vào chương trình
-                                    </Typography>
-                                  )}
-                                </Typography>
-                                <Typography
-                                  variant="caption"
-                                  color="text.secondary"
+                              >
+                                <Box
+                                  component="img"
+                                  src={course.thumbnailUrl}
+                                  alt={course.title}
                                   sx={{
-                                    display: "block",
-                                    mt: 0.5,
-                                    whiteSpace: "nowrap",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
+                                    width: 40,
+                                    height: 40,
+                                    objectFit: "cover",
+                                    borderRadius: 1,
+                                    border: "1px solid",
+                                    borderColor: "divider",
                                   }}
-                                >
-                                  {course.description}
-                                </Typography>
+                                />
+                                <Box sx={{ flex: 1 }}>
+                                  <Typography>
+                                    {course.title}{" "}
+                                    {isCourseAdded && (
+                                      <Typography
+                                        variant="caption"
+                                        sx={{ ml: 1 }}
+                                      >
+                                        Đã được thêm vào chương trình
+                                      </Typography>
+                                    )}
+                                  </Typography>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                    sx={{
+                                      display: "block",
+                                      mt: 0.5,
+                                      whiteSpace: "nowrap",
+                                      overflow: "hidden",
+                                      textOverflow: "ellipsis",
+                                    }}
+                                  >
+                                    {course.description}
+                                  </Typography>
+                                </Box>
                               </Box>
-                            </Box>
-                          </MenuItem>
-                        );
-                      })}
+                            </MenuItem>
+                          );
+                        })}
                     </Select>
                     {!newCourse.courseId && (
                       <Typography color="error" variant="caption">

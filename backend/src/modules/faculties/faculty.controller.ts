@@ -49,4 +49,11 @@ export class FacultyController {
   remove(@Param('id', ParseIntPipe) id: number) {
     return this.facultyService.remove(id);
   }
+
+  @Get('instructor/:instructorId')
+  getInstructorFaculty(
+    @Param('instructorId', ParseIntPipe) instructorId: number,
+  ) {
+    return this.facultyService.findByInstructorId(instructorId);
+  }
 }

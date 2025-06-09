@@ -17,6 +17,7 @@ import {
   SelectChangeEvent,
   Avatar,
   Button,
+  Collapse,
 } from "@mui/material";
 import CustomContainer from "../../components/common/CustomContainer";
 import CardCourse from "../../components/common/CardCourse";
@@ -33,7 +34,21 @@ import { selectCurrentUser } from "../../features/auth/authSelectors";
 import { fetchStudentAcademicCourses } from "../../features/users/usersApiSlice";
 import { selectStudentAcademicCourses } from "../../features/users/usersSelectors";
 import { useNavigate } from "react-router-dom";
-import { FilterList, Clear, Search, MenuBook } from "@mui/icons-material";
+import {
+  FilterList,
+  Clear,
+  Search,
+  MenuBook,
+  ExpandMore,
+  ExpandLess,
+} from "@mui/icons-material";
+import { fetchStudentAcademicProgram } from "../../features/programs/programsSlice";
+import { selectStudentAcademicProgram } from "../../features/programs/programsSelectors";
+import { alpha } from "@mui/material/styles";
+import { User } from "../../features/auth/authApiSlice";
+
+// Add type definition at the top of the file
+type UserRole = "student" | "student_academic" | "instructor" | "admin";
 
 const calculateTotalLessons = (course: any) => {
   if (!course || !course.sections) return 0;
@@ -43,18 +58,66 @@ const calculateTotalLessons = (course: any) => {
   );
 };
 
-const EnrolledCourses: React.FC = () => {
+// Add new type for semester courses
+interface SemesterCourses {
+  semester: number;
+  courses: any[];
+  startDate: string;
+  endDate: string;
+}
+
+// Add helper function to check if course is locked
+const isCourseLocked = (startDate: string): boolean => {
+  if (!startDate) return true;
+  const start = new Date(startDate);
+  const now = new Date();
+  return start > now;
+};
+
+// Add helper function to format date safely
+const formatDate = (dateString: string | undefined | null): string => {
+  if (!dateString) return "Chưa có thông tin";
+  const date = new Date(dateString);
+  return isNaN(date.getTime())
+    ? "Chưa có thông tin"
+    : date.toLocaleDateString("vi-VN");
+};
+
+// Add helper function to get current semester
+const getCurrentSemester = (
+  semesterCourses: SemesterCourses[]
+): number | null => {
+  const now = new Date();
+
+  // Find semester that contains current date
+  const currentSemester = semesterCourses.find((semester) => {
+    const startDate = new Date(semester.startDate);
+    const endDate = new Date(semester.endDate);
+    return now >= startDate && now <= endDate;
+  });
+
+  return currentSemester?.semester || null;
+};
+
+// Change to named export
+export const EnrolledCourses: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector(selectCurrentUser);
   const userEnrollments = useAppSelector(selectUserEnrollments);
   const userProgress = useAppSelector(selectUserProgress);
   const studentAcademicCourses = useAppSelector(selectStudentAcademicCourses);
+  const programCourses = useAppSelector(selectStudentAcademicProgram);
 
   // Filters state
   const [instructorFilter, setInstructorFilter] = useState<string>("");
   const [progressFilter, setProgressFilter] = useState<number[]>([0, 100]);
   const [searchQuery, setSearchQuery] = useState<string>("");
+
+  // Add state for expanded semesters
+  const [expandedSemesters, setExpandedSemesters] = useState<Set<number>>(
+    new Set()
+  );
 
   // Extract unique instructors from courses
   const uniqueInstructors = React.useMemo(() => {
@@ -106,11 +169,32 @@ const EnrolledCourses: React.FC = () => {
     setSearchQuery("");
   };
 
+  // Add toggle handler
+  const toggleSemester = (semester: number) => {
+    setExpandedSemesters((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(semester)) {
+        newSet.delete(semester);
+      } else {
+        newSet.add(semester);
+      }
+      return newSet;
+    });
+  };
+
   useEffect(() => {
     if (currentUser?.id) {
       dispatch(fetchUserEnrollments(Number(currentUser.id)));
       dispatch(fetchStudentAcademicCourses(currentUser.id));
       dispatch(fetchUserProgress());
+    }
+  }, [dispatch, currentUser, navigate]);
+
+  useEffect(() => {
+    if (currentUser?.userStudentAcademic?.id) {
+      dispatch(
+        fetchStudentAcademicProgram(Number(currentUser.userStudentAcademic.id))
+      );
     }
   }, [dispatch, currentUser, navigate]);
 
@@ -162,6 +246,68 @@ const EnrolledCourses: React.FC = () => {
         };
       });
   }, [studentAcademicCourses, instructorFilter, searchQuery]);
+
+  // Process academic courses that are not in the program
+  const nonProgramAcademicCourses = React.useMemo(() => {
+    if (
+      !Array.isArray(studentAcademicCourses) ||
+      !Array.isArray(programCourses?.programCourses)
+    )
+      return [];
+
+    // Get all course IDs from the program
+    const programCourseIds = new Set(
+      programCourses.programCourses.map((pc) => pc.course?.id)
+    );
+
+    // Filter out courses that are in the program
+    return studentAcademicCourses
+      .filter((item) => {
+        // Skip if course is in the program
+        if (programCourseIds.has(item.course?.id)) return false;
+
+        // Apply instructor filter
+        if (
+          instructorFilter &&
+          item.course?.instructor?.fullName !== instructorFilter
+        ) {
+          return false;
+        }
+
+        // Apply search filter
+        if (
+          searchQuery &&
+          item.course.title &&
+          !item.course.title.toLowerCase().includes(searchQuery.toLowerCase())
+        ) {
+          return false;
+        }
+
+        return true;
+      })
+      .map((item) => {
+        const course = item.course;
+        return {
+          id: course.id || 0,
+          title: course.title || "",
+          instructor: {
+            fullName: course.instructor?.fullName || "",
+            avatar: course.instructor?.user?.avatarUrl || "",
+          },
+          totalLessons: calculateTotalLessons(course),
+          image: course.thumbnailUrl || "",
+          category: course.category?.name || "",
+          isAcademic: true,
+          startDate: course.startDate || "",
+          endDate: course.endDate || "",
+          rating: 0,
+          totalRatings: 0,
+          duration: "",
+          price: 0,
+          for: "both",
+        };
+      });
+  }, [studentAcademicCourses, programCourses, instructorFilter, searchQuery]);
 
   // Process enrolled courses with filters
   const filteredEnrollments = React.useMemo(() => {
@@ -231,6 +377,70 @@ const EnrolledCourses: React.FC = () => {
     progressFilter,
     searchQuery,
   ]);
+
+  // Group academic courses by semester
+  const semesterCourses = React.useMemo(() => {
+    if (
+      !programCourses?.programCourses ||
+      currentUser?.role !== "student_academic"
+    ) {
+      return [];
+    }
+
+    const semesterMap = new Map<number, SemesterCourses>();
+
+    programCourses.programCourses.forEach((programCourse) => {
+      const semester = programCourse.semester;
+      const course = programCourse.course;
+      const startTime = programCourse.start_time;
+      const endTime = programCourse.end_time;
+
+      if (!semesterMap.has(semester)) {
+        semesterMap.set(semester, {
+          semester,
+          courses: [],
+          startDate: startTime ?? "",
+          endDate: endTime ?? "",
+        });
+      }
+
+      const semesterData = semesterMap.get(semester)!;
+
+      // Check if course exists in academicCourses
+      if (course?.id) {
+        const existingCourse = academicCourses.find(
+          (ac) => ac.id === course.id
+        );
+        if (existingCourse) {
+          const isLocked = isCourseLocked(startTime ?? "");
+          semesterData.courses.push({
+            ...existingCourse,
+            credits: programCourse.credits,
+            isMandatory: programCourse.isMandatory,
+            practice: programCourse.practice,
+            theory: programCourse.theory,
+            isLocked,
+            startDate: startTime ?? "",
+            endDate: endTime ?? "",
+          });
+        }
+      }
+    });
+
+    return Array.from(semesterMap.values()).sort(
+      (a, b) => a.semester - b.semester
+    );
+  }, [programCourses, academicCourses, currentUser?.role]);
+
+  // Update expanded semesters when semesterCourses changes
+  useEffect(() => {
+    if (semesterCourses.length > 0) {
+      const currentSemester = getCurrentSemester(semesterCourses);
+      if (currentSemester !== null) {
+        setExpandedSemesters(new Set([currentSemester]));
+      }
+    }
+  }, [semesterCourses]);
 
   return (
     <CustomContainer>
@@ -390,30 +600,249 @@ const EnrolledCourses: React.FC = () => {
           )}
         </Paper>
 
-        {/* Academic Courses Section */}
-        {academicCourses && academicCourses.length > 0 && (
-          <Box mb={4}>
-            <Typography variant="h5" fontWeight="bold" sx={{ mb: 2 }}>
-              Khóa học thuật
-            </Typography>
-            <Grid container spacing={3}>
-              {academicCourses.map((course) => (
-                <Grid
-                  item
-                  xs={12}
-                  sm={6}
-                  md={4}
-                  lg={3}
-                  key={`academic-${course.id}`}
-                >
-                  <CardCourse {...course} />
-                </Grid>
-              ))}
-            </Grid>
-          </Box>
-        )}
+        {/* Academic Courses Section - Grouped by Semester */}
+        {currentUser &&
+          currentUser.role === "student_academic" &&
+          semesterCourses.length > 0 && (
+            <Box mb={4}>
+              <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>
+                Khóa học theo chương trình đào tạo
+              </Typography>
 
-        {/* Enrolled Courses Section */}
+              {semesterCourses.map((semester) => {
+                const isCurrentSemester =
+                  getCurrentSemester(semesterCourses) === semester.semester;
+
+                return (
+                  <Box key={semester.semester} mb={4}>
+                    <Paper
+                      elevation={0}
+                      sx={{
+                        p: 2,
+                        mb: 2,
+                        borderRadius: 2,
+                        bgcolor: (theme) =>
+                          alpha(
+                            theme.palette.primary.main,
+                            isCurrentSemester ? 0.1 : 0.05
+                          ),
+                        cursor: "pointer",
+                        "&:hover": {
+                          bgcolor: (theme) =>
+                            alpha(
+                              theme.palette.primary.main,
+                              isCurrentSemester ? 0.15 : 0.08
+                            ),
+                        },
+                        borderColor: "primary.main",
+                      }}
+                      onClick={() => toggleSemester(semester.semester)}
+                    >
+                      <Stack
+                        direction="row"
+                        justifyContent="space-between"
+                        alignItems="center"
+                      >
+                        <Stack direction="row" spacing={2} alignItems="center">
+                          <IconButton
+                            size="small"
+                            sx={{
+                              transform: expandedSemesters.has(
+                                semester.semester
+                              )
+                                ? "rotate(180deg)"
+                                : "none",
+                              transition: "transform 0.2s",
+                            }}
+                          >
+                            <ExpandMore />
+                          </IconButton>
+                          <Stack
+                            direction="row"
+                            spacing={1}
+                            alignItems="center"
+                          >
+                            <Typography
+                              variant="h6"
+                              fontWeight="bold"
+                              color="primary"
+                            >
+                              Học kỳ {semester.semester}
+                            </Typography>
+                            {isCurrentSemester && (
+                              <Chip
+                                size="small"
+                                label="Học kỳ hiện tại"
+                                color="primary"
+                                sx={{
+                                  height: "20px",
+                                  "& .MuiChip-label": {
+                                    px: 1,
+                                    fontSize: "0.75rem",
+                                  },
+                                }}
+                              />
+                            )}
+                          </Stack>
+                        </Stack>
+                        <Stack direction="row" spacing={2} alignItems="center">
+                          <Chip
+                            size="small"
+                            label={`${semester.courses.reduce(
+                              (sum, course) => sum + (course.credits || 0),
+                              0
+                            )} tín chỉ`}
+                            color="primary"
+                            variant="outlined"
+                          />
+                          <Typography variant="body2" color="text.secondary">
+                            {formatDate(semester.startDate)} -{" "}
+                            {formatDate(semester.endDate)}
+                          </Typography>
+                        </Stack>
+                      </Stack>
+                    </Paper>
+
+                    <Collapse in={expandedSemesters.has(semester.semester)}>
+                      <Grid container spacing={3}>
+                        {semester.courses.map((course) => (
+                          <Grid
+                            item
+                            xs={12}
+                            sm={6}
+                            md={4}
+                            lg={3}
+                            key={`semester-${semester.semester}-course-${course.id}`}
+                          >
+                            <CardCourse
+                              {...course}
+                              additionalInfo={
+                                <Stack direction="row" spacing={1} mt={1}>
+                                  <Chip
+                                    size="small"
+                                    label={`${course.credits} tín chỉ`}
+                                    color="primary"
+                                    variant="outlined"
+                                  />
+                                  {course.isMandatory && (
+                                    <Chip
+                                      size="small"
+                                      label="Bắt buộc"
+                                      color="error"
+                                      variant="outlined"
+                                    />
+                                  )}
+                                  {course.practice > 0 && (
+                                    <Chip
+                                      size="small"
+                                      label={`${course.practice} TH`}
+                                      color="info"
+                                      variant="outlined"
+                                    />
+                                  )}
+                                  {course.theory > 0 && (
+                                    <Chip
+                                      size="small"
+                                      label={`${course.theory} LT`}
+                                      color="warning"
+                                      variant="outlined"
+                                    />
+                                  )}
+                                  {course.isLocked && (
+                                    <Chip
+                                      size="small"
+                                      label="Chưa mở"
+                                      color="default"
+                                      variant="outlined"
+                                      sx={{
+                                        bgcolor: "grey.100",
+                                        "& .MuiChip-label": {
+                                          color: "text.secondary",
+                                        },
+                                      }}
+                                    />
+                                  )}
+                                </Stack>
+                              }
+                              disabled={course.isLocked}
+                              disabledTooltip={
+                                course.isLocked
+                                  ? `Khóa học sẽ mở ${formatDate(
+                                      course.startDate
+                                    )}`
+                                  : undefined
+                              }
+                            />
+                          </Grid>
+                        ))}
+                      </Grid>
+                    </Collapse>
+                  </Box>
+                );
+              })}
+            </Box>
+          )}
+
+        {/* Non-Program Academic Courses Section */}
+        {currentUser?.role === "student_academic" &&
+          nonProgramAcademicCourses.length > 0 && (
+            <Box mb={4}>
+              <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>
+                Khóa học bổ sung
+              </Typography>
+              <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+                Các khóa học bổ sung không thuộc chương trình đào tạo chính thức
+              </Typography>
+              <Grid container spacing={3}>
+                {nonProgramAcademicCourses.map((course) => (
+                  <Grid
+                    item
+                    xs={12}
+                    sm={6}
+                    md={4}
+                    lg={3}
+                    key={`non-program-${course.id}`}
+                  >
+                    <CardCourse
+                      {...course}
+                      additionalInfo={
+                        <Stack direction="row" spacing={1} mt={1}>
+                          <Chip
+                            size="small"
+                            label="Khóa học bổ sung"
+                            color="info"
+                            variant="outlined"
+                          />
+                          {course.isLocked && (
+                            <Chip
+                              size="small"
+                              label="Chưa mở"
+                              color="default"
+                              variant="outlined"
+                              sx={{
+                                bgcolor: "grey.100",
+                                "& .MuiChip-label": {
+                                  color: "text.secondary",
+                                },
+                              }}
+                            />
+                          )}
+                        </Stack>
+                      }
+                      disabled={course.isLocked}
+                      disabledTooltip={
+                        course.isLocked
+                          ? `Khóa học sẽ mở ${formatDate(course.startDate)}`
+                          : undefined
+                      }
+                    />
+                  </Grid>
+                ))}
+              </Grid>
+            </Box>
+          )}
+
+        {/* Regular Enrolled Courses Section */}
         {filteredEnrollments.length > 0 && (
           <Box>
             <Typography variant="h5" fontWeight="bold" sx={{ mb: 2 }}>
@@ -558,4 +987,5 @@ const EnrolledCourses: React.FC = () => {
   );
 };
 
+// Add default export
 export default EnrolledCourses;

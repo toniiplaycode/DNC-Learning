@@ -54,13 +54,6 @@ const Footer = () => {
       { text: "Phản hồi", href: "#" },
       { text: "Báo lỗi", href: "#-issue" },
     ],
-    resources: [
-      { text: "Blog", href: "#" },
-      { text: "Tài liệu học tập", href: "#" },
-      { text: "Cộng đồng", href: "#" },
-      { text: "Diễn đàn", href: "#" },
-      { text: "Sự kiện", href: "#" },
-    ],
   };
 
   const socialLinks = [
@@ -198,9 +191,7 @@ const Footer = () => {
                   <Typography variant="subtitle2" color="primary.light">
                     Địa chỉ
                   </Typography>
-                  <Typography variant="body2">
-                    123 Đường ABC, Quận XYZ, TP. Hồ Chí Minh
-                  </Typography>
+                  <Typography variant="body2">Đại học Nam Cần Thơ</Typography>
                 </Box>
               </Stack>
             </Grid>
@@ -208,32 +199,10 @@ const Footer = () => {
         </Box>
 
         {/* Bottom Footer */}
-        <Box sx={{ mt: 2 }}>
-          <Divider sx={{ borderColor: "rgba(255,255,255,0.1)", mb: 3 }} />
-          <Grid container spacing={2} alignItems="center">
-            <Grid item xs={12} md={6}>
-              <Typography variant="body2" color="text.secondary">
-                © {currentYear} DNC Learning. Tất cả quyền được bảo lưu.
-              </Typography>
-            </Grid>
-            <Grid item xs={12} md={6}>
-              <Stack
-                direction="row"
-                spacing={2}
-                justifyContent={{ xs: "flex-start", md: "flex-end" }}
-              >
-                <Link href="/terms" color="inherit" variant="body2">
-                  Điều khoản sử dụng
-                </Link>
-                <Link href="/privacy" color="inherit" variant="body2">
-                  Chính sách bảo mật
-                </Link>
-                <Link href="/cookies" color="inherit" variant="body2">
-                  Chính sách cookie
-                </Link>
-              </Stack>
-            </Grid>
-          </Grid>
+        <Box sx={{ mt: 2, textAlign: "center" }}>
+          <Typography variant="body2" color="primary.light" fontWeight="bold">
+            © {currentYear} DNC Learning. Tất cả quyền được bảo lưu.
+          </Typography>
         </Box>
       </Container>
     </Box>

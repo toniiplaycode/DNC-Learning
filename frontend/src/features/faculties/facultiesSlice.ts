@@ -9,15 +9,19 @@ import {
 interface FacultiesState {
   faculties: Faculty[];
   currentFaculty: Faculty | null;
+  instructorFaculty: Faculty | null;
   status: "idle" | "loading" | "succeeded" | "failed";
   error: string | null;
+  isInstructorFacultyLoading: boolean;
 }
 
 const initialState: FacultiesState = {
   faculties: [],
   currentFaculty: null,
+  instructorFaculty: null,
   status: "idle",
   error: null,
+  isInstructorFacultyLoading: false,
 };
 
 // Fetch all faculties
@@ -113,6 +117,17 @@ export const deleteFaculty = createAsyncThunk(
   }
 );
 
+// Add new thunk for getting instructor's faculty
+export const fetchInstructorFaculty = createAsyncThunk(
+  "faculties/fetchInstructorFaculty",
+  async (instructorId: number) => {
+    const response = await api.get<Faculty | null>(
+      `/faculties/instructor/${instructorId}`
+    );
+    return response.data;
+  }
+);
+
 const facultiesSlice = createSlice({
   name: "faculties",
   initialState,
@@ -120,11 +135,15 @@ const facultiesSlice = createSlice({
     resetState: (state) => {
       state.faculties = [];
       state.currentFaculty = null;
+      state.instructorFaculty = null;
       state.status = "idle";
       state.error = null;
     },
     clearError: (state) => {
       state.error = null;
+    },
+    clearInstructorFaculty: (state) => {
+      state.instructorFaculty = null;
     },
   },
   extraReducers: (builder) => {
@@ -219,9 +238,27 @@ const facultiesSlice = createSlice({
       .addCase(deleteFaculty.rejected, (state, action) => {
         state.status = "failed";
         state.error = action.payload as string;
+      })
+      // Fetch instructor faculty
+      .addCase(fetchInstructorFaculty.pending, (state) => {
+        state.status = "loading";
+        state.error = null;
+        state.isInstructorFacultyLoading = true;
+      })
+      .addCase(fetchInstructorFaculty.fulfilled, (state, action) => {
+        state.status = "succeeded";
+        state.instructorFaculty = action.payload;
+        state.isInstructorFacultyLoading = false;
+      })
+      .addCase(fetchInstructorFaculty.rejected, (state, action) => {
+        state.status = "failed";
+        state.error =
+          action.error.message || "Failed to fetch instructor faculty";
+        state.isInstructorFacultyLoading = false;
       });
   },
 });
 
-export const { resetState, clearError } = facultiesSlice.actions;
+export const { resetState, clearError, clearInstructorFaculty } =
+  facultiesSlice.actions;
 export default facultiesSlice.reducer;

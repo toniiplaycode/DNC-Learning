@@ -37,6 +37,11 @@ import {
   TextSnippet,
   VideoLibrary,
   Link as LinkIcon,
+  School,
+  MenuBook,
+  EmojiEvents,
+  Timer,
+  AutoStories,
 } from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
 import CustomContainer from "../../components/common/CustomContainer";
@@ -52,6 +57,7 @@ import { selectCurrentUser } from "../../features/auth/authSelectors";
 import { selectUserEnrollments } from "../../features/enrollments/enrollmentsSelectors";
 import { fetchStudentAcademicCourses } from "../../features/users/usersApiSlice";
 import { selectStudentAcademicCourses } from "../../features/users/usersSelectors";
+import { alpha } from "@mui/material/styles";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -258,33 +264,117 @@ const CourseDetail: React.FC = () => {
             {currentCourse?.description}
           </Typography>
 
-          <Box sx={{ display: "flex", gap: 2, alignItems: "center", mb: 3 }}>
-            <Chip icon={<AccessTime />} label={"12 tuần"} variant="outlined" />
-            <Chip
-              icon={<PlayCircleOutline />}
-              label={`${totalLessons} bài học`}
-              variant="outlined"
-            />
-            <Chip
-              icon={<Person />}
-              label={`${currentCourse?.enrollments?.length || 0} học viên`}
-              variant="outlined"
-            />
-            <Chip
-              icon={<Star />}
-              label={averageRating.toFixed(2)}
-              variant="outlined"
-            />
+          <Box
+            sx={{
+              display: "flex",
+              gap: 2,
+              alignItems: "center",
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                py: 1,
+                borderRadius: 2,
+                "&:hover": {
+                  bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                },
+              }}
+            >
+              <AccessTime sx={{ color: "primary.main", fontSize: 20 }} />
+              <Typography variant="body2" fontWeight="medium">
+                12 tuần
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                py: 1,
+                borderRadius: 2,
+                "&:hover": {
+                  bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                },
+              }}
+            >
+              <PlayCircleOutline sx={{ color: "primary.main", fontSize: 20 }} />
+              <Typography variant="body2" fontWeight="medium">
+                {totalLessons} bài học
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                py: 1,
+                borderRadius: 2,
+                "&:hover": {
+                  bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                },
+              }}
+            >
+              <Person sx={{ color: "primary.main", fontSize: 20 }} />
+              <Typography variant="body2" fontWeight="medium">
+                {currentCourse?.enrollments?.length || 0} học viên
+              </Typography>
+            </Box>
+
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                py: 1,
+                borderRadius: 2,
+                "&:hover": {
+                  bgcolor: (theme) => alpha(theme.palette.primary.main, 0.1),
+                },
+              }}
+            >
+              <Star sx={{ color: "primary.main", fontSize: 20 }} />
+              <Typography variant="body2" fontWeight="medium">
+                {averageRating.toFixed(1)}
+              </Typography>
+            </Box>
+
             {currentCourse?.for && currentCourse.for !== "both" && (
-              <Chip
-                color={currentCourse.for === "student" ? "info" : "primary"}
-                label={
-                  currentCourse.for === "student"
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 1,
+                  px: 2,
+                  py: 1,
+                  borderRadius: 2,
+                  bgcolor: (theme) =>
+                    currentCourse.for === "student"
+                      ? alpha(theme.palette.info.main, 0.1)
+                      : alpha(theme.palette.primary.main, 0.1),
+                  color: (theme) =>
+                    currentCourse.for === "student"
+                      ? theme.palette.info.main
+                      : theme.palette.primary.main,
+                  "&:hover": {
+                    bgcolor: (theme) =>
+                      currentCourse.for === "student"
+                        ? alpha(theme.palette.info.main, 0.15)
+                        : alpha(theme.palette.primary.main, 0.15),
+                  },
+                }}
+              >
+                <School sx={{ fontSize: 20 }} />
+                <Typography variant="body2" fontWeight="medium">
+                  {currentCourse.for === "student"
                     ? "Dành cho học viên"
-                    : "Dành cho sinh viên"
-                }
-                variant="outlined"
-              />
+                    : "Dành cho sinh viên"}
+                </Typography>
+              </Box>
             )}
           </Box>
 
@@ -687,33 +777,265 @@ const CourseDetail: React.FC = () => {
               </Box>
 
               <Box sx={{ mb: 3 }}>
-                <Typography variant="body2" paragraph>
-                  Khóa học bao gồm:
-                </Typography>
-                <Stack spacing={1}>
-                  <Box sx={{ display: "flex", gap: 1 }}>
-                    <PlayCircleOutline />
-                    <Typography variant="body2">
-                      {totalLessons} bài học
-                    </Typography>
-                  </Box>
-                  <Box sx={{ display: "flex", gap: 1 }}>
-                    <AccessTime />
-                    <Typography variant="body2">12 tuần học</Typography>
-                  </Box>
-                  <Box sx={{ display: "flex", gap: 1 }}>
-                    <Assignment />
-                    <Typography variant="body2">Bài tập thực hành</Typography>
-                  </Box>
-                  <Box sx={{ display: "flex", gap: 1 }}>
-                    <Quiz />
-                    <Typography variant="body2">Kiểm tra đánh giá</Typography>
-                  </Box>
-                  <Box sx={{ display: "flex", gap: 1 }}>
-                    <LibraryBooks />
-                    <Typography variant="body2">Tài liệu học tập</Typography>
-                  </Box>
-                </Stack>
+                <Grid container spacing={2}>
+                  <Grid item xs={6}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        borderRadius: 1,
+                        transition: "all 0.2s",
+                        height: "100%",
+                        "&:hover": {
+                          bgcolor: (theme) =>
+                            alpha(theme.palette.primary.main, 0.1),
+                          transform: "translateX(4px)",
+                        },
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          width: 20,
+                          height: 20,
+                          borderRadius: "50%",
+                          bgcolor: (theme) =>
+                            alpha(theme.palette.primary.main, 0.1),
+                          color: "primary.main",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <MenuBook />
+                      </Box>
+                      <Box>
+                        <Typography variant="subtitle2" fontWeight="medium">
+                          {totalLessons} bài học
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Nội dung học tập đa dạng
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+
+                  <Grid item xs={6}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        borderRadius: 1,
+                        transition: "all 0.2s",
+                        height: "100%",
+                        "&:hover": {
+                          bgcolor: (theme) =>
+                            alpha(theme.palette.primary.main, 0.1),
+                          transform: "translateX(4px)",
+                        },
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          width: 20,
+                          height: 20,
+                          borderRadius: "50%",
+                          bgcolor: (theme) =>
+                            alpha(theme.palette.primary.main, 0.1),
+                          color: "primary.main",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <Timer />
+                      </Box>
+                      <Box>
+                        <Typography variant="subtitle2" fontWeight="medium">
+                          12 tuần học
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Thời gian học tập linh hoạt
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+
+                  <Grid item xs={6}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        borderRadius: 1,
+                        transition: "all 0.2s",
+                        height: "100%",
+                        "&:hover": {
+                          bgcolor: (theme) =>
+                            alpha(theme.palette.primary.main, 0.1),
+                          transform: "translateX(4px)",
+                        },
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          width: 20,
+                          height: 20,
+                          borderRadius: "50%",
+                          bgcolor: (theme) =>
+                            alpha(theme.palette.primary.main, 0.1),
+                          color: "primary.main",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <Assignment />
+                      </Box>
+                      <Box>
+                        <Typography variant="subtitle2" fontWeight="medium">
+                          Bài tập thực hành
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Rèn luyện kỹ năng thực tế
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+
+                  <Grid item xs={6}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        borderRadius: 1,
+                        transition: "all 0.2s",
+                        height: "100%",
+                        "&:hover": {
+                          bgcolor: (theme) =>
+                            alpha(theme.palette.primary.main, 0.1),
+                          transform: "translateX(4px)",
+                        },
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          width: 20,
+                          height: 20,
+                          borderRadius: "50%",
+                          bgcolor: (theme) =>
+                            alpha(theme.palette.primary.main, 0.1),
+                          color: "primary.main",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <Quiz />
+                      </Box>
+                      <Box>
+                        <Typography variant="subtitle2" fontWeight="medium">
+                          Kiểm tra đánh giá
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Đánh giá năng lực học tập
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+
+                  <Grid item xs={6}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        borderRadius: 1,
+                        transition: "all 0.2s",
+                        height: "100%",
+                        "&:hover": {
+                          bgcolor: (theme) =>
+                            alpha(theme.palette.primary.main, 0.1),
+                          transform: "translateX(4px)",
+                        },
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          width: 20,
+                          height: 20,
+                          borderRadius: "50%",
+                          bgcolor: (theme) =>
+                            alpha(theme.palette.primary.main, 0.1),
+                          color: "primary.main",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <AutoStories />
+                      </Box>
+                      <Box>
+                        <Typography variant="subtitle2" fontWeight="medium">
+                          Tài liệu học tập
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Tài liệu tham khảo phong phú
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+
+                  <Grid item xs={6}>
+                    <Box
+                      sx={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: 2,
+                        borderRadius: 1,
+                        transition: "all 0.2s",
+                        height: "100%",
+                        "&:hover": {
+                          bgcolor: (theme) =>
+                            alpha(theme.palette.primary.main, 0.1),
+                          transform: "translateX(4px)",
+                        },
+                      }}
+                    >
+                      <Box
+                        sx={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          width: 20,
+                          height: 20,
+                          borderRadius: "50%",
+                          bgcolor: (theme) =>
+                            alpha(theme.palette.primary.main, 0.1),
+                          color: "primary.main",
+                          flexShrink: 0,
+                        }}
+                      >
+                        <EmojiEvents />
+                      </Box>
+                      <Box>
+                        <Typography variant="subtitle2" fontWeight="medium">
+                          Chứng chỉ
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          Chứng nhận kết quả học tập
+                        </Typography>
+                      </Box>
+                    </Box>
+                  </Grid>
+                </Grid>
               </Box>
 
               <Button

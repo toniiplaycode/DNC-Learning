@@ -94,4 +94,12 @@ export class ProgramController {
       isMandatory,
     );
   }
+
+  // Get student's program
+  @Get('student-academic/:studentAcademicId')
+  getStudentAcademicProgram(
+    @Param('studentAcademicId', ParseIntPipe) studentAcademicId: number,
+  ) {
+    return this.programService.getStudentAcademicProgram(studentAcademicId);
+  }
 }

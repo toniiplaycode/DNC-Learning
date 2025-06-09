@@ -45,6 +45,7 @@ import {
   ExpandMore,
   Dashboard,
   CalendarMonth,
+  MenuBook as MenuBookIcon,
 } from "@mui/icons-material";
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -462,6 +463,22 @@ const Header = () => {
               >
                 Khóa học của tôi
               </NavButton>
+
+              {currentUser?.role === "student_academic" && (
+                <NavButton
+                  startIcon={<MenuBookIcon sx={{ fontSize: 18 }} />}
+                  onClick={() => {
+                    if (currentUser) {
+                      navigate("/academic-program");
+                    } else {
+                      navigate("/login");
+                    }
+                  }}
+                  sx={{ px: 1.5, py: 0.75 }}
+                >
+                  Chương trình đào tạo
+                </NavButton>
+              )}
             </Box>
           </Box>
 
@@ -537,7 +554,8 @@ const Header = () => {
                 borderRadius: "20px",
                 px: 2,
                 mr: 0.75,
-                width: 180,
+                width:
+                  currentUser?.role !== "student_academic" ? "280px" : "50px",
                 height: "36px",
                 cursor: "pointer",
                 border: `1px solid ${alpha(theme.palette.common.white, 0.2)}`,
@@ -561,16 +579,11 @@ const Header = () => {
                   fontSize: "18px",
                 }}
               />
-              <Typography
-                color="white"
-                sx={{
-                  opacity: 0.9,
-                  fontSize: "0.85rem",
-                  fontWeight: 500,
-                }}
-              >
-                Tìm kiếm...
-              </Typography>
+              {currentUser?.role !== "student_academic" && (
+                <Typography variant="body2" color="white">
+                  Tìm kiếm...
+                </Typography>
+              )}
             </Box>
 
             {/* Mobile/Tablet Search */}
@@ -639,9 +652,16 @@ const Header = () => {
                       fontWeight={600}
                       fontSize="0.8rem"
                     >
-                      {currentUser.userStudent?.fullName ||
-                        currentUser.userStudentAcademic?.fullName ||
-                        "User"}
+                      {(() => {
+                        const fullName =
+                          currentUser.userStudent?.fullName ||
+                          currentUser.userStudentAcademic?.fullName ||
+                          "User";
+                        const nameParts = fullName.split(" ");
+                        return nameParts.length >= 2
+                          ? nameParts.slice(-2).join(" ")
+                          : fullName;
+                      })()}
                     </Typography>
                     <Typography
                       variant="caption"
@@ -817,7 +837,14 @@ const Header = () => {
                       variant="subtitle1"
                       sx={{ color: "white", fontWeight: "bold" }}
                     >
-                      {currentUser.userStudent?.fullName || "User"}
+                      {(() => {
+                        const fullName =
+                          currentUser.userStudent?.fullName || "User";
+                        const nameParts = fullName.split(" ");
+                        return nameParts.length >= 2
+                          ? nameParts.slice(-2).join(" ")
+                          : fullName;
+                      })()}
                     </Typography>
                     <Typography
                       variant="body2"
@@ -984,6 +1011,33 @@ const Header = () => {
                     />
                   </ListItemButton>
                 </ListItem>
+
+                {currentUser.role === "student_academic" && (
+                  <ListItem disablePadding sx={{ mb: 0.5 }}>
+                    <ListItemButton
+                      onClick={() => {
+                        navigate("/academic-program");
+                        handleDrawerToggle();
+                      }}
+                      sx={{
+                        borderRadius: 2,
+                        transition: "all 0.2s",
+                        "&:hover": {
+                          bgcolor: (theme) =>
+                            alpha(theme.palette.primary.main, 0.08),
+                        },
+                      }}
+                    >
+                      <ListItemIcon>
+                        <MenuBookIcon color="primary" />
+                      </ListItemIcon>
+                      <ListItemText
+                        primary="Chương trình đào tạo"
+                        primaryTypographyProps={{ fontWeight: 600 }}
+                      />
+                    </ListItemButton>
+                  </ListItem>
+                )}
 
                 <ListItem disablePadding sx={{ mb: 0.5 }}>
                   <ListItemButton

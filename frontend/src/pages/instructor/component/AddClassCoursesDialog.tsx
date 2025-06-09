@@ -12,7 +12,7 @@ import {
   Stack,
   Chip,
 } from "@mui/material";
-import { School, Info } from "@mui/icons-material";
+import { School, Info, MenuBook, Book, Group } from "@mui/icons-material";
 import { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { selectCoursesByInstructor } from "../../../features/courses/coursesSelector";
@@ -32,6 +32,7 @@ import { toast } from "react-toastify";
 import { createNotification } from "../../../features/notifications/notificationsSlice";
 import { selectProgramCourses } from "../../../features/academic-classes/academicClassesSelectors";
 import { fetchClassProgramCourses } from "../../../features/academic-classes/academicClassesSlice";
+import EmptyState from "../../../components/common/EmptyState";
 
 interface AddClassCoursesDialogProps {
   open: boolean;
@@ -210,7 +211,17 @@ export const AddClassCoursesDialog = ({
         {title}
       </Typography>
       {courses.length === 0 ? (
-        <Typography color="text.secondary">Chưa có khóa học nào</Typography>
+        <EmptyState
+          icon={isProgramCourse ? <MenuBook /> : <Book />}
+          title="Chưa có khóa học nào"
+          description={
+            isProgramCourse
+              ? "Chưa có khóa học nào trong chương trình đào tạo"
+              : "Chưa có khóa học nào được thêm vào lớp hoặc đã tồn tại trong chương trình đào tạo"
+          }
+          maxWidth={400}
+          height={200}
+        />
       ) : isProgramCourse ? (
         // Ultra compact grid layout for program courses
         <Box
@@ -434,11 +445,21 @@ export const AddClassCoursesDialog = ({
                   </Typography>
                 </Box>
               </Box>
-              {renderCourseList(
-                courses,
-                "Khóa học đã thêm vào lớp",
-                false,
-                true
+              {courses.length === 0 ? (
+                <EmptyState
+                  icon={<Group />}
+                  title="Chưa có khóa học nào"
+                  description={`Giảng viên ${instructor.fullName} chưa thêm khóa học nào vào lớp`}
+                  maxWidth={400}
+                  height={200}
+                />
+              ) : (
+                renderCourseList(
+                  courses,
+                  "Khóa học đã thêm vào lớp",
+                  false,
+                  true
+                )
               )}
             </Box>
           )

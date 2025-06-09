@@ -4,12 +4,15 @@ import { Repository } from 'typeorm';
 import { Faculty } from '../../entities/Faculty';
 import { CreateFacultyDto } from './dto/create-faculty.dto';
 import { UpdateFacultyDto } from './dto/update-faculty.dto';
+import { UserInstructor } from '../../entities/UserInstructor';
 
 @Injectable()
 export class FacultyService {
   constructor(
     @InjectRepository(Faculty)
     private readonly facultyRepository: Repository<Faculty>,
+    @InjectRepository(UserInstructor)
+    private readonly instructorRepository: Repository<UserInstructor>,
   ) {}
 
   async create(createDto: CreateFacultyDto): Promise<Faculty> {
@@ -83,5 +86,30 @@ export class FacultyService {
     }
 
     return faculty;
+  }
+
+  async findByInstructorId(instructorId: number): Promise<Faculty | null> {
+    const instructor = await this.instructorRepository.findOne({
+      where: { id: instructorId },
+      relations: {
+        faculty: {
+          majors: {
+            programs: {
+              programCourses: {
+                course: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!instructor) {
+      throw new NotFoundException(
+        `Instructor with ID ${instructorId} not found`,
+      );
+    }
+
+    return instructor.faculty;
   }
 }

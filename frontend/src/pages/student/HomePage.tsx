@@ -13,6 +13,13 @@ import {
   Fade,
   Zoom,
   Slide,
+  Paper,
+  alpha,
+  Chip,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import FeaturedCourses from "../../components/student/home/FeaturedCourses";
@@ -20,80 +27,80 @@ import FeaturedInstructors from "../../components/student/home/FeaturedInstructo
 import FeaturedForumDiscussions from "../../components/student/home/FeaturedForumDiscussions";
 import {
   School,
-  People,
   AutoStories,
-  Quiz,
-  Forum,
-  ChatBubble,
+  Timeline as TimelineIcon,
+  CheckCircle,
 } from "@mui/icons-material";
 import { motion } from "framer-motion";
-
-// Thêm các variants cho animation
-const containerVariants = {
-  hidden: { opacity: 0 },
-  visible: {
-    opacity: 1,
-    transition: {
-      staggerChildren: 0.2,
-    },
-  },
-};
-
-const itemVariants = {
-  hidden: { y: 20, opacity: 0 },
-  visible: {
-    y: 0,
-    opacity: 1,
-    transition: {
-      duration: 0.5,
-    },
-  },
-};
+import {
+  Timeline,
+  TimelineItem,
+  TimelineSeparator,
+  TimelineConnector,
+  TimelineContent,
+  TimelineOppositeContent,
+  TimelineDot,
+} from "@mui/lab";
 
 const HomePage = () => {
   const navigate = useNavigate();
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
-  // Thêm mảng features để render
-  const features = [
+  const timelineSteps = [
     {
-      icon: <School sx={{ fontSize: 40 }} />,
-      title: "Khóa học chất lượng",
+      semester: "Học kỳ 1",
+      title: "Kiến thức đại cương",
       description:
-        "Học tập với các khóa học được thiết kế bởi giảng viên chuyên môn cao",
-      color: "primary.main",
+        "Xây dựng nền tảng kiến thức cơ bản và các môn học đại cương",
+      courses: ["Môn học cơ sở", "Môn học đại cương", "Kỹ năng cơ bản"],
+      color: theme.palette.primary.main,
+      bgColor: alpha(theme.palette.primary.main, 0.05),
+      chipBgColor: alpha(theme.palette.primary.main, 0.1),
     },
     {
-      icon: <People sx={{ fontSize: 40 }} />,
-      title: "Giảng viên chuyên nghiệp",
-      description: "Đội ngũ giảng viên giàu kinh nghiệm, nhiệt tình và tận tâm",
-      color: "success.main",
-    },
-    {
-      icon: <AutoStories sx={{ fontSize: 40 }} />,
-      title: "Tài liệu phong phú",
-      description: "Hệ thống tài liệu học tập đa dạng, cập nhật liên tục",
-      color: "info.main",
-    },
-    {
-      icon: <Quiz sx={{ fontSize: 40 }} />,
-      title: "Bài tập trắc nghiệm",
-      description: "Hệ thống bài tập trắc nghiệm giúp củng cố kiến thức",
-      color: "warning.main",
-    },
-    {
-      icon: <Forum sx={{ fontSize: 40 }} />,
-      title: "Diễn đàn thảo luận",
+      semester: "Học kỳ 2",
+      title: "Kiến thức cơ sở ngành",
       description:
-        "Không gian trao đổi, thảo luận với giảng viên và học viên khác",
-      color: "primary.main",
+        "Tiếp cận các môn học cơ sở ngành và bắt đầu hình thành tư duy chuyên môn",
+      courses: ["Môn cơ sở ngành", "Thực hành cơ bản", "Phương pháp học tập"],
+      color: theme.palette.success.main,
+      bgColor: alpha(theme.palette.success.main, 0.05),
+      chipBgColor: alpha(theme.palette.success.main, 0.1),
     },
     {
-      icon: <ChatBubble sx={{ fontSize: 40 }} />,
-      title: "Hỗ trợ 24/7 với AI",
-      description: "Chatbot AI luôn sẵn sàng giải đáp thắc mắc của bạn",
-      color: "error.main",
+      semester: "Học kỳ 3",
+      title: "Kiến thức chuyên ngành",
+      description:
+        "Đi sâu vào các môn học chuyên ngành và phát triển kỹ năng thực hành",
+      courses: ["Môn chuyên ngành", "Thực hành chuyên sâu", "Dự án nhóm"],
+      color: theme.palette.info.main,
+      bgColor: alpha(theme.palette.info.main, 0.05),
+      chipBgColor: alpha(theme.palette.info.main, 0.1),
+    },
+    {
+      semester: "Học kỳ 4",
+      title: "Tổng hợp và thực tập",
+      description:
+        "Tổng hợp kiến thức, thực tập và chuẩn bị cho đồ án tốt nghiệp",
+      courses: [
+        "Đồ án chuyên ngành",
+        "Thực tập thực tế",
+        "Định hướng nghề nghiệp",
+      ],
+      color: theme.palette.warning.main,
+      bgColor: alpha(theme.palette.warning.main, 0.05),
+      chipBgColor: alpha(theme.palette.warning.main, 0.1),
+    },
+    {
+      semester: "Học kỳ ...",
+      title: "Tiếp tục phát triển",
+      description:
+        "Khám phá thêm các học kỳ tiếp theo với nhiều kiến thức và kỹ năng chuyên sâu hơn",
+      courses: ["Chuyên sâu nâng cao", "Dự án thực tế", "Nghiên cứu khoa học"],
+      color: "#555",
+      bgColor: alpha("#555", 0.05),
+      chipBgColor: alpha("#555", 0.1),
     },
   ];
 
@@ -192,8 +199,283 @@ const HomePage = () => {
         </Box>
       </motion.div>
 
-      {/* Features Section với animation */}
-      <Box sx={{ bgcolor: "background.paper", p: 8 }}>
+      {/* Student Types Section */}
+      <Box sx={{ bgcolor: "background.default", py: 6 }}>
+        <Container maxWidth="lg">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6 }}
+          >
+            <Box sx={{ textAlign: "center", mb: 4 }}>
+              <Typography
+                variant="h4"
+                component={motion.h2}
+                gutterBottom
+                sx={{
+                  fontWeight: "bold",
+                  color: "text.primary",
+                  mb: 1,
+                }}
+              >
+                Dành cho mọi đối tượng học viên
+              </Typography>
+              <Typography
+                variant="body1"
+                color="text.primary"
+                sx={{ maxWidth: 600, mx: "auto" }}
+              >
+                DNC Learning cung cấp chương trình học tập phù hợp với cả sinh
+                viên chính quy và học viên tự do
+              </Typography>
+            </Box>
+          </motion.div>
+
+          <Stack
+            direction={{ xs: "column", md: "row" }}
+            spacing={3}
+            sx={{ mt: 2 }}
+          >
+            {/* Sinh viên chính quy */}
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              style={{ flex: 1 }}
+            >
+              <Card
+                sx={{
+                  height: "100%",
+                  transition: "all 0.3s ease-in-out",
+                  "&:hover": {
+                    transform: "translateY(-4px)",
+                    boxShadow: theme.shadows[4],
+                  },
+                }}
+              >
+                <CardContent sx={{ p: 3 }}>
+                  <Stack
+                    direction="row"
+                    spacing={2}
+                    alignItems="center"
+                    sx={{ mb: 2 }}
+                  >
+                    <Box
+                      sx={{
+                        display: "flex",
+                        p: 1.5,
+                        borderRadius: "50%",
+                        bgcolor: `${theme.palette.primary.main}15`,
+                        color: "primary.main",
+                      }}
+                    >
+                      <School sx={{ fontSize: 28 }} />
+                    </Box>
+                    <Typography
+                      variant="h5"
+                      component="h3"
+                      sx={{ fontWeight: "bold" }}
+                    >
+                      Sinh viên chính quy
+                    </Typography>
+                  </Stack>
+                  <Stack spacing={1.5} sx={{ mb: 2 }}>
+                    <List dense disablePadding>
+                      <ListItem disablePadding sx={{ py: 0.5 }}>
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <CheckCircle
+                            sx={{ color: "primary.main", fontSize: 20 }}
+                          />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Theo dõi tiến độ học tập theo chương trình đào tạo"
+                          primaryTypographyProps={{
+                            variant: "body2",
+                            color: "text.secondary",
+                          }}
+                        />
+                      </ListItem>
+                      <ListItem disablePadding sx={{ py: 0.5 }}>
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <CheckCircle
+                            sx={{ color: "primary.main", fontSize: 20 }}
+                          />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Tham gia các lớp học trực tuyến với giảng viên"
+                          primaryTypographyProps={{
+                            variant: "body2",
+                            color: "text.secondary",
+                          }}
+                        />
+                      </ListItem>
+                      <ListItem disablePadding sx={{ py: 0.5 }}>
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <CheckCircle
+                            sx={{ color: "primary.main", fontSize: 20 }}
+                          />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Tương tác và trao đổi với bạn học cùng lớp"
+                          primaryTypographyProps={{
+                            variant: "body2",
+                            color: "text.secondary",
+                          }}
+                        />
+                      </ListItem>
+                      <ListItem disablePadding sx={{ py: 0.5 }}>
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <CheckCircle
+                            sx={{ color: "primary.main", fontSize: 20 }}
+                          />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Được những quyền lợi như học viên tự do"
+                          primaryTypographyProps={{
+                            variant: "body2",
+                            color: "text.secondary",
+                          }}
+                        />
+                      </ListItem>
+                    </List>
+                  </Stack>
+                  <Button
+                    variant="contained"
+                    color="primary"
+                    size="medium"
+                    onClick={() => navigate("/academic-program")}
+                    fullWidth
+                  >
+                    Xem chương trình đào tạo
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Học viên tự do */}
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              style={{ flex: 1 }}
+            >
+              <Card
+                sx={{
+                  height: "100%",
+                  transition: "all 0.3s ease-in-out",
+                  "&:hover": {
+                    transform: "translateY(-4px)",
+                    boxShadow: theme.shadows[4],
+                  },
+                }}
+              >
+                <CardContent sx={{ p: 3 }}>
+                  <Stack
+                    direction="row"
+                    spacing={2}
+                    alignItems="center"
+                    sx={{ mb: 2 }}
+                  >
+                    <Box
+                      sx={{
+                        display: "flex",
+                        p: 1.5,
+                        borderRadius: "50%",
+                        bgcolor: `${theme.palette.info.main}15`,
+                        color: "info.main",
+                      }}
+                    >
+                      <AutoStories sx={{ fontSize: 28 }} />
+                    </Box>
+                    <Typography
+                      variant="h5"
+                      component="h3"
+                      sx={{ fontWeight: "bold" }}
+                    >
+                      Học viên tự do
+                    </Typography>
+                  </Stack>
+                  <Stack spacing={1.5} sx={{ mb: 2 }}>
+                    <List dense disablePadding>
+                      <ListItem disablePadding sx={{ py: 0.5 }}>
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <CheckCircle
+                            sx={{ color: "info.main", fontSize: 20 }}
+                          />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Học tập theo tốc độ và lịch trình cá nhân"
+                          primaryTypographyProps={{
+                            variant: "body2",
+                            color: "text.secondary",
+                          }}
+                        />
+                      </ListItem>
+                      <ListItem disablePadding sx={{ py: 0.5 }}>
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <CheckCircle
+                            sx={{ color: "info.main", fontSize: 20 }}
+                          />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Truy cập nội dung học tập mọi lúc, mọi nơi"
+                          primaryTypographyProps={{
+                            variant: "body2",
+                            color: "text.secondary",
+                          }}
+                        />
+                      </ListItem>
+                      <ListItem disablePadding sx={{ py: 0.5 }}>
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <CheckCircle
+                            sx={{ color: "info.main", fontSize: 20 }}
+                          />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Thực hành và làm bài tập tự đánh giá"
+                          primaryTypographyProps={{
+                            variant: "body2",
+                            color: "text.secondary",
+                          }}
+                        />
+                      </ListItem>
+                      <ListItem disablePadding sx={{ py: 0.5 }}>
+                        <ListItemIcon sx={{ minWidth: 36 }}>
+                          <CheckCircle
+                            sx={{ color: "info.main", fontSize: 20 }}
+                          />
+                        </ListItemIcon>
+                        <ListItemText
+                          primary="Nhận chứng chỉ hoàn thành khóa học"
+                          primaryTypographyProps={{
+                            variant: "body2",
+                            color: "text.secondary",
+                          }}
+                        />
+                      </ListItem>
+                    </List>
+                  </Stack>
+                  <Button
+                    variant="contained"
+                    color="secondary"
+                    size="medium"
+                    onClick={() => navigate("/courses")}
+                    fullWidth
+                  >
+                    Khám phá khóa học
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+          </Stack>
+        </Container>
+      </Box>
+
+      {/* Learning Path Timeline Section */}
+      <Box sx={{ bgcolor: "background.default", pb: 8, pt: 4 }}>
         <Container>
           <motion.div
             initial={{ opacity: 0, y: 50 }}
@@ -210,84 +492,122 @@ const HomePage = () => {
                   fontWeight: "bold",
                   color: "text.primary",
                   mb: 2,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 2,
                 }}
               >
-                Tại sao chọn DNC Learning?
+                Chương trình đào tạo chuẩn
               </Typography>
               <Typography
                 variant="h6"
                 color="text.secondary"
                 sx={{ maxWidth: 800, mx: "auto" }}
               >
-                Nền tảng học tập trực tuyến với đầy đủ công cụ hỗ trợ việc học
-                tập và phát triển kỹ năng của bạn
+                Khám phá chương trình học được thiết kế theo từng học kỳ, với
+                nhiều học kỳ chuyên sâu đang chờ đón bạn
               </Typography>
             </Box>
           </motion.div>
 
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            whileInView="visible"
-            viewport={{ once: true }}
-          >
-            <Grid container spacing={4}>
-              {features.map((feature, index) => (
-                <Grid item xs={12} sm={6} md={4} key={index}>
-                  <motion.div
-                    variants={itemVariants}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Card
+          <Box sx={{ position: "relative", mt: 4, ml: { xs: 0, md: "-30%" } }}>
+            <Timeline position="alternate">
+              {timelineSteps.map((step, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, x: index % 2 === 0 ? -50 : 50 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.5, delay: index * 0.2 }}
+                >
+                  <TimelineItem>
+                    <TimelineOppositeContent
                       sx={{
-                        height: "100%",
-                        display: "flex",
-                        flexDirection: "column",
-                        transition: "box-shadow 0.3s",
-                        "&:hover": {
-                          boxShadow: theme.shadows[8],
-                        },
+                        flex: 0.5,
+                        display: { xs: "none", md: "block" },
                       }}
                     >
-                      <CardContent
-                        sx={{ flexGrow: 1, textAlign: "center", p: 4 }}
+                      <Typography
+                        variant="h6"
+                        color="text.secondary"
+                        sx={{ fontWeight: "bold" }}
                       >
-                        <motion.div
-                          whileHover={{ rotate: 360 }}
-                          transition={{ duration: 0.5 }}
-                        >
-                          <Box
-                            sx={{
-                              display: "inline-flex",
-                              p: 2,
-                              borderRadius: "50%",
-                              bgcolor: `${feature.color}15`,
-                              color: feature.color,
-                              mb: 2,
-                            }}
-                          >
-                            {feature.icon}
-                          </Box>
-                        </motion.div>
+                        {step.semester}
+                      </Typography>
+                    </TimelineOppositeContent>
+                    <TimelineSeparator>
+                      <TimelineDot
+                        sx={{
+                          bgcolor: step.color,
+                          p: 2,
+                          boxShadow: `0 0 0 4px ${alpha(step.color, 0.1)}`,
+                        }}
+                      >
+                        <School />
+                      </TimelineDot>
+                      {index < timelineSteps.length - 1 && (
+                        <TimelineConnector
+                          sx={{
+                            bgcolor: alpha(step.color, 0.2),
+                            height: "100px",
+                          }}
+                        />
+                      )}
+                    </TimelineSeparator>
+                    <TimelineContent>
+                      <Paper
+                        elevation={0}
+                        sx={{
+                          p: 3,
+                          borderRadius: 4,
+                          bgcolor: step.bgColor,
+                          transition: "transform 0.2s",
+                          "&:hover": {
+                            transform: "translateY(-4px)",
+                            boxShadow: theme.shadows[4],
+                          },
+                        }}
+                      >
                         <Typography
-                          variant="h5"
-                          component="h3"
-                          gutterBottom
-                          sx={{ fontWeight: "bold" }}
+                          variant="h6"
+                          sx={{ color: step.color, fontWeight: "bold", mb: 1 }}
                         >
-                          {feature.title}
+                          {step.title}
                         </Typography>
-                        <Typography variant="body1" color="text.secondary">
-                          {feature.description}
+                        <Typography
+                          variant="body1"
+                          color="text.secondary"
+                          sx={{ mb: 2 }}
+                        >
+                          {step.description}
                         </Typography>
-                      </CardContent>
-                    </Card>
-                  </motion.div>
-                </Grid>
+                        <Stack
+                          direction="row"
+                          spacing={1}
+                          flexWrap="wrap"
+                          useFlexGap
+                        >
+                          {step.courses.map((course, courseIndex) => (
+                            <Chip
+                              key={courseIndex}
+                              label={course}
+                              size="small"
+                              sx={{
+                                bgcolor: step.chipBgColor,
+                                color: step.color,
+                                fontWeight: 500,
+                              }}
+                            />
+                          ))}
+                        </Stack>
+                      </Paper>
+                    </TimelineContent>
+                  </TimelineItem>
+                </motion.div>
               ))}
-            </Grid>
-          </motion.div>
+            </Timeline>
+          </Box>
         </Container>
       </Box>
 

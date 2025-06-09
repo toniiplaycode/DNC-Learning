@@ -10,8 +10,10 @@ import {
   Button,
   LinearProgress,
   Chip,
+  IconButton,
+  Tooltip,
 } from "@mui/material";
-import { AccessTime, PlayCircle } from "@mui/icons-material";
+import { AccessTime, PlayCircle, Lock } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 
 interface CardCourseProps {
@@ -34,12 +36,16 @@ interface CardCourseProps {
   startDate?: string;
   endDate?: string;
   for: string;
+  disabled?: boolean;
+  disabledTooltip?: string;
 }
 
 const CardCourse: React.FC<CardCourseProps> = ({
   isAcademic,
   startDate,
   endDate,
+  disabled,
+  disabledTooltip,
   ...props
 }) => {
   const {
@@ -67,18 +73,43 @@ const CardCourse: React.FC<CardCourseProps> = ({
     }).format(price);
   };
 
+  const handleCardClick = () => {
+    if (disabled) return;
+    navigate(`/course/${id}`);
+  };
+
+  const handleButtonClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (disabled) return;
+    navigate(isEnrolled ? `/course/${id}/learn` : `/course/${id}`);
+  };
+
+  const formatDate = (dateString: string | undefined | null): string => {
+    if (!dateString) return "Chưa có thông tin";
+    const date = new Date(dateString);
+    return isNaN(date.getTime())
+      ? "Chưa có thông tin"
+      : date.toLocaleDateString("vi-VN", {
+          year: "numeric",
+          month: "long",
+          day: "numeric",
+        });
+  };
+
   return (
     <Card
       sx={{
         height: "100%",
         display: "flex",
         flexDirection: "column",
-        cursor: "pointer",
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.7 : 1,
         "&:hover": {
-          boxShadow: 6,
+          boxShadow: disabled ? 1 : 6,
         },
+        position: "relative",
       }}
-      onClick={() => navigate(`/course/${id}`)}
+      onClick={handleCardClick}
     >
       <Box sx={{ position: "relative" }}>
         <CardMedia
@@ -86,8 +117,39 @@ const CardCourse: React.FC<CardCourseProps> = ({
           height="220"
           image={image}
           alt={title}
-          sx={{ objectFit: "cover" }}
+          sx={{
+            objectFit: "cover",
+            filter: disabled ? "grayscale(50%)" : "none",
+          }}
         />
+        {disabled && (
+          <Box
+            sx={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              bgcolor: "rgba(0, 0, 0, 0.3)",
+            }}
+          >
+            <IconButton
+              sx={{
+                bgcolor: "rgba(0, 0, 0, 0.7)",
+                color: "white",
+                "&:hover": {
+                  bgcolor: "rgba(0, 0, 0, 0.8)",
+                },
+              }}
+              size="large"
+            >
+              <Lock />
+            </IconButton>
+          </Box>
+        )}
         <Chip
           label={category}
           size="small"
@@ -97,8 +159,25 @@ const CardCourse: React.FC<CardCourseProps> = ({
             left: 8,
             bgcolor: "rgba(255, 255, 255, 0.9)",
             fontWeight: 500,
+            zIndex: 1,
           }}
         />
+        {disabled && (
+          <Chip
+            label="Chưa mở"
+            size="small"
+            color="default"
+            sx={{
+              position: "absolute",
+              top: 8,
+              right: 8,
+              bgcolor: "rgba(0, 0, 0, 0.7)",
+              color: "white",
+              fontWeight: 500,
+              zIndex: 1,
+            }}
+          />
+        )}
       </Box>
 
       <CardContent
@@ -128,7 +207,7 @@ const CardCourse: React.FC<CardCourseProps> = ({
             sx={{ width: 24, height: 24, mr: 1 }}
           />
           <Typography variant="body2" color="text.secondary">
-            {instructor.fullName || instructor.name}
+            {instructor.fullName}
           </Typography>
         </Box>
 
@@ -222,27 +301,65 @@ const CardCourse: React.FC<CardCourseProps> = ({
           <Button
             variant="contained"
             fullWidth
-            sx={{ mt: 2 }}
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/course/${id}`);
+            sx={{
+              mt: 2,
+              position: "relative",
+              ...(disabled && {
+                bgcolor: "grey.400",
+                "&:hover": {
+                  bgcolor: "grey.400",
+                },
+              }),
             }}
+            onClick={handleButtonClick}
+            disabled={disabled}
+            startIcon={disabled ? <Lock /> : undefined}
           >
-            Đăng ký ngay
+            {disabled ? `Mở khóa ${formatDate(startDate)}` : "Đăng ký ngay"}
           </Button>
         ) : (
           <Button
             variant="contained"
             fullWidth
-            onClick={(e) => {
-              e.stopPropagation();
-              navigate(`/course/${id}/learn`);
+            onClick={handleButtonClick}
+            disabled={disabled}
+            startIcon={disabled ? <Lock /> : undefined}
+            sx={{
+              ...(disabled && {
+                bgcolor: "grey.400",
+                "&:hover": {
+                  bgcolor: "grey.400",
+                },
+              }),
             }}
           >
-            {progress === 100 ? "Xem lại" : "Tiếp tục học"}
+            {disabled
+              ? `Mở khóa ${formatDate(startDate)}`
+              : progress === 100
+              ? "Xem lại"
+              : "Tiếp tục học"}
           </Button>
         )}
       </CardContent>
+
+      {disabled && disabledTooltip && (
+        <Tooltip
+          title={`Khóa học sẽ mở  ${formatDate(startDate)}`}
+          placement="top"
+          arrow
+        >
+          <Box
+            sx={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 2,
+            }}
+          />
+        </Tooltip>
+      )}
     </Card>
   );
 };

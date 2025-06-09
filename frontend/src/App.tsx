@@ -57,6 +57,8 @@ import ForgotPassword from "./pages/student/auth/ForgotPassword";
 import ResetPassword from "./pages/student/auth/ResetPassword";
 import NotFound from "./components/common/NotFound";
 import AdminTrainingSystem from "./pages/admin/AdminTrainingSystem";
+import InstructorFaculties from "./pages/instructor/InstructorFaculties";
+import AcademicProgram from "./pages/student/AcademicProgram";
 
 const App = () => {
   const navigate = useNavigate();
@@ -114,6 +116,7 @@ const App = () => {
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password" element={<ResetPassword />} />
           <Route path="/enrolled-courses" element={<EnrolledCourses />} />
+          <Route path="/academic-program" element={<AcademicProgram />} />
           <Route path="/profile" element={<ProfileAccount />} />
           <Route path="/courses" element={<Courses />} />
           <Route path="/list-instructors" element={<Instructors />} />
@@ -137,7 +140,8 @@ const App = () => {
         {/* Instructor routes */}
         <Route element={<InstructorLayout />}>
           <Route path="/instructor/login" element={<InstructorLogin />} />
-          <Route path="/instructor" element={<InstructorCourses />} />
+          <Route path="/instructor" element={<InstructorFaculties />} />
+          <Route path="/instructor/courses" element={<InstructorCourses />} />
           <Route
             path="/instructor/courses/:id"
             element={<InstructorCourseView />}

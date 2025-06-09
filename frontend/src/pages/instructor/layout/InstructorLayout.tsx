@@ -39,6 +39,7 @@ import {
   Comment,
   PeopleAltTwoTone,
   CheckCircle,
+  School,
 } from "@mui/icons-material";
 import { useNavigate, useLocation, Outlet } from "react-router-dom";
 import Logo from "../../../assets/logo.png";
@@ -53,7 +54,8 @@ const COLLAPSED_DRAWER_WIDTH = 70;
 const TRANSITION_DURATION = "0.3s";
 
 const menuItems = [
-  { text: "Khóa học", icon: <LibraryBooks />, path: "/instructor" },
+  { text: "Chương trình đào tạo", icon: <School />, path: "/instructor" },
+  { text: "Khóa học", icon: <LibraryBooks />, path: "/instructor/courses" },
   {
     text: "Học viên/sinh viên",
     icon: <People />,

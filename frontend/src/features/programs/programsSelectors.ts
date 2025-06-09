@@ -10,6 +10,9 @@ export const selectProgramsStatus = (state: RootState) => state.programs.status;
 
 export const selectProgramsError = (state: RootState) => state.programs.error;
 
+export const selectStudentAcademicProgram = (state: RootState) =>
+  state.programs.studentAcademicProgram;
+
 export const selectProgramsByMajor = (state: RootState, majorId: number) =>
   state.programs.programs.filter(
     (program: Program) => program.majorId === majorId

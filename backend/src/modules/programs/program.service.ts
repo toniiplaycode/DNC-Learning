@@ -11,6 +11,7 @@ import { Course } from '../../entities/Course';
 import { AcademicClass } from '../../entities/AcademicClass';
 import { CreateProgramDto } from './dto/create-program.dto';
 import { UpdateProgramDto } from './dto/update-program.dto';
+import { UserStudentAcademic } from '../../entities/UserStudentAcademic';
 
 @Injectable()
 export class ProgramService {
@@ -223,5 +224,29 @@ export class ProgramService {
     programCourse.isMandatory = isMandatory;
 
     return this.programCourseRepository.save(programCourse);
+  }
+
+  async getStudentAcademicProgram(studentAcademicId: number): Promise<Program> {
+    const studentAcademic = await this.programRepository.manager.findOne(
+      UserStudentAcademic,
+      {
+        where: { id: studentAcademicId },
+        relations: {
+          academicClass: {
+            program: {
+              programCourses: {
+                course: true,
+              },
+            },
+          },
+        },
+      },
+    );
+
+    if (!studentAcademic?.academicClass?.program) {
+      throw new NotFoundException('cannot find student academic program');
+    }
+
+    return studentAcademic.academicClass.program;
   }
 }

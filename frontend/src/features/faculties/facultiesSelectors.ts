@@ -11,6 +11,11 @@ export const selectFacultiesStatus = (state: RootState) =>
   state.faculties.status;
 export const selectFacultiesError = (state: RootState) => state.faculties.error;
 
+export const selectInstructorFaculty = (state: RootState) =>
+  state.faculties.instructorFaculty;
+export const selectIsInstructorFacultyLoading = (state: RootState) =>
+  state.faculties.isInstructorFacultyLoading;
+
 // Derived selectors
 export const selectFacultyById = (facultyId: number) =>
   createSelector(
