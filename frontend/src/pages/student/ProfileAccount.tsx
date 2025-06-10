@@ -104,6 +104,9 @@ import { setCredentials, updateUserInfo } from "../../features/auth/authSlice";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 import EmptyState from "../../components/common/EmptyState";
+import { fetchStudentAcademicProgram } from "../../features/programs/programsSlice";
+import { selectStudentAcademicProgram } from "../../features/programs/programsSelectors";
+import { Program } from "../../types/program.types";
 
 type Gender = "male" | "female" | "other";
 
@@ -1111,292 +1114,726 @@ const GradesTab = React.memo(
   ({
     currentUser,
     userGrades,
+    program,
     loadingGrades,
   }: {
     currentUser: User | null;
     userGrades: any[];
+    program: Program | null;
     loadingGrades: boolean;
-  }) => (
-    <Stack spacing={3} px={2}>
-      <Box>
-        <Typography variant="h6" gutterBottom>
-          Tổng quan
-        </Typography>
-        <Grid container spacing={3}>
-          <Grid item xs={12} md>
-            <Card>
-              <CardContent sx={{ textAlign: "center" }}>
-                <Typography variant="h4" color="primary">
-                  {userGrades && userGrades.length > 0
-                    ? (
-                        userGrades.reduce(
-                          (sum, grade) =>
-                            sum +
-                            (Number(grade.score) / Number(grade.maxScore)) *
-                              100 *
-                              Number(grade.weight || 1),
-                          0
-                        ) /
-                        userGrades.reduce(
-                          (sum, grade) => sum + Number(grade.weight || 1),
-                          0
-                        )
-                      ).toFixed(2)
-                    : "0.00"}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Điểm trung bình
-                </Typography>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      </Box>
+  }) => {
+    const [selectedCourse, setSelectedCourse] = useState<string>("all");
+    const [selectedGradeType, setSelectedGradeType] = useState<string>("all");
+    const [selectedSemester, setSelectedSemester] = useState<string>("all");
 
-      <Box>
-        <Typography variant="h6" gutterBottom>
-          Chi tiết điểm
-        </Typography>
-        {loadingGrades ? (
-          <Box sx={{ display: "flex", justifyContent: "center", my: 3 }}>
-            <CircularProgress />
-          </Box>
-        ) : userGrades && userGrades.length > 0 ? (
-          currentUser?.role === UserRole.STUDENT_ACADEMIC ? (
-            <Card sx={{ p: 3 }}>
-              <Typography variant="h6" fontWeight="bold" gutterBottom>
-                Bảng điểm sinh viên
-              </Typography>
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                display="block"
-                gutterBottom
-              >
-                Cập nhật: {new Date().toLocaleDateString("vi-VN")}
-              </Typography>
-              <Divider sx={{ my: 2 }} />
-              {[...userGrades]
-                .sort((a, b) => parseFloat(b.weight) - parseFloat(a.weight))
-                .map((grade) => (
-                  <Box
-                    key={grade.id}
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      py: 0.5,
-                    }}
+    // Hàm lấy học kỳ của một khóa học
+    const getSemesterOfCourse = (courseId: string | number) => {
+      if (!program || !program.programCourses) return null;
+      const pc = program.programCourses.find(
+        (pc) => String(pc.courseId) === String(courseId)
+      );
+      return pc ? pc.semester : null;
+    };
+
+    // Lấy danh sách học kỳ có sẵn
+    const availableSemesters = React.useMemo(() => {
+      if (!program || !program.programCourses) return [];
+      const semesters = new Set<number>();
+      program.programCourses.forEach((pc) => {
+        if (pc.semester) {
+          semesters.add(pc.semester);
+        }
+      });
+      return Array.from(semesters).sort((a, b) => a - b);
+    }, [program]);
+
+    // Lấy danh sách khóa học từ userGrades
+    const courses = React.useMemo(() => {
+      if (!userGrades || userGrades.length === 0) return [];
+
+      const courseMap = new Map();
+      userGrades.forEach((grade) => {
+        if (grade.courseId && grade.course?.title) {
+          courseMap.set(grade.courseId, {
+            id: grade.courseId,
+            title: grade.course.title,
+          });
+        }
+      });
+
+      return Array.from(courseMap.values());
+    }, [userGrades]);
+
+    // Lọc điểm theo khóa học và loại điểm được chọn
+    const filteredGrades = React.useMemo(() => {
+      if (!userGrades || userGrades.length === 0) return [];
+
+      let filtered = userGrades;
+
+      // Lọc theo khóa học
+      if (selectedCourse !== "all") {
+        filtered = filtered.filter(
+          (grade) => grade.courseId === selectedCourse
+        );
+      }
+
+      // Lọc theo loại điểm
+      if (selectedGradeType !== "all") {
+        filtered = filtered.filter(
+          (grade) => grade.gradeType === selectedGradeType
+        );
+      }
+
+      // Lọc theo học kỳ (chỉ áp dụng cho sinh viên học thuật)
+      if (
+        currentUser?.role === UserRole.STUDENT_ACADEMIC &&
+        selectedSemester !== "all"
+      ) {
+        filtered = filtered.filter((grade) => {
+          const semester = getSemesterOfCourse(grade.courseId);
+          return semester === parseInt(selectedSemester);
+        });
+      }
+
+      return filtered;
+    }, [
+      userGrades,
+      selectedCourse,
+      selectedGradeType,
+      selectedSemester,
+      currentUser?.role,
+      program,
+    ]);
+
+    return (
+      <Stack spacing={3} px={2}>
+        <Box>
+          <Box
+            sx={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              mb: 2,
+              flexWrap: "wrap",
+              gap: 2,
+            }}
+          >
+            <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+              {courses.length > 0 && (
+                <FormControl size="small" sx={{ minWidth: 200 }}>
+                  <InputLabel>Lọc theo khóa học</InputLabel>
+                  <Select
+                    value={selectedCourse}
+                    label="Lọc theo khóa học"
+                    onChange={(e) => setSelectedCourse(e.target.value)}
                   >
-                    <Typography variant="body1">
-                      {grade.gradeType === "assignment" &&
-                        grade.assignmentSubmission?.assignment?.title}
-                      {grade.gradeType === "quiz" &&
-                        grade.quizAttempt?.quiz?.title}
-                      {grade.gradeType === "midterm" && "Điểm giữa kỳ"}
-                      {grade.gradeType === "final" && "Điểm cuối kỳ"}
+                    <MenuItem value="all">Tất cả khóa học</MenuItem>
+                    {courses.map((course) => (
+                      <MenuItem key={course.id} value={course.id}>
+                        {course.title}
+                      </MenuItem>
+                    ))}
+                  </Select>
+                </FormControl>
+              )}
+              {currentUser?.role === UserRole.STUDENT_ACADEMIC &&
+                availableSemesters.length > 0 && (
+                  <FormControl size="small" sx={{ minWidth: 180 }}>
+                    <InputLabel>Lọc theo học kỳ</InputLabel>
+                    <Select
+                      value={selectedSemester}
+                      label="Lọc theo học kỳ"
+                      onChange={(e) => setSelectedSemester(e.target.value)}
+                    >
+                      <MenuItem value="all">Tất cả học kỳ</MenuItem>
+                      {availableSemesters.map((semester) => (
+                        <MenuItem key={semester} value={semester.toString()}>
+                          Học kỳ {semester}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+                )}
+              <FormControl size="small" sx={{ minWidth: 180 }}>
+                <InputLabel>Lọc theo loại bài</InputLabel>
+                <Select
+                  value={selectedGradeType}
+                  label="Lọc theo loại bài"
+                  onChange={(e) => setSelectedGradeType(e.target.value)}
+                >
+                  <MenuItem value="all">Tất cả loại bài</MenuItem>
+                  <MenuItem value="quiz">🎯 Trắc nghiệm</MenuItem>
+                  <MenuItem value="assignment">📝 Bài tập</MenuItem>
+                  <MenuItem value="midterm">📊 Kiểm tra giữa kỳ</MenuItem>
+                  <MenuItem value="final">📈 Kiểm tra cuối kỳ</MenuItem>
+                  <MenuItem value="participation">👥 Điểm tham gia</MenuItem>
+                </Select>
+              </FormControl>
+              <Button
+                variant="outlined"
+                size="small"
+                startIcon={<CloseIcon />}
+                onClick={() => {
+                  setSelectedCourse("all");
+                  setSelectedGradeType("all");
+                  setSelectedSemester("all");
+                }}
+                sx={{
+                  minWidth: 120,
+                  height: 40,
+                }}
+              >
+                Xóa bộ lọc
+              </Button>
+            </Box>
+          </Box>
+
+          {loadingGrades ? (
+            <Box sx={{ display: "flex", justifyContent: "center", my: 3 }}>
+              <CircularProgress />
+            </Box>
+          ) : filteredGrades && filteredGrades.length > 0 ? (
+            currentUser?.role === UserRole.STUDENT_ACADEMIC ? (
+              <Card sx={{ px: 3, py: 1 }}>
+                <Typography variant="h6" fontWeight="bold" gutterBottom>
+                  Bảng điểm sinh viên
+                  {selectedCourse !== "all" && (
+                    <Typography
+                      component="span"
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ ml: 1 }}
+                    >
+                      - {courses.find((c) => c.id === selectedCourse)?.title}
                     </Typography>
-                    <Box>
-                      <Typography component="span">
-                        {grade.score || 0}/{grade.maxScore || 100}
-                      </Typography>
-                      <Typography
-                        component="span"
-                        color="text.secondary"
-                        sx={{ ml: 1 }}
-                      >
-                        (x{parseFloat(grade.weight || "0").toFixed(2)})
-                      </Typography>
-                    </Box>
-                  </Box>
-                ))}
-              {(() => {
+                  )}
+                  {selectedGradeType !== "all" && (
+                    <Typography
+                      component="span"
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{ ml: 1 }}
+                    >
+                      - {selectedGradeType === "quiz" && "Trắc nghiệm"}
+                      {selectedGradeType === "assignment" && "Bài tập"}
+                      {selectedGradeType === "midterm" && "Kiểm tra giữa kỳ"}
+                      {selectedGradeType === "final" && "Kiểm tra cuối kỳ"}
+                      {selectedGradeType === "participation" && "Điểm tham gia"}
+                    </Typography>
+                  )}
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="text.secondary"
+                  display="block"
+                  gutterBottom
+                >
+                  Cập nhật: {new Date().toLocaleDateString("vi-VN")}
+                </Typography>
+                <Divider sx={{ my: 2 }} />
+
+                {/* Nhóm điểm theo khóa học */}
+                {(() => {
+                  const courseGrades = filteredGrades.filter(
+                    (grade) => grade.courseId !== null
+                  );
+                  if (courseGrades.length > 0) {
+                    // Group grades by courseId
+                    const gradesByCourse = courseGrades.reduce((acc, grade) => {
+                      const courseId = grade.courseId;
+                      if (!acc[courseId]) {
+                        acc[courseId] = {
+                          courseId,
+                          courseTitle:
+                            grade.course?.title || "Khóa học không xác định",
+                          grades: [],
+                        };
+                      }
+                      acc[courseId].grades.push(grade);
+                      return acc;
+                    }, {});
+
+                    // Nhóm các khóa học theo học kỳ
+                    const coursesBySemester = Object.values(
+                      gradesByCourse
+                    ).reduce((acc: Record<number, any[]>, courseGroup: any) => {
+                      const semester = getSemesterOfCourse(
+                        courseGroup.courseId
+                      );
+                      if (semester) {
+                        if (!acc[semester]) {
+                          acc[semester] = [];
+                        }
+                        acc[semester].push(courseGroup);
+                      }
+                      return acc;
+                    }, {});
+
+                    // Sắp xếp các học kỳ theo thứ tự tăng dần
+                    const sortedSemesters = Object.keys(coursesBySemester)
+                      .map(Number)
+                      .sort((a, b) => a - b);
+
+                    // Nếu đã lọc theo học kỳ cụ thể, chỉ hiển thị học kỳ đó
+                    const semestersToShow =
+                      selectedSemester !== "all"
+                        ? sortedSemesters.filter(
+                            (semester) =>
+                              semester === parseInt(selectedSemester)
+                          )
+                        : sortedSemesters;
+
+                    return (
+                      <Box sx={{ mb: 4 }}>
+                        {semestersToShow.map((semester) => (
+                          <Box key={semester} sx={{ mb: 4 }}>
+                            <Typography
+                              variant="h5"
+                              color="info.main"
+                              fontWeight="bold"
+                              gutterBottom
+                              sx={{
+                                borderBottom: "2px solid",
+                                borderColor: "#999",
+                                pb: 1,
+                                mb: 2,
+                              }}
+                            >
+                              🎓 Học kỳ {semester}
+                            </Typography>
+                            {coursesBySemester[semester].map(
+                              (courseGroup: any) => (
+                                <Box key={courseGroup.courseId} sx={{ mb: 3 }}>
+                                  <Typography
+                                    variant="h6"
+                                    color="primary"
+                                    fontWeight="bold"
+                                    gutterBottom
+                                  >
+                                    {courseGroup.courseTitle}
+                                  </Typography>
+                                  {courseGroup.grades
+                                    .sort(
+                                      (a: any, b: any) =>
+                                        parseFloat(b.weight) -
+                                        parseFloat(a.weight)
+                                    )
+                                    .map((grade: any) => (
+                                      <Box
+                                        key={grade.id}
+                                        sx={{
+                                          display: "flex",
+                                          justifyContent: "space-between",
+                                          py: 0.5,
+                                          pl: 2,
+                                        }}
+                                      >
+                                        <Box>
+                                          <Typography variant="body1">
+                                            {grade.gradeType === "assignment" &&
+                                              grade.assignmentSubmission
+                                                ?.assignment?.title}
+                                            {grade.gradeType === "quiz" &&
+                                              grade.quizAttempt?.quiz?.title}
+                                            {grade.gradeType === "midterm" &&
+                                              "Điểm giữa kỳ"}
+                                            {grade.gradeType === "final" &&
+                                              "Điểm cuối kỳ"}
+                                          </Typography>
+                                          <Typography
+                                            variant="caption"
+                                            color="text.secondary"
+                                          >
+                                            {grade.gradeType === "assignment" &&
+                                              "📝 Bài tập"}
+                                            {grade.gradeType === "quiz" &&
+                                              "🎯 Trắc nghiệm"}
+                                            {grade.gradeType === "midterm" &&
+                                              "📊 Kiểm tra giữa kỳ"}
+                                            {grade.gradeType === "final" &&
+                                              "📈 Kiểm tra cuối kỳ"}
+                                          </Typography>
+                                        </Box>
+                                        <Box>
+                                          <Typography component="span">
+                                            {grade.score || 0}/
+                                            {grade.maxScore || 100}
+                                          </Typography>
+                                          <Typography
+                                            component="span"
+                                            color="text.secondary"
+                                            sx={{ ml: 1 }}
+                                          >
+                                            (x
+                                            {parseFloat(
+                                              grade.weight || "0"
+                                            ).toFixed(2)}
+                                            )
+                                          </Typography>
+                                        </Box>
+                                      </Box>
+                                    ))}
+                                  {(() => {
+                                    let totalWeightedScore = 0;
+                                    let totalWeight = 0;
+                                    courseGroup.grades.forEach((grade: any) => {
+                                      const score = parseFloat(grade.score);
+                                      const maxScore = parseFloat(
+                                        grade.maxScore
+                                      );
+                                      const weight = parseFloat(grade.weight);
+                                      // Tính điểm theo hệ số: (điểm/maxScore) * 100 * weight
+                                      const weightedScore =
+                                        (score / maxScore) * 100 * weight;
+                                      totalWeightedScore += weightedScore;
+                                      totalWeight += weight;
+                                    });
+                                    // Điểm tổng kết = tổng điểm có trọng số / tổng trọng số
+                                    const finalGrade =
+                                      totalWeight > 0
+                                        ? parseFloat(
+                                            (
+                                              totalWeightedScore / totalWeight
+                                            ).toFixed(2)
+                                          )
+                                        : 0;
+                                    return (
+                                      <Box sx={{ mt: 2, pl: 2 }}>
+                                        <Typography
+                                          variant="subtitle2"
+                                          fontWeight="bold"
+                                          color="#333"
+                                        >
+                                          Điểm tổng kết khóa học (theo hệ số):{" "}
+                                          <Box
+                                            component="span"
+                                            fontWeight="bold"
+                                          >
+                                            {finalGrade}/100
+                                          </Box>
+                                        </Typography>
+                                        <Typography
+                                          variant="caption"
+                                          color="text.secondary"
+                                          display="block"
+                                        >
+                                          Tổng hệ số: {totalWeight.toFixed(2)}
+                                        </Typography>
+                                      </Box>
+                                    );
+                                  })()}
+                                  <Divider sx={{ mt: 2 }} />
+                                </Box>
+                              )
+                            )}
+                          </Box>
+                        ))}
+                      </Box>
+                    );
+                  }
+                  return null;
+                })()}
+
+                {/* Nhóm điểm làm bài riêng thuộc lớp học thuật */}
+                {(() => {
+                  const academicClassGrades = filteredGrades.filter(
+                    (grade) => grade.courseId === null
+                  );
+                  if (academicClassGrades.length > 0) {
+                    return (
+                      <Box>
+                        <Typography
+                          variant="h6"
+                          fontWeight="bold"
+                          color="info.main"
+                          gutterBottom
+                        >
+                          🎓 Điểm làm bài riêng thuộc lớp học thuật
+                        </Typography>
+                        {academicClassGrades
+                          .sort(
+                            (a, b) =>
+                              parseFloat(b.weight) - parseFloat(a.weight)
+                          )
+                          .map((grade) => (
+                            <Box
+                              key={grade.id}
+                              sx={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                py: 0.5,
+                                pl: 2,
+                              }}
+                            >
+                              <Box>
+                                <Typography variant="body1">
+                                  {grade.gradeType === "assignment" &&
+                                    grade.assignmentSubmission?.assignment
+                                      ?.title}
+                                  {grade.gradeType === "quiz" &&
+                                    grade.quizAttempt?.quiz?.title}
+                                  {grade.gradeType === "midterm" &&
+                                    "Điểm giữa kỳ"}
+                                  {grade.gradeType === "final" &&
+                                    "Điểm cuối kỳ"}
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                >
+                                  {grade.gradeType === "assignment" &&
+                                    "📝 Bài tập"}
+                                  {grade.gradeType === "quiz" &&
+                                    "🎯 Trắc nghiệm"}
+                                  {grade.gradeType === "midterm" &&
+                                    "📊 Kiểm tra giữa kỳ"}
+                                  {grade.gradeType === "final" &&
+                                    "📈 Kiểm tra cuối kỳ"}
+                                </Typography>
+                              </Box>
+                              <Box>
+                                <Typography component="span">
+                                  {grade.score || 0}/{grade.maxScore || 100}
+                                </Typography>
+                                <Typography
+                                  component="span"
+                                  color="text.secondary"
+                                  sx={{ ml: 1 }}
+                                >
+                                  (x{parseFloat(grade.weight || "0").toFixed(2)}
+                                  )
+                                </Typography>
+                              </Box>
+                            </Box>
+                          ))}
+                      </Box>
+                    );
+                  }
+                  return null;
+                })()}
+              </Card>
+            ) : (
+              Object.values(
+                filteredGrades.reduce((acc, grade) => {
+                  const courseId = grade.courseId;
+                  if (!acc[courseId]) {
+                    acc[courseId] = {
+                      course_id: courseId,
+                      course_title:
+                        grade.course?.title || "Khóa học không xác định",
+                      grades: [],
+                      completion_date: grade.gradedAt,
+                      final_grade: 0,
+                      total_weight: 0,
+                    };
+                  }
+                  acc[courseId].grades.push(grade);
+                  if (
+                    new Date(grade.gradedAt) >
+                    new Date(acc[courseId].completion_date)
+                  ) {
+                    acc[courseId].completion_date = grade.gradedAt;
+                  }
+                  return acc;
+                }, {})
+              ).map((course: any) => {
                 let totalWeightedScore = 0;
                 let totalWeight = 0;
-                userGrades.forEach((grade) => {
-                  const score = parseFloat(grade.score);
-                  const maxScore = parseFloat(grade.maxScore);
-                  const weight = parseFloat(grade.weight);
+                course.grades.forEach((grade: any) => {
+                  const weight = Number(grade.weight);
+                  const score = Number(grade.score);
+                  const maxScore = Number(grade.maxScore);
                   const weightedScore = (score / maxScore) * 100 * weight;
                   totalWeightedScore += weightedScore;
                   totalWeight += weight;
                 });
-                const finalGrade =
+                course.final_grade =
                   totalWeight > 0
                     ? parseFloat((totalWeightedScore / totalWeight).toFixed(2))
                     : 0;
-                return (
-                  <>
-                    <Divider sx={{ my: 2 }} />
-                    <Typography variant="subtitle1" fontWeight="bold">
-                      Điểm tổng kết:{" "}
-                      <Box component="span" fontWeight="bold">
-                        {finalGrade}/100
-                      </Box>
-                    </Typography>
-                    <Box sx={{ mt: 2 }}>
-                      <LinearProgress
-                        variant="determinate"
-                        value={(finalGrade / 100) * 100}
-                        sx={{
-                          height: 8,
-                          borderRadius: 1,
-                          bgcolor: "grey.200",
-                          "& .MuiLinearProgress-bar": {
-                            bgcolor:
-                              finalGrade >= 80
-                                ? "success.main"
-                                : finalGrade >= 60
-                                ? "warning.main"
-                                : "error.main",
-                          },
-                        }}
-                      />
-                    </Box>
-                  </>
+                course.grades.sort(
+                  (a: any, b: any) => Number(b.weight) - Number(a.weight)
                 );
-              })()}
-            </Card>
+                return (
+                  <Card key={course.course_id} sx={{ mb: 2 }}>
+                    <CardContent>
+                      <Box sx={{ mb: 2 }}>
+                        <Typography
+                          variant="h6"
+                          color="primary"
+                          fontWeight="bold"
+                          gutterBottom
+                        >
+                          {course.course_title}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Cập nhật:{" "}
+                          {new Date(course.completion_date).toLocaleDateString(
+                            "vi-VN"
+                          )}
+                        </Typography>
+                      </Box>
+                      <Divider sx={{ my: 2 }} />
+                      <Stack spacing={1}>
+                        {course.grades.map((grade: any) => {
+                          const scorePart = `${Number(grade.score)}/${Number(
+                            grade.maxScore
+                          )}`;
+                          const weightPart = `(x${Number(grade.weight).toFixed(
+                            2
+                          )})`;
+
+                          // Xác định loại bài và icon
+                          let gradeTypeInfo = {
+                            name: "",
+                            color: "text.secondary",
+                          };
+
+                          if (grade.gradeType === "midterm") {
+                            gradeTypeInfo = {
+                              name: "Điểm giữa khóa",
+
+                              color: "info.main",
+                            };
+                          } else if (grade.gradeType === "final") {
+                            gradeTypeInfo = {
+                              name: "Điểm cuối khóa",
+
+                              color: "primary.main",
+                            };
+                          } else if (grade.gradeType === "assignment") {
+                            gradeTypeInfo = {
+                              name:
+                                grade.assignment?.title ||
+                                grade.lesson?.title ||
+                                "Bài tập",
+
+                              color: "success.main",
+                            };
+                          } else if (grade.gradeType === "quiz") {
+                            gradeTypeInfo = {
+                              name:
+                                grade.quiz?.title ||
+                                grade.lesson?.title ||
+                                "Bài trắc nghiệm",
+
+                              color: "warning.main",
+                            };
+                          } else if (grade.gradeType === "participation") {
+                            gradeTypeInfo = {
+                              name: "Điểm tham gia",
+                              color: "#333",
+                            };
+                          } else {
+                            gradeTypeInfo = {
+                              name: grade.gradeType,
+                              color: "text.secondary",
+                            };
+                          }
+
+                          return (
+                            <Box
+                              key={grade.id}
+                              sx={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                borderBottom: "1px solid #e0e0e0",
+                                py: 1,
+                                px: 1,
+                                borderRadius: 1,
+                                "&:hover": {
+                                  bgcolor: "grey.50",
+                                },
+                              }}
+                            >
+                              <Box
+                                sx={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  flex: 1,
+                                }}
+                              >
+                                <Box>
+                                  <Typography
+                                    variant="body2"
+                                    fontWeight="medium"
+                                    color={gradeTypeInfo.color}
+                                  >
+                                    {gradeTypeInfo.name}
+                                  </Typography>
+                                  <Typography
+                                    variant="caption"
+                                    color="text.secondary"
+                                  >
+                                    {grade.gradeType === "assignment" &&
+                                      "📝 Bài tập"}
+                                    {grade.gradeType === "quiz" &&
+                                      "🎯 Trắc nghiệm"}
+                                    {grade.gradeType === "midterm" &&
+                                      "📊 Kiểm tra giữa kỳ"}
+                                    {grade.gradeType === "final" &&
+                                      "📈 Kiểm tra cuối kỳ"}
+                                    {grade.gradeType === "participation" &&
+                                      "👥 Điểm tham gia"}
+                                  </Typography>
+                                </Box>
+                              </Box>
+                              <Box sx={{ textAlign: "right" }}>
+                                <Typography variant="body2" fontWeight="medium">
+                                  {scorePart}
+                                </Typography>
+                                <Typography
+                                  variant="caption"
+                                  color="text.secondary"
+                                >
+                                  {weightPart}
+                                </Typography>
+                              </Box>
+                            </Box>
+                          );
+                        })}
+                      </Stack>
+                      <Box sx={{ mt: 2 }}>
+                        <Typography variant="subtitle1" fontWeight="bold">
+                          Điểm tổng kết (theo hệ số):{" "}
+                          <Box component="span">{course.final_grade}/100</Box>
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Tổng hệ số:{" "}
+                          {course.grades
+                            .reduce(
+                              (sum: number, grade: any) =>
+                                sum + Number(grade.weight || 0),
+                              0
+                            )
+                            .toFixed(2)}
+                        </Typography>
+                      </Box>
+                    </CardContent>
+                  </Card>
+                );
+              })
+            )
           ) : (
-            Object.values(
-              userGrades.reduce((acc, grade) => {
-                const courseId = grade.courseId;
-                if (!acc[courseId]) {
-                  acc[courseId] = {
-                    course_id: courseId,
-                    course_title:
-                      grade.course?.title || "Khóa học không xác định",
-                    grades: [],
-                    completion_date: grade.gradedAt,
-                    final_grade: 0,
-                    total_weight: 0,
-                  };
-                }
-                acc[courseId].grades.push(grade);
-                if (
-                  new Date(grade.gradedAt) >
-                  new Date(acc[courseId].completion_date)
-                ) {
-                  acc[courseId].completion_date = grade.gradedAt;
-                }
-                return acc;
-              }, {})
-            ).map((course) => {
-              let totalWeightedScore = 0;
-              let totalWeight = 0;
-              course.grades.forEach((grade) => {
-                const weight = Number(grade.weight);
-                const score = Number(grade.score);
-                const maxScore = Number(grade.maxScore);
-                const weightedScore = (score / maxScore) * 100 * weight;
-                totalWeightedScore += weightedScore;
-                totalWeight += weight;
-              });
-              course.final_grade =
-                totalWeight > 0
-                  ? parseFloat((totalWeightedScore / totalWeight).toFixed(2))
-                  : 0;
-              course.grades.sort((a, b) => Number(b.weight) - Number(a.weight));
-              return (
-                <Card key={course.course_id} sx={{ mb: 2 }}>
-                  <CardContent>
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle1" fontWeight="bold">
-                        {course.course_title}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Cập nhật:{" "}
-                        {new Date(course.completion_date).toLocaleDateString(
-                          "vi-VN"
-                        )}
-                      </Typography>
-                    </Box>
-                    <Divider sx={{ my: 2 }} />
-                    <Box sx={{ mb: 2 }}>
-                      <Typography variant="subtitle1" fontWeight="bold">
-                        Điểm tổng kết:{" "}
-                        <Box component="span">{course.final_grade}/100</Box>
-                      </Typography>
-                    </Box>
-                    <Stack spacing={1}>
-                      {course.grades.map((grade) => {
-                        const scorePart = `${Number(grade.score)}/${Number(
-                          grade.maxScore
-                        )}`;
-                        const weightPart = `(x${Number(grade.weight).toFixed(
-                          2
-                        )})`;
-                        let gradeName = "";
-                        if (grade.gradeType === "midterm")
-                          gradeName = "Điểm giữa khóa:";
-                        else if (grade.gradeType === "final")
-                          gradeName = "Điểm cuối khóa:";
-                        else if (grade.gradeType === "assignment")
-                          gradeName = `${
-                            grade.assignment?.title ||
-                            grade.lesson?.title ||
-                            "Bài tập"
-                          }:`;
-                        else if (grade.gradeType === "quiz")
-                          gradeName = `${
-                            grade.quiz?.title ||
-                            grade.lesson?.title ||
-                            "Bài trắc nghiệm"
-                          }:`;
-                        else if (grade.gradeType === "participation")
-                          gradeName = "Điểm tham gia:";
-                        else gradeName = `${grade.gradeType}:`;
-                        return (
-                          <Box
-                            key={grade.id}
-                            sx={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              borderBottom: "1px solid #e0e0e0",
-                              py: 0.5,
-                            }}
-                          >
-                            <Typography variant="body2">{gradeName}</Typography>
-                            <Typography variant="body2">
-                              {scorePart} {weightPart}
-                            </Typography>
-                          </Box>
-                        );
-                      })}
-                    </Stack>
-                    <Box sx={{ mt: 2 }}>
-                      <LinearProgress
-                        variant="determinate"
-                        value={(course.final_grade / 100) * 100}
-                        sx={{
-                          height: 8,
-                          borderRadius: 1,
-                          bgcolor: "grey.200",
-                          "& .MuiLinearProgress-bar": {
-                            bgcolor:
-                              course.final_grade >= 80
-                                ? "success.main"
-                                : course.final_grade >= 60
-                                ? "warning.main"
-                                : "error.main",
-                          },
-                        }}
-                      />
-                    </Box>
-                  </CardContent>
-                </Card>
-              );
-            })
-          )
-        ) : (
-          <EmptyState
-            icon={<GradeIcon />}
-            title="Chưa có thông tin điểm"
-            description="Bạn chưa có bất kỳ điểm số nào được ghi nhận. Điểm số sẽ xuất hiện sau khi bạn hoàn thành các bài tập và bài kiểm tra."
-          />
-        )}
-      </Box>
-    </Stack>
-  )
+            <EmptyState
+              icon={<GradeIcon />}
+              title={
+                selectedCourse === "all" && selectedGradeType === "all"
+                  ? "Chưa có thông tin điểm"
+                  : "Không có điểm phù hợp với bộ lọc"
+              }
+              description={
+                selectedCourse === "all" && selectedGradeType === "all"
+                  ? "Bạn chưa có bất kỳ điểm số nào được ghi nhận. Điểm số sẽ xuất hiện sau khi bạn hoàn thành các bài tập và bài kiểm tra."
+                  : "Không có điểm số nào phù hợp với bộ lọc đã chọn. Hãy thử thay đổi bộ lọc để xem kết quả khác."
+              }
+            />
+          )}
+        </Box>
+      </Stack>
+    );
+  }
 );
 
 // PaymentsTab component
@@ -1406,7 +1843,9 @@ const PaymentsTab = React.memo(
     paymentFilter,
     setPaymentFilter,
     page,
+    setPage,
     itemsPerPage,
+    setItemsPerPage,
     showAllItems,
     setShowAllItems,
     handlePageChange,
@@ -1415,7 +1854,9 @@ const PaymentsTab = React.memo(
     paymentFilter: any;
     setPaymentFilter: (filter: any) => void;
     page: number;
+    setPage: (value: number) => void;
     itemsPerPage: number;
+    setItemsPerPage: (value: number) => void;
     showAllItems: boolean;
     setShowAllItems: (value: boolean) => void;
     handlePageChange: (
@@ -1474,9 +1915,6 @@ const PaymentsTab = React.memo(
     return (
       <Stack spacing={3} px={2}>
         <Box>
-          <Typography variant="h6" gutterBottom>
-            Lịch sử thanh toán
-          </Typography>
           {Array.isArray(userPayments) && userPayments.length > 0 ? (
             <Box>
               <Card sx={{ mb: 2, p: 2 }}>
@@ -1588,7 +2026,7 @@ const PaymentsTab = React.memo(
                       value={itemsPerPage}
                       onChange={(e) => {
                         setItemsPerPage(Number(e.target.value));
-                        handlePageChange(e, 1);
+                        setPage(1);
                       }}
                       displayEmpty
                     >
@@ -1783,6 +2221,7 @@ const ProfileAccount: React.FC = () => {
   const userProgress = useAppSelector(selectUserProgress);
   const userCourseProgress = useAppSelector(selectUserCourseProgress);
   const userPayments = useAppSelector(selectUserPayments);
+  const program = useAppSelector(selectStudentAcademicProgram);
   const [currentTab, setCurrentTab] = useState(0);
   const [loadingGrades, setLoadingGrades] = useState(false);
   const [showAlert, setShowAlert] = useState(false);
@@ -1887,10 +2326,17 @@ const ProfileAccount: React.FC = () => {
       dispatch(fetchUserProgress());
       if (currentUser.role === UserRole.STUDENT_ACADEMIC) {
         dispatch(fetchUserCourseProgress());
+        dispatch(
+          fetchStudentAcademicProgram(
+            Number(currentUser.userStudentAcademic?.id)
+          )
+        );
       }
       dispatch(fetchUserPayments(Number(currentUser.id)));
     }
   }, [dispatch, currentUser]);
+
+  console.log(program);
 
   useEffect(() => {
     if (currentUser?.id && !isNaN(Number(currentUser.id))) {
@@ -2007,7 +2453,7 @@ const ProfileAccount: React.FC = () => {
 
       if (currentUser.role === UserRole.STUDENT) {
         const formattedDateOfBirth = formData.dateOfBirth
-          ? new Date(formData.dateOfBirth).toISOString().split("T")[0]
+          ? new Date(formData.dateOfBirth)
           : undefined;
         const dataToUpdate = {
           user: {
@@ -2015,7 +2461,7 @@ const ProfileAccount: React.FC = () => {
           },
           student: {
             fullName: formData.fullName,
-            dateOfBirth: formattedDateOfBirth,
+            dateOfBirth: formattedDateOfBirth as Date | undefined,
             gender: formData.gender || undefined,
             educationLevel: formData.educationLevel || undefined,
             occupation: formData.occupation || undefined,
@@ -2474,6 +2920,7 @@ const ProfileAccount: React.FC = () => {
                 <GradesTab
                   currentUser={currentUser}
                   userGrades={userGrades}
+                  program={program as any}
                   loadingGrades={loadingGrades}
                 />
               </TabPanel>
@@ -2483,7 +2930,9 @@ const ProfileAccount: React.FC = () => {
                   paymentFilter={paymentFilter}
                   setPaymentFilter={setPaymentFilter}
                   page={page}
+                  setPage={setPage}
                   itemsPerPage={itemsPerPage}
+                  setItemsPerPage={setItemsPerPage}
                   showAllItems={showAllItems}
                   setShowAllItems={setShowAllItems}
                   handlePageChange={handlePageChange}

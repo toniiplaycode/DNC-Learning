@@ -43,6 +43,8 @@ import { formatDateTime } from "../../../utils/formatters";
 import { fetchUserSubmissions } from "../../../features/assignment-submissions/assignmentSubmissionsSlice";
 import { selectUserSubmissions } from "../../../features/assignment-submissions/assignmentSubmissionsSelectors";
 import { QuizType } from "../../../types/quiz.types";
+import { AssignmentType } from "../../../types/assignment.types";
+import EmptyState from "../../../components/common/EmptyState";
 
 const Assessment = () => {
   const navigate = useNavigate();
@@ -109,6 +111,11 @@ const Assessment = () => {
           ? getQuizStatus(assessment)
           : null;
 
+        // Get assignment status for filtering
+        const assignmentStatus = assessment.assignmentType
+          ? getAssignmentStatus(assessment)
+          : null;
+
         if (tabValue === 0) return matchesSearch; // Tất cả
         if (tabValue === 1) return assessment.quizType && matchesSearch; // Trắc nghiệm
         if (tabValue === 2) return assessment.assignmentType && matchesSearch; // Bài tập
@@ -116,22 +123,33 @@ const Assessment = () => {
           return (isQuizCompleted || isAssignmentCompleted) && matchesSearch; // Đã hoàn thành
         if (tabValue === 4)
           return (
-            assessment.quizType &&
+            (assessment.quizType &&
             quizStatus?.status === "upcoming" &&
-            matchesSearch
+              matchesSearch) ||
+            (assessment.assignmentType &&
+              assignmentStatus?.status === "ongoing" &&
+              new Date(assessment.dueDate) > new Date() &&
+              matchesSearch)
           ); // Sắp diễn ra
         if (tabValue === 5)
           return (
-            assessment.quizType &&
+            (assessment.quizType &&
             quizStatus?.status === "active" &&
-            matchesSearch
+              matchesSearch) ||
+            (assessment.assignmentType &&
+              assignmentStatus?.status === "ongoing" &&
+              new Date(assessment.dueDate) > new Date() &&
+              matchesSearch)
           ); // Đang diễn ra
         if (tabValue === 6)
           return (
-            assessment.quizType &&
+            (assessment.quizType &&
             quizStatus?.status === "ended" &&
-            matchesSearch
-          ); // Đã kết thúc
+              matchesSearch) ||
+            (assessment.assignmentType &&
+              assignmentStatus?.status === "overdue" &&
+              matchesSearch)
+          ); // Đã kết thúc/quá hạn
 
         return false;
       });
@@ -269,6 +287,20 @@ const Assessment = () => {
     return { status: "active", label: "Đang diễn ra", color: "success" };
   };
 
+  // Helper to get assignment status
+  const getAssignmentStatus = (assignment: any) => {
+    if (!assignment.assignmentType) return null; // Not an assignment
+
+    const now = new Date();
+    const dueDate = new Date(assignment.dueDate);
+
+    if (now > dueDate) {
+      return { status: "overdue", label: "Quá hạn", color: "error" };
+    } else {
+      return { status: "ongoing", label: "Đang diễn ra", color: "success" };
+    }
+  };
+
   return (
     <CustomContainer maxWidth="lg">
       <Typography variant="h4" component="h1" gutterBottom fontWeight="bold">
@@ -318,7 +350,11 @@ const Assessment = () => {
             icon={<CheckCircle />}
             iconPosition="start"
           />
-          <Tab label="Đã kết thúc" icon={<DoNotTouch />} iconPosition="start" />
+          <Tab
+            label="Đã kết thúc/quá hạn"
+            icon={<DoNotTouch />}
+            iconPosition="start"
+          />
         </Tabs>
       </Box>
 
@@ -461,6 +497,65 @@ const Assessment = () => {
                       }
                       return null;
                     })()}
+
+                  {/* Display assignment status chip */}
+                  {assessment.assignmentType &&
+                    (() => {
+                      const status = getAssignmentStatus(assessment);
+                      if (status) {
+                        const getStatusIcon = () => {
+                          switch (status.status) {
+                            case "ongoing":
+                              return <CheckCircle fontSize="small" />;
+                            case "overdue":
+                              return <DoNotTouch fontSize="small" />;
+                            default:
+                              return <CheckCircle fontSize="small" />;
+                          }
+                        };
+
+                        const getStatusStyle = () => {
+                          switch (status.status) {
+                            case "ongoing":
+                              return {
+                                bgcolor: "success.light",
+                                color: "white",
+                                border: "1px solid",
+                              };
+                            case "overdue":
+                              return {
+                                bgcolor: "error.light",
+                                color: "white",
+                                border: "1px solid",
+                              };
+                            default:
+                              return {
+                                bgcolor: "success.light",
+                                color: "white",
+                                border: "1px solid",
+                              };
+                          }
+                        };
+
+                        return (
+                          <Chip
+                            icon={getStatusIcon()}
+                            label={status.label}
+                            size="small"
+                            sx={{
+                              ...getStatusStyle(),
+                              fontWeight: "bold",
+                              fontSize: "0.75rem",
+                              height: "28px",
+                              "& .MuiChip-icon": {
+                                color: "inherit",
+                              },
+                            }}
+                          />
+                        );
+                      }
+                      return null;
+                    })()}
                 </Stack>
 
                 <Typography variant="h6" gutterBottom>
@@ -502,6 +597,40 @@ const Assessment = () => {
                               return "Không xác định";
                           }
                         })()}
+                      </Typography>
+                    </Stack>
+                  )}
+
+                  {assessment.assignmentType && (
+                    <Stack direction="row" spacing={1}>
+                      <Assignment fontSize="small" color="action" />
+                      <Typography variant="body2" color="text.secondary">
+                        Loại:{" "}
+                        {(() => {
+                          switch (assessment.assignmentType) {
+                            case AssignmentType.PRACTICE:
+                              return "Thực hành";
+                            case AssignmentType.HOMEWORK:
+                              return "Bài tập";
+                            case AssignmentType.MIDTERM:
+                              return "Giữa kỳ";
+                            case AssignmentType.FINAL:
+                              return "Cuối kỳ";
+                            case AssignmentType.PROJECT:
+                              return "Dự án";
+                            default:
+                              return "Bài tập";
+                          }
+                        })()}
+                      </Typography>
+                    </Stack>
+                  )}
+
+                  {assessment.assignmentType && assessment.dueDate && (
+                    <Stack direction="row" spacing={1}>
+                      <Schedule fontSize="small" color="action" />
+                      <Typography variant="body2" color="text.secondary">
+                        Hạn nộp: {formatDateTime(assessment.dueDate)}
                       </Typography>
                     </Stack>
                   )}
@@ -709,9 +838,11 @@ const Assessment = () => {
               width: "100%",
             }}
           >
-            <Typography variant="h6" color="text.secondary">
-              Không tìm thấy Bài trắc nghiệm hoặc bài tập nào
-            </Typography>
+            <EmptyState
+              icon={<DocumentScanner />}
+              title="Không tìm thấy bài trắc nghiệm hoặc bài tập nào"
+              description="Hiện chưa có bài trắc nghiệm hoặc bài tập nào phù hợp với bộ lọc của bạn"
+            />
           </Box>
         )}
       </Grid>

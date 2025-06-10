@@ -77,6 +77,8 @@ import * as XLSX from "xlsx";
 import EditStudentStatusDialog from "./component/EditStudentStatusDialog";
 import { toast } from "react-toastify";
 import { createNotification } from "../../features/notifications/notificationsSlice";
+import { fetchStudentAcademicProgram } from "../../features/programs/programsSlice";
+import { selectStudentAcademicProgram } from "../../features/programs/programsSelectors";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -109,6 +111,7 @@ const InstructorStudents = () => {
     selectInstructorAcademicStudents
   );
   const instructorCourses = useAppSelector(selectCoursesByInstructor);
+  const program = useAppSelector(selectStudentAcademicProgram);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [page, setPage] = useState(1);
@@ -141,8 +144,6 @@ const InstructorStudents = () => {
   const [warningThreshold, setWarningThreshold] = useState(60);
   const [thresholdDialogOpen, setThresholdDialogOpen] = useState(false);
 
-  console.log(instructorAcademicStudents);
-
   useEffect(() => {
     if (currentUser?.userInstructor?.id) {
       const instructorId = parseInt(currentUser.userInstructor.id);
@@ -153,6 +154,18 @@ const InstructorStudents = () => {
       }
     }
   }, [dispatch, currentUser]);
+
+  useEffect(() => {
+    if (selectedStudent?.userStudentAcademic?.id) {
+      dispatch(
+        fetchStudentAcademicProgram(
+          Number(selectedStudent.userStudentAcademic.id)
+        )
+      );
+    }
+  }, [dispatch, selectedStudent]);
+
+  console.log(program);
 
   const handleStatusFilterChange = (event: any) => {
     setStatusFilter(event.target.value);
@@ -1024,7 +1037,7 @@ const InstructorStudents = () => {
 
               <TabPanel value={dialogTabValue} index={1}>
                 {selectedStudent?.role === "student_academic" ? (
-                  // Show academic class courses
+                  // Show academic class courses grouped by semester
                   selectedStudent?.userStudentAcademic?.academicClass
                     ?.classCourses?.length > 0 ? (
                     <div>
@@ -1040,112 +1053,329 @@ const InstructorStudents = () => {
                         khóa học
                       </Typography>
 
-                      {selectedStudent.userStudentAcademic.academicClass.classCourses.map(
-                        (classCourse: any) => (
-                          <Card key={classCourse.id} sx={{ mb: 2 }}>
-                            <CardContent>
-                              <Stack
-                                direction="row"
-                                spacing={2}
-                                alignItems="flex-start"
-                              >
-                                <Avatar
-                                  src={classCourse.course?.thumbnailUrl}
-                                  variant="rounded"
-                                  sx={{ width: 60, height: 60 }}
+                      {(() => {
+                        // Hàm lấy học kỳ của một khóa học
+                        const getSemesterOfCourse = (
+                          courseId: string | number
+                        ) => {
+                          if (!program || !program.programCourses) return null;
+                          const pc = program.programCourses.find(
+                            (pc) => String(pc.courseId) === String(courseId)
+                          );
+                          return pc ? pc.semester : null;
+                        };
+
+                        // Tách các khóa học thành 2 nhóm: có học kỳ và không có học kỳ
+                        const coursesWithSemester: Record<number, any[]> = {};
+                        const coursesWithoutSemester: any[] = [];
+
+                        selectedStudent.userStudentAcademic.academicClass.classCourses.forEach(
+                          (classCourse: any) => {
+                            const semester = getSemesterOfCourse(
+                              classCourse.courseId
+                            );
+                            if (semester) {
+                              if (!coursesWithSemester[semester]) {
+                                coursesWithSemester[semester] = [];
+                              }
+                              coursesWithSemester[semester].push(classCourse);
+                            } else {
+                              coursesWithoutSemester.push(classCourse);
+                            }
+                          }
+                        );
+
+                        // Sắp xếp các học kỳ theo thứ tự tăng dần
+                        const sortedSemesters = Object.keys(coursesWithSemester)
+                          .map(Number)
+                          .sort((a, b) => a - b);
+
+                        return (
+                          <Box>
+                            {/* Hiển thị các khóa học theo học kỳ */}
+                            {sortedSemesters.map((semester) => (
+                              <Box key={semester} sx={{ mb: 4 }}>
+                                <Typography
+                                  variant="h5"
+                                  color="primary"
+                                  fontWeight="bold"
+                                  gutterBottom
+                                  sx={{
+                                    borderBottom: "2px solid",
+                                    borderColor: "#999",
+                                    pb: 1,
+                                    mb: 2,
+                                  }}
                                 >
-                                  {classCourse.course?.title
-                                    ? classCourse.course.title.charAt(0)
-                                    : "C"}
-                                </Avatar>
+                                  🎓 Học kỳ {semester}
+                                </Typography>
+                                {coursesWithSemester[semester].map(
+                                  (classCourse: any) => (
+                                    <Card key={classCourse.id} sx={{ mb: 2 }}>
+                                      <CardContent>
+                                        <Stack
+                                          direction="row"
+                                          spacing={2}
+                                          alignItems="flex-start"
+                                        >
+                                          <Avatar
+                                            src={
+                                              classCourse.course?.thumbnailUrl
+                                            }
+                                            variant="rounded"
+                                            sx={{ width: 60, height: 60 }}
+                                          >
+                                            {classCourse.course?.title
+                                              ? classCourse.course.title.charAt(
+                                                  0
+                                                )
+                                              : "C"}
+                                          </Avatar>
 
-                                <Stack spacing={1} sx={{ flex: 1 }}>
-                                  <Typography variant="h6">
-                                    {classCourse.course?.title ||
-                                      "Không có tiêu đề"}
-                                  </Typography>
+                                          <Stack spacing={1} sx={{ flex: 1 }}>
+                                            <Typography variant="h6">
+                                              {classCourse.course?.title ||
+                                                "Không có tiêu đề"}
+                                            </Typography>
 
-                                  <Stack
-                                    direction="row"
-                                    justifyContent="space-between"
-                                    alignItems="center"
-                                  >
-                                    <Typography
-                                      variant="body2"
-                                      color="text.secondary"
-                                    >
-                                      Ngày bắt đầu:{" "}
-                                      {new Date(
-                                        classCourse.course?.startDate
-                                      ).toLocaleDateString("vi-VN")}
-                                    </Typography>
+                                            <Stack
+                                              direction="row"
+                                              justifyContent="space-between"
+                                              alignItems="center"
+                                            >
+                                              <Typography
+                                                variant="body2"
+                                                color="text.secondary"
+                                              >
+                                                Ngày bắt đầu:{" "}
+                                                {new Date(
+                                                  classCourse.course?.startDate
+                                                ).toLocaleDateString("vi-VN")}
+                                              </Typography>
 
-                                    <Chip
-                                      label={
-                                        classCourse.course?.status ===
-                                        "published"
-                                          ? "Đang học"
-                                          : "Chưa bắt đầu"
-                                      }
-                                      color={
-                                        classCourse.course?.status ===
-                                        "published"
-                                          ? "primary"
-                                          : "default"
-                                      }
-                                      size="small"
-                                    />
-                                  </Stack>
+                                              <Chip
+                                                label={
+                                                  classCourse.course?.status ===
+                                                  "published"
+                                                    ? "Đang học"
+                                                    : "Chưa bắt đầu"
+                                                }
+                                                color={
+                                                  classCourse.course?.status ===
+                                                  "published"
+                                                    ? "primary"
+                                                    : "default"
+                                                }
+                                                size="small"
+                                              />
+                                            </Stack>
 
-                                  <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                    sx={{
-                                      display: "-webkit-box",
-                                      overflow: "hidden",
-                                      WebkitBoxOrient: "vertical",
-                                      WebkitLineClamp: 2,
-                                      mt: 1,
-                                    }}
-                                  >
-                                    {classCourse.course?.description ||
-                                      "Không có mô tả"}
-                                  </Typography>
+                                            <Typography
+                                              variant="body2"
+                                              color="text.secondary"
+                                              sx={{
+                                                display: "-webkit-box",
+                                                overflow: "hidden",
+                                                WebkitBoxOrient: "vertical",
+                                                WebkitLineClamp: 2,
+                                                mt: 1,
+                                              }}
+                                            >
+                                              {classCourse.course
+                                                ?.description ||
+                                                "Không có mô tả"}
+                                            </Typography>
 
-                                  <Box sx={{ mt: 1 }}>
-                                    <Stack direction="row" spacing={1}>
-                                      <Chip
-                                        size="small"
-                                        label={
-                                          classCourse.course?.level ===
-                                          "beginner"
-                                            ? "Cơ bản"
-                                            : classCourse.course?.level ===
-                                              "intermediate"
-                                            ? "Trung cấp"
-                                            : classCourse.course?.level ===
-                                              "advanced"
-                                            ? "Nâng cao"
-                                            : "Không xác định"
-                                        }
-                                        variant="outlined"
-                                      />
+                                            <Box sx={{ mt: 1 }}>
+                                              <Stack
+                                                direction="row"
+                                                spacing={1}
+                                              >
+                                                <Chip
+                                                  size="small"
+                                                  label={
+                                                    classCourse.course
+                                                      ?.level === "beginner"
+                                                      ? "Cơ bản"
+                                                      : classCourse.course
+                                                          ?.level ===
+                                                        "intermediate"
+                                                      ? "Trung cấp"
+                                                      : classCourse.course
+                                                          ?.level === "advanced"
+                                                      ? "Nâng cao"
+                                                      : "Không xác định"
+                                                  }
+                                                  variant="outlined"
+                                                />
 
-                                      <Chip
-                                        size="small"
-                                        label={`Kết thúc: ${new Date(
-                                          classCourse.course?.endDate
-                                        ).toLocaleDateString("vi-VN")}`}
-                                        variant="outlined"
-                                      />
-                                    </Stack>
-                                  </Box>
-                                </Stack>
-                              </Stack>
-                            </CardContent>
-                          </Card>
-                        )
-                      )}
+                                                <Chip
+                                                  size="small"
+                                                  label={`Kết thúc: ${new Date(
+                                                    classCourse.course?.endDate
+                                                  ).toLocaleDateString(
+                                                    "vi-VN"
+                                                  )}`}
+                                                  variant="outlined"
+                                                />
+                                              </Stack>
+                                            </Box>
+                                          </Stack>
+                                        </Stack>
+                                      </CardContent>
+                                    </Card>
+                                  )
+                                )}
+                              </Box>
+                            ))}
+
+                            {/* Hiển thị các khóa học không thuộc học kỳ nào */}
+                            {coursesWithoutSemester.length > 0 && (
+                              <Box sx={{ mb: 4 }}>
+                                <Typography
+                                  variant="h5"
+                                  color="warning.main"
+                                  fontWeight="bold"
+                                  gutterBottom
+                                  sx={{
+                                    borderBottom: "2px solid",
+                                    borderColor: "#ff9800",
+                                    pb: 1,
+                                    mb: 2,
+                                  }}
+                                >
+                                  📚 Khóa học bổ sung
+                                </Typography>
+                                <Typography
+                                  variant="body2"
+                                  color="text.secondary"
+                                  sx={{ mb: 2 }}
+                                >
+                                  Các khóa học do giảng viên thêm ngoài chương
+                                  trình học
+                                </Typography>
+                                {coursesWithoutSemester.map(
+                                  (classCourse: any) => (
+                                    <Card key={classCourse.id} sx={{ mb: 2 }}>
+                                      <CardContent>
+                                        <Stack
+                                          direction="row"
+                                          spacing={2}
+                                          alignItems="flex-start"
+                                        >
+                                          <Avatar
+                                            src={
+                                              classCourse.course?.thumbnailUrl
+                                            }
+                                            variant="rounded"
+                                            sx={{ width: 60, height: 60 }}
+                                          >
+                                            {classCourse.course?.title
+                                              ? classCourse.course.title.charAt(
+                                                  0
+                                                )
+                                              : "C"}
+                                          </Avatar>
+
+                                          <Stack spacing={1} sx={{ flex: 1 }}>
+                                            <Typography variant="h6">
+                                              {classCourse.course?.title ||
+                                                "Không có tiêu đề"}
+                                            </Typography>
+
+                                            <Stack
+                                              direction="row"
+                                              justifyContent="space-between"
+                                              alignItems="center"
+                                            >
+                                              <Typography
+                                                variant="body2"
+                                                color="text.secondary"
+                                              >
+                                                Ngày bắt đầu:{" "}
+                                                {new Date(
+                                                  classCourse.course?.startDate
+                                                ).toLocaleDateString("vi-VN")}
+                                              </Typography>
+
+                                              <Chip
+                                                label={
+                                                  classCourse.course?.status ===
+                                                  "published"
+                                                    ? "Đang học"
+                                                    : "Chưa bắt đầu"
+                                                }
+                                                color={
+                                                  classCourse.course?.status ===
+                                                  "published"
+                                                    ? "primary"
+                                                    : "default"
+                                                }
+                                                size="small"
+                                              />
+                                            </Stack>
+
+                                            <Typography
+                                              variant="body2"
+                                              color="text.secondary"
+                                              sx={{
+                                                display: "-webkit-box",
+                                                overflow: "hidden",
+                                                WebkitBoxOrient: "vertical",
+                                                WebkitLineClamp: 2,
+                                                mt: 1,
+                                              }}
+                                            >
+                                              {classCourse.course
+                                                ?.description ||
+                                                "Không có mô tả"}
+                                            </Typography>
+
+                                            <Box sx={{ mt: 1 }}>
+                                              <Stack
+                                                direction="row"
+                                                spacing={1}
+                                              >
+                                                <Chip
+                                                  size="small"
+                                                  label={
+                                                    classCourse.course
+                                                      ?.level === "beginner"
+                                                      ? "Cơ bản"
+                                                      : classCourse.course
+                                                          ?.level ===
+                                                        "intermediate"
+                                                      ? "Trung cấp"
+                                                      : classCourse.course
+                                                          ?.level === "advanced"
+                                                      ? "Nâng cao"
+                                                      : "Không xác định"
+                                                  }
+                                                  variant="outlined"
+                                                />
+
+                                                <Chip
+                                                  size="small"
+                                                  label={`Kết thúc: ${new Date(
+                                                    classCourse.course?.endDate
+                                                  ).toLocaleDateString(
+                                                    "vi-VN"
+                                                  )}`}
+                                                  variant="outlined"
+                                                />
+                                              </Stack>
+                                            </Box>
+                                          </Stack>
+                                        </Stack>
+                                      </CardContent>
+                                    </Card>
+                                  )
+                                )}
+                              </Box>
+                            )}
+                          </Box>
+                        );
+                      })()}
                     </div>
                   ) : (
                     <Box
@@ -1186,10 +1416,9 @@ const InstructorStudents = () => {
                       </Typography>
                     </Box>
                   )
-                ) : // Show regular enrollment courses
+                ) : // Existing code for regular students
                 selectedStudent?.enrollments?.length > 0 ? (
                   <div>
-                    {/* Tiêu đề phần */}
                     <Typography
                       variant="subtitle1"
                       sx={{ mb: 2, fontWeight: "medium" }}
@@ -1197,7 +1426,6 @@ const InstructorStudents = () => {
                       Có {selectedStudent.enrollments.length} khóa học
                     </Typography>
 
-                    {/* Danh sách khóa học */}
                     {selectedStudent.enrollments.map((enrollment: any) => (
                       <Card key={enrollment.id} sx={{ mb: 2 }}>
                         <CardContent>
@@ -1230,10 +1458,12 @@ const InstructorStudents = () => {
                                   variant="body2"
                                   color="text.secondary"
                                 >
-                                  Ngày đăng ký:{" "}
-                                  {new Date(
-                                    enrollment.enrollmentDate
-                                  ).toLocaleDateString("vi-VN")}
+                                  Trạng thái:{" "}
+                                  {enrollment.status === "active"
+                                    ? "Đang học"
+                                    : enrollment.status === "completed"
+                                    ? "Đã hoàn thành"
+                                    : "Đã tạm dừng"}
                                 </Typography>
 
                                 <Chip
@@ -1242,35 +1472,18 @@ const InstructorStudents = () => {
                                       ? "Đang học"
                                       : enrollment.status === "completed"
                                       ? "Đã hoàn thành"
-                                      : enrollment.status === "dropped"
-                                      ? "Đã hủy"
-                                      : "Không xác định"
+                                      : "Đã tạm dừng"
                                   }
                                   color={
                                     enrollment.status === "active"
                                       ? "primary"
                                       : enrollment.status === "completed"
                                       ? "success"
-                                      : enrollment.status === "dropped"
-                                      ? "error"
                                       : "default"
                                   }
                                   size="small"
                                 />
                               </Stack>
-
-                              {enrollment.status === "completed" &&
-                                enrollment.completionDate && (
-                                  <Typography
-                                    variant="body2"
-                                    color="text.secondary"
-                                  >
-                                    Ngày hoàn thành:{" "}
-                                    {new Date(
-                                      enrollment.completionDate
-                                    ).toLocaleDateString("vi-VN")}
-                                  </Typography>
-                                )}
 
                               <Typography
                                 variant="body2"
@@ -1292,30 +1505,26 @@ const InstructorStudents = () => {
                                   <Chip
                                     size="small"
                                     label={
-                                      enrollment.course?.level
-                                        ? enrollment.course.level === "beginner"
-                                          ? "Cơ bản"
-                                          : enrollment.course.level ===
-                                            "intermediate"
-                                          ? "Trung cấp"
-                                          : enrollment.course.level ===
-                                            "advanced"
-                                          ? "Nâng cao"
-                                          : enrollment.course.level
+                                      enrollment.course?.level === "beginner"
+                                        ? "Cơ bản"
+                                        : enrollment.course?.level ===
+                                          "intermediate"
+                                        ? "Trung cấp"
+                                        : enrollment.course?.level ===
+                                          "advanced"
+                                        ? "Nâng cao"
                                         : "Không xác định"
                                     }
                                     variant="outlined"
                                   />
 
-                                  {enrollment.course?.price && (
-                                    <Chip
-                                      size="small"
-                                      label={`${parseInt(
-                                        enrollment.course.price
-                                      ).toLocaleString("vi-VN")}đ`}
-                                      variant="outlined"
-                                    />
-                                  )}
+                                  <Chip
+                                    size="small"
+                                    label={`Ngày đăng ký: ${new Date(
+                                      enrollment.createdAt
+                                    ).toLocaleDateString("vi-VN")}`}
+                                    variant="outlined"
+                                  />
                                 </Stack>
                               </Box>
                             </Stack>
@@ -1357,9 +1566,9 @@ const InstructorStudents = () => {
                       color="text.secondary"
                       sx={{ maxWidth: 400 }}
                     >
-                      Học viên chưa đăng ký tham gia bất kỳ khóa học nào. Thông
-                      tin khóa học sẽ được hiển thị tại đây khi học viên đăng ký
-                      các khóa học.
+                      Học viên chưa đăng ký bất kỳ khóa học nào. Thông tin khóa
+                      học sẽ được hiển thị tại đây khi học viên đăng ký các khóa
+                      học.
                     </Typography>
                   </Box>
                 )}
@@ -1378,69 +1587,6 @@ const InstructorStudents = () => {
                         <Typography variant="h6" fontWeight="bold">
                           Bảng điểm sinh viên
                         </Typography>
-                        <Stack direction="row" spacing={1}>
-                          <Button
-                            variant="outlined"
-                            color="primary"
-                            startIcon={<Settings />}
-                            onClick={() => setThresholdDialogOpen(true)}
-                            size="small"
-                          >
-                            Ngưỡng cảnh báo: {warningThreshold}/100
-                          </Button>
-                          {(() => {
-                            let totalWeightedScore = 0;
-                            let totalWeight = 0;
-
-                            selectedStudent.userGrades.forEach((grade) => {
-                              const score = parseFloat(grade.score);
-                              const maxScore = parseFloat(grade.maxScore);
-                              const weight = parseFloat(grade.weight);
-
-                              const weightedScore =
-                                (score / maxScore) * 100 * weight;
-                              totalWeightedScore += weightedScore;
-                              totalWeight += weight;
-                            });
-
-                            const finalGrade =
-                              totalWeight > 0
-                                ? parseFloat(
-                                    (totalWeightedScore / totalWeight).toFixed(
-                                      2
-                                    )
-                                  )
-                                : 0;
-
-                            return (
-                              <Button
-                                variant="outlined"
-                                color={
-                                  finalGrade < warningThreshold
-                                    ? "warning"
-                                    : "primary"
-                                }
-                                startIcon={<Warning />}
-                                onClick={() => {
-                                  setSelectedGradeInfo({
-                                    courseTitle: "Tất cả các môn học",
-                                    finalGrade,
-                                    studentName:
-                                      selectedStudent.userStudentAcademic
-                                        ?.fullName || "",
-                                    studentEmail: selectedStudent.email || "",
-                                    threshold: warningThreshold,
-                                  });
-                                  setWarningEmailDialogOpen(true);
-                                }}
-                              >
-                                {finalGrade < warningThreshold
-                                  ? "Gửi cảnh báo điểm số"
-                                  : "Gửi thông báo điểm số"}
-                              </Button>
-                            );
-                          })()}
-                        </Stack>
                       </Stack>
 
                       <Typography
@@ -1454,49 +1600,421 @@ const InstructorStudents = () => {
 
                       <Divider sx={{ my: 2 }} />
 
-                      {/* Sắp xếp điểm theo trọng số */}
-                      {[...selectedStudent.userGrades] // Create new array before sorting
-                        .sort(
-                          (a, b) => parseFloat(b.weight) - parseFloat(a.weight)
-                        )
-                        .map((grade) => (
-                          <Box
-                            key={grade.id}
-                            sx={{
-                              display: "flex",
-                              justifyContent: "space-between",
-                              py: 0.5,
-                            }}
-                          >
-                            <Typography>
-                              {grade.gradeType === "assignment" &&
-                                grade.assignmentSubmission?.assignment.title}
-                              {grade.gradeType === "quiz" &&
-                                grade.quizAttempt?.quiz.title}
-                              {grade.gradeType === "midterm" && "Điểm giữa kỳ"}
-                              {grade.gradeType === "final" && "Điểm cuối kỳ"}
-                            </Typography>
-                            <Box>
-                              <Typography component="span">
-                                {grade.score}/{grade.maxScore}
-                              </Typography>
-                              <Typography
-                                component="span"
-                                color="text.secondary"
-                                sx={{ ml: 1 }}
-                              >
-                                (x{parseFloat(grade.weight).toFixed(2)})
-                              </Typography>
-                            </Box>
-                          </Box>
-                        ))}
+                      {/* Nhóm điểm theo khóa học */}
+                      {(() => {
+                        const courseGrades = selectedStudent.userGrades.filter(
+                          (grade: any) => grade.courseId !== null
+                        );
+                        if (courseGrades.length > 0) {
+                          // Group grades by courseId
+                          const gradesByCourse = courseGrades.reduce(
+                            (acc: any, grade: any) => {
+                              const courseId = grade.courseId;
+                              if (!acc[courseId]) {
+                                acc[courseId] = {
+                                  courseId,
+                                  courseTitle:
+                                    grade.course?.title ||
+                                    "Khóa học không xác định",
+                                  grades: [],
+                                };
+                              }
+                              acc[courseId].grades.push(grade);
+                              return acc;
+                            },
+                            {}
+                          );
 
-                      {/* Tính và hiển thị điểm tổng kết */}
+                          // Hàm lấy học kỳ của một khóa học
+                          const getSemesterOfCourse = (
+                            courseId: string | number
+                          ) => {
+                            if (!program || !program.programCourses)
+                              return null;
+                            const pc = program.programCourses.find(
+                              (pc) => String(pc.courseId) === String(courseId)
+                            );
+                            return pc ? pc.semester : null;
+                          };
+
+                          // Nhóm các khóa học theo học kỳ
+                          const coursesBySemester = Object.values(
+                            gradesByCourse
+                          ).reduce(
+                            (acc: Record<number, any[]>, courseGroup: any) => {
+                              const semester = getSemesterOfCourse(
+                                courseGroup.courseId
+                              );
+                              if (semester) {
+                                if (!acc[semester]) {
+                                  acc[semester] = [];
+                                }
+                                acc[semester].push(courseGroup);
+                              }
+                              return acc;
+                            },
+                            {}
+                          );
+
+                          // Sắp xếp các học kỳ theo thứ tự tăng dần
+                          const sortedSemesters = Object.keys(coursesBySemester)
+                            .map(Number)
+                            .sort((a, b) => a - b);
+
+                          return (
+                            <Box sx={{ mb: 4 }}>
+                              {sortedSemesters.map((semester) => (
+                                <Box key={semester} sx={{ mb: 4 }}>
+                                  <Typography
+                                    variant="h5"
+                                    color="primary"
+                                    fontWeight="bold"
+                                    gutterBottom
+                                    sx={{
+                                      borderBottom: "2px solid",
+                                      borderColor: "#999",
+                                      pb: 1,
+                                      mb: 2,
+                                    }}
+                                  >
+                                    🎓 Học kỳ {semester}
+                                  </Typography>
+                                  {coursesBySemester[semester].map(
+                                    (courseGroup: any) => {
+                                      // Tính điểm tổng kết cho từng khóa học
+                                      let courseTotalWeightedScore = 0;
+                                      let courseTotalWeight = 0;
+                                      courseGroup.grades.forEach(
+                                        (grade: any) => {
+                                          const score = parseFloat(grade.score);
+                                          const maxScore = parseFloat(
+                                            grade.maxScore
+                                          );
+                                          const weight = parseFloat(
+                                            grade.weight
+                                          );
+                                          const weightedScore =
+                                            (score / maxScore) * 100 * weight;
+                                          courseTotalWeightedScore +=
+                                            weightedScore;
+                                          courseTotalWeight += weight;
+                                        }
+                                      );
+                                      const courseFinalGrade =
+                                        courseTotalWeight > 0
+                                          ? parseFloat(
+                                              (
+                                                courseTotalWeightedScore /
+                                                courseTotalWeight
+                                              ).toFixed(2)
+                                            )
+                                          : 0;
+
+                                      return (
+                                        <Box
+                                          key={courseGroup.courseId}
+                                          sx={{ mb: 3 }}
+                                        >
+                                          <Stack
+                                            direction="column"
+                                            sx={{ mb: 1 }}
+                                          >
+                                            <Typography
+                                              variant="h6"
+                                              color="primary"
+                                              fontWeight="bold"
+                                              gutterBottom
+                                            >
+                                              {courseGroup.courseTitle}
+                                            </Typography>
+                                            <Box>
+                                              <Stack
+                                                direction="row"
+                                                spacing={1}
+                                              >
+                                                <Button
+                                                  variant="outlined"
+                                                  color="primary"
+                                                  startIcon={<Settings />}
+                                                  onClick={() =>
+                                                    setThresholdDialogOpen(true)
+                                                  }
+                                                  size="small"
+                                                >
+                                                  Ngưỡng cảnh báo:{" "}
+                                                  {warningThreshold}/100
+                                                </Button>
+                                                <Button
+                                                  variant="outlined"
+                                                  color={
+                                                    courseFinalGrade <
+                                                    warningThreshold
+                                                      ? "warning"
+                                                      : "primary"
+                                                  }
+                                                  startIcon={<Warning />}
+                                                  onClick={() => {
+                                                    setSelectedGradeInfo({
+                                                      courseTitle:
+                                                        courseGroup.courseTitle,
+                                                      finalGrade:
+                                                        courseFinalGrade,
+                                                      studentName:
+                                                        selectedStudent
+                                                          .userStudentAcademic
+                                                          ?.fullName || "",
+                                                      studentEmail:
+                                                        selectedStudent.email ||
+                                                        "",
+                                                      threshold:
+                                                        warningThreshold,
+                                                    });
+                                                    setWarningEmailDialogOpen(
+                                                      true
+                                                    );
+                                                  }}
+                                                >
+                                                  {courseFinalGrade <
+                                                  warningThreshold
+                                                    ? "Gửi cảnh báo điểm số"
+                                                    : "Gửi thông báo điểm số"}
+                                                </Button>
+                                              </Stack>
+                                            </Box>
+                                          </Stack>
+                                          {courseGroup.grades
+                                            .sort(
+                                              (a: any, b: any) =>
+                                                parseFloat(b.weight) -
+                                                parseFloat(a.weight)
+                                            )
+                                            .map((grade: any) => (
+                                              <Box
+                                                key={grade.id}
+                                                sx={{
+                                                  display: "flex",
+                                                  justifyContent:
+                                                    "space-between",
+                                                  py: 0.5,
+                                                  pl: 2,
+                                                }}
+                                              >
+                                                <Box>
+                                                  <Typography variant="body1">
+                                                    {grade.gradeType ===
+                                                      "assignment" &&
+                                                      grade.assignmentSubmission
+                                                        ?.assignment?.title}
+                                                    {grade.gradeType ===
+                                                      "quiz" &&
+                                                      grade.quizAttempt?.quiz
+                                                        ?.title}
+                                                    {grade.gradeType ===
+                                                      "midterm" &&
+                                                      "Điểm giữa kỳ"}
+                                                    {grade.gradeType ===
+                                                      "final" && "Điểm cuối kỳ"}
+                                                  </Typography>
+                                                  <Typography
+                                                    variant="caption"
+                                                    color="text.secondary"
+                                                  >
+                                                    {grade.gradeType ===
+                                                      "assignment" &&
+                                                      "📝 Bài tập"}
+                                                    {grade.gradeType ===
+                                                      "quiz" &&
+                                                      "🎯 Trắc nghiệm"}
+                                                    {grade.gradeType ===
+                                                      "midterm" &&
+                                                      "📊 Kiểm tra giữa kỳ"}
+                                                    {grade.gradeType ===
+                                                      "final" &&
+                                                      "📈 Kiểm tra cuối kỳ"}
+                                                  </Typography>
+                                                </Box>
+                                                <Box>
+                                                  <Typography component="span">
+                                                    {grade.score || 0}/
+                                                    {grade.maxScore || 100}
+                                                  </Typography>
+                                                  <Typography
+                                                    component="span"
+                                                    color="text.secondary"
+                                                    sx={{ ml: 1 }}
+                                                  >
+                                                    (x
+                                                    {parseFloat(
+                                                      grade.weight || "0"
+                                                    ).toFixed(2)}
+                                                    )
+                                                  </Typography>
+                                                </Box>
+                                              </Box>
+                                            ))}
+                                          {(() => {
+                                            let totalWeightedScore = 0;
+                                            let totalWeight = 0;
+                                            courseGroup.grades.forEach(
+                                              (grade: any) => {
+                                                const score = parseFloat(
+                                                  grade.score
+                                                );
+                                                const maxScore = parseFloat(
+                                                  grade.maxScore
+                                                );
+                                                const weight = parseFloat(
+                                                  grade.weight
+                                                );
+                                                // Tính điểm theo hệ số: (điểm/maxScore) * 100 * weight
+                                                const weightedScore =
+                                                  (score / maxScore) *
+                                                  100 *
+                                                  weight;
+                                                totalWeightedScore +=
+                                                  weightedScore;
+                                                totalWeight += weight;
+                                              }
+                                            );
+                                            // Điểm tổng kết = tổng điểm có trọng số / tổng trọng số
+                                            const finalGrade =
+                                              totalWeight > 0
+                                                ? parseFloat(
+                                                    (
+                                                      totalWeightedScore /
+                                                      totalWeight
+                                                    ).toFixed(2)
+                                                  )
+                                                : 0;
+                                            return (
+                                              <Box sx={{ mt: 2, pl: 2 }}>
+                                                <Typography
+                                                  variant="subtitle2"
+                                                  fontWeight="bold"
+                                                  color="#333"
+                                                >
+                                                  Điểm tổng kết khóa học (theo
+                                                  hệ số):{" "}
+                                                  <Box
+                                                    component="span"
+                                                    fontWeight="bold"
+                                                  >
+                                                    {finalGrade}/100
+                                                  </Box>
+                                                </Typography>
+                                                <Typography
+                                                  variant="caption"
+                                                  color="text.secondary"
+                                                  display="block"
+                                                >
+                                                  Tổng hệ số:{" "}
+                                                  {totalWeight.toFixed(2)}
+                                                </Typography>
+                                              </Box>
+                                            );
+                                          })()}
+                                          <Divider sx={{ mt: 2 }} />
+                                        </Box>
+                                      );
+                                    }
+                                  )}
+                                </Box>
+                              ))}
+                            </Box>
+                          );
+                        }
+                        return null;
+                      })()}
+
+                      {/* Nhóm điểm làm bài riêng thuộc lớp học thuật */}
+                      {(() => {
+                        const academicClassGrades =
+                          selectedStudent.userGrades.filter(
+                            (grade: any) => grade.courseId === null
+                          );
+                        if (academicClassGrades.length > 0) {
+                          return (
+                            <Box>
+                              <Typography
+                                variant="h6"
+                                fontWeight="bold"
+                                color="info.main"
+                                gutterBottom
+                              >
+                                🎓 Điểm làm bài riêng thuộc lớp học thuật
+                              </Typography>
+                              {academicClassGrades
+                                .sort(
+                                  (a: any, b: any) =>
+                                    parseFloat(b.weight) - parseFloat(a.weight)
+                                )
+                                .map((grade: any) => (
+                                  <Box
+                                    key={grade.id}
+                                    sx={{
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      py: 0.5,
+                                      pl: 2,
+                                    }}
+                                  >
+                                    <Box>
+                                      <Typography variant="body1">
+                                        {grade.gradeType === "assignment" &&
+                                          grade.assignmentSubmission?.assignment
+                                            ?.title}
+                                        {grade.gradeType === "quiz" &&
+                                          grade.quizAttempt?.quiz?.title}
+                                        {grade.gradeType === "midterm" &&
+                                          "Điểm giữa kỳ"}
+                                        {grade.gradeType === "final" &&
+                                          "Điểm cuối kỳ"}
+                                      </Typography>
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                      >
+                                        {grade.gradeType === "assignment" &&
+                                          "📝 Bài tập"}
+                                        {grade.gradeType === "quiz" &&
+                                          "🎯 Trắc nghiệm"}
+                                        {grade.gradeType === "midterm" &&
+                                          "📊 Kiểm tra giữa kỳ"}
+                                        {grade.gradeType === "final" &&
+                                          "📈 Kiểm tra cuối kỳ"}
+                                      </Typography>
+                                    </Box>
+                                    <Box>
+                                      <Typography component="span">
+                                        {grade.score || 0}/
+                                        {grade.maxScore || 100}
+                                      </Typography>
+                                      <Typography
+                                        component="span"
+                                        color="text.secondary"
+                                        sx={{ ml: 1 }}
+                                      >
+                                        (x
+                                        {parseFloat(
+                                          grade.weight || "0"
+                                        ).toFixed(2)}
+                                        )
+                                      </Typography>
+                                    </Box>
+                                  </Box>
+                                ))}
+                            </Box>
+                          );
+                        }
+                        return null;
+                      })()}
+
+                      {/* Tính và hiển thị điểm tổng kết tổng thể */}
                       {(() => {
                         let totalWeightedScore = 0;
                         let totalWeight = 0;
 
-                        selectedStudent.userGrades.forEach((grade) => {
+                        selectedStudent.userGrades.forEach((grade: any) => {
                           const score = parseFloat(grade.score);
                           const maxScore = parseFloat(grade.maxScore);
                           const weight = parseFloat(grade.weight);
@@ -1517,8 +2035,12 @@ const InstructorStudents = () => {
                         return (
                           <>
                             <Divider sx={{ my: 2 }} />
-                            <Typography variant="subtitle1" fontWeight="bold">
-                              Điểm tổng kết:{" "}
+                            <Typography
+                              variant="h6"
+                              fontWeight="bold"
+                              color="primary"
+                            >
+                              Điểm tổng kết tổng thể:{" "}
                               <Box component="span" fontWeight="bold">
                                 {finalGrade}/100
                               </Box>
@@ -1542,6 +2064,14 @@ const InstructorStudents = () => {
                                 }}
                               />
                             </Box>
+                            <Typography
+                              variant="body2"
+                              color="text.secondary"
+                              display="block"
+                              sx={{ mt: 1 }}
+                            >
+                              Tổng hệ số: {totalWeight.toFixed(2)}
+                            </Typography>
                           </>
                         );
                       })()}
@@ -1587,16 +2117,16 @@ const InstructorStudents = () => {
                   )
                 ) : // Existing code for regular students
                 selectedStudent?.enrollments?.some(
-                    (enrollment) => enrollment.grades?.length > 0
+                    (enrollment: any) => enrollment.grades?.length > 0
                   ) ? (
                   selectedStudent.enrollments
-                    .filter((enrollment) => enrollment.grades?.length > 0)
-                    .map((enrollment) => {
+                    .filter((enrollment: any) => enrollment.grades?.length > 0)
+                    .map((enrollment: any) => {
                       // Tính điểm tổng dựa trên trọng số và thang điểm tối đa - PHƯƠNG PHÁP ĐỒNG NHẤT
                       let totalWeightedScore = 0;
                       let totalWeight = 0;
 
-                      enrollment.grades.forEach((grade) => {
+                      enrollment.grades.forEach((grade: any) => {
                         const score = parseFloat(grade.score);
                         const maxScore = parseFloat(grade.maxScore);
                         const weight = parseFloat(grade.weight);
@@ -1618,55 +2148,60 @@ const InstructorStudents = () => {
 
                       // Sắp xếp điểm theo trọng số từ cao đến thấp
                       const sortedGrades = [...enrollment.grades].sort(
-                        (a, b) => parseFloat(b.weight) - parseFloat(a.weight)
+                        (a: any, b: any) =>
+                          parseFloat(b.weight) - parseFloat(a.weight)
                       );
 
                       return (
                         <Card key={enrollment.course?.id} sx={{ mb: 2, p: 3 }}>
-                          <Stack
-                            direction="row"
-                            justifyContent="space-between"
-                            alignItems="center"
-                          >
-                            <Typography variant="h6" fontWeight="bold">
+                          <Stack direction="column" sx={{ mb: 1 }}>
+                            <Typography
+                              variant="h6"
+                              fontWeight="bold"
+                              color="primary"
+                              mb={1}
+                            >
                               {enrollment.course?.title}
                             </Typography>
-                          </Stack>
-
-                          <Stack direction="row" spacing={1} sx={{ py: 1 }}>
-                            <Button
-                              variant="outlined"
-                              color="primary"
-                              startIcon={<Settings />}
-                              onClick={() => setThresholdDialogOpen(true)}
-                              size="small"
-                            >
-                              Ngưỡng cảnh báo: {warningThreshold}/100
-                            </Button>
-                            <Button
-                              variant="outlined"
-                              color={
-                                finalGrade < warningThreshold
-                                  ? "warning"
-                                  : "primary"
-                              }
-                              startIcon={<Warning />}
-                              onClick={() => {
-                                setSelectedGradeInfo({
-                                  courseTitle: enrollment.course?.title || "",
-                                  finalGrade,
-                                  studentName:
-                                    selectedStudent.userStudent?.fullName || "",
-                                  studentEmail: selectedStudent.email || "",
-                                  threshold: warningThreshold,
-                                });
-                                setWarningEmailDialogOpen(true);
-                              }}
-                            >
-                              {finalGrade < warningThreshold
-                                ? "Gửi cảnh báo điểm số"
-                                : "Gửi thông báo điểm số"}
-                            </Button>
+                            <Box>
+                              <Stack direction="row" spacing={1}>
+                                <Button
+                                  variant="outlined"
+                                  color="primary"
+                                  startIcon={<Settings />}
+                                  onClick={() => setThresholdDialogOpen(true)}
+                                  size="small"
+                                >
+                                  Ngưỡng cảnh báo: {warningThreshold}/100
+                                </Button>
+                                <Button
+                                  variant="outlined"
+                                  color={
+                                    finalGrade < warningThreshold
+                                      ? "warning"
+                                      : "primary"
+                                  }
+                                  startIcon={<Warning />}
+                                  onClick={() => {
+                                    setSelectedGradeInfo({
+                                      courseTitle:
+                                        enrollment.course?.title || "",
+                                      finalGrade,
+                                      studentName:
+                                        selectedStudent.userStudent?.fullName ||
+                                        "",
+                                      studentEmail: selectedStudent.email || "",
+                                      threshold: warningThreshold,
+                                    });
+                                    setWarningEmailDialogOpen(true);
+                                  }}
+                                >
+                                  {finalGrade < warningThreshold
+                                    ? "Gửi cảnh báo điểm số"
+                                    : "Gửi thông báo điểm số"}
+                                </Button>
+                              </Stack>
+                            </Box>
                           </Stack>
 
                           <Typography
@@ -1680,60 +2215,131 @@ const InstructorStudents = () => {
 
                           <Divider sx={{ my: 2 }} />
 
-                          <Typography
-                            variant="subtitle1"
-                            fontWeight="bold"
-                            gutterBottom
-                          >
-                            Điểm tổng kết:{" "}
-                            <Box component="span" fontWeight="bold">
-                              {finalGrade}/100
-                            </Box>
-                          </Typography>
+                          {/* Hiển thị từng bài với chi tiết */}
+                          <Stack spacing={1}>
+                            {sortedGrades.map((grade: any) => {
+                              const scorePart = `${parseFloat(
+                                grade.score
+                              )}/${parseFloat(grade.maxScore)}`;
+                              const weightPart = `(x${parseFloat(
+                                grade.weight
+                              ).toFixed(2)})`;
 
-                          {sortedGrades.map((grade) => {
-                            const scorePart = `${parseFloat(
-                              grade.score
-                            )}/${parseFloat(grade.maxScore)}`;
-                            const weightPart = `(x${parseFloat(
-                              grade.weight
-                            ).toFixed(2)})`;
+                              // Xác định loại bài và icon
+                              let gradeTypeInfo = {
+                                name: "",
+                              };
 
-                            return (
-                              <Box
-                                key={grade.id}
-                                sx={{
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                  py: 0.5,
-                                }}
-                              >
-                                <Typography>
-                                  {grade.gradeType === "midterm" &&
-                                    "Điểm giữa khóa:"}
-                                  {grade.gradeType === "final" &&
-                                    "Điểm cuối khóa:"}
-                                  {grade.gradeType === "assignment" &&
-                                    (grade.lesson?.title || "Bài tập:")}
-                                  {grade.gradeType === "quiz" &&
-                                    (grade.lesson?.title || "Bài trắc nghiệm:")}
-                                  {grade.gradeType === "participation" &&
-                                    "Điểm tham gia:"}
-                                  {![
-                                    "midterm",
-                                    "final",
-                                    "assignment",
-                                    "quiz",
-                                    "participation",
-                                  ].includes(grade.gradeType) &&
-                                    grade.gradeType}
-                                </Typography>
-                                <Typography>
-                                  {scorePart} {weightPart}
-                                </Typography>
+                              if (grade.gradeType === "midterm") {
+                                gradeTypeInfo = {
+                                  name: "Điểm giữa khóa",
+                                };
+                              } else if (grade.gradeType === "final") {
+                                gradeTypeInfo = {
+                                  name: "Điểm cuối khóa",
+                                };
+                              } else if (grade.gradeType === "assignment") {
+                                gradeTypeInfo = {
+                                  name: grade.lesson?.title || "Bài tập",
+                                };
+                              } else if (grade.gradeType === "quiz") {
+                                gradeTypeInfo = {
+                                  name:
+                                    grade.lesson?.title || "Bài trắc nghiệm",
+                                };
+                              } else if (grade.gradeType === "participation") {
+                                gradeTypeInfo = {
+                                  name: "Điểm tham gia",
+                                };
+                              } else {
+                                gradeTypeInfo = {
+                                  name: grade.gradeType,
+                                };
+                              }
+
+                              return (
+                                <Box
+                                  key={grade.id}
+                                  sx={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    borderBottom: "1px solid #e0e0e0",
+                                    py: 1,
+                                    px: 1,
+                                    borderRadius: 1,
+                                    "&:hover": {
+                                      bgcolor: "grey.50",
+                                    },
+                                  }}
+                                >
+                                  <Box
+                                    sx={{
+                                      display: "flex",
+                                      alignItems: "center",
+                                      flex: 1,
+                                    }}
+                                  >
+                                    <Box>
+                                      <Typography
+                                        variant="body2"
+                                        fontWeight="medium"
+                                        color={gradeTypeInfo.color}
+                                      >
+                                        {gradeTypeInfo.name}
+                                      </Typography>
+                                      <Typography
+                                        variant="caption"
+                                        color="text.secondary"
+                                      >
+                                        {grade.gradeType === "assignment" &&
+                                          "📝 Bài tập"}
+                                        {grade.gradeType === "quiz" &&
+                                          "🎯 Trắc nghiệm"}
+                                        {grade.gradeType === "midterm" &&
+                                          "📊 Kiểm tra giữa kỳ"}
+                                        {grade.gradeType === "final" &&
+                                          "📈 Kiểm tra cuối kỳ"}
+                                        {grade.gradeType === "participation" &&
+                                          "👥 Điểm tham gia"}
+                                      </Typography>
+                                    </Box>
+                                  </Box>
+                                  <Box sx={{ textAlign: "right" }}>
+                                    <Typography
+                                      variant="body2"
+                                      fontWeight="medium"
+                                    >
+                                      {scorePart}
+                                    </Typography>
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                    >
+                                      {weightPart}
+                                    </Typography>
+                                  </Box>
+                                </Box>
+                              );
+                            })}
+                          </Stack>
+
+                          {/* Điểm tổng kết khóa học */}
+                          <Box sx={{ mt: 2 }}>
+                            <Typography
+                              variant="subtitle1"
+                              fontWeight="bold"
+                              color="primary"
+                            >
+                              Điểm tổng kết khóa học (theo hệ số):{" "}
+                              <Box component="span" fontWeight="bold">
+                                {finalGrade}/100
                               </Box>
-                            );
-                          })}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                              Tổng hệ số: {totalWeight.toFixed(2)}
+                            </Typography>
+                          </Box>
 
                           <Box sx={{ mt: 2 }}>
                             <LinearProgress
