@@ -51,6 +51,7 @@ import {
   DescriptionOutlined,
   TrendingUpOutlined,
   CheckCircleOutlined,
+  Schedule,
 } from "@mui/icons-material";
 import { useParams } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
@@ -91,6 +92,7 @@ import {
   AlignmentType,
   Packer,
 } from "docx";
+import { formatDateTime } from "../../../utils/formatters";
 
 // Định nghĩa kiểu QuizOption
 interface QuizOption {
@@ -126,8 +128,8 @@ interface Quiz {
   quizType: QuizType;
   showExplanation: boolean;
   random: number;
-  startTime?: Date;
-  endTime?: Date;
+  startTime?: Date | null;
+  endTime?: Date | null;
   questions?: QuizQuestion[];
 }
 
@@ -202,7 +204,12 @@ async function generateQuizDocx(
               q.correctExplanation
                 ? new Paragraph({
                     text: `Giải thích: ${q.correctExplanation}`,
-                    italics: true,
+                    children: [
+                      new TextRun({
+                        text: `Giải thích: ${q.correctExplanation}`,
+                        italics: true,
+                      }),
+                    ],
                     spacing: { before: 200, after: 200 },
                   })
                 : new Paragraph({ text: "" }),
@@ -212,7 +219,12 @@ async function generateQuizDocx(
           new Paragraph({ text: "" }), // Final spacing
           new Paragraph({
             text: "Lưu ý: Các câu hỏi có thể được sử dụng để làm bài offline. Đáp án đúng được đánh dấu trong ngoặc đơn.",
-            italics: true,
+            children: [
+              new TextRun({
+                text: "Lưu ý: Các câu hỏi có thể được sử dụng để làm bài offline. Đáp án đúng được đánh dấu trong ngoặc đơn.",
+                italics: true,
+              }),
+            ],
           }),
         ],
       },
@@ -261,7 +273,9 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
   const ERROR_TOAST_COOLDOWN = 5000; // 5 seconds cooldown between error toasts
 
   useEffect(() => {
-    dispatch(fetchClassInstructorById(Number(currentUser?.userInstructor?.id)));
+    if (currentUser?.userInstructor?.id) {
+      dispatch(fetchClassInstructorById(Number(currentUser.userInstructor.id)));
+    }
   }, [dispatch, currentUser]);
 
   // State cho form quiz
@@ -276,7 +290,106 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
     quizType: QuizType.PRACTICE,
     showExplanation: true,
     random: 1,
+    startTime: null,
+    endTime: null,
   });
+
+  // State để bật/tắt thời gian bắt đầu và kết thúc
+  const [useTimeRange, setUseTimeRange] = useState(false);
+
+  // Function to calculate end time based on start time and time limit
+  const calculateEndTime = (
+    startTime: Date | null | undefined,
+    timeLimitMinutes: number
+  ): Date | null => {
+    if (!startTime) return null;
+    const endTime = new Date(startTime);
+    endTime.setMinutes(endTime.getMinutes() + timeLimitMinutes);
+    return endTime;
+  };
+
+  // Handle start time change
+  const handleStartTimeChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const inputValue = event.target.value;
+    if (!inputValue) {
+      setQuizForm((prev) => ({
+        ...prev,
+        startTime: null,
+        endTime: null,
+      }));
+      return;
+    }
+
+    // Create date from input value (this handles timezone correctly)
+    const startTime = new Date(inputValue);
+    const endTime = calculateEndTime(startTime, quizForm.timeLimit || 0);
+
+    setQuizForm((prev) => ({
+      ...prev,
+      startTime,
+      endTime,
+    }));
+  };
+
+  // Format date for datetime-local input
+  const formatDateForInput = (date: Date | null | undefined): string => {
+    if (!date) return "";
+
+    // Convert to local timezone and format as YYYY-MM-DDTHH:mm
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
+
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  // Get current time for minimum value
+  const getCurrentDateTimeLocal = (): string => {
+    const now = new Date();
+    return formatDateForInput(now);
+  };
+
+  // Validate start time
+  const validateStartTime = (startTime: Date | null | undefined): boolean => {
+    if (!startTime) return true; // Allow empty for optional field
+    const now = new Date();
+    return startTime >= now;
+  };
+
+  // Get start time error message
+  const getStartTimeError = (): string | null => {
+    if (!quizForm.startTime) return null;
+    if (!validateStartTime(quizForm.startTime)) {
+      const now = new Date();
+      const nowFormatted = now.toLocaleString("vi-VN", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      return `Thời gian hiện tại (${nowFormatted})`;
+    }
+    return null;
+  };
+
+  // Handle time limit change
+  const handleTimeLimitChange = (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const timeLimit = parseInt(event.target.value) || 0;
+    const newEndTime = calculateEndTime(quizForm.startTime, timeLimit);
+
+    setQuizForm((prev) => ({
+      ...prev,
+      timeLimit,
+      endTime: newEndTime,
+    }));
+  };
 
   useEffect(() => {
     if (quizForm.academicClassId)
@@ -322,7 +435,14 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
           ...quizToEdit,
           showExplanation: Boolean(quizToEdit.showExplanation),
           random: quizToEdit.random,
+          startTime: quizToEdit.startTime
+            ? new Date(quizToEdit.startTime)
+            : null,
+          endTime: quizToEdit.endTime ? new Date(quizToEdit.endTime) : null,
         });
+
+        // Set useTimeRange based on whether startTime exists and is not null
+        setUseTimeRange(!!quizToEdit.startTime);
 
         // Load câu hỏi từ quiz đang edit
         // Nếu không có câu hỏi, tự động tải từ quiz mẫu
@@ -342,7 +462,12 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
           quizType: QuizType.PRACTICE,
           showExplanation: true,
           random: 1,
+          startTime: null,
+          endTime: null,
         });
+
+        // Reset useTimeRange for new quiz
+        setUseTimeRange(false);
 
         // Tự động tải câu hỏi từ quiz mẫu
         setQuestions([]);
@@ -475,7 +600,9 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
   };
 
   // Sau handleEditQuestion, thêm hàm này:
-  const handlePreviewQuestion = (questionId: number) => {
+  const handlePreviewQuestion = (questionId: number | undefined) => {
+    if (!questionId) return;
+
     const question = questions.find((q) => q.id === questionId);
     if (question) {
       setCurrentQuestion(question);
@@ -499,6 +626,26 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
       return;
     }
 
+    // Validate start time
+    if (
+      useTimeRange &&
+      quizForm.startTime &&
+      !validateStartTime(quizForm.startTime)
+    ) {
+      const now = new Date();
+      const nowFormatted = now.toLocaleString("vi-VN", {
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+      });
+      toast.error(
+        `Thời gian bắt đầu phải lớn hơn hoặc bằng thời gian hiện tại (${nowFormatted})`
+      );
+      return;
+    }
+
     // Additional validation for academicClass and lesson
     if (
       additionalInfo?.targetType === "academic" &&
@@ -516,6 +663,9 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
     // Chuẩn bị dữ liệu để submit
     const quizData: Quiz = {
       ...quizForm,
+      // Chỉ gửi startTime và endTime khi useTimeRange được bật, ngược lại set null
+      startTime: useTimeRange ? quizForm.startTime : null,
+      endTime: useTimeRange ? quizForm.endTime : null,
       questions: questions.map((q, index) => ({
         ...q,
         orderNumber: index + 1,
@@ -532,18 +682,24 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
 
       onClose();
 
-      if (academicClassStudents.length > 0) {
+      if (academicClassStudents.length > 0 && currentUser?.userInstructor) {
         const notificationData = {
-          userIds: academicClassStudents.map((user) => user.userId),
+          userIds: academicClassStudents.map((user) => user.id),
           title: `Giảng viên "${currentUser.userInstructor.fullName}" vừa thêm trắc nghiệm mới`,
-          content: `Giảng viên vừa thêm trắc nghiệm "${quizForm.title}".`,
+          content: `Giảng viên vừa thêm trắc nghiệm "${quizForm.title}".${
+            useTimeRange && quizForm.startTime && quizForm.endTime
+              ? ` Thời gian làm bài từ ${formatDateTime(
+                  quizForm.startTime.toISOString()
+                )} đến ${formatDateTime(quizForm.endTime.toISOString())}.`
+              : ""
+          }`,
           type: "quiz",
         };
         dispatch(createNotification(notificationData));
       }
     } else if (editMode) {
       const result = await dispatch(updateQuiz(quizData));
-      if (result?.error?.message == "Rejected") {
+      if (result.meta.requestStatus === "rejected") {
         toast.error(
           "Không thể sửa Bài trắc nghiệm vì đã có học sinh/sinh viên làm!"
         );
@@ -561,12 +717,14 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
       await dispatch(fetchQuizzesByCourse(Number(id)));
     }
 
-    await dispatch(
-      fetchQuizzesByInstructor(Number(currentUser.userInstructor.id))
-    );
-    await dispatch(
-      fetchInstructorAttempts(Number(currentUser.userInstructor.id))
-    );
+    if (currentUser?.userInstructor?.id) {
+      await dispatch(
+        fetchQuizzesByInstructor(Number(currentUser.userInstructor.id))
+      );
+      await dispatch(
+        fetchInstructorAttempts(Number(currentUser.userInstructor.id))
+      );
+    }
   };
 
   // Add file upload handler in component
@@ -584,7 +742,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
       const normalized = normalizeQuestions(
         Array.isArray(parsedQuestions)
           ? parsedQuestions
-          : parsedQuestions.questions
+          : (parsedQuestions as any).questions || []
       );
 
       setQuizForm((prev) => ({
@@ -639,9 +797,11 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
           await dispatch(fetchCourseById(Number(id)));
           await dispatch(fetchQuizzesByCourse(Number(id)));
         }
-        await dispatch(
-          fetchQuizzesByInstructor(Number(currentUser.userInstructor.id))
-        );
+        if (currentUser?.userInstructor?.id) {
+          await dispatch(
+            fetchQuizzesByInstructor(Number(currentUser.userInstructor.id))
+          );
+        }
 
         onClose();
       } catch (error) {
@@ -898,15 +1058,16 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
               <MenuItem value="">
                 <em>Chọn lớp học</em>
               </MenuItem>
-              {currentClassInstructor?.map((classInstructor) => (
-                <MenuItem
-                  key={classInstructor.academicClass.id}
-                  value={classInstructor.academicClass.id}
-                >
-                  {classInstructor.academicClass.classCode} -{" "}
-                  {classInstructor.academicClass.className}
-                </MenuItem>
-              ))}
+              {Array.isArray(currentClassInstructor) &&
+                currentClassInstructor.map((classInstructor: any) => (
+                  <MenuItem
+                    key={classInstructor.academicClass.id}
+                    value={classInstructor.academicClass.id}
+                  >
+                    {classInstructor.academicClass.classCode} -{" "}
+                    {classInstructor.academicClass.className}
+                  </MenuItem>
+                ))}
             </Select>
             {!quizForm.academicClassId && (
               <FormHelperText error>Vui lòng chọn lớp học</FormHelperText>
@@ -986,10 +1147,83 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
               )}
             </FormControl>
           )}
+
+          {/* Thời gian làm bài */}
+          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+            <TextField
+              label="Thời gian làm bài (phút)"
+              type="number"
+              value={quizForm.timeLimit}
+              onChange={handleTimeLimitChange}
+              InputProps={{ inputProps: { min: 0 } }}
+              sx={{ minWidth: 200 }}
+              helperText="0 = không giới hạn thời gian"
+            />
+
+            <FormControlLabel
+              sx={{ position: "relative", top: "-10px" }}
+              control={
+                <Switch
+                  checked={useTimeRange}
+                  onChange={(e) => {
+                    setUseTimeRange(e.target.checked);
+                    if (!e.target.checked) {
+                      // Clear start and end time when disabling
+                      setQuizForm((prev) => ({
+                        ...prev,
+                        startTime: null,
+                        endTime: null,
+                      }));
+                    }
+                  }}
+                />
+              }
+              label="Sử dụng thời gian bắt đầu và kết thúc"
+            />
+          </Box>
+
+          {/* Thời gian bắt đầu và kết thúc - chỉ hiển thị khi useTimeRange = true */}
+          {useTimeRange && (
+            <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+              <TextField
+                label="Thời gian bắt đầu"
+                type="datetime-local"
+                value={formatDateForInput(quizForm.startTime)}
+                onChange={handleStartTimeChange}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+                inputProps={{
+                  min: getCurrentDateTimeLocal(),
+                }}
+                sx={{ minWidth: 250 }}
+                error={!!getStartTimeError()}
+                helperText={
+                  getStartTimeError() ||
+                  "Thời gian học viên có thể bắt đầu làm bài"
+                }
+              />
+
+              <TextField
+                label="Thời gian kết thúc"
+                type="datetime-local"
+                value={formatDateForInput(quizForm.endTime)}
+                InputLabelProps={{
+                  shrink: true,
+                }}
+                sx={{ minWidth: 250 }}
+                helperText="Tự động tính từ thời gian bắt đầu + thời gian làm bài"
+                disabled
+              />
+            </Box>
+          )}
+
+          <Divider />
+
           {/* Cài đặt quiz */}
           <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
             <FormControl sx={{ minWidth: 200 }}>
-              <InputLabel>Loại Bài trắc nghiệm</InputLabel>
+              <InputLabel>Loại bài trắc nghiệm</InputLabel>
               <Select
                 value={quizForm.quizType}
                 label="Loại Bài trắc nghiệm"
@@ -1000,10 +1234,66 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                   })
                 }
               >
-                <MenuItem value={QuizType.PRACTICE}>Luyện tập</MenuItem>
-                <MenuItem value={QuizType.HOMEWORK}>Bài tập về nhà</MenuItem>
-                <MenuItem value={QuizType.MIDTERM}>Thi giữa kỳ</MenuItem>
-                <MenuItem value={QuizType.FINAL}>Thi cuối kỳ</MenuItem>
+                <MenuItem value={QuizType.PRACTICE}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      width: "100%",
+                    }}
+                  >
+                    <span>Luyện tập</span>
+                    <Typography variant="caption" color="text.secondary">
+                      (trọng số 0.1)
+                    </Typography>
+                  </Box>
+                </MenuItem>
+                <MenuItem value={QuizType.HOMEWORK}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      width: "100%",
+                    }}
+                  >
+                    <span>Bài tập</span>
+                    <Typography variant="caption" color="text.secondary">
+                      (trọng số 0.2)
+                    </Typography>
+                  </Box>
+                </MenuItem>
+                <MenuItem value={QuizType.MIDTERM}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      width: "100%",
+                    }}
+                  >
+                    <span>Thi giữa kỳ</span>
+                    <Typography variant="caption" color="text.secondary">
+                      (trọng số 0.3)
+                    </Typography>
+                  </Box>
+                </MenuItem>
+                <MenuItem value={QuizType.FINAL}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      width: "100%",
+                    }}
+                  >
+                    <span>Thi cuối kỳ</span>
+                    <Typography variant="caption" color="text.secondary">
+                      (trọng số 0.6)
+                    </Typography>
+                  </Box>
+                </MenuItem>
               </Select>
             </FormControl>
 
@@ -1033,59 +1323,48 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
               InputProps={{ inputProps: { min: 0, max: 100 } }}
             />
 
-            <TextField
-              label="Thời gian làm bài (phút)"
-              type="number"
-              value={quizForm.timeLimit}
-              onChange={(e) =>
-                setQuizForm({
-                  ...quizForm,
-                  timeLimit: parseInt(e.target.value) || 0,
-                })
-              }
-              InputProps={{ inputProps: { min: 0 } }}
-              helperText="0 = không giới hạn thời gian"
-            />
+            <Stack sx={{ position: "relative", top: "-12px" }}>
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={quizForm.showExplanation}
+                    onChange={handleShowExplanationChange}
+                    disabled={showExplanationStatus === "loading"}
+                  />
+                }
+                label={
+                  <Box sx={{ display: "flex", alignItems: "center" }}>
+                    Hiện giải thích sau khi nộp bài
+                    {showExplanationStatus === "loading" && (
+                      <Typography
+                        variant="caption"
+                        sx={{ ml: 1, color: "text.secondary" }}
+                      >
+                        (Đang cập nhật...)
+                      </Typography>
+                    )}
+                  </Box>
+                }
+              />
 
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={quizForm.showExplanation}
-                  onChange={handleShowExplanationChange}
-                  disabled={showExplanationStatus === "loading"}
-                />
-              }
-              label={
-                <Box sx={{ display: "flex", alignItems: "center" }}>
-                  Hiện giải thích sau khi nộp bài
-                  {showExplanationStatus === "loading" && (
-                    <Typography
-                      variant="caption"
-                      sx={{ ml: 1, color: "text.secondary" }}
-                    >
-                      (Đang cập nhật...)
-                    </Typography>
-                  )}
-                </Box>
-              }
-            />
-
-            <FormControlLabel
-              control={
-                <Switch
-                  checked={quizForm.random === 1}
-                  onChange={(e) => {
-                    const newValue = e.target.checked ? 1 : 0;
-                    setQuizForm((prev) => ({
-                      ...prev,
-                      random: newValue,
-                    }));
-                  }}
-                />
-              }
-              label="Hiển thị câu hỏi ngẫu nhiên"
-            />
+              <FormControlLabel
+                control={
+                  <Switch
+                    checked={quizForm.random === 1}
+                    onChange={(e) => {
+                      const newValue = e.target.checked ? 1 : 0;
+                      setQuizForm((prev) => ({
+                        ...prev,
+                        random: newValue,
+                      }));
+                    }}
+                  />
+                }
+                label="Hiển thị câu hỏi ngẫu nhiên"
+              />
+            </Stack>
           </Box>
+
           <Divider sx={{ my: 2 }} />
           {/* Hiển thị danh sách câu hỏi đã thêm */}
           <Box>
@@ -1302,7 +1581,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                         <DescriptionOutlined fontSize="small" />
                         <Typography variant="body2">
                           <strong>Nội dung file:</strong>{" "}
-                          {fileStats.contentLength.toLocaleString()} ký tự
+                          {fileStats.contentLength?.toLocaleString() || 0} ký tự
                           <Typography
                             component="span"
                             variant="caption"
@@ -1593,13 +1872,15 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
               </Box>
             )}
           </Box>
-          <Divider ref={editSectionRef}>
-            <Typography variant="caption" color="text.secondary">
-              {editingQuestionIndex !== null
-                ? "Chỉnh sửa câu hỏi"
-                : "Thêm câu hỏi mới"}
-            </Typography>
-          </Divider>
+          <Box ref={editSectionRef}>
+            <Divider>
+              <Typography variant="caption" color="text.secondary">
+                {editingQuestionIndex !== null
+                  ? "Chỉnh sửa câu hỏi"
+                  : "Thêm câu hỏi mới"}
+              </Typography>
+            </Divider>
+          </Box>
           {/* Form thêm/sửa câu hỏi */}
           <Box
             sx={{

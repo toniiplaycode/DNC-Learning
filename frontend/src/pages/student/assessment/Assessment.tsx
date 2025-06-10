@@ -13,6 +13,7 @@ import {
   Tab,
   TextField,
   InputAdornment,
+  Divider,
 } from "@mui/material";
 import {
   Quiz,
@@ -25,6 +26,8 @@ import {
   QuestionAnswer,
   DoNotTouch,
   CheckCircle,
+  AccessTime,
+  Schedule,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import CustomContainer from "../../../components/common/CustomContainer";
@@ -39,6 +42,7 @@ import { fetchUserAttempts } from "../../../features/quizAttempts/quizAttemptsSl
 import { formatDateTime } from "../../../utils/formatters";
 import { fetchUserSubmissions } from "../../../features/assignment-submissions/assignmentSubmissionsSlice";
 import { selectUserSubmissions } from "../../../features/assignment-submissions/assignmentSubmissionsSelectors";
+import { QuizType } from "../../../types/quiz.types";
 
 const Assessment = () => {
   const navigate = useNavigate();
@@ -54,19 +58,25 @@ const Assessment = () => {
   const userSubmissions = useAppSelector(selectUserSubmissions);
   const [tabValue, setTabValue] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredAssessments, setFilteredAssessments] = useState([]);
+  const [filteredAssessments, setFilteredAssessments] = useState<any[]>([]);
 
   useEffect(() => {
     if (currentAuthUser?.role == "student_academic") {
-      dispatch(
-        fetchQuizzesByStudentAcademic(currentAuthUser?.userStudentAcademic?.id)
-      );
-      dispatch(
-        fetchAssignmentsByStudentAcademic(
-          currentAuthUser?.userStudentAcademic?.id
-        )
-      );
-      dispatch(fetchUserAttempts(currentAuthUser?.id));
+      if (currentAuthUser?.userStudentAcademic?.id) {
+        dispatch(
+          fetchQuizzesByStudentAcademic(
+            Number(currentAuthUser.userStudentAcademic.id)
+          )
+        );
+        dispatch(
+          fetchAssignmentsByStudentAcademic(
+            Number(currentAuthUser.userStudentAcademic.id)
+          )
+        );
+      }
+      if (currentAuthUser?.id) {
+        dispatch(fetchUserAttempts(Number(currentAuthUser.id)));
+      }
       dispatch(fetchUserSubmissions());
     }
   }, [currentAuthUser, dispatch]);
@@ -94,11 +104,34 @@ const Assessment = () => {
           (submission) => submission.assignmentId === assessment.id
         );
 
-        if (tabValue === 0) return matchesSearch;
-        if (tabValue === 1) return assessment.quizType && matchesSearch;
-        if (tabValue === 2) return assessment.assignmentType && matchesSearch;
+        // Get quiz status for filtering
+        const quizStatus = assessment.quizType
+          ? getQuizStatus(assessment)
+          : null;
+
+        if (tabValue === 0) return matchesSearch; // Tất cả
+        if (tabValue === 1) return assessment.quizType && matchesSearch; // Trắc nghiệm
+        if (tabValue === 2) return assessment.assignmentType && matchesSearch; // Bài tập
         if (tabValue === 3)
-          return (isQuizCompleted || isAssignmentCompleted) && matchesSearch;
+          return (isQuizCompleted || isAssignmentCompleted) && matchesSearch; // Đã hoàn thành
+        if (tabValue === 4)
+          return (
+            assessment.quizType &&
+            quizStatus?.status === "upcoming" &&
+            matchesSearch
+          ); // Sắp diễn ra
+        if (tabValue === 5)
+          return (
+            assessment.quizType &&
+            quizStatus?.status === "active" &&
+            matchesSearch
+          ); // Đang diễn ra
+        if (tabValue === 6)
+          return (
+            assessment.quizType &&
+            quizStatus?.status === "ended" &&
+            matchesSearch
+          ); // Đã kết thúc
 
         return false;
       });
@@ -137,6 +170,18 @@ const Assessment = () => {
       if (!saved) return null;
       const parsed = JSON.parse(saved);
       if (parsed && parsed.quizId && String(parsed.quizId) === String(quizId)) {
+        // Kiểm tra nếu quiz có thời gian kết thúc và đã hết thời gian
+        const quiz = quizzesByStudentAcademic.find((q) => q.id === quizId);
+        if (quiz && quiz.endTime) {
+          const now = new Date();
+          const endTime = new Date(quiz.endTime);
+          if (now >= endTime) {
+            // Tự động clear saved quiz state khi đã hết thời gian
+            localStorage.removeItem("saved_quiz_state");
+            return null;
+          }
+        }
+
         // Nếu còn thời gian và chưa nộp
         if (parsed.timeRemaining > 0) return parsed;
       }
@@ -155,10 +200,88 @@ const Assessment = () => {
     return `${m}:${s}`;
   };
 
+  // Helper to check if quiz is currently available
+  const isQuizAvailable = (quiz: any) => {
+    if (!quiz.quizType) return { available: true }; // Not a quiz, always available
+
+    const now = new Date();
+
+    // Check start time
+    if (quiz.startTime) {
+      const startTime = new Date(quiz.startTime);
+      if (now < startTime) {
+        return {
+          available: false,
+          reason: "Chưa đến thời gian bắt đầu",
+          time: startTime,
+        };
+      }
+    }
+
+    // Check end time
+    if (quiz.endTime) {
+      const endTime = new Date(quiz.endTime);
+      if (now > endTime) {
+        return {
+          available: false,
+          reason: "Đã hết thời gian làm bài",
+          time: endTime,
+        };
+      }
+    }
+
+    return { available: true, time: null };
+  };
+
+  // Helper to get quiz status
+  const getQuizStatus = (quiz: any) => {
+    if (!quiz.quizType) return null; // Not a quiz
+
+    const now = new Date();
+
+    if (quiz.startTime && quiz.endTime) {
+      const startTime = new Date(quiz.startTime);
+      const endTime = new Date(quiz.endTime);
+
+      if (now < startTime) {
+        return { status: "upcoming", label: "Sắp diễn ra", color: "warning" };
+      } else if (now >= startTime && now <= endTime) {
+        return { status: "active", label: "Đang diễn ra", color: "success" };
+      } else {
+        return { status: "ended", label: "Đã kết thúc", color: "error" };
+      }
+    } else if (quiz.startTime) {
+      const startTime = new Date(quiz.startTime);
+      if (now < startTime) {
+        return { status: "upcoming", label: "Sắp diễn ra", color: "warning" };
+      } else {
+        return { status: "active", label: "Đang diễn ra", color: "success" };
+      }
+    } else if (quiz.endTime) {
+      const endTime = new Date(quiz.endTime);
+      if (now > endTime) {
+        return { status: "ended", label: "Đã kết thúc", color: "error" };
+      } else {
+        return { status: "active", label: "Đang diễn ra", color: "success" };
+      }
+    }
+
+    return { status: "active", label: "Đang diễn ra", color: "success" };
+  };
+
   return (
     <CustomContainer maxWidth="lg">
       <Typography variant="h4" component="h1" gutterBottom fontWeight="bold">
-        Trắc nghiệm & bài tập
+        Trắc nghiệm & bài tập lớp học thuật{" "}
+        <Typography
+          variant="body2"
+          color="text.secondary"
+          fontWeight="bold"
+          mt={1}
+        >
+          {currentAuthUser?.userStudentAcademic?.academicClass?.className} -{" "}
+          {currentAuthUser?.userStudentAcademic?.academicClass?.classCode}
+        </Typography>
       </Typography>
 
       <Box sx={{ mb: 4 }}>
@@ -177,11 +300,25 @@ const Assessment = () => {
           sx={{ mb: 3 }}
         />
 
-        <Tabs value={tabValue} onChange={handleTabChange} sx={{ mb: 3 }}>
+        <Tabs
+          value={tabValue}
+          onChange={handleTabChange}
+          sx={{ mb: 3 }}
+          variant="scrollable"
+          scrollButtons="auto"
+          allowScrollButtonsMobile
+        >
           <Tab label="Tất cả" icon={<DocumentScanner />} iconPosition="start" />
           <Tab label="Trắc nghiệm" icon={<Quiz />} iconPosition="start" />
           <Tab label="Bài tập" icon={<Assignment />} iconPosition="start" />
           <Tab label="Đã hoàn thành" icon={<School />} iconPosition="start" />
+          <Tab label="Sắp diễn ra" icon={<Timer />} iconPosition="start" />
+          <Tab
+            label="Đang diễn ra"
+            icon={<CheckCircle />}
+            iconPosition="start"
+          />
+          <Tab label="Đã kết thúc" icon={<DoNotTouch />} iconPosition="start" />
         </Tabs>
       </Box>
 
@@ -225,7 +362,7 @@ const Assessment = () => {
                     <Typography variant="body2" color="warning.dark">
                       {
                         getSavedQuizState(assessment.id).answers.filter(
-                          (a) => a !== undefined && a !== null
+                          (a: any) => a !== undefined && a !== null
                         ).length
                       }
                       /{getSavedQuizState(assessment.id).answers.length} câu,
@@ -257,6 +394,73 @@ const Assessment = () => {
                       </Typography>
                     </Stack>
                   )}
+
+                  {/* Display quiz status chip */}
+                  {assessment.quizType &&
+                    (() => {
+                      const status = getQuizStatus(assessment);
+                      if (status) {
+                        const getStatusIcon = () => {
+                          switch (status.status) {
+                            case "upcoming":
+                              return <Timer fontSize="small" />;
+                            case "active":
+                              return <CheckCircle fontSize="small" />;
+                            case "ended":
+                              return <DoNotTouch fontSize="small" />;
+                            default:
+                              return <CheckCircle fontSize="small" />;
+                          }
+                        };
+
+                        const getStatusStyle = () => {
+                          switch (status.status) {
+                            case "upcoming":
+                              return {
+                                bgcolor: "warning.light",
+                                color: "white",
+                                border: "1px solid",
+                              };
+                            case "active":
+                              return {
+                                bgcolor: "success.light",
+                                color: "white",
+                                border: "1px solid",
+                              };
+                            case "ended":
+                              return {
+                                bgcolor: "error.light",
+                                color: "white",
+                                border: "1px solid",
+                              };
+                            default:
+                              return {
+                                bgcolor: "success.light",
+                                color: "white",
+                                border: "1px solid",
+                              };
+                          }
+                        };
+
+                        return (
+                          <Chip
+                            icon={getStatusIcon()}
+                            label={status.label}
+                            size="small"
+                            sx={{
+                              ...getStatusStyle(),
+                              fontWeight: "bold",
+                              fontSize: "0.75rem",
+                              height: "28px",
+                              "& .MuiChip-icon": {
+                                color: "inherit",
+                              },
+                            }}
+                          />
+                        );
+                      }
+                      return null;
+                    })()}
                 </Stack>
 
                 <Typography variant="h6" gutterBottom>
@@ -278,6 +482,29 @@ const Assessment = () => {
                       {assessment.academicClass?.className}
                     </Typography>
                   </Stack>
+
+                  {assessment.quizType && (
+                    <Stack direction="row" spacing={1}>
+                      <School fontSize="small" color="action" />
+                      <Typography variant="body2" color="text.secondary">
+                        Loại:{" "}
+                        {(() => {
+                          switch (assessment.quizType) {
+                            case QuizType.PRACTICE:
+                              return "Luyện tập (trọng số 0.1)";
+                            case QuizType.HOMEWORK:
+                              return "Bài tập (trọng số 0.2)";
+                            case QuizType.MIDTERM:
+                              return "Giữa kì (trọng số 0.3)";
+                            case QuizType.FINAL:
+                              return "Cuối kì (trọng số 0.6)";
+                            default:
+                              return "Không xác định";
+                          }
+                        })()}
+                      </Typography>
+                    </Stack>
+                  )}
 
                   {assessment.quizType && (
                     <Stack direction="row" spacing={1}>
@@ -307,54 +534,79 @@ const Assessment = () => {
                     </Stack>
                   )}
 
+                  {assessment.quizType && assessment.startTime && (
+                    <Stack direction="row" spacing={1}>
+                      <AccessTime fontSize="small" color="action" />
+                      <Typography variant="body2" color="text.secondary">
+                        Bắt đầu: {formatDateTime(assessment.startTime)}
+                      </Typography>
+                    </Stack>
+                  )}
+
+                  {assessment.quizType && assessment.endTime && (
+                    <Stack direction="row" spacing={1}>
+                      <Schedule fontSize="small" color="action" />
+                      <Typography variant="body2" color="text.secondary">
+                        Kết thúc: {formatDateTime(assessment.endTime)}
+                      </Typography>
+                    </Stack>
+                  )}
+
                   {assessment.quizType && (
                     <>
                       {userAttempts?.some(
                         (attempt) => attempt.quizId === assessment.id
                       ) && (
-                        <Box sx={{ mb: 2 }}>
-                          <Typography
-                            variant="subtitle2"
-                            color="primary"
-                            gutterBottom
-                          >
-                            Các lần làm bài:
-                          </Typography>
-                          <Stack spacing={1}>
-                            {getQuizAttempts(userAttempts, assessment.id).map(
-                              (attempt, index) => (
-                                <Box
-                                  key={attempt.id}
-                                  sx={{
-                                    pt: 1,
-                                    display: "flex",
-                                    justifyContent: "space-between",
-                                    alignItems: "center",
-                                    bgcolor: "background.default",
-                                    borderRadius: 1,
-                                  }}
-                                >
-                                  <Typography variant="body2">
-                                    Lần {index + 1}
-                                  </Typography>
-                                  <Typography
-                                    variant="body2"
-                                    color="primary"
-                                    fontWeight="bold"
+                        <>
+                          <Divider />
+                          <Box sx={{ mb: 2 }}>
+                            <Typography
+                              variant="subtitle2"
+                              color="primary"
+                              gutterBottom
+                            >
+                              Các lần làm bài:
+                            </Typography>
+                            <Stack spacing={1}>
+                              {getQuizAttempts(userAttempts, assessment.id).map(
+                                (attempt, index) => (
+                                  <Box
+                                    key={attempt.id}
+                                    sx={{
+                                      pt: 1,
+                                      display: "flex",
+                                      justifyContent: "space-between",
+                                      alignItems: "center",
+                                      bgcolor: "background.default",
+                                      borderRadius: 1,
+                                    }}
                                   >
-                                    Điểm: {attempt.score}/100
-                                  </Typography>
-                                  <Typography
-                                    variant="caption"
-                                    color="text.secondary"
-                                  >
-                                    {formatDateTime(attempt.endTime)}
-                                  </Typography>
-                                </Box>
-                              )
-                            )}
-                          </Stack>
-                        </Box>
+                                    <Typography variant="body2">
+                                      Lần {index + 1}
+                                    </Typography>
+                                    <Typography
+                                      variant="body2"
+                                      color="primary"
+                                      fontWeight="bold"
+                                    >
+                                      {attempt.score !== null
+                                        ? `Điểm: ${attempt.score}/100`
+                                        : "-------"}
+                                    </Typography>
+                                    <Typography
+                                      variant="caption"
+                                      color="text.secondary"
+                                    >
+                                      {attempt.endTime !== null
+                                        ? formatDateTime(attempt.endTime)
+                                        : "Chưa hoàn thành"}
+                                    </Typography>
+                                  </Box>
+                                )
+                              )}
+                            </Stack>
+                          </Box>
+                        </>
                       )}
                     </>
                   )}
@@ -365,23 +617,6 @@ const Assessment = () => {
                   display="block"
                   sx={{ mt: "auto" }}
                 >
-                  {assessment.quizType && getSavedQuizState(assessment.id)
-                    ? null
-                    : userAttempts?.some(
-                        (attempt) => attempt.quizId === assessment.id
-                      )
-                    ? `Hoàn thành: ${formatDateTime(
-                        userAttempts.find(
-                          (quiz_attempt) =>
-                            quiz_attempt.quizId === assessment.id
-                        )?.endTime || new Date().toISOString()
-                      )}`
-                    : `Hạn: ${
-                        assessment?.dueDate
-                          ? formatDateTime(assessment?.dueDate)
-                          : "Chưa có hạn"
-                      }`}
-
                   {userSubmissions?.some(
                     (submission) => submission.assignmentId === assessment.id
                   ) && (
@@ -430,19 +665,36 @@ const Assessment = () => {
                     Xem kết quả
                   </Button>
                 ) : (
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    onClick={() =>
-                      navigate(
-                        `/assessment/${
-                          assessment.quizType ? "quiz" : "assignment"
-                        }/${assessment.id}`
-                      )
+                  (() => {
+                    const availability = isQuizAvailable(assessment);
+                    if (assessment.quizType && !availability.available) {
+                      return (
+                        <Button
+                          fullWidth
+                          variant="contained"
+                          disabled
+                          sx={{ bgcolor: "grey.400", color: "grey.600" }}
+                        >
+                          {availability.reason}
+                        </Button>
+                      );
                     }
-                  >
-                    Bắt đầu làm
-                  </Button>
+                    return (
+                      <Button
+                        fullWidth
+                        variant="contained"
+                        onClick={() =>
+                          navigate(
+                            `/assessment/${
+                              assessment.quizType ? "quiz" : "assignment"
+                            }/${assessment.id}`
+                          )
+                        }
+                      >
+                        Bắt đầu làm
+                      </Button>
+                    );
+                  })()
                 )}
               </CardActions>
             </Card>

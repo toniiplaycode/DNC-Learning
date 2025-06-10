@@ -883,7 +883,26 @@ export class QuizzesService {
         newGrade.gradeType = GradeType.QUIZ;
         newGrade.score = scorePercentage;
         newGrade.maxScore = 100;
-        newGrade.weight = 0.2;
+
+        // Set weight based on quiz type
+        let weight: number;
+        switch (attempt.quiz.quizType) {
+          case QuizType.PRACTICE:
+            weight = 0.1;
+            break;
+          case QuizType.HOMEWORK:
+            weight = 0.2;
+            break;
+          case QuizType.MIDTERM:
+            weight = 0.3;
+            break;
+          case QuizType.FINAL:
+            weight = 0.6;
+            break;
+          default:
+            weight = 0.2; // fallback to default
+        }
+        newGrade.weight = weight;
         newGrade.gradedAt = new Date();
 
         // Optional fields with proper null handling
@@ -892,8 +911,6 @@ export class QuizzesService {
         newGrade.lessonId = attempt.quiz.lessonId ?? null;
         newGrade.assignmentSubmissionId = null;
         newGrade.feedback = null;
-
-        console.log('newGrade:', newGrade);
 
         await queryRunner.manager.save(UserGrade, newGrade);
       }
@@ -929,6 +946,8 @@ export class QuizzesService {
         quizType: createQuizDto.quizType,
         showExplanation: createQuizDto.showExplanation,
         random: createQuizDto.random,
+        startTime: createQuizDto.startTime,
+        endTime: createQuizDto.endTime,
       });
 
       const savedQuiz = await queryRunner.manager.save(Quiz, quiz);
@@ -1005,12 +1024,15 @@ export class QuizzesService {
         title: updateQuizDto.title,
         description: updateQuizDto.description,
         lessonId: updateQuizDto.lessonId,
+        academicClassId: updateQuizDto.academicClassId,
         timeLimit: updateQuizDto.timeLimit,
         passingScore: updateQuizDto.passingScore,
         attemptsAllowed: updateQuizDto.attemptsAllowed,
         quizType: updateQuizDto.quizType,
         showExplanation: updateQuizDto.showExplanation,
         random: updateQuizDto.random,
+        startTime: updateQuizDto.startTime,
+        endTime: updateQuizDto.endTime,
       });
 
       await queryRunner.manager.save(Quiz, quiz);

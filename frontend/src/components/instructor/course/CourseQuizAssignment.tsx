@@ -27,11 +27,12 @@ import {
   QueryBuilder,
   CheckCircle,
   Info,
-  Check,
   Shuffle,
   HelpOutline,
   MenuBook,
   Assignment as AssignmentIcon,
+  Schedule,
+  EditNote,
 } from "@mui/icons-material";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { selectAllQuizzes } from "../../../features/quizzes/quizzesSelectors";
@@ -178,8 +179,9 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
                             color={
                               quiz?.attempts?.length == 0
                                 ? "primary"
-                                : "disabled"
+                                : "default"
                             }
+                            disabled={quiz?.attempts?.length > 0}
                           >
                             <Edit />
                           </IconButton>
@@ -187,10 +189,9 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
                             onClick={() => handleDeleteClick("quiz", quiz.id)}
                             size="small"
                             color={
-                              quiz?.attempts?.length == 0
-                                ? "primary"
-                                : "disabled"
+                              quiz?.attempts?.length == 0 ? "error" : "default"
                             }
+                            disabled={quiz?.attempts?.length > 0}
                           >
                             <Delete />
                           </IconButton>
@@ -232,28 +233,28 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
                       }
                     >
                       <Stack direction="row" alignItems="center" spacing={1}>
-                        <QueryBuilder fontSize="small" color="action" />
+                        <QueryBuilder fontSize="small" color="primary" />
                         <Typography variant="body2">
                           {quiz.timeLimit} phút
                         </Typography>
                       </Stack>
 
                       <Stack direction="row" alignItems="center" spacing={1}>
-                        <Info fontSize="small" color="action" />
+                        <Info fontSize="small" color="info" />
                         <Typography variant="body2">
                           {quiz?.questions?.length} câu hỏi
                         </Typography>
                       </Stack>
 
                       <Stack direction="row" alignItems="center" spacing={1}>
-                        <CheckCircle fontSize="small" color="action" />
+                        <CheckCircle fontSize="small" color="success" />
                         <Typography variant="body2">
                           Điểm đạt: {quiz.passingScore}%
                         </Typography>
                       </Stack>
 
                       <Stack direction="row" alignItems="center" spacing={1}>
-                        <Shuffle fontSize="small" color="action" />
+                        <Shuffle fontSize="small" color="warning" />
                         <Typography variant="body2">
                           {quiz.random === 1
                             ? "Hiển thị ngẫu nhiên"
@@ -262,7 +263,7 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
                       </Stack>
 
                       <Stack direction="row" alignItems="center" spacing={1}>
-                        <HelpOutline fontSize="small" color="action" />
+                        <HelpOutline fontSize="small" color="#333" />
                         <Typography variant="body2">
                           {quiz.showExplanation === 1
                             ? "Hiển thị giải thích"
@@ -270,11 +271,31 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
                         </Typography>
                       </Stack>
 
-                      <Chip
-                        label={`Tối đa ${quiz.attemptsAllowed} lần làm bài`}
-                        size="small"
-                        variant="outlined"
-                      />
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <EditNote fontSize="small" color="error" />
+                        <Typography variant="body2">
+                          Tối đa {quiz.attemptsAllowed} lần làm bài
+                        </Typography>
+                      </Stack>
+
+                      {/* Hiển thị thời gian bắt đầu và kết thúc nếu có */}
+                      {quiz.startTime && (
+                        <Stack direction="row" alignItems="center" spacing={1}>
+                          <Schedule fontSize="small" color="success" />
+                          <Typography variant="body2">
+                            Bắt đầu: {formatDateTime(quiz.startTime)}
+                          </Typography>
+                        </Stack>
+                      )}
+
+                      {quiz.endTime && (
+                        <Stack direction="row" alignItems="center" spacing={1}>
+                          <AccessTime fontSize="small" color="error" />
+                          <Typography variant="body2">
+                            Kết thúc: {formatDateTime(quiz.endTime)}
+                          </Typography>
+                        </Stack>
+                      )}
                     </Stack>
                   </Stack>
                 </CardContent>
@@ -367,14 +388,14 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
                       }
                     >
                       <Stack direction="row" alignItems="center" spacing={1}>
-                        <AccessTime fontSize="small" color="action" />
+                        <AccessTime fontSize="small" color="warning" />
                         <Typography variant="body2">
                           Hạn nộp {formatDateTime(assignment.dueDate)}
                         </Typography>
                       </Stack>
 
                       <Stack direction="row" alignItems="center" spacing={1}>
-                        <CheckCircle fontSize="small" color="action" />
+                        <CheckCircle fontSize="small" color="success" />
                         <Typography variant="body2">
                           Điểm tối đa: {assignment.maxScore}
                         </Typography>

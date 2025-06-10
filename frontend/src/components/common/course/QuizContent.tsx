@@ -18,19 +18,20 @@ import {
   DialogContent,
   DialogActions,
   DialogContentText,
+  Stack,
 } from "@mui/material";
 import {
-  LocalConvenienceStoreOutlined,
   Quiz as QuizIcon,
-} from "@mui/icons-material";
-import {
-  Timer,
   CheckCircle,
   Cancel,
   PlayArrow,
   Info,
   Visibility,
   VisibilityOff,
+  Timer,
+  AccessTime,
+  QuestionAnswer,
+  School,
 } from "@mui/icons-material";
 import {
   createAttempt,
@@ -51,8 +52,7 @@ import { selectCurrentUser } from "../../../features/auth/authSelectors";
 import { useLocation, useParams } from "react-router-dom";
 import { toast } from "react-toastify";
 import { createNotification } from "../../../features/notifications/notificationsSlice";
-import { AcademicClass } from "../../../types/academic-class.types";
-import { Instructor } from "../../../features/user_instructors/instructorsApiSlice";
+import { QuizType } from "../../../types/quiz.types";
 
 // Add this interface for better type safety
 interface QuizAnswer {
@@ -96,7 +96,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
   const currentAttempt = useAppSelector(selectCurrentAttempt);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const [activeQuiz, setActiveQuiz] = useState();
+  const [activeQuiz, setActiveQuiz] = useState<any>(null);
   // State
   const [timeRemaining, setTimeRemaining] = useState<number | null>(null);
   const [quizStarted, setQuizStarted] = useState(false);
@@ -129,6 +129,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
   const [savedQuizState, setSavedQuizState] = useState<SavedQuizState | null>(
     null
   );
+  const [timeExpired, setTimeExpired] = useState(false);
 
   // Add new functions after the existing interfaces
   const saveQuizState = (state: SavedQuizState) => {
@@ -155,6 +156,43 @@ const QuizContent: React.FC<QuizContentProps> = ({
     } catch (error) {
       console.error("Error clearing quiz state:", error);
     }
+  };
+
+  // Check if quiz start time has been reached
+  const checkQuizStartTime = (quiz: any) => {
+    if (!quiz || !quiz.startTime) return true; // No start time restriction
+
+    const now = new Date();
+    const startTime = new Date(quiz.startTime);
+
+    return now >= startTime;
+  };
+
+  // Check if quiz has ended
+  const checkQuizEndTime = (quiz: any) => {
+    if (!quiz || !quiz.endTime) return false; // No end time restriction
+
+    const now = new Date();
+    const endTime = new Date(quiz.endTime);
+
+    return now > endTime;
+  };
+
+  // Check if quiz is currently available (not ended)
+  const isQuizAvailable = (quiz: any) => {
+    if (!quiz) return true;
+
+    // Check if quiz has ended
+    if (checkQuizEndTime(quiz)) {
+      return false;
+    }
+
+    // Check if quiz hasn't started yet
+    if (!checkQuizStartTime(quiz)) {
+      return false;
+    }
+
+    return true;
   };
 
   useEffect(() => {
@@ -254,17 +292,24 @@ const QuizContent: React.FC<QuizContentProps> = ({
 
   useEffect(() => {
     // Timer logic
-    if (timeRemaining !== null && timeRemaining > 0 && !quizSubmitted) {
+    if (
+      timeRemaining !== null &&
+      timeRemaining > 0 &&
+      !quizSubmitted &&
+      !timeExpired
+    ) {
       const timer = setTimeout(() => {
         setTimeRemaining(timeRemaining - 1);
       }, 1000);
       return () => clearTimeout(timer);
-    } else if (timeRemaining === 0 && !quizSubmitted) {
-      // Clear localStorage when time expires
-      clearQuizState();
-      handleSubmit();
+    } else if (timeRemaining === 0 && !quizSubmitted && !timeExpired) {
+      // Set time expired flag to prevent further timer operations
+      setTimeExpired(true);
+      // Show toast message instead of auto-submitting
+      toast.error("Đã hết thời gian làm bài!");
+      // Don't clear quiz state or set quizSubmitted to true - let user see their answers but can't submit
     }
-  }, [timeRemaining, quizSubmitted]);
+  }, [timeRemaining, quizSubmitted, timeExpired]);
 
   // Reset answers when quiz changes
   useEffect(() => {
@@ -291,6 +336,18 @@ const QuizContent: React.FC<QuizContentProps> = ({
   };
 
   const handleStartQuizAttempt = () => {
+    // Check if quiz is available (not ended and start time reached)
+    if (activeQuiz) {
+      if (!isQuizAvailable(activeQuiz)) {
+        if (checkQuizEndTime(activeQuiz)) {
+          toast.error("Bài trắc nghiệm đã kết thúc!");
+        } else if (activeQuiz.startTime && !checkQuizStartTime(activeQuiz)) {
+          toast.warning("Chưa đến thời gian bắt đầu làm bài trắc nghiệm!");
+        }
+        return;
+      }
+    }
+
     dispatch(createAttempt(Number(activeQuiz?.id))).then(() => {
       dispatch(
         fetchAttemptByUserIdAndQuizId({
@@ -305,8 +362,17 @@ const QuizContent: React.FC<QuizContentProps> = ({
     setQuizStarted(true);
   };
 
+  console.log(userAttempts);
+
   const handleSubmit = async () => {
     if (!activeQuiz || currentAnswers.quizId !== activeQuiz.id) return;
+
+    // Check if time has run out
+    if (timeRemaining == 0 || timeExpired) {
+      toast.error("Đã hết thời gian làm bài, không thể nộp bài!");
+      clearQuizState();
+      return;
+    }
 
     try {
       // Clear saved state before submitting
@@ -365,6 +431,12 @@ const QuizContent: React.FC<QuizContentProps> = ({
   };
 
   const handleRetakeQuiz = () => {
+    // Check if quiz has ended
+    if (activeQuiz && checkQuizEndTime(activeQuiz)) {
+      toast.error("Bài trắc nghiệm đã kết thúc, không thể làm lại!");
+      return;
+    }
+
     // Clear saved state when retaking
     clearQuizState();
 
@@ -486,7 +558,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
   // Update useEffect for quiz state management
   useEffect(() => {
     // Save state whenever answers or time changes
-    if (activeQuiz && quizStarted && !quizSubmitted) {
+    if (activeQuiz && quizStarted && !quizSubmitted && !timeExpired) {
       const stateToSave: SavedQuizState = {
         quizId: activeQuiz.id,
         answers: currentAnswers.answers,
@@ -671,13 +743,130 @@ const QuizContent: React.FC<QuizContentProps> = ({
     Number(latestAttempt.quizId) === Number(activeQuiz.id) &&
     quizSubmitted
   ) {
+    const quizHasEnded = checkQuizEndTime(activeQuiz);
+
     return (
       <Box sx={{ p: 3 }}>
         <Card>
           <CardContent>
-            <Typography variant="h5" gutterBottom>
+            <Typography
+              variant="h5"
+              fontWeight={600}
+              textAlign="center"
+              gutterBottom
+            >
               Kết quả bài làm gần nhất
             </Typography>
+
+            {/* Hiển thị các lần làm bài */}
+            {userAttempts &&
+              userAttempts.length > 0 &&
+              (() => {
+                const quizAttempts = userAttempts.filter(
+                  (attempt) => attempt.quizId === activeQuiz.id
+                );
+                return quizAttempts.length > 1 ? (
+                  <Box sx={{ mb: 3 }}>
+                    <Typography
+                      variant="h6"
+                      gutterBottom
+                      sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                    >
+                      <Timer color="primary" />
+                      Các lần làm bài trước:
+                    </Typography>
+                    <Stack spacing={1}>
+                      {quizAttempts
+                        .sort(
+                          (a, b) =>
+                            new Date(a.endTime || a.startTime).getTime() -
+                            new Date(b.endTime || b.startTime).getTime()
+                        )
+                        .map((attempt, index) => (
+                          <Paper
+                            key={attempt.id}
+                            elevation={1}
+                            sx={{
+                              p: 2,
+                              display: "flex",
+                              justifyContent: "space-between",
+                              alignItems: "center",
+                              bgcolor:
+                                attempt.status === "completed"
+                                  ? "success.50"
+                                  : "warning.50",
+                              border: "1px solid #e0e0e0",
+                              borderColor:
+                                attempt.status === "completed"
+                                  ? "success.200"
+                                  : "warning.200",
+                            }}
+                          >
+                            <Box>
+                              <Typography variant="body1" fontWeight="bold">
+                                Lần {index + 1}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                {attempt.startTime &&
+                                  new Date(attempt.startTime).toLocaleString(
+                                    "vi-VN"
+                                  )}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ textAlign: "right" }}>
+                              <Typography
+                                variant="body1"
+                                fontWeight="bold"
+                                color={
+                                  attempt.status === "completed"
+                                    ? "success.main"
+                                    : "warning.main"
+                                }
+                              >
+                                {attempt.status === "completed"
+                                  ? `Điểm: ${attempt.score}/100`
+                                  : "Chưa hoàn thành"}
+                              </Typography>
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                              >
+                                {attempt.status === "completed" &&
+                                attempt.endTime
+                                  ? `Hoàn thành: ${new Date(
+                                      attempt.endTime
+                                    ).toLocaleString("vi-VN")}`
+                                  : "Đang làm dở"}
+                              </Typography>
+                            </Box>
+                          </Paper>
+                        ))}
+                    </Stack>
+                  </Box>
+                ) : null;
+              })()}
+
+            {/* Show message if quiz has ended */}
+            {quizHasEnded && (
+              <Box
+                sx={{
+                  mb: 3,
+                  p: 2,
+                  borderRadius: 1,
+                  textAlign: "center",
+                }}
+              >
+                <Typography variant="body1" color="error" fontWeight="bold">
+                  Bài trắc nghiệm đã kết thúc
+                </Typography>
+                <Typography variant="body2">
+                  Bạn có thể xem kết quả bài làm nhưng không thể làm lại bài.
+                </Typography>
+              </Box>
+            )}
 
             <Box
               sx={{
@@ -888,7 +1077,8 @@ const QuizContent: React.FC<QuizContentProps> = ({
             {activeQuiz &&
               activeQuiz.attemptsAllowed >
                 (userAttempts?.filter((a) => a.quizId === activeQuiz.id)
-                  ?.length || 0) && (
+                  ?.length || 0) &&
+              !checkQuizEndTime(activeQuiz) && (
                 <Box
                   sx={{
                     display: "flex",
@@ -1023,6 +1213,11 @@ const QuizContent: React.FC<QuizContentProps> = ({
     if (savedState && savedState.quizId === activeQuiz.id) {
       return null;
     }
+
+    const quizHasEnded = checkQuizEndTime(activeQuiz);
+    const quizNotStarted =
+      activeQuiz.startTime && !checkQuizStartTime(activeQuiz);
+
     return (
       <Box sx={{ p: 3 }}>
         <Card sx={{ maxWidth: 800, mx: "auto" }}>
@@ -1030,6 +1225,52 @@ const QuizContent: React.FC<QuizContentProps> = ({
             <Typography variant="h4" gutterBottom color="primary">
               {activeQuiz.title}
             </Typography>
+
+            {/* Show warning message if quiz has ended or not started */}
+            {quizHasEnded && (
+              <Box
+                sx={{
+                  mb: 3,
+                  p: 2,
+                }}
+              >
+                <Typography
+                  variant="body1"
+                  color="error.dark"
+                  fontWeight="medium"
+                >
+                  Bài trắc nghiệm đã kết thúc
+                </Typography>
+                <Typography variant="body2" color="error.dark">
+                  Bạn không thể làm bài trắc nghiệm này nữa.
+                </Typography>
+              </Box>
+            )}
+
+            {quizNotStarted && (
+              <Box
+                sx={{
+                  mb: 3,
+                  p: 2,
+                  bgcolor: "warning.light",
+                  borderRadius: 1,
+                  border: "1px solid",
+                  borderColor: "warning.main",
+                }}
+              >
+                <Typography
+                  variant="body1"
+                  color="warning.dark"
+                  fontWeight="medium"
+                >
+                  ⏰ Chưa đến thời gian bắt đầu
+                </Typography>
+                <Typography variant="body2" color="warning.dark">
+                  Bài trắc nghiệm sẽ bắt đầu vào:{" "}
+                  {formatDateTime(activeQuiz.startTime)}
+                </Typography>
+              </Box>
+            )}
 
             <Box sx={{ my: 3, px: 3 }}>
               {activeQuiz.description && (
@@ -1057,6 +1298,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
                     minWidth: "150px",
                   }}
                 >
+                  <QuestionAnswer color="primary" sx={{ mb: 1 }} />
                   <Typography variant="subtitle2" color="text.secondary">
                     Số câu hỏi
                   </Typography>
@@ -1076,6 +1318,7 @@ const QuizContent: React.FC<QuizContentProps> = ({
                       minWidth: "150px",
                     }}
                   >
+                    <AccessTime color="warning" sx={{ mb: 1 }} />
                     <Typography variant="subtitle2" color="text.secondary">
                       Thời gian
                     </Typography>
@@ -1084,6 +1327,59 @@ const QuizContent: React.FC<QuizContentProps> = ({
                     </Typography>
                   </Paper>
                 )}
+
+                <Paper
+                  elevation={1}
+                  sx={{
+                    p: 2,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    minWidth: "150px",
+                  }}
+                >
+                  <School color="info" sx={{ mb: 1 }} />
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Loại bài
+                  </Typography>
+                  <Typography variant="h5" sx={{ mt: 1 }}>
+                    {(() => {
+                      switch (activeQuiz.quizType) {
+                        case QuizType.PRACTICE:
+                          return "Luyện tập";
+                        case QuizType.HOMEWORK:
+                          return "Bài tập";
+                        case QuizType.MIDTERM:
+                          return "Giữa kì";
+                        case QuizType.FINAL:
+                          return "Cuối kì";
+                        default:
+                          return "Không xác định";
+                      }
+                    })()}
+                  </Typography>
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    sx={{ mt: 1 }}
+                  >
+                    Trọng số:{" "}
+                    {(() => {
+                      switch (activeQuiz.quizType) {
+                        case QuizType.PRACTICE:
+                          return "0.1";
+                        case QuizType.HOMEWORK:
+                          return "0.2";
+                        case QuizType.MIDTERM:
+                          return "0.3";
+                        case QuizType.FINAL:
+                          return "0.6";
+                        default:
+                          return "0.2";
+                      }
+                    })()}
+                  </Typography>
+                </Paper>
               </Box>
 
               <Typography variant="subtitle1" sx={{ mb: 3 }}>
@@ -1096,9 +1392,14 @@ const QuizContent: React.FC<QuizContentProps> = ({
               size="large"
               startIcon={<PlayArrow />}
               onClick={handleStartQuizAttempt}
+              disabled={quizHasEnded || quizNotStarted}
               sx={{ px: 4, py: 1.5, borderRadius: 2 }}
             >
-              Bắt đầu làm bài
+              {quizHasEnded
+                ? "Bài đã kết thúc"
+                : quizNotStarted
+                ? "Chưa đến giờ"
+                : "Bắt đầu làm bài"}
             </Button>
           </CardContent>
         </Card>
@@ -1253,9 +1554,51 @@ const QuizContent: React.FC<QuizContentProps> = ({
           <Paper elevation={3} sx={{ p: 2, borderRadius: 2 }}>
             {timeRemaining !== null && (
               <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                <Timer color="primary" sx={{ mr: 1 }} />
-                <Typography variant="subtitle1" fontWeight="bold">
-                  Thời gian còn lại: {formatTime(timeRemaining)}
+                <Timer
+                  color={
+                    timeRemaining === 0 || timeExpired ? "error" : "primary"
+                  }
+                  sx={{ mr: 1 }}
+                />
+                <Typography
+                  variant="subtitle1"
+                  fontWeight="bold"
+                  color={
+                    timeRemaining === 0 || timeExpired ? "error" : "inherit"
+                  }
+                >
+                  {timeRemaining === 0 || timeExpired
+                    ? "Đã hết thời gian!"
+                    : `Thời gian còn lại: ${formatTime(timeRemaining)}`}
+                </Typography>
+              </Box>
+            )}
+
+            {/* Show warning when time runs out */}
+            {(timeRemaining === 0 || timeExpired) && (
+              <Box
+                sx={{
+                  mb: 2,
+                  p: 1.5,
+                  bgcolor: "error.light",
+                  borderRadius: 1,
+                }}
+              >
+                <Typography
+                  variant="body2"
+                  color="white"
+                  fontWeight="medium"
+                  textAlign="center"
+                >
+                  ⏰ Đã hết thời gian làm bài!
+                </Typography>
+                <Typography
+                  variant="caption"
+                  color="white"
+                  textAlign="center"
+                  display="block"
+                >
+                  Bạn không thể nộp bài hoặc thay đổi câu trả lời nữa.
                 </Typography>
               </Box>
             )}
@@ -1402,10 +1745,14 @@ const QuizContent: React.FC<QuizContentProps> = ({
               disabled={
                 currentAnswers.answers.filter(
                   (a) => a !== undefined && a !== null
-                ).length !== activeQuiz?.questions?.length
+                ).length !== activeQuiz?.questions?.length ||
+                timeRemaining === 0 ||
+                timeExpired
               }
             >
-              Nộp bài
+              {timeRemaining === 0 || timeExpired
+                ? "Đã hết thời gian"
+                : "Nộp bài"}
             </Button>
           </Paper>
         </Box>
@@ -1477,7 +1824,11 @@ const QuizContent: React.FC<QuizContentProps> = ({
                         <FormControlLabel
                           key={option.id}
                           value={option.id}
-                          control={<Radio />}
+                          control={
+                            <Radio
+                              disabled={timeRemaining === 0 || timeExpired}
+                            />
+                          }
                           label={`${String.fromCharCode(65 + optionIndex)}. ${
                             option.optionText
                           }`}

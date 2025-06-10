@@ -64,6 +64,8 @@ import {
   FilterAlt,
   KeyboardArrowDown,
   KeyboardArrowUp,
+  AccessTime,
+  Schedule,
 } from "@mui/icons-material";
 import { useNavigate, useParams } from "react-router-dom";
 import DialogAddEditQuiz from "../../components/instructor/course/DialogAddEditQuiz";
@@ -84,6 +86,8 @@ import { formatDateTime } from "../../utils/formatters";
 import { toast } from "react-toastify";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
+import EmptyState from "../../components/common/EmptyState";
+import { QuizType } from "../../types/quiz.types";
 
 // Thêm interface để định nghĩa kiểu dữ liệu
 interface QuizAttempt {
@@ -120,8 +124,9 @@ interface Quiz {
   timeLimit: number;
   passingScore: number;
   attemptsAllowed: number;
-  quizType: string;
+  quizType: QuizType;
   showExplanation: number;
+  random: number;
   startTime: string | null;
   endTime: string | null;
   createdAt: string;
@@ -167,6 +172,13 @@ interface TabPanelProps {
   type: string;
 }
 
+// Add interface for delete dialog state
+interface DeleteDialogState {
+  open: boolean;
+  type: string;
+  id: string;
+}
+
 const InstructorQuizs = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
@@ -192,6 +204,10 @@ const InstructorQuizs = () => {
   const [quizToEdit, setQuizToEdit] = useState<Quiz | null>(null);
   // Thêm state cho sắp xếp
   const [sortBy, setSortBy] = useState("newest"); // newest, oldest, highest, lowest
+  // Add new filter states for "all" tab
+  const [filterDateCreated, setFilterDateCreated] = useState("all"); // all, newest, oldest
+  const [filterQuestionCount, setFilterQuestionCount] = useState("all"); // all, low, medium, high
+  const [filterPassingScore, setFilterPassingScore] = useState("all"); // all, low, medium, high
 
   useEffect(() => {
     // Fetch both quizzes and attempts
@@ -447,7 +463,7 @@ const InstructorQuizs = () => {
   const getFilteredQuizzes = () => {
     if (!instructorQuizzes) return [];
 
-    return instructorQuizzes.filter((quiz) => {
+    let filtered = instructorQuizzes.filter((quiz) => {
       // Filter by search query
       const matchesSearch =
         !searchQuery ||
@@ -461,13 +477,69 @@ const InstructorQuizs = () => {
         (studentTypeFilter === "student_academic" && quiz.academicClassId);
 
       // Filter by course/class if selected
-      const matchesCourse =
-        filterCourse === "all" ||
-        quiz.lesson?.section.course.id === filterCourse ||
-        quiz.academicClass?.id === filterCourse;
+      let matchesCourse = true;
+      if (studentTypeFilter === "student" && filterCourse !== "all") {
+        matchesCourse = quiz.lesson?.section.course.id === filterCourse;
+      } else if (
+        studentTypeFilter === "student_academic" &&
+        classFilter !== "all"
+      ) {
+        matchesCourse = quiz.academicClass?.id === classFilter;
+      }
 
-      return matchesSearch && matchesType && matchesCourse;
+      // Filter by creation date (only for "all" tab)
+      let matchesDateCreated = true;
+      if (studentTypeFilter === "all" && filterDateCreated !== "all") {
+        // This will be handled by sorting instead of filtering
+        matchesDateCreated = true;
+      }
+
+      // Filter by question count (only for "all" tab)
+      let matchesQuestionCount = true;
+      if (studentTypeFilter === "all" && filterQuestionCount !== "all") {
+        const questionCount = quiz.questions.length;
+        if (filterQuestionCount === "low") {
+          matchesQuestionCount = questionCount <= 10;
+        } else if (filterQuestionCount === "medium") {
+          matchesQuestionCount = questionCount > 10 && questionCount <= 30;
+        } else if (filterQuestionCount === "high") {
+          matchesQuestionCount = questionCount > 30;
+        }
+      }
+
+      // Filter by passing score (only for "all" tab)
+      let matchesPassingScore = true;
+      if (studentTypeFilter === "all" && filterPassingScore !== "all") {
+        const passingScore = quiz.passingScore;
+        if (filterPassingScore === "low") {
+          matchesPassingScore = passingScore <= 60;
+        } else if (filterPassingScore === "medium") {
+          matchesPassingScore = passingScore > 60 && passingScore <= 80;
+        } else if (filterPassingScore === "high") {
+          matchesPassingScore = passingScore > 80;
+        }
+      }
+
+      return (
+        matchesSearch &&
+        matchesType &&
+        matchesCourse &&
+        matchesDateCreated &&
+        matchesQuestionCount &&
+        matchesPassingScore
+      );
     });
+
+    // Sort by creation date if "all" tab is selected and date filter is not "all"
+    if (studentTypeFilter === "all" && filterDateCreated !== "all") {
+      filtered.sort((a, b) => {
+        const dateA = new Date(a.createdAt).getTime();
+        const dateB = new Date(b.createdAt).getTime();
+        return filterDateCreated === "newest" ? dateB - dateA : dateA - dateB;
+      });
+    }
+
+    return filtered;
   };
 
   // Thêm hàm xuất Excel vào trong component InstructorQuizs
@@ -623,6 +695,49 @@ const InstructorQuizs = () => {
                     Tạo Bài trắc nghiệm mới
                   </Button>
                 </>
+              ) : studentTypeFilter == "all" ? (
+                <>
+                  <FormControl size="small" sx={{ minWidth: 180 }}>
+                    <InputLabel>Ngày tạo</InputLabel>
+                    <Select
+                      value={filterDateCreated}
+                      label="Ngày tạo"
+                      onChange={(e) => setFilterDateCreated(e.target.value)}
+                    >
+                      <MenuItem value="all">Tất cả</MenuItem>
+                      <MenuItem value="newest">Mới nhất </MenuItem>
+                      <MenuItem value="oldest">Cũ nhất</MenuItem>
+                    </Select>
+                  </FormControl>
+
+                  <FormControl size="small" sx={{ minWidth: 180 }}>
+                    <InputLabel>Số câu hỏi</InputLabel>
+                    <Select
+                      value={filterQuestionCount}
+                      label="Số câu hỏi"
+                      onChange={(e) => setFilterQuestionCount(e.target.value)}
+                    >
+                      <MenuItem value="all">Tất cả</MenuItem>
+                      <MenuItem value="low">Ít (≤10 câu)</MenuItem>
+                      <MenuItem value="medium">Trung bình (11-30 câu)</MenuItem>
+                      <MenuItem value="high">Nhiều ({">"}30 câu)</MenuItem>
+                    </Select>
+                  </FormControl>
+
+                  <FormControl size="small" sx={{ minWidth: 180 }}>
+                    <InputLabel>Điểm đạt</InputLabel>
+                    <Select
+                      value={filterPassingScore}
+                      label="Điểm đạt"
+                      onChange={(e) => setFilterPassingScore(e.target.value)}
+                    >
+                      <MenuItem value="all">Tất cả</MenuItem>
+                      <MenuItem value="low">Thấp (≤60%)</MenuItem>
+                      <MenuItem value="medium">Trung bình (61-80%)</MenuItem>
+                      <MenuItem value="high">Cao ({">"}80%)</MenuItem>
+                    </Select>
+                  </FormControl>
+                </>
               ) : (
                 <></>
               )}
@@ -725,7 +840,7 @@ const InstructorQuizs = () => {
       <Card sx={{ mb: 3 }}>
         <CardContent>
           <Grid item xs={12} md={6}>
-            <Stack spacing={4} direction="row">
+            <Stack spacing={4} direction="row" sx={{ mb: 2 }}>
               <Box>
                 <Typography variant="subtitle2" color="text.secondary">
                   {selectedQuiz.lessonId ? "Khóa học" : "Lớp học"}
@@ -735,6 +850,37 @@ const InstructorQuizs = () => {
                     ? selectedQuiz.lesson?.section.course.title
                     : `${selectedQuiz.academicClass?.className} - ${selectedQuiz.academicClass?.classCode}`}
                 </Typography>
+              </Box>
+
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Loại bài trắc nghiệm
+                </Typography>
+                <Chip
+                  label={
+                    selectedQuiz.quizType == QuizType.PRACTICE
+                      ? "Luyện tập"
+                      : selectedQuiz.quizType == QuizType.HOMEWORK
+                      ? "Bài tập"
+                      : selectedQuiz.quizType == QuizType.MIDTERM
+                      ? "Kiểm tra giữa kỳ"
+                      : selectedQuiz.quizType == QuizType.FINAL
+                      ? "Kiểm tra cuối kỳ"
+                      : "Bài trắc nghiệm"
+                  }
+                  color={
+                    selectedQuiz.quizType == QuizType.PRACTICE
+                      ? "primary"
+                      : selectedQuiz.quizType == QuizType.HOMEWORK
+                      ? "warning"
+                      : selectedQuiz.quizType == QuizType.MIDTERM
+                      ? "info"
+                      : selectedQuiz.quizType == QuizType.FINAL
+                      ? "error"
+                      : "default"
+                  }
+                  size="small"
+                />
               </Box>
 
               <Box>
@@ -765,6 +911,73 @@ const InstructorQuizs = () => {
                 </Typography>
                 <Typography variant="body2">
                   {formatDateTime(selectedQuiz.createdAt)}
+                </Typography>
+              </Box>
+
+              {selectedQuiz.startTime && (
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Thời gian bắt đầu
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                  >
+                    <AccessTime fontSize="small" />
+                    {formatDateTime(selectedQuiz.startTime)}
+                  </Typography>
+                </Box>
+              )}
+
+              {selectedQuiz.endTime && (
+                <Box>
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Thời gian kết thúc
+                  </Typography>
+                  <Typography
+                    variant="body2"
+                    sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                  >
+                    <Schedule fontSize="small" />
+                    {formatDateTime(selectedQuiz.endTime)}
+                  </Typography>
+                </Box>
+              )}
+
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Trộn câu hỏi
+                </Typography>
+                <Chip
+                  label={
+                    selectedQuiz.random == 1
+                      ? "Câu hỏi ngẫu nhiên"
+                      : "Câu hỏi cố định"
+                  }
+                  color={selectedQuiz.random == 1 ? "primary" : "default"}
+                  size="small"
+                />
+              </Box>
+
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Hiển thị giải thích
+                </Typography>
+                <Chip
+                  label={selectedQuiz.showExplanation === 1 ? "Có" : "Không"}
+                  color={
+                    selectedQuiz.showExplanation === 1 ? "success" : "default"
+                  }
+                  size="small"
+                />
+              </Box>
+
+              <Box>
+                <Typography variant="subtitle2" color="text.secondary">
+                  Số lần thử
+                </Typography>
+                <Typography variant="body2">
+                  {selectedQuiz.attemptsAllowed} lần
                 </Typography>
               </Box>
             </Stack>
@@ -863,7 +1076,11 @@ const InstructorQuizs = () => {
                 <Table>
                   <TableHead>
                     <TableRow>
-                      <TableCell>Học viên</TableCell>
+                      <TableCell>
+                        {studentTypeFilter === "student"
+                          ? "Học viên"
+                          : "Sinh viên"}
+                      </TableCell>
                       {studentTypeFilter === "student_academic" && (
                         <>
                           <TableCell>Mã SV</TableCell>
@@ -902,7 +1119,7 @@ const InstructorQuizs = () => {
                                     <Chip
                                       size="small"
                                       icon={<School fontSize="small" />}
-                                      label="SV"
+                                      label={`${attempt.user.userStudentAcademic?.studentCode}`}
                                       color="primary"
                                       variant="outlined"
                                       sx={{ ml: 1 }}
@@ -1066,41 +1283,13 @@ const InstructorQuizs = () => {
                           colSpan={
                             studentTypeFilter === "student_academic" ? 9 : 7
                           }
-                          sx={{ py: 8 }} // Add more vertical padding
+                          sx={{ py: 8 }}
                         >
-                          <Box
-                            sx={{
-                              display: "flex",
-                              flexDirection: "column",
-                              alignItems: "center",
-                              gap: 2,
-                            }}
-                          >
-                            {/* Add an icon */}
-                            <Assignment
-                              sx={{
-                                fontSize: 64,
-                                color: "text.disabled",
-                                opacity: 0.5,
-                              }}
-                            />
-
-                            {/* Main message */}
-                            <Typography variant="h6" color="text.secondary">
-                              Không tìm thấy dữ liệu
-                            </Typography>
-
-                            {/* Optional helper text */}
-                            <Typography
-                              variant="body2"
-                              color="text.disabled"
-                              align="center"
-                              sx={{ maxWidth: 300 }}
-                            >
-                              Hiện chưa có học viên nào làm bài trắc nghiệm này
-                              hoặc không tìm thấy kết quả phù hợp với bộ lọc
-                            </Typography>
-                          </Box>
+                          <EmptyState
+                            icon={<Assignment />}
+                            title="Không tìm thấy dữ liệu"
+                            description="Hiện chưa có học viên nào làm bài trắc nghiệm này hoặc không tìm thấy kết quả phù hợp với bộ lọc"
+                          />
                         </TableCell>
                       </TableRow>
                     )}
@@ -1533,12 +1722,15 @@ const QuizList = ({ quizzes, onQuizClick, onEditClick }: QuizListProps) => {
         <TableHead>
           <TableRow>
             <TableCell>Tên bài trắc nghiệm</TableCell>
-            <TableCell>Loại</TableCell>
+            <TableCell>Thuộc</TableCell>
+            <TableCell>Loại bài (trọng số)</TableCell>
             <TableCell>Khóa học/Lớp học</TableCell>
             <TableCell align="center">Số bài làm</TableCell>
             <TableCell align="center">Số câu hỏi</TableCell>
             <TableCell align="center">Điểm đạt</TableCell>
             <TableCell align="center">Thời gian (phút)</TableCell>
+            <TableCell align="center">Thời gian bắt đầu</TableCell>
+            <TableCell align="center">Thời gian kết thúc</TableCell>
             <TableCell align="center">Ngày tạo</TableCell>
             <TableCell align="center">Thao tác</TableCell>
           </TableRow>
@@ -1564,6 +1756,21 @@ const QuizList = ({ quizzes, onQuizClick, onEditClick }: QuizListProps) => {
                   />
                 )}
               </TableCell>
+
+              <TableCell>
+                {quiz.quizType === QuizType.PRACTICE ? (
+                  <Chip label="Luyện tập (0.1)" size="small" />
+                ) : quiz.quizType === QuizType.HOMEWORK ? (
+                  <Chip label="Bài tập (0.2)" color="primary" size="small" />
+                ) : quiz.quizType === QuizType.MIDTERM ? (
+                  <Chip label="Giữa kì (0.3)" color="info" size="small" />
+                ) : quiz.quizType === QuizType.FINAL ? (
+                  <Chip label="Cuối kì (0.6)" color="error" size="small" />
+                ) : (
+                  <Chip label="Bài trắc nghiệm" color="default" size="small" />
+                )}
+              </TableCell>
+
               <TableCell>
                 {quiz.lessonId
                   ? quiz.lesson?.section.course.title
@@ -1571,6 +1778,7 @@ const QuizList = ({ quizzes, onQuizClick, onEditClick }: QuizListProps) => {
                     " - " +
                     quiz.academicClass?.classCode}
               </TableCell>
+
               {/* Add attempt count cell */}
               <TableCell align="center">
                 <Chip
@@ -1588,6 +1796,12 @@ const QuizList = ({ quizzes, onQuizClick, onEditClick }: QuizListProps) => {
               <TableCell align="center">{quiz.questions.length}</TableCell>
               <TableCell align="center">{quiz.passingScore}%</TableCell>
               <TableCell align="center">{quiz.timeLimit}</TableCell>
+              <TableCell align="center">
+                {quiz.startTime ? formatDateTime(quiz.startTime) : "-"}
+              </TableCell>
+              <TableCell align="center">
+                {quiz.endTime ? formatDateTime(quiz.endTime) : "-"}
+              </TableCell>
               <TableCell align="center">
                 {formatDateTime(quiz.createdAt)}
               </TableCell>
@@ -1627,8 +1841,12 @@ const QuizList = ({ quizzes, onQuizClick, onEditClick }: QuizListProps) => {
           ))}
           {quizzes.length === 0 && (
             <TableRow>
-              <TableCell colSpan={8} align="center">
-                Không có bài trắc nghiệm nào
+              <TableCell colSpan={11} sx={{ py: 8 }}>
+                <EmptyState
+                  icon={<Quiz />}
+                  title="Không có bài trắc nghiệm nào"
+                  description="Bạn chưa tạo bài trắc nghiệm nào hoặc không tìm thấy bài trắc nghiệm phù hợp với bộ lọc"
+                />
               </TableCell>
             </TableRow>
           )}
