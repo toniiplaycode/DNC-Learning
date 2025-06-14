@@ -23,6 +23,7 @@ import {
   Paper,
   CircularProgress,
   Alert,
+  Avatar,
 } from "@mui/material";
 import {
   Add,
@@ -45,6 +46,7 @@ import {
   updateTeachingSchedule,
   deleteTeachingSchedule,
   updateScheduleStatus,
+  fetchAllTeachingSchedules,
 } from "../../features/teaching-schedules/teachingSchedulesSlice";
 import { selectCurrentUser } from "../../features/auth/authSelectors";
 import {
@@ -71,6 +73,7 @@ import { formatDateTime } from "../../utils/formatters";
 import { createNotification } from "../../features/notifications/notificationsSlice";
 import { selectAcademicClassStudents } from "../../features/users/usersSelectors";
 import { fetchStudentsByAcademicClass } from "../../features/users/usersApiSlice";
+import { fetchAcademicClasses } from "../../features/academic-classes/academicClassesSlice";
 
 // Định nghĩa enum cho view mode
 enum ViewMode {
@@ -80,7 +83,15 @@ enum ViewMode {
   MONTH = "month",
 }
 
-const InstructorSchedules = () => {
+const InstructorSchedules = ({
+  adminTeachingSchedules,
+  adminAcademicClasses,
+  isAdmin,
+}: {
+  adminTeachingSchedules: TeachingSchedule[];
+  adminAcademicClasses: any[];
+  isAdmin: boolean;
+}) => {
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector(selectCurrentUser);
   const instructorSchedules = useAppSelector(selectInstructorSchedules);
@@ -118,11 +129,16 @@ const InstructorSchedules = () => {
   const [sortOption, setSortOption] = useState<string>("newest");
   const [timeError, setTimeError] = useState<string>("");
 
+  // Sử dụng dữ liệu phù hợp dựa trên isAdmin flag
+  const schedulesToDisplay = isAdmin
+    ? adminTeachingSchedules
+    : instructorSchedules;
+
   useEffect(() => {
-    if (currentUser?.userInstructor?.id) {
+    if (!isAdmin && currentUser?.userInstructor?.id) {
       dispatch(
         fetchTeachingSchedulesByInstructor(
-          Number(currentUser.userInstructor.id)
+          Number(currentUser?.userInstructor?.id)
         )
       );
       dispatch(
@@ -131,12 +147,13 @@ const InstructorSchedules = () => {
         })
       );
     }
-  }, [dispatch, currentUser]);
+  }, [dispatch, currentUser, isAdmin]);
 
   useEffect(() => {
-    if (formData.academicClassId)
+    if (!isAdmin && formData.academicClassId) {
       dispatch(fetchStudentsByAcademicClass(Number(formData.academicClassId)));
-  }, [formData.academicClassId]);
+    }
+  }, [formData.academicClassId, isAdmin]);
 
   const handleAddSchedule = () => {
     const now = new Date();
@@ -179,6 +196,20 @@ const InstructorSchedules = () => {
       try {
         await dispatch(deleteTeachingSchedule(scheduleToDelete)).unwrap();
         toast.success("Xóa lịch dạy thành công");
+
+        // Refresh data sau khi xóa
+        if (isAdmin) {
+          // Chế độ admin - refresh cả teaching schedules và academic classes
+          dispatch(fetchAllTeachingSchedules());
+          dispatch(fetchAcademicClasses());
+        } else if (currentUser?.userInstructor?.id) {
+          // Chế độ instructor - chỉ refresh teaching schedules của instructor
+          dispatch(
+            fetchTeachingSchedulesByInstructor(
+              Number(currentUser.userInstructor.id)
+            )
+          );
+        }
       } catch (error) {
         toast.error("Không thể xóa lịch dạy");
       }
@@ -191,12 +222,22 @@ const InstructorSchedules = () => {
   const checkScheduleConflict = (
     startTime: string,
     endTime: string,
-    excludeScheduleId?: number
+    excludeScheduleId?: number,
+    academicClassInstructorId?: number
   ) => {
     const newStart = new Date(startTime);
     const newEnd = new Date(endTime);
 
-    return instructorSchedules.some((schedule) => {
+    // Nếu là admin, chỉ kiểm tra trùng với các lịch của cùng 1 giảng viên
+    let schedulesToCheck = schedulesToDisplay;
+    if (isAdmin && academicClassInstructorId) {
+      schedulesToCheck = schedulesToDisplay.filter(
+        (schedule) =>
+          schedule.academicClassInstructorId === academicClassInstructorId
+      );
+    }
+
+    return schedulesToCheck.some((schedule) => {
       // Bỏ qua lịch hiện tại khi đang chỉnh sửa
       if (excludeScheduleId && schedule.id === excludeScheduleId) {
         return false;
@@ -218,6 +259,16 @@ const InstructorSchedules = () => {
       );
     });
   };
+
+  // Thêm hàm kiểm tra URL hợp lệ
+  function isValidUrl(url: string) {
+    try {
+      new URL(url);
+      return true;
+    } catch {
+      return false;
+    }
+  }
 
   const handleSaveSchedule = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -242,6 +293,12 @@ const InstructorSchedules = () => {
       toast.error("Vui lòng nhập link phòng học");
       return;
     }
+    if (!isValidUrl(formData.meetingLink.trim())) {
+      toast.error(
+        "Link phòng học phải là một URL hợp lệ (bắt đầu bằng http:// hoặc https://)"
+      );
+      return;
+    }
 
     // Kiểm tra thời gian
     if (formData.startTime && formData.endTime) {
@@ -258,23 +315,43 @@ const InstructorSchedules = () => {
         checkScheduleConflict(
           formData.startTime,
           formData.endTime,
-          editingSchedule?.id
+          editingSchedule?.id,
+          isAdmin ? Number(formData.academicClassInstructorId) : undefined
         )
       ) {
-        toast.error("Thời gian này đã trùng với một lịch dạy khác");
+        toast.error(
+          isAdmin
+            ? "Thời gian này đã trùng với một lịch dạy khác của giảng viên này"
+            : "Thời gian này đã trùng với một lịch dạy khác"
+        );
         return;
       }
     }
 
-    if (!currentUser?.userInstructor?.id) {
+    if (!isAdmin && !currentUser?.userInstructor?.id) {
       toast.error("Không tìm thấy thông tin giảng viên");
       return;
     }
 
     // Kiểm tra thêm nếu đang tạo mới
-    if (!editingSchedule && !formData.academicClassInstructorId) {
-      toast.error("Vui lòng chọn lớp học");
-      return;
+    if (!editingSchedule) {
+      if (isAdmin) {
+        // Chế độ admin - cần cả academicClassId và academicClassInstructorId
+        if (!formData.academicClassId) {
+          toast.error("Vui lòng chọn lớp học");
+          return;
+        }
+        if (!formData.academicClassInstructorId) {
+          toast.error("Vui lòng chọn giảng viên");
+          return;
+        }
+      } else {
+        // Chế độ instructor - chỉ cần academicClassInstructorId
+        if (!formData.academicClassInstructorId) {
+          toast.error("Vui lòng chọn lớp học");
+          return;
+        }
+      }
     }
 
     try {
@@ -296,30 +373,51 @@ const InstructorSchedules = () => {
       else {
         const newScheduleData: CreateTeachingScheduleData = {
           ...(formData as CreateTeachingScheduleData),
-          academicClassId: Number(formData.academicClassId),
-          academicClassInstructorId: Number(formData.academicClassInstructorId),
           title: formData.title!,
           startTime: formData.startTime!,
           endTime: formData.endTime!,
         };
 
+        // Xử lý academicClassId và academicClassInstructorId dựa trên mode
+        if (isAdmin) {
+          // Chế độ admin - sử dụng dữ liệu từ adminAcademicClasses
+          newScheduleData.academicClassId = Number(formData.academicClassId);
+          newScheduleData.academicClassInstructorId = Number(
+            formData.academicClassInstructorId
+          );
+        } else {
+          // Chế độ instructor - sử dụng dữ liệu từ classInstructors
+          newScheduleData.academicClassId = Number(formData.academicClassId);
+          newScheduleData.academicClassInstructorId = Number(
+            formData.academicClassInstructorId
+          );
+        }
+
         await dispatch(createTeachingSchedule(newScheduleData)).unwrap();
 
-        const notificationData = {
-          userIds: academicClassStudents.map((user) => user.userId),
-          title: `Lịch dạy mới`,
-          content: `Giảng viên vừa thêm lịch dạy mới "${newScheduleData.title}".`,
-          type: "schedule",
-        };
+        // Chỉ tạo notification khi không phải admin
+        if (!isAdmin) {
+          const notificationData = {
+            userIds: academicClassStudents.map((user) => user.id),
+            title: `Lịch dạy mới`,
+            content: `Giảng viên vừa thêm lịch dạy mới "${newScheduleData.title}".`,
+            type: "schedule",
+          };
 
-        dispatch(createNotification(notificationData));
+          dispatch(createNotification(notificationData));
+        }
 
         toast.success("Tạo lịch dạy mới thành công");
       }
 
       setOpenDialog(false);
       // Refresh data
-      if (currentUser?.userInstructor?.id) {
+      if (isAdmin) {
+        // Chế độ admin - refresh cả teaching schedules và academic classes
+        dispatch(fetchAllTeachingSchedules());
+        dispatch(fetchAcademicClasses());
+      } else if (currentUser?.userInstructor?.id) {
+        // Chế độ instructor - chỉ refresh teaching schedules của instructor
         dispatch(
           fetchTeachingSchedulesByInstructor(
             Number(currentUser.userInstructor.id)
@@ -338,7 +436,7 @@ const InstructorSchedules = () => {
 
   const getSchedulesForDate = (date: Date) => {
     const dateStr = date.toISOString().split("T")[0];
-    return instructorSchedules.filter(
+    return schedulesToDisplay.filter(
       (schedule) => schedule.startTime.split("T")[0] === dateStr
     );
   };
@@ -349,7 +447,7 @@ const InstructorSchedules = () => {
     const endOfWeek = new Date(startOfWeek);
     endOfWeek.setDate(startOfWeek.getDate() + 6);
 
-    return instructorSchedules.filter((schedule) => {
+    return schedulesToDisplay.filter((schedule) => {
       const scheduleDate = new Date(schedule.startTime);
       return scheduleDate >= startOfWeek && scheduleDate <= endOfWeek;
     });
@@ -359,7 +457,7 @@ const InstructorSchedules = () => {
     const year = date.getFullYear();
     const month = date.getMonth();
 
-    return instructorSchedules.filter((schedule) => {
+    return schedulesToDisplay.filter((schedule) => {
       const scheduleDate = new Date(schedule.startTime);
       return (
         scheduleDate.getFullYear() === year && scheduleDate.getMonth() === month
@@ -618,7 +716,7 @@ const InstructorSchedules = () => {
             }}
           >
             <Typography variant="body2" color="text.secondary">
-              Hiển thị {filteredSchedules.length} / {instructorSchedules.length}{" "}
+              Hiển thị {filteredSchedules.length} / {schedulesToDisplay.length}{" "}
               lịch dạy
             </Typography>
             <FormControl variant="outlined" size="small" sx={{ minWidth: 200 }}>
@@ -645,6 +743,7 @@ const InstructorSchedules = () => {
                     schedule={schedule}
                     onEdit={handleEditSchedule}
                     onDelete={handleDeleteSchedule}
+                    isAdmin={isAdmin}
                   />
                 </Grid>
               ))}
@@ -685,6 +784,7 @@ const InstructorSchedules = () => {
                     schedule={schedule}
                     onEdit={handleEditSchedule}
                     onDelete={handleDeleteSchedule}
+                    isAdmin={isAdmin}
                   />
                 </Grid>
               ))}
@@ -835,6 +935,26 @@ const InstructorSchedules = () => {
                             {schedule.academicClass.className}
                           </Typography>
                         )}
+                        {/* Thông tin giảng viên - chỉ hiển thị khi là admin */}
+                        {isAdmin &&
+                          schedule.academicClassInstructor?.instructor && (
+                            <Typography
+                              variant="caption"
+                              display="block"
+                              sx={{
+                                mt: 0.5,
+                                color: "secondary.main",
+                                fontWeight: 500,
+                              }}
+                              noWrap
+                            >
+                              GV:{" "}
+                              {
+                                schedule.academicClassInstructor.instructor
+                                  .fullName
+                              }
+                            </Typography>
+                          )}
                       </Paper>
                     ))}
                   </Grid>
@@ -1001,10 +1121,12 @@ const InstructorSchedules = () => {
     schedule,
     onEdit,
     onDelete,
+    isAdmin,
   }: {
     schedule: TeachingSchedule;
     onEdit: (schedule: TeachingSchedule) => void;
     onDelete: (id: number) => void;
+    isAdmin: boolean;
   }) => {
     return (
       <Paper
@@ -1074,6 +1196,46 @@ const InstructorSchedules = () => {
           </Box>
         </Box>
 
+        {/* Thông tin giảng viên - chỉ hiển thị khi là admin */}
+        {isAdmin && schedule.academicClassInstructor?.instructor && (
+          <Box
+            sx={{
+              p: 1.5,
+              bgcolor: "rgba(156, 39, 176, 0.05)",
+              borderRadius: 1,
+              mb: 1.5,
+              borderLeft: 3,
+              borderColor: "secondary.main",
+              display: "flex",
+              alignItems: "center",
+            }}
+          >
+            <Avatar
+              src={
+                schedule.academicClassInstructor.instructor.user?.avatarUrl ||
+                "/src/assets/logo.png"
+              }
+              sx={{ width: 32, height: 32, mr: 2 }}
+            />
+            <Box>
+              <Typography variant="body2" fontWeight="500">
+                {schedule.academicClassInstructor.instructor.fullName}
+              </Typography>
+              {schedule.academicClassInstructor.instructor.user?.email && (
+                <Typography variant="body2" color="text.secondary">
+                  Email:{" "}
+                  {schedule.academicClassInstructor.instructor.user.email}
+                </Typography>
+              )}
+              {schedule.academicClassInstructor.instructor.user?.phone && (
+                <Typography variant="body2" color="text.secondary">
+                  SĐT: {schedule.academicClassInstructor.instructor.user.phone}
+                </Typography>
+              )}
+            </Box>
+          </Box>
+        )}
+
         {/* Thông tin lớp học */}
         <Box sx={{ mb: 1.5 }}>
           <Typography variant="body2" color="text.primary" fontWeight="500">
@@ -1082,11 +1244,6 @@ const InstructorSchedules = () => {
           <Typography variant="body2" color="text.secondary">
             Mã lớp: {schedule.academicClass?.classCode || "Không xác định"}
           </Typography>
-          {schedule.academicClass?.semester && (
-            <Typography variant="body2" color="text.secondary">
-              Học kỳ: {schedule.academicClass.semester}
-            </Typography>
-          )}
         </Box>
 
         {/* Thông tin thời gian */}
@@ -1282,7 +1439,7 @@ const InstructorSchedules = () => {
 
   // Thêm hàm lọc các lịch dạy
   const getFilteredSchedules = () => {
-    let filtered = instructorSchedules.filter((schedule) => {
+    let filtered = schedulesToDisplay.filter((schedule) => {
       // Lọc theo trạng thái
       if (filterStatus !== "all" && schedule.status !== filterStatus) {
         return false;
@@ -1337,7 +1494,7 @@ const InstructorSchedules = () => {
     const now = new Date();
 
     // Lọc các lịch dạy đã quá hạn và chưa hoàn thành
-    const expiredSchedules = instructorSchedules.filter((schedule) => {
+    const expiredSchedules = schedulesToDisplay.filter((schedule) => {
       const endTime = new Date(schedule.endTime);
       return (
         endTime < now &&
@@ -1369,7 +1526,7 @@ const InstructorSchedules = () => {
     const now = new Date();
 
     // Lọc các lịch dạy đang diễn ra (thời gian hiện tại nằm giữa startTime và endTime)
-    const inProgressSchedules = instructorSchedules.filter((schedule) => {
+    const inProgressSchedules = schedulesToDisplay.filter((schedule) => {
       const startTime = new Date(schedule.startTime);
       const endTime = new Date(schedule.endTime);
       return (
@@ -1427,12 +1584,12 @@ const InstructorSchedules = () => {
 
   // Thêm useEffect để refresh data sau khi cập nhật trạng thái
   useEffect(() => {
-    if (currentUser?.userInstructor?.id) {
+    if (!isAdmin && currentUser?.userInstructor?.id) {
       const refreshData = async () => {
         try {
           await dispatch(
             fetchTeachingSchedulesByInstructor(
-              Number(currentUser.userInstructor.id)
+              Number(currentUser?.userInstructor?.id)
             )
           );
         } catch (error) {
@@ -1445,7 +1602,7 @@ const InstructorSchedules = () => {
 
       return () => clearInterval(refreshInterval);
     }
-  }, [dispatch, currentUser]);
+  }, [dispatch, currentUser, isAdmin]);
 
   return (
     <Box sx={{ p: 3 }}>
@@ -1462,7 +1619,7 @@ const InstructorSchedules = () => {
         }}
       >
         <Typography variant="h5" gutterBottom fontWeight="bold">
-          Lịch dạy trực tuyến
+          {isAdmin ? "Quản lý lịch dạy trực tuyến" : "Lịch dạy trực tuyến"}
         </Typography>
         <Button
           variant="contained"
@@ -1632,8 +1789,112 @@ const InstructorSchedules = () => {
           </DialogTitle>
           <DialogContent dividers sx={{ p: 3 }}>
             <Stack spacing={2.5} sx={{ pt: 1 }}>
-              {/* Select lớp học - chỉ hiển thị khi tạo mới */}
-              {!editingSchedule ? (
+              {/* Select lớp học và giảng viên - chỉ hiển thị khi tạo mới và là admin */}
+              {!editingSchedule && isAdmin ? (
+                <>
+                  {/* Chọn lớp học */}
+                  <FormControl
+                    fullWidth
+                    variant="outlined"
+                    sx={{ mb: 2 }}
+                    required
+                  >
+                    <InputLabel>Lớp học</InputLabel>
+                    <Select
+                      name="academicClassId"
+                      label="Lớp học *"
+                      value={formData.academicClassId || ""}
+                      onChange={handleSelectChange}
+                      required
+                      sx={{ borderRadius: 1.5 }}
+                    >
+                      {adminAcademicClasses.map((academicClass) => (
+                        <MenuItem
+                          key={academicClass.id}
+                          value={academicClass.id}
+                        >
+                          {academicClass.className} ({academicClass.classCode})
+                          - {academicClass.major?.majorName}
+                        </MenuItem>
+                      ))}
+                    </Select>
+                  </FormControl>
+
+                  {/* Chọn giảng viên */}
+                  {formData.academicClassId && (
+                    <FormControl
+                      fullWidth
+                      variant="outlined"
+                      sx={{ mb: 2 }}
+                      required
+                    >
+                      <InputLabel>Giảng viên</InputLabel>
+                      <Select
+                        name="academicClassInstructorId"
+                        label="Giảng viên *"
+                        value={formData.academicClassInstructorId || ""}
+                        onChange={handleSelectChange}
+                        required
+                        sx={{ borderRadius: 1.5 }}
+                      >
+                        {adminAcademicClasses
+                          .find((ac) => ac.id === formData.academicClassId)
+                          ?.instructors?.map((instructorRelation: any) => (
+                            <MenuItem
+                              key={instructorRelation.id}
+                              value={instructorRelation.id}
+                            >
+                              {instructorRelation.instructor.fullName} -{" "}
+                              {instructorRelation.instructor.professionalTitle}
+                            </MenuItem>
+                          ))}
+                      </Select>
+                    </FormControl>
+                  )}
+
+                  {/* Hiển thị thông tin lớp học đã chọn */}
+                  {formData.academicClassId && (
+                    <Box
+                      sx={{
+                        mb: 2,
+                        p: 2,
+                        bgcolor: "rgba(25, 118, 210, 0.05)",
+                        borderRadius: 1,
+                      }}
+                    >
+                      <Typography
+                        variant="subtitle2"
+                        color="primary"
+                        gutterBottom
+                      >
+                        Thông tin lớp học đã chọn:
+                      </Typography>
+                      {(() => {
+                        const selectedClass = adminAcademicClasses.find(
+                          (ac) => ac.id === formData.academicClassId
+                        );
+                        return selectedClass ? (
+                          <Box>
+                            <Typography variant="body2">
+                              <strong>Lớp:</strong> {selectedClass.className} (
+                              {selectedClass.classCode})
+                            </Typography>
+                            <Typography variant="body2">
+                              <strong>Ngành:</strong>{" "}
+                              {selectedClass.major?.majorName}
+                            </Typography>
+                            <Typography variant="body2">
+                              <strong>Số sinh viên:</strong>{" "}
+                              {selectedClass.studentsAcademic?.length || 0}
+                            </Typography>
+                          </Box>
+                        ) : null;
+                      })()}
+                    </Box>
+                  )}
+                </>
+              ) : !editingSchedule && !isAdmin ? (
+                // Chế độ instructor - chọn từ classInstructors
                 <FormControl
                   fullWidth
                   variant="outlined"
@@ -1692,6 +1953,20 @@ const InstructorSchedules = () => {
                       {editingSchedule?.academicClass?.classCode &&
                         ` (${editingSchedule.academicClass.classCode})`}
                     </Typography>
+                    {isAdmin &&
+                      editingSchedule?.academicClassInstructor?.instructor && (
+                        <Typography
+                          variant="body2"
+                          color="text.secondary"
+                          sx={{ mt: 1 }}
+                        >
+                          Giảng viên:{" "}
+                          {
+                            editingSchedule.academicClassInstructor.instructor
+                              .fullName
+                          }
+                        </Typography>
+                      )}
                   </Paper>
                 </Box>
               )}
@@ -1719,17 +1994,11 @@ const InstructorSchedules = () => {
                 rows={3}
                 value={formData.description || ""}
                 onChange={handleFormChange}
-                required
                 variant="outlined"
                 InputProps={{
                   sx: { borderRadius: 1.5 },
                 }}
-                error={!formData.description?.trim()}
-                helperText={
-                  !formData.description?.trim()
-                    ? "Mô tả không được để trống"
-                    : ""
-                }
+                helperText="Mô tả chi tiết về buổi học (không bắt buộc)"
               />
               <TextField
                 label="Ngày và giờ bắt đầu"
@@ -1910,7 +2179,7 @@ const InstructorSchedules = () => {
         >
           Xác nhận xóa
         </DialogTitle>
-        <DialogContent sx={{ pt: 3, pb: 2 }}>
+        <DialogContent sx={{ pt: 3, pb: 2, mt: 2 }}>
           <Typography>
             Bạn có chắc chắn muốn xóa lịch dạy này không? Hành động này không
             thể hoàn tác.

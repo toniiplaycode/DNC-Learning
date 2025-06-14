@@ -8,6 +8,63 @@ from docx.oxml.ns import qn
 # Dữ liệu chi tiết cho từng bảng (đã cập nhật theo Structure.sql)
 db_schema = [
     {
+        "name": "Khoa (faculties)",
+        "fields": [
+            ("id", "bigint", "PK", "ID tự tăng"),
+            ("faculty_code", "varchar(50)", "UNIQUE", "Mã khoa (VD: FIT, FBA)"),
+            ("faculty_name", "varchar(255)", "", "Tên khoa"),
+            ("description", "text", "", "Mô tả"),
+            ("status", "enum", "", "Trạng thái (active/inactive)"),
+            ("created_at", "timestamp", "", "Ngày tạo"),
+            ("updated_at", "timestamp", "", "Ngày cập nhật"),
+        ]
+    },
+    {
+        "name": "Ngành (majors)",
+        "fields": [
+            ("id", "bigint", "PK", "ID tự tăng"),
+            ("faculty_id", "bigint", "FK", "Tham chiếu faculties(id)"),
+            ("major_code", "varchar(50)", "UNIQUE", "Mã ngành (VD: SE, CS)"),
+            ("major_name", "varchar(255)", "", "Tên ngành"),
+            ("description", "text", "", "Mô tả"),
+            ("status", "enum", "", "Trạng thái (active/inactive)"),
+            ("created_at", "timestamp", "", "Ngày tạo"),
+            ("updated_at", "timestamp", "", "Ngày cập nhật"),
+        ]
+    },
+    {
+        "name": "Chương trình đào tạo (programs)",
+        "fields": [
+            ("id", "bigint", "PK", "ID tự tăng"),
+            ("major_id", "bigint", "FK", "Tham chiếu majors(id)"),
+            ("program_code", "varchar(50)", "UNIQUE", "Mã chương trình (VD: BSIT2023)"),
+            ("program_name", "varchar(255)", "", "Tên chương trình"),
+            ("description", "text", "", "Mô tả"),
+            ("total_credits", "int", "", "Tổng số tín chỉ"),
+            ("duration_years", "int", "", "Thời gian đào tạo (năm)"),
+            ("status", "enum", "", "Trạng thái (active/inactive)"),
+            ("created_at", "timestamp", "", "Ngày tạo"),
+            ("updated_at", "timestamp", "", "Ngày cập nhật"),
+        ]
+    },
+    {
+        "name": "Khóa học chương trình (program_courses)",
+        "fields": [
+            ("id", "bigint", "PK", "ID tự tăng"),
+            ("program_id", "bigint", "FK", "Tham chiếu programs(id)"),
+            ("course_id", "bigint", "FK", "Tham chiếu courses(id)"),
+            ("credits", "int", "", "Số tín chỉ của môn học"),
+            ("semester", "int", "", "Học kỳ"),
+            ("practice", "int", "", "Số giờ thực hành"),
+            ("theory", "int", "", "Số giờ lý thuyết"),
+            ("is_mandatory", "tinyint(1)", "", "Môn bắt buộc hay tùy chọn"),
+            ("start_time", "date", "", "Ngày bắt đầu môn học"),
+            ("end_time", "date", "", "Ngày kết thúc môn học"),
+            ("created_at", "timestamp", "", "Ngày tạo"),
+            ("updated_at", "timestamp", "", "Ngày cập nhật"),
+        ]
+    },
+    {
         "name": "Khóa học lớp học (academic_class_courses)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
@@ -33,6 +90,8 @@ db_schema = [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("class_code", "varchar(50)", "UNIQUE", "Mã lớp"),
             ("class_name", "varchar(255)", "", "Tên lớp"),
+            ("major_id", "bigint", "FK", "Tham chiếu majors(id)"),
+            ("program_id", "bigint", "FK", "Tham chiếu programs(id)"),
             ("semester", "varchar(20)", "", "Học kỳ (VD: 20231)"),
             ("status", "enum", "", "Trạng thái (active/completed/cancelled)"),
             ("created_at", "timestamp", "", "Ngày tạo"),
@@ -261,6 +320,19 @@ db_schema = [
         ]
     },
     {
+        "name": "Tin nhắn nhóm (group_messages)",
+        "fields": [
+            ("id", "bigint", "PK", "ID tự tăng"),
+            ("sender_id", "bigint", "FK", "Người gửi"),
+            ("class_id", "bigint", "FK", "Tham chiếu academic_classes(id)"),
+            ("message_text", "text", "", "Nội dung tin nhắn"),
+            ("reference_link", "text", "", "Liên kết tham chiếu"),
+            ("reply_to_id", "bigint", "FK", "ID tin nhắn trả lời"),
+            ("created_at", "timestamp", "", "Ngày tạo"),
+            ("updated_at", "timestamp", "", "Ngày cập nhật"),
+        ]
+    },
+    {
         "name": "Thông báo (notifications)",
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
@@ -453,6 +525,7 @@ db_schema = [
         "fields": [
             ("id", "bigint", "PK", "ID tự tăng"),
             ("user_id", "bigint", "FK UNIQUE", "Tham chiếu users(id)"),
+            ("faculty_id", "bigint", "FK", "Tham chiếu faculties(id)"),
             ("full_name", "varchar(100)", "", "Họ tên"),
             ("professional_title", "varchar(100)", "", "Chức danh"),
             ("specialization", "varchar(255)", "", "Chuyên môn"),
@@ -533,7 +606,6 @@ db_schema = [
 ]
 
 doc = Document()
-doc.add_heading('Lược Đồ Cơ Sở Dữ Liệu Hệ Thống E-Learning', 0)
 
 # Create custom style 'bang' if not exists
 styles = doc.styles
@@ -546,6 +618,10 @@ if 'bang' not in [s.name for s in styles]:
 table_counter = 1
 
 for table in db_schema:
+    # Add table name above the table, centered
+    p = doc.add_paragraph(f"Bảng 4.{table_counter} {table['name']}", style='bang')
+    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    
     t = doc.add_table(rows=1, cols=5)
     t.alignment = WD_TABLE_ALIGNMENT.RIGHT
     t.style = 'Table Grid'
@@ -577,9 +653,6 @@ for table in db_schema:
         row_cells[3].text = field[2]
         row_cells[4].text = field[3]
     
-    # Add custom heading 'bang' below the table, centered
-    p = doc.add_paragraph(f"Bảng 4.6.{table_counter} {table['name']}", style='bang')
-    p.alignment = WD_ALIGN_PARAGRAPH.CENTER
     table_counter += 1
     doc.add_paragraph()
 

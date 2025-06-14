@@ -565,54 +565,38 @@ const TeachingSchedules = () => {
                     </Box>
 
                     {/* Attendance status card */}
-                    {schedule.attendedStudents > 0 && (
-                      <Box
-                        sx={{
-                          display: "flex",
-                          justifyContent: "space-between",
-                          p: 1.5,
-                          bgcolor: alpha(theme.palette.primary.light, 0.1),
-                          borderRadius: 2,
-                          border: `1px solid ${alpha(
-                            theme.palette.primary.main,
-                            0.2
-                          )}`,
-                        }}
-                      >
-                        <Box>
-                          <Box sx={{ display: "flex", alignItems: "center" }}>
-                            <GroupIcon
-                              sx={{
-                                mr: 1,
-                                fontSize: 18,
-                                color: theme.palette.primary.main,
-                              }}
+                    {schedule.attendedStudents > 0 &&
+                      renderAttendanceStatus(schedule) && (
+                        <Box
+                          sx={{
+                            display: "flex",
+                            justifyContent: "space-between",
+                            p: 1.5,
+                            bgcolor: alpha(theme.palette.primary.light, 0.1),
+                            borderRadius: 2,
+                            border: `1px solid ${alpha(
+                              theme.palette.primary.main,
+                              0.2
+                            )}`,
+                          }}
+                        >
+                          <Box>{renderAttendanceStatus(schedule)}</Box>
+
+                          {schedule.status === "completed" && (
+                            <Chip
+                              icon={<CheckCircleIcon fontSize="small" />}
+                              label="Đã điểm danh"
+                              color={
+                                schedule.userAttendance
+                                  ? "success"
+                                  : ("default" as "success" | "default")
+                              }
+                              size="small"
+                              sx={{ fontWeight: "medium" }}
                             />
-                            <Typography variant="body2" fontWeight="medium">
-                              {schedule.attendedStudents}/
-                              {schedule.totalStudents} học viên tham gia
-                            </Typography>
-                          </Box>
-
-                          {/* User's own attendance status */}
-                          {renderAttendanceStatus(schedule)}
+                          )}
                         </Box>
-
-                        {schedule.status === "completed" && (
-                          <Chip
-                            icon={<CheckCircleIcon fontSize="small" />}
-                            label="Đã điểm danh"
-                            color={
-                              schedule.userAttendance
-                                ? "success"
-                                : ("default" as "success" | "default")
-                            }
-                            size="small"
-                            sx={{ fontWeight: "medium" }}
-                          />
-                        )}
-                      </Box>
-                    )}
+                      )}
 
                     {/* Collapsible details section */}
                     <Collapse
@@ -961,7 +945,7 @@ const TeachingSchedules = () => {
                 }}
               >
                 <CircularProgress
-                  variant="determinate" 
+                  variant="determinate"
                   value={100}
                   size={100}
                   thickness={5}

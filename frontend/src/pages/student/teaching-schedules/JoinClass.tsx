@@ -343,6 +343,12 @@ const JoinClass = () => {
     return Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60));
   };
 
+  const uniqueAttendees = attendees.filter(
+    (att, idx, arr) =>
+      arr.findIndex((a) => a.studentAcademicId === att.studentAcademicId) ===
+      idx
+  );
+
   if (loading) {
     return (
       <Box
@@ -886,15 +892,6 @@ const JoinClass = () => {
                   <Typography variant="h6" fontWeight="bold">
                     Danh sách điểm danh
                   </Typography>
-                  <Chip
-                    label={`${
-                      attendees.filter(
-                        (a) => a.status !== AttendanceStatus.ABSENT
-                      ).length
-                    }/${attendees.length}`}
-                    color="primary"
-                    size="small"
-                  />
                 </Box>
 
                 <LinearProgress
@@ -929,7 +926,7 @@ const JoinClass = () => {
                     spacing={2}
                     sx={{ maxHeight: 400, overflow: "auto", pr: 1 }}
                   >
-                    {attendees.map((attendance) => (
+                    {uniqueAttendees.map((attendance) => (
                       <Paper
                         key={attendance.id}
                         elevation={0}

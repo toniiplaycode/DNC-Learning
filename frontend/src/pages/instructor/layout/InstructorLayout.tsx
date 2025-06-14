@@ -75,7 +75,7 @@ const menuItems = [
     path: "/instructor/schedules",
   },
   {
-    text: "Điểm danh học trực tuyến",
+    text: "Điểm danh trực tuyến",
     icon: <CheckCircle />,
     path: "/instructor/attendances",
   },
