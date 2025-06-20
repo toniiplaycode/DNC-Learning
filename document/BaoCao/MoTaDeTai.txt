@@ -1,0 +1,2542 @@
+TRƯỜNG ĐẠI HỌC NAM CẦN THƠ
+
+
+KHOA CÔNG NGHỆ THÔNG TIN
+
+
+
+A red logo with green text
+
+AI-generated content may be incorrect.
+
+LÊ THANH TOÀN
+
+XÂY DỰNG HỆ THỐNG HỖ TRỢ HỌC TẬP ELEARNING TRÊN NỀN TẢNG WEB
+
+KHÓA LUẬN TỐT NGHIỆP ĐẠI HỌC
+
+Ngành: Công nghệ thông tin
+
+Mã số ngành: 7480201
+
+Tháng 6 năm 2025
+
+TRƯỜNG ĐẠI HỌC NAM CẦN THƠ
+
+KHOA CÔNG NGHỆ THÔNG TIN
+
+
+
+LÊ THANH TOÀN
+
+2110425
+
+XÂY DỰNG HỆ THỐNG HỖ TRỢ HỌC TẬP ELEARNING TRÊN NỀN TẢNG WEB
+
+KHÓA LUẬN TỐT NGHIỆP ĐẠI HỌC
+
+Ngành: Công nghệ thông tin
+
+Mã số ngành: 7480201
+
+GIẢNG VIÊN HƯỚNG DẪN
+
+ThS. VÕ VĂN PHÚC
+
+Tháng 6 năm 2025
+
+CHẤP THUẬN CỦA HỘI ĐỒNG
+
+Khóa luận “Xây dựng hệ thống hỗ trợ học tập elearning trên nền tảng web”, do sinh viên Lê Thanh Toàn thực hiện dưới sự hướng dẫn của ThS. Võ Văn Phúc. Khóa luận đã báo cáo và được Hội đồng chấm khóa luận thông qua ngày ……. tháng ……. năm …….
+
+Ủy viên Thư ký
+
+(Ký tên) (Ký tên)
+
+--------------------------------------- --------------------------------------
+
+GHI CHỨC DANH, HỌ, TÊN GHI CHỨC DANH, HỌ, TÊN
+
+Phản biện 1 Phản biện 2
+
+(Ký tên) (Ký tên)
+
+--------------------------------------- ---------------------------------------
+
+GHI CHỨC DANH, HỌ, TÊN GHI CHỨC DANH, HỌ, TÊN
+
+Cán bộ hướng dẫn Chủ tịch hội đồng
+
+(Ký tên) (Ký tên)
+
+--------------------------------------- --------------------------------------
+
+GHI CHỨC DANH, HỌ, TÊN GHI CHỨC DANH, HỌ, TÊN
+
+LỜI CẢM ƠN
+
+Mỗi sự thành công đều gắn liền với những sự giúp đỡ, hỗ trợ dù ít hay nhiều, dù trực tiếp hay gián tiếp của người khác. Trong suốt khoảng thời gian từ những bước chân đầu tiên đến giảng đường Đại học đến ngày hôm nay, em đã nhận được rất nhiều sự quan tâm, giúp đỡ của quý thầy cô, gia đình, bạn bè.
+
+Trước hết em xin gửi tới các thầy cô khoa Công nghệ thông tin trường Đại học Nam Cần Thơ lời chào trân trọng, lời chúc sức khỏe và lời cảm ơn sâu sắc. Với sự quan tâm, dạy dỗ, chỉ bảo tận tình chu đáo của thầy cô, đến nay em đã có thể hoàn thành khóa luận tốt nghiệp với đề tài:"Xây dựng hệ thống hỗ trợ học tập elearning trên nền tảng web".
+
+Đặc biệt em xin gửi lời cảm ơn chân thành nhất đến ThS.Võ Văn Phúc đã quan tâm giúp đỡ, hướng dẫn tận tình em hoàn thành tốt khóa luận tốt nghiệp này trong thời gian vừa qua.
+
+Em xin bày tỏ lòng biết ơn đến lãnh đạo Trường Đại học Nam Cần Thơ, các thầy cô khoa Công nghệ thông tin đã trực tiếp và gián tiếp giúp đỡ em trong suốt quá trình học tập và nghiên cứu đề tài.
+
+Với điều kiện thời gian cũng như kinh nghiệm còn hạn chế, khóa luận này không thể tránh được những thiếu sót. Em rất mong nhận được sự chỉ bảo, đóng góp ý kiến của các thầy cô để em có điều kiện bổ sung, nâng cao kiến thức của mình, phục vụ tốt hơn công tác thực tế sau này.
+
+Em xin chân thành cảm ơn!
+
+Cần Thơ, ngày 15 tháng 06 năm 2025
+
+Người thực hiện
+
+LỜI CAM KẾT
+
+Em xin cam kết báo cáo khóa luận tốt nghiệp này được hoàn thành dựa trên các kết quả nghiên cứu của em trong khuôn khổ của đề tài “Xây dựng hệ thống hỗ trợ học tập elearning trên nền tảng web” và các kết quả này chưa được dùng cho bất cứ khóa luận cùng cấp nào trước đó.
+
+Cần Thơ, ngày 15 tháng 06 năm 2025
+
+Người thực hiện
+
+NHẬN XÉT, ĐÁNH GIÁ CỦA GIÁO VIÊN HƯỚNG DẪN
+
+……………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………
+
+Cần Thơ, ngày ….. tháng ….. năm 2025
+
+
+NHẬN XÉT, ĐÁNH GIÁ CỦA GIÁO VIÊN PHẢN BIỆN
+
+……………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………………
+
+Cần Thơ, ngày ….. tháng ….. năm 2025
+
+
+MỤC LỤC
+
+CHƯƠNG 1: GIỚI THIỆU 1
+
+1.1. Đặt vấn đề 1
+
+1.2. Giải quyết vấn đề 1
+
+1.3. Phạm vi và đối tượng nghiên cứu 2
+
+1.3.1. Phạm vi địa lý 2
+
+1.3.2. Phạm vi đối tượng 3
+
+1.3.3. Phạm vi chức năng 5
+
+1.3.4. Phạm vi thời gian 6
+
+1.3.5. Phạm vi kỹ thuật 7
+
+1.4. Những đóng góp chính của đề tài 7
+
+1.5. Bố cục luận văn 9
+
+CHƯƠNG 2: CƠ SỞ LÝ THUYẾT 11
+
+2.1. Quy định của Bộ Giáo dục và Đào tạo về eLearning hỗ trợ học tập 11
+
+2.1.1. Tổ chức dạy học trực tuyến 11
+
+2.1.2. Kiểm tra và đánh giá 11
+
+2.1.3. Yêu cầu về hạ tầng kỹ thuật và phần mềm 12
+
+2.2. Quy trình nghiệp vụ của hệ thống eLearning 12
+
+2.2.1. Đăng nhập và phân quyền người dùng 12
+
+2.2.2. Quản lý khóa học và lớp học thuật 12
+
+2.2.3. Thanh toán học phí 13
+
+2.2.4. Học tập và tương tác 13
+
+2.2.5. Tạo bài trắc nghiệm tự động bằng AI 13
+
+2.2.6. Làm bài tập và bài kiểm tra 13
+
+2.2.7. Hỗ trợ thông minh bằng chatbot 13
+
+2.2.8. Điểm danh và theo dõi thời gian học 13
+
+2.2.9. Thông báo và giao tiếp 14
+
+2.2.10. Đánh giá và cấp chứng chỉ 14
+
+2.2.11. Quản lý hệ thống 14
+
+2.3. Phương pháp nghiên cứu 14
+
+2.3.1. Phương pháp nghiên cứu 14
+
+2.3.2. Phương pháp thực hiện 15
+
+2.4. Nội dung nghiên cứu 15
+
+2.5. Hệ quản trị cơ sở dữ liệu MySQL 16
+
+2.6. Ngôn ngữ lập trình TypeScript 17
+
+2.7. Thư viện ReactJS 17
+
+2.8. Framework NestJS 18
+
+2.9. Thư viện Material UI 18
+
+2.10. Thư viện TypeORM 19
+
+2.11. Công cụ Json Web Token (JWT) 19
+
+2.12. Thư viện NodeMailer 19
+
+2.13. Giao diện lập trình Web API 20
+
+2.14. Nền tảng tích hợp OpenAI API 20
+
+2.15. Mô hình Retrieval-Augmented Generation (RAG) 21
+
+2.16. Các công cụ phát triển trong hệ thống eLearning 21
+
+CHƯƠNG 3: PHÂN TÍCH THIẾT KẾ HỆ THỐNG 23
+
+3.1. Mô tả hệ thống 23
+
+3.2. Mô hình RAG (Retrieval-Augmented Generation) và các thành phần liên quan 27
+
+3.2.1. Dữ liệu thô (Raw Data) 27
+
+3.2.2. Trích xuất thông tin (Information Extraction) 27
+
+3.2.3. Phân đoạn (Chunking) 28
+
+3.2.4. Nhúng vector (Embedding) 28
+
+3.2.5. Cơ sở dữ liệu vector (Vector Database) 28
+
+3.2.6. Truy vấn (Query) 28
+
+3.2.7. Dữ liệu liên quan (Relevant Data ) 28
+
+3.2.8. Mô hình ngôn ngữ lớn (LLMs) 29
+
+3.2.9. Phản hồi (Response) 29
+
+3.3. Mô hình phân cấp chức năng BFD (Business Function Diagram) 30
+
+3.4. Sơ đồ use-case 31
+
+3.4.1. Sơ đồ use-case tổng quát 31
+
+3.4.2. Sơ đồ use-case tác nhân quản trị viên 32
+
+3.4.3. Sơ đồ use-case tác nhân giảng viên 33
+
+3.4.4. Sơ đồ use-case tác nhân người học tự do 34
+
+3.4.5. Sơ đồ use-case tác nhân người học chính quy 35
+
+3.5. Sơ đồ tuần tự chức năng 36
+
+3.5.1 Sơ đồ tuần tự chức năng đăng ký tài khoản 36
+
+3.5.2 Sơ đồ tuần tự chức năng đăng nhập 36
+
+3.5.3 Sơ đồ tuần tự chức năng quên mật khẩu 37
+
+3.5.4 Sơ đồ tuần tự chức năng thêm mới dữ liệu 37
+
+3.5.5 Sơ đồ tuần tự chức năng cập nhật dữ liệu 38
+
+3.5.6 Sơ đồ tuần tự chức năng xóa dữ liệu 38
+
+3.5.7 Sơ đồ tuần tự chức năng tìm kiếm và lọc thông tin 39
+
+3.5.8 Sơ đồ tuần tự chức năng đăng ký khóa học 39
+
+3.5.9 Sơ đồ tuần tự chức năng thống kê 40
+
+3.5.10 Sơ đồ tuần tự chức năng gửi email 40
+
+3.5.11 Sơ đồ tuần tự chức năng gửi tin nhắn thông thường 41
+
+3.5.12 Sơ đồ tuần tự chức năng gửi tin nhắn chatbot 41
+
+3.5.13 Sơ đồ tuần tự chức năng tự động tạo trắc nghiệm 42
+
+3.5.14 Sơ đồ tuần tự chức năng làm bài trắc nghiệm 42
+
+3.5.15 Sơ đồ tuần tự chức năng làm bài tập tự luận 43
+
+3.5.16 Sơ đồ tuần tự chức năng chấm điểm bài tập 43
+
+3.5.17 Sơ đồ tuần tự chức năng tương tác bài viết diễn đàn 44
+
+3.5.18 Sơ đồ tuần tự chức năng đánh giá 44
+
+3.5.19 Sơ đồ tuần tự lên lịch dạy trực tuyến 44
+
+3.5.20 Sơ đồ tuần tự tham gia học trực tuyến và điểm danh 45
+
+3.5.21 Sơ đồ tuần tự cấp chứng chỉ 45
+
+3.5.22 Sơ đồ tuần tự chức năng tải file lên Google Drive 46
+
+CHƯƠNG 4: THIẾT KẾ CƠ SỞ DỮ LIỆU 47
+
+4.1. Xác định thực thể 47
+
+4.1.1 Thực thể khóa học lớp học (AcademicClassCourse) 47
+
+4.1.2 Thực thể giảng viên lớp học (AcademicClassInstructor) 47
+
+4.1.3 Thực thể lớp học thuật (AcademicClass) 47
+
+4.1.4 Thực thể bài nộp bài tập (AssignmentSubmission) 47
+
+4.1.5 Thực thể bài tập (Assignment) 48
+
+4.1.6 Thực thể danh mục khóa học (Category) 48
+
+4.1.7 Thực thể chứng chỉ (Certificate) 48
+
+4.1.8 Thực thể phản hồi chatbot (ChatbotResponse) 48
+
+4.1.9 Thực thể thảo luận bài học (CourseLessonDiscussion) 48
+
+4.1.10 Thực thể bài học khóa học (CourseLesson) 49
+
+4.1.11 Thực thể tiến độ khóa học (CourseProgress) 49
+
+4.1.12 Thực thể phần khóa học (CourseSection) 49
+
+4.1.13 Thực thể khóa học (Course) 49
+
+4.1.14 Thực thể tài liệu (Document) 50
+
+4.1.15 Thực thể đăng ký khóa học (Enrollment) 50
+
+4.1.16 Thực thể lượt thích diễn đàn (ForumLike) 50
+
+4.1.17 Thực thể trả lời diễn đàn (ForumReply) 50
+
+4.1.18 Thực thể diễn đàn (Forum) 50
+
+4.1.19 Thực thể tin nhắn (Message) 51
+
+4.1.20 Thực thể thông báo (Notification) 51
+
+4.1.21 Thực thể thanh toán (Payment) 51
+
+4.1.22 Thực thể lượt làm bài kiểm tra (QuizAttempt) 51
+
+4.1.23 Thực thể lựa chọn bài kiểm tra (QuizOption) 52
+
+4.1.24 Thực thể câu hỏi bài kiểm tra (QuizQuestion) 52
+
+4.1.25 Thực thể phản hồi bài kiểm tra (QuizResponse) 52
+
+4.1.26 Thực thể bài kiểm tra (Quiz) 52
+
+4.1.27 Thực thể đánh giá (Review) 53
+
+4.1.28 Thực thể điểm danh buổi học (SessionAttendance) 53
+
+4.1.29 Thực thể lịch giảng dạy (TeachingSchedule) 53
+
+4.1.30 Thực thể quản trị viên (UserAdmin) 53
+
+4.1.31 Thực thể điểm số (UserGrade) 54
+
+4.1.32 Thực thể giảng viên (UserInstructor) 54
+
+4.1.33 Thực thể người học tự do (UserStudent) 54
+
+4.1.34 Thực thể Người học chính quy (UserStudentAcademic) 55
+
+4.1.35 Thực thể Người dùng (User) 55
+
+4.1.36 Thực thể Tin nhắn nhóm (GroupMessages) 55
+
+4.1.37 Thực thể Khoa (Faculty) 55
+
+4.1.38 Thực thể Ngành (Major) 56
+
+4.1.39 Thực thể Chương trình đào tạo (Program) 56
+
+4.1.40 Thực thể Khóa học chương trình (ProgramCourse) 56
+
+4.2. Sơ đồ thực thể kết hợp ERD (Entity Relationship Diagram) 57
+
+4.3. Mô hình vật lý PDM (Physical Data Model) 58
+
+4.4. Lược đồ cơ sở dữ liệu quan hệ 59
+
+4.5. Lưu đồ cơ sở dữ liệu (Database Diagram) 62
+
+4.6. Các bảng biểu và ràng buộc toàn vẹn 63
+
+CHƯƠNG 5: KẾT QUẢ ĐỀ TÀI 78
+
+5.1. Giao diện phía người học 78
+
+5.1.1 Trang chủ 79
+
+5.1.2 Chương trình đào tạo của người học chính quy 80
+
+5.1.3 Hộp thoại chat nhóm 81
+
+5.1.4 Tham gia học trực tuyến 82
+
+5.1.5 Các bài tập và trắc nghiệm 82
+
+5.1.6 Trang cá nhân bảng điểm 83
+
+5.1.7 Đăng ký 84
+
+5.1.8 Đăng nhập 84
+
+5.1.9 Hộp thoại chat 85
+
+5.1.10 Giao diện chatbot 85
+
+5.1.11 Danh sách khóa học 86
+
+5.1.12 Thanh toán ZaloPay 86
+
+5.1.13 Chi tiết khóa học 87
+
+5.1.14 Chi tiết nội dung học video 88
+
+5.1.15 Chi tiết nội dung học văn bản 89
+
+5.1.16 Chi tiết nội dung học slide 90
+
+5.1.17 Chi tiết nội dung học làm trắc nghiệm 90
+
+5.1.18 Hiển thị điểm và đáp án 91
+
+5.1.19 Chi tiết nội dung học làm bài tập 92
+
+5.1.20 Kết quả bài tập 92
+
+5.1.21 Danh sách giảng viên 93
+
+5.1.22 Chi tiết diễn đàn 94
+
+5.1.23 Trang cá nhân chứng chỉ 95
+
+5.1.24 Trang cá nhân thanh toán 96
+
+5.1.25 Tìm kiếm thông tin 97
+
+5.1.26 Thông báo 98
+
+5.1.27 Thông báo mail 98
+
+5.2. Giao diện phía giảng viên 99
+
+5.2.1 Đăng nhập giảng viên 100
+
+5.2.2 Khoa, ngành, chương trình đào tạo của giảng viên 101
+
+5.2.3 Quản lý nội dung khóa học 102
+
+5.2.4 Quản lý nội dung khóa học (thêm nội dung) 103
+
+5.2.5 Quản lý nội dung khóa học (thêm tài liệu) 104
+
+5.2.6 Quản lý người học tự do, người học chính quy 105
+
+5.2.7 Quản lý người học tự do, người học chính quy (cảnh báo học vụ) 106
+
+5.2.8 Quản lý người học tự do, người học chính quy (bảng điểm) 107
+
+5.2.9 Quản lý lớp học thuật (thêm khóa học) 108
+
+5.2.10 Quản lý bài tập (thêm bài cho lớp học thuật) 109
+
+5.2.11 Quản lý bài tập (chấm điểm) 110
+
+5.2.12 Quản lý bài trắc nghiệm 111
+
+5.2.13 Quản lý bài trắc nghiệm (thêm bài trắc nghiệm) 112
+
+5.2.14 Quản lý bài trắc nghiệm (xem bài làm) 113
+
+5.2.15 Hộp thoại chat 114
+
+5.2.16 Quản lý lịch dạy 115
+
+5.2.17 Quản lý lịch dạy (hộp thoại) 116
+
+5.2.18 Quản lý điểm danh 117
+
+5.2.19 Quản lý diễn đàn (hộp thoại) 118
+
+5.2.20 Quản lý thông báo 119
+
+5.3. Giao diện phía quản trị viên 120
+
+5.3.1 Đăng nhập quản trị viên 121
+
+5.3.2 Khoa, ngành, chương trình đào tạo của quản trị viên 122
+
+5.3.3 Quản lý khóa học 123
+
+5.3.4 Quản lý khóa học (hộp thoại) 124
+
+5.3.5 Quản lý khóa học (xem nội dung khóa học) 125
+
+5.3.6 Quản lý giảng viên 126
+
+5.3.7 Quản lý giảng viên (hộp thoại) 127
+
+5.3.8 Quản lý người học tự do và người học chính quy 128
+
+5.3.9 Quản lý người học tự do và người học chính quy (xem thông tin) 129
+
+5.3.10 Quản lý lớp học thuật 130
+
+5.3.11 Quản lý lớp học thuật (hộp thoại) 131
+
+5.3.12 Quản lý lớp học thuật (thêm người học chính quy) 132
+
+5.3.13 Quản lý lớp học thuật (phân công) 133
+
+5.3.14 Danh mục (hộp thoại) 133
+
+5.3.15 Quản lý thanh toán 134
+
+5.3.16 Quản lý lịch dạy các giảng viên 135
+
+5.3.17 Quản lý thống kê 136
+
+CHƯƠNG 6: TỔNG KẾT VÀ ĐÁNH GIÁ 137
+
+6.1. Đánh giá chung 137
+
+6.2. Ưu và khuyết điểm 137
+
+6.3. Hướng phát triển 138
+
+6.4. Đề xuất 139
+
+KẾT LUẬN 140
+
+TÀI LIỆU THAM KHẢO 141
+
+DANH SÁCH BẢNG
+
+Bảng 4.1 Khoa (faculties) 63
+
+Bảng 4.2 Ngành (majors) 63
+
+Bảng 4.3 Chương trình đào tạo (programs) 63
+
+Bảng 4.4 Khóa học chương trình (program_courses) 64
+
+Bảng 4.5 Khóa học lớp học (academic_class_courses) 64
+
+Bảng 4.6 Giảng viên lớp học (academic_class_instructors) 64
+
+Bảng 4.7 Lớp học chính quy (academic_classes) 64
+
+Bảng 4.8 Bài nộp (assignment_submissions) 65
+
+Bảng 4.9 Bài tập (assignments) 65
+
+Bảng 4.10 Danh mục khóa học (categories) 65
+
+Bảng 4.11 Chứng chỉ (certificates) 66
+
+Bảng 4.12 Phản hồi chatbot (chatbot_response) 66
+
+Bảng 4.13 Thảo luận bài học (course_lesson_discussions) 66
+
+Bảng 4.14 Bài học (course_lessons) 67
+
+Bảng 4.15 Tiến độ học tập (course_progress) 67
+
+Bảng 4.16 Phần học (course_sections) 67
+
+Bảng 4.17 Khóa học (courses) 68
+
+Bảng 4.18 Tài liệu (documents) 68
+
+Bảng 4.19 Đăng ký khóa học (enrollments) 69
+
+Bảng 4.20 Lượt thích diễn đàn (forum_likes) 69
+
+Bảng 4.21 Phản hồi diễn đàn (forum_replies) 69
+
+Bảng 4.22 Diễn đàn (forums) 69
+
+Bảng 4.23 Tin nhắn (messages) 70
+
+Bảng 4.24 Tin nhắn nhóm (group_messages) 70
+
+Bảng 4.25 Thông báo (notifications) 70
+
+Bảng 4.26 Thanh toán (payments) 71
+
+Bảng 4.27 Lần làm bài kiểm tra (quiz_attempts) 71
+
+Bảng 4.28 Lựa chọn câu hỏi (quiz_options) 71
+
+Bảng 4.29 Câu hỏi kiểm tra (quiz_questions) 72
+
+Bảng 4.30 Câu trả lời kiểm tra (quiz_responses) 72
+
+Bảng 4.31 Bài kiểm tra (quizzes) 72
+
+Bảng 4.32 Đánh giá (reviews) 73
+
+Bảng 4.33 Điểm danh buổi học (session_attendances) 73
+
+Bảng 4.34 Lịch dạy (teaching_schedules) 74
+
+Bảng 4.35 Quản trị viên (user_admins) 74
+
+Bảng 4.36 Điểm số (user_grades) 75
+
+Bảng 4.37 Giảng viên (user_instructors) 75
+
+Bảng 4.38 Người học tự do (user_students) 76
+
+Bảng 4.39 Người học chính quy (user_students_academic) 76
+
+Bảng 4.40 Người dùng (users) 77
+
+DANH SÁCH HÌNH
+
+Hình 3.1 Mô hình RAG (Retrieval-Augmented Generation) 27
+
+Hình 3.2 Mô hình phân cấp chức năng BFD (Business Function Diagram) 30
+
+Hình 3.3 Usecase tổng quát 31
+
+Hình 3.4 Usecase tác nhân quản trị viên 32
+
+Hình 3.5 Usecase tác nhân giảng viên 33
+
+Hình 3.6 Usecase tác nhân người học tự do 34
+
+Hình 3.7 Usecase tác nhân người học chính quy 35
+
+Hình 3.8 Sơ đồ tuần tự chức năng đăng ký tài khoản 36
+
+Hình 3.9 Sơ đồ tuần tự chức năng đăng nhập tài khoản 36
+
+Hình 3.10 Sơ đồ tuần tự chức năng quên mật khẩu 37
+
+Hình 3.11 Sơ đồ tuần tự chức năng thêm mới dữ liệu 37
+
+Hình 3.12 Sơ đồ tuần tự chức năng cập nhật dữ liệu 38
+
+Hình 3.13 Sơ đồ tuần tự chức năn xóa dữ liệu 38
+
+Hình 3.14 Sơ đồ tuần tự chức năng tìm kiếm và lọc thông tin 39
+
+Hình 3.15 Sơ đồ tuần tự chức năng tìm kiếm đăng ký khóa học 39
+
+Hình 3.16 Sơ đồ tuần tự chức năng thống kê 40
+
+Hình 3.17 Sơ đồ tuần tự chức năng gửi mail 40
+
+Hình 3.18 Sơ đồ tuần tự chức năng gửi tin nhắn thông thường 41
+
+Hình 3.19 Sơ đồ tuần tự chức năng gửi tin nhắn chatbot 41
+
+Hình 3.20 Sơ đồ tuần tự chức năng tự động tạo trắc nghiệm 42
+
+Hình 3.21 Sơ đồ tuần tự chức năng làm bài trắc nghiệm 42
+
+Hình 3.22 Sơ đồ tuần tự chức năng làm bài tập tự luận 43
+
+Hình 3.23 Sơ đồ tuần tự chức năng làm bài tập tự luận 43
+
+Hình 3.24 Sơ đồ tuần tự chức năng tương tác bài viết diễn đàn 44
+
+Hình 3.25 Sơ đồ tuần tự chức năng đánh giá 44
+
+Hình 3.26 Sơ đồ tuần tự chức năng lên lịch dạy trực tuyến 44
+
+Hình 3.27 Sơ đồ tuần tự chức năng tham gia học trực truyến và điểm danh 45
+
+Hình 3.28 Sơ đồ tuần tự cấp chứng chỉ 45
+
+Hình 3.29 Sơ đồ tuần tự chức năng tải file lên Google Drive 46
+
+Hình 4.1 Sơ đồ thực thể ERD (Entity Relationship Diagram) 57
+
+Hình 4.2 Sơ đồ vật lý PDM (Physical Data Model) 58
+
+Hình 4.3 Lưu đồ cơ sở dữ liệu 62
+
+Hình 5.1 Trang chủ 79
+
+Hình 5.2 Chương trình đào tạo của người học chính quy 80
+
+Hình 5.3 Hộp thoại chat nhóm 81
+
+Hình 5.4 Tham gia học trực tuyến 82
+
+Hình 5.5 Các bài tập và trắc nghiệm 83
+
+Hình 5.6 Trang cá nhân bảng điểm 83
+
+Hình 5.7 Đăng ký 84
+
+Hình 5.8 Đăng nhập 84
+
+Hình 5.9 Hộp thoại chat 85
+
+Hình 5.10 Giao diện chatbot 85
+
+Hình 5.11 Danh sách khóa học 86
+
+Hình 5.12 Thanh toán ZaloPay 86
+
+Hình 5.13 Chi tiết khóa học 87
+
+Hình 5.14 Chi tiết nội dung học video 88
+
+Hình 5.15 Chi tiết nội dung học văn bản 89
+
+Hình 5.16 Chi tiết nội dung học slide 90
+
+Hình 5.17 Chi tiết nội dung học làm trắc nghiệm 90
+
+Hình 5.18 Hiển thị điểm và đáp án 91
+
+Hình 5.19 Chi tiết nội dung học làm bài tập 92
+
+Hình 5.20 Kết quả bài tập 92
+
+Hình 5.21 Danh sách giảng viên 93
+
+Hình 5.22 Chi tiết diễn đàn 94
+
+Hình 5.23 Trang cá nhân chứng chỉ 95
+
+Hình 5.24 Trang cá nhân thanh toán 96
+
+Hình 5.25 Tìm kiếm thông tin 97
+
+Hình 5.26 Thông báo 98
+
+Hình 5.27 Thông báo mail 98
+
+Hình 5.28 Đăng nhập giảng viên 100
+
+Hình 5.29 Khoa, ngành, chương trình đào tạo của giảng viên 101
+
+Hình 5.30 Quản lý nội dung khóa học 102
+
+Hình 5.31 Quản lý nội dung khóa học (thêm nội dung) 103
+
+Hình 5.32 Quản lý nội dung khóa học (thêm tài liệu) 104
+
+Hình 5.33 Quản lý người học tự do, người học chính quy 105
+
+Hình 5.34 Quản lý người học tự do, người học chính quy (cảnh báo học vụ) 106
+
+Hình 5.35 Quản lý người học tự do, người học chính quy (bảng điểm) 107
+
+Hình 5.36 Quản lý lớp học thuật (thêm khóa học) 108
+
+Hình 5.37 Quản lý bài tập (thêm bài cho lớp học thuật) 109
+
+Hình 5.38 Quản lý bài tập (chấm điểm) 110
+
+Hình 5.39 Quản lý bài trắc nghiệm 111
+
+Hình 5.40 Quản lý bài trắc nghiệm (thêm bài trắc nghiệm) 112
+
+Hình 5.41 Quản lý bài trắc nghiệm (xem bài làm) 113
+
+Hình 5.42 Hộp thoại chat 114
+
+Hình 5.43 Quản lý lịch dạy 115
+
+Hình 5.44 Quản lý lịch dạy (hộp thoại) 116
+
+Hình 5.45 Quản lý điểm danh 117
+
+Hình 5.46 Quản lý diễn đàn (hộp thoại) 118
+
+Hình 5.47 Quản lý thông báo 119
+
+Hình 5.48 Đăng nhập quản trị viên 121
+
+Hình 5.49 Khoa, ngành, chương trình đào tạo của quản trị viên 122
+
+Hình 5.50 Quản lý khóa học 123
+
+Hình 5.51 Quản lý khóa học (hộp thoại) 124
+
+Hình 5.52 Quản lý khóa học (xem nội dung khóa học) 125
+
+Hình 5.53 Quản lý giảng viên 126
+
+Hình 5.54 Quản lý giảng viên (hộp thoại) 127
+
+Hình 5.55 Quản lý người học tự do và người học chính quy 128
+
+Hình 5.56 Quản lý người học tự do và người học chính quy (xem thông tin) 129
+
+Hình 5.57 Quản lý lớp học thuật 130
+
+Hình 5.58 Quản lý lớp học thuật (hộp thoại) 131
+
+Hình 5.59 Quản lý lớp học thuật (thêm người học chính quy) 132
+
+Hình 5.60 Quản lý lớp học thuật (phân công) 133
+
+Hình 5.61 Danh mục (hộp thoại) 133
+
+Hình 5.62 Quản lý thanh toán 134
+
+Hình 5.63 Quản lý lịch dạy các giảng viên 135
+
+Hình 5.64 Quản lý thống kê 136
+
+DANH SÁCH TỪ VIẾT TẮT
+
+SQL (Structured Query Language)
+
+Ngôn ngữ truy vấn có cấu trúc
+
+RDBMS (Relational Database Management System)
+
+Hệ quản trị cơ sở dữ liệu quan hệ
+
+ERD (Entity Relationship Diagram)
+
+Sơ đồ mối quan hệ thực thể
+
+PDM (Physical Data Model)
+
+Mô hình dữ liệu vật lý
+
+PK (Primary Key)
+
+Khóa chính
+
+FK (Foreign Key)
+
+Khóa ngoại
+
+eLearning (Electronic Learning)
+
+Học tập trực tuyến
+
+LMS (Learning Management System)
+
+Hệ thống quản lý học tập
+
+Market course
+
+Khóa học thương mại
+
+Hybrid (Hybrid model between Market course and LMS)
+
+Mô hình kết hợp giữa Market course và LMS
+
+RAG (Retrieval-Augmented Generation)
+
+Tạo nội dung dựa trên truy xuất
+
+API (Application Programming Interface)
+
+Giao diện lập trình ứng dụng
+
+Qdrant
+
+Cơ sở dữ liệu vector
+
+HTTP (HyperText Transfer Protocol)
+
+Giao thức truyền siêu văn bản
+
+UI (User Interface)
+
+Giao diện người dùng
+
+UX (User Experience)
+
+Trải nghiệm người dùng
+
+AI (Artificial Intelligence)
+
+Trí tuệ nhân tạo
+
+LLM (Large Language Model)
+
+Mô hình ngôn ngữ lớn
+
+Web API (Web Application Programming Interface)
+
+Giao diện lập trình ứng dụng web
+
+BFD (Business Flow Diagram)
+
+Sơ đồ luồng nghiệp vụ
+
+CHƯƠNG 1: GIỚI THIỆU
+1.1. Đặt vấn đề
+Trong bối cảnh công nghệ số phát triển mạnh mẽ, nhu cầu học tập trực tuyến ngày càng gia tăng. Đặc biệt trong lĩnh vực giáo dục chính quy và học tập suốt đời. Các nền tảng eLearning không chỉ cung cấp kiến thức học thuật mà còn hỗ trợ phát triển kỹ năng mềm, kỹ năng chuyên môn, và học tập linh hoạt cho nhiều đối tượng, từ học sinh, sinh viên đến người đi làm. Tuy nhiên, việc quản lý và triển khai một hệ thống eLearning hiệu quả đang đối mặt với nhiều thách thức, bao gồm sự thiếu tích hợp giữa các mô hình học tập (học thuật và thương mại), khó khăn trong đảm bảo chất lượng khóa học, và hạn chế trong việc cá nhân hóa trải nghiệm học tập.
+
+Các phương pháp quản lý học tập truyền thống, như sử dụng giấy tờ hoặc các phần mềm đơn lẻ, thường không đáp ứng được yêu cầu về tính linh hoạt, khả năng mở rộng, và hiệu quả trong việc quản lý khóa học, người học, và giảng viên. Điều này dẫn đến sai sót trong theo dõi tiến độ học tập, thiếu thống nhất trong đánh giá chất lượng, và giảm sự hài lòng của người học. Đặc biệt, sự kết hợp giữa mô hình Learning Management System (LMS) – phục vụ giáo dục chính quy, và Market Course – phục vụ học tập tự do, đòi hỏi một hệ thống tích hợp hiện đại, có khả năng đáp ứng đồng thời cả hai nhu cầu.
+
+Chính vì vậy, việc nghiên cứu và phát triển một xây “Xây dựng hệ thống hỗ trợ học tập elearning trên nền tảng web” theo mô hình kết hợp là một nhu cầu cấp thiết. Hệ thống này không chỉ giúp quản lý hiệu quả các khóa học, bài kiểm tra, và tương tác giữa người học và giảng viên, mà còn hỗ trợ thương mại hóa giáo dục, mang lại sự linh hoạt và chất lượng cao cho người học. Với mục tiêu ứng dụng công nghệ thông tin để nâng cao hiệu quả quản lý và học tập, tôi quyết định chọn đề tài “Xây dựng hệ thống hỗ trợ học tập elearning trên nền tảng web” làm đề tài cho khóa luận tốt nghiệp đại học ngành Công nghệ thông tin tại trường Đại học Nam Cần Thơ. Đề tài nhằm xây dựng một hệ thống tích hợp, đáp ứng nhu cầu giáo dục hiện đại và góp phần thúc đẩy chuyển đổi số trong lĩnh vực giáo dục.
+
+1.2. Giải quyết vấn đề
+Trong thời đại công nghệ 4.0, nhu cầu về các hệ thống học tập trực tuyến (eLearning) ngày càng tăng, đặc biệt với sự kết hợp giữa giáo dục chính quy và học tập tự do. Tuy nhiên, các phương pháp quản lý học tập truyền thống, như sử dụng giấy tờ hoặc phần mềm đơn lẻ, đã bộc lộ nhiều hạn chế, bao gồm thiếu tích hợp, khó khăn trong theo dõi tiến độ học tập, và không đáp ứng được tính linh hoạt của người học.
+
+Sự gia tăng nhu cầu học tập trực tuyến đã thúc đẩy nhiều nhà cung cấp phần mềm phát triển các nền tảng eLearning. Tuy nhiên, không phải hệ thống nào cũng đáp ứng được yêu cầu của cả mô hình Learning Management System (LMS) – phục vụ giáo dục chính quy, và Market Course – hỗ trợ học tập thương mại hóa. Nhiều nền tảng chỉ cung cấp các chức năng cơ bản, thiếu các tính năng chuyên biệt như quản lý bài kiểm tra, tương tác người học-giảng viên, hoặc tích hợp thanh toán học phí, gây khó khăn cho các tổ chức giáo dục và người học trong việc lựa chọn giải pháp phù hợp.
+
+Một hệ thống eLearning hiệu quả theo mô hình kết hợp cần tích hợp các chức năng chuyên biệt để đáp ứng nhu cầu đa dạng của người học và giảng viên. Cụ thể, hệ thống cần có khả năng:
+
+Quản lý thông tin người học và tiến độ học tập: Lưu trữ hồ sơ người học, điểm số, và tiến độ khóa học, hỗ trợ tra cứu nhanh chóng để cá nhân hóa trải nghiệm học tập trong LMS và Market Course.
+Tổ chức khóa học và bài kiểm tra: Cho phép giảng viên tạo khóa học, phân loại nội dung theo danh mục, và thiết kế bài kiểm tra định kỳ, đảm bảo chất lượng học tập và cấp chứng chỉ cho người học.
+Tăng cường hiệu quả quản lý và tương tác: Rút ngắn quy trình quản lý khóa học, cung cấp diễn đàn thảo luận, nhắn tin nội bộ, và thông báo tự động để tăng cường giao tiếp giữa người học và giảng viên.
+Quản lý tài chính minh bạch: Hỗ trợ thanh toán học phí trực tuyến, thống kê doanh thu từ Market Course, đảm bảo tính minh bạch và thuận tiện cho người học tự do.
+Tích hợp công nghệ hiện đại: Sử dụng AI để đề xuất khóa học, chatbot hỗ trợ người học, và hệ thống thông báo qua email để cập nhật thông tin kịp thời về lịch học hoặc hạn nộp bài.
+Những lợi ích này cho thấy tầm quan trọng của việc phát triển một “Xây dựng hệ thống hỗ trợ học tập elearning trên nền tảng web” theo mô hình kết hợp. Hệ thống không chỉ nâng cao hiệu quả quản lý học tập mà còn đáp ứng nhu cầu ngày càng cao của người học, giảng viên, và các tổ chức giáo dục, góp phần thúc đẩy chuyển đổi số trong lĩnh vực giáo dục.
+
+1.3. Phạm vi và đối tượng nghiên cứu
+1.3.1. Phạm vi địa lý
+Hệ thống eLearning được triển khai trên nền tảng web, hướng đến phục vụ người dùng tại các khu vực thành thị ở Việt Nam, nơi có hạ tầng internet phát triển và nhu cầu học tập trực tuyến cao. Ngoài ra, hệ thống có khả năng mở rộng để hỗ trợ người dùng trên toàn quốc và quốc tế, đặc biệt là các trung tâm đào tạo trực tuyến hoặc trường đại học có nhu cầu tích hợp nền tảng học tập số.
+
+
+1.3.2. Phạm vi đối tượng
+Hệ thống eLearning được thiết kế để phục vụ nhiều nhóm người dùng với vai trò và mục đích sử dụng khác nhau, bao gồm người học, giảng viên, và quản trị viên. Mỗi nhóm có quyền truy cập và chức năng riêng biệt, phù hợp với nhu cầu học tập, giảng dạy, hoặc quản lý trong hai mô hình chính của hệ thống: LMS (Learning Management System) và Market Course. Dưới đây là mô tả chi tiết về từng nhóm đối tượng:
+
+1.3.2.1. Người học
+Người học chính quy và người học tự do là nhóm người dùng chính của hệ thống, được chia thành hai phân nhóm dựa trên loại khóa học họ tham gia.
+
+Người học chính quy tham gia các khóa học chính quy trong mô hình LMS:
+
+Đây là các người học chính quy thuộc các chương trình đào tạo chính quy (ví dụ: sinh viên đại học, cao đẳng, hoặc các khóa học thuộc tổ chức giáo dục). Họ được gán vào các lớp học cụ thể do giảng viên quản lý với các chức năng:
+
+Truy cập nội dung khóa học (bài giảng, tài liệu, video, bài tập) theo lịch trình được giảng viên thiết lập.
+Tham gia các bài kiểm tra, bài tập, hoặc dự án nhóm được giao trong hệ thống.
+Theo dõi tiến độ học tập cá nhân (điểm số, tỷ lệ hoàn thành, phản hồi từ giảng viên).
+Tương tác với giảng viên và các người học chính quy khác qua các công cụ như diễn đàn, chat, hoặc nhóm thảo luận tích hợp trong LMS.
+Ngữ cảnh sử dụng: Người học chính quy sử dụng hệ thống như một phần bắt buộc của chương trình học, với các khóa học được quản lý chặt chẽ theo lịch trình và quy định của cơ sở giáo dục.
+
+Người học tự do tham gia các khóa học thương mại trên nền tảng Market Course:
+
+Đây là các cá nhân đăng ký học các khóa học trực tuyến mở (thương mại) trên nền tảng Market Course. Họ không bị ràng buộc bởi lịch trình cố định và có thể là bất kỳ ai quan tâm đến việc học tập (người đi làm, người học tự do, hoặc người tự học) với các chức năng:
+
+Tự do lựa chọn và đăng ký các khóa học từ danh mục khóa học thương mại (ví dụ: kỹ năng mềm, lập trình, ngoại ngữ,…).
+Học theo tiến độ cá nhân, với quyền truy cập nội dung khóa học bất kỳ lúc nào trong thời gian hiệu lực của khóa.
+Tham gia các bài kiểm tra hoặc bài tập tự động (nếu có) để tự đánh giá kiến thức.
+Nhận chứng chỉ hoàn thành (nếu khóa học cung cấp) sau khi đáp ứng các yêu cầu.
+Ngữ cảnh sử dụng: Người học tự do sử dụng hệ thống để nâng cao kỹ năng hoặc kiến thức theo nhu cầu cá nhân, thường không có sự giám sát trực tiếp từ giảng viên.
+
+1.3.2.2. Giảng viên
+Giảng viên là những người chịu trách nhiệm tạo, quản lý, và giám sát các khóa học trong cả hai mô hình LMS và Market Course. Họ đóng vai trò trung tâm trong việc đảm bảo chất lượng nội dung học tập và hỗ trợ người học với các chức năng:
+
+Thiết kế nội dung khóa học (bài giảng, tài liệu, video, bài tập) trong hệ thống.
+Cấu hình các bài kiểm tra, bài tập, hoặc dự án, bao gồm các tiêu chí đánh giá và thời hạn nộp.
+Tùy chỉnh lộ trình học tập phù hợp với mục tiêu của khóa học (đặc biệt trong LMS).
+Theo dõi tiến độ học tập của từng người học (tỷ lệ hoàn thành, điểm số, mức độ tham gia).
+Cung cấp phản hồi cá nhân hoặc nhóm dựa trên bài tập hoặc bài kiểm tra.
+Trả lời thắc mắc và hỗ trợ người học tự do qua các kênh giao tiếp tích hợp (chat, diễn đàn, email).
+Gán người học tự do vào các lớp học cụ thể.
+Quản lý danh sách người học tự do, điểm danh (nếu cần), và báo cáo tiến độ học tập.
+Tạo các khóa học thương mại hấp dẫn để thu hút người học tự do.
+Cập nhật nội dung khóa học định kỳ để đảm bảo tính phù hợp và cạnh tranh trên thị trường.
+Ngữ cảnh sử dụng: Giảng viên sử dụng hệ thống như một công cụ để tổ chức và quản lý quá trình giảng dạy, đồng thời tương tác trực tiếp với người học để đảm bảo hiệu quả học tập.
+
+1.3.2.3. Quản trị viên
+Quản trị viên là nhóm người dùng có quyền hạn cao nhất trong hệ thống, chịu trách nhiệm duy trì và quản lý toàn bộ nền tảng eLearning với các chức năng:
+
+Cấu hình và bảo trì các thành phần kỹ thuật của hệ thống (máy chủ, cơ sở dữ liệu, giao diện người dùng).
+Đảm bảo hệ thống hoạt động ổn định, bảo mật, và có khả năng mở rộng khi số lượng người dùng tăng.
+Xử lý các vấn đề kỹ thuật (lỗi hệ thống, sự cố truy cập).
+Tạo, chỉnh sửa, hoặc xóa tài khoản của người học tự do, giảng viên, và các quản trị viên khác.
+Phân quyền truy cập cho từng nhóm người dùng (ví dụ: giới hạn quyền của giảng viên trong Market Course so với LMS).
+Kiểm duyệt các khóa học trên Market Course để đảm bảo chất lượng và tuân thủ quy định (ví dụ: không chứa nội dung vi phạm bản quyền).
+Quản lý danh mục khóa học và các chương trình đào tạo trong LMS.
+Tạo báo cáo về hiệu suất hệ thống, số lượng người dùng, tỷ lệ tham gia khóa học, hoặc doanh thu từ Market Course.
+Phân tích dữ liệu để đề xuất cải tiến cho hệ thống hoặc chiến lược phát triển.
+Ngữ cảnh sử dụng: Quản trị viên làm việc ở cấp độ quản lý toàn hệ thống, tập trung vào việc duy trì hoạt động trơn tru và tối ưu hóa trải nghiệm cho tất cả người dùng.
+
+1.3.3. Phạm vi chức năng
+Hệ thống eLearning trên nền tảng web sẽ bao gồm các chức năng chính sau:
+
+Quản lý người học: Hỗ trợ đăng ký/đăng nhập qua email hoặc tích hợp Google/Facebook, cập nhật hồ sơ cá nhân (tên, thông tin liên hệ, mục tiêu học tập), theo dõi tiến độ học tập qua biểu đồ, quản lý điểm số, và cấp chứng nhận hoàn thành khóa học với mã xác minh.
+Quản lý khóa học: Tạo và tổ chức khóa học theo mô-đun (chương, bài học), phân loại theo danh mục (công nghệ, ngoại ngữ, kỹ năng mềm), quản lý nội dung đa dạng (video, PDF, bài kiểm tra), và kiểm duyệt khóa học thương mại để đảm bảo chất lượng.
+Quản lý giảng viên: Lưu trữ thông tin giảng viên (trình độ, chuyên môn, kinh nghiệm), hỗ trợ tạo khóa học, theo dõi tiến độ người học tự do qua báo cáo, và quản lý lịch giảng dạy hoặc thông báo.
+Quản lý bài kiểm tra và bài tập: Tạo bài kiểm tra trắc nghiệm/đúng-sai hoặc bài tập với yêu cầu tài liệu/liên kết, cài đặt thời gian bắt đầu và kết thúc cho bài kiểm tra trắc nghiệm, chấm điểm tự động cho trắc nghiệm và thủ công cho bài tập, lưu trữ điểm số, cung cấp phản hồi chi tiết, và quản lý ngân hàng câu hỏi hoặc lịch sử nộp bài.
+Quản lý tài chính: Xử lý thanh toán học phí, thống kê doanh thu theo khóa học hoặc thời gian, tạo hóa đơn điện tử, và quản lý trạng thái giao dịch như hoàn tiền hoặc thất bại.
+Tích hợp thanh toán: Hỗ trợ thanh toán qua thẻ tín dụng, ví điện tử (như ZaloPay), hoặc chuyển khoản ngân hàng, đảm bảo giao dịch an toàn và quản lý lịch sử giao dịch chi tiết.
+Gửi thông báo: Tự động gửi thông báo qua email hoặc giao diện về lịch học, hạn nộp bài, kết quả kiểm tra, hoặc cập nhật khóa học, với nội dung tùy chỉnh và quản lý danh sách người nhận.
+Tương tác qua diễn đàn khóa học: Tích hợp diễn đàn thảo luận cho mỗi khóa học, hỗ trợ trả lời, đánh dấu giải pháp, và quản lý tương tác thông qua lượt thích.
+Tương tác qua diễn đàn bài học: Cung cấp diễn đàn cho từng bài học, hỗ trợ bình luận chính và phản hồi, với khả năng ẩn hoặc khóa nội dung để kiểm soát chất lượng.
+Tích hợp AI – Chatbot: Sử dụng chatbot để trả lời tự động câu hỏi về đăng ký, truy cập khóa học, hoặc xử lý lỗi, hỗ trợ người dùng 24/7 với phản hồi nhanh chóng.
+Tích hợp AI tạo bài trắc nghiệm dựa trên nội dung tài liệu tải lên: Tải file (PDF, Word, văn bản), AI phân tích và trích xuất thông tin chính, tự động tạo câu hỏi trắc nghiệm sát với nội dung, tùy chỉnh số lượng câu, ước lượng tối đa câu hỏi tùy độ dài tài liệu.
+Nhắn tin nội bộ: Hỗ trợ nhắn tin giữa người học và giảng viên, nhắn tin trong nhóm lớp, cho phép gửi liên kết tham khảo và theo dõi trạng thái đã đọc để tăng hiệu quả giao tiếp.
+Quản lý lịch giảng dạy: Lên lịch học trực tuyến hoặc trực tiếp, cung cấp liên kết họp, quản lý chi tiết phiên học (thời gian, mô tả), và hỗ trợ giảng viên tổ chức hiệu quả.
+Báo cáo và thống kê: Tạo báo cáo về tiến độ học tập, điểm số, doanh thu, và hiệu suất giảng dạy, hỗ trợ xuất dữ liệu dưới dạng Excel hoặc PDF cho quản trị viên.
+Đánh giá khóa học: Cho phép người học tự do đánh giá khóa học hoặc giảng viên với điểm số từ 1 đến 5 và nhận xét, hỗ trợ cải thiện chất lượng nội dung và giảng dạy.
+Tham gia học trực tuyến và điểm danh: Hỗ trợ người học tham gia các buổi học trực tuyến qua liên kết họp, theo dõi điểm danh (hiện diện, vắng mặt, trễ), và ghi nhận thời gian tham gia để quản lý hiệu quả.
+1.3.4. Phạm vi thời gian
+Nghiên cứu và phát triển hệ thống trong khoảng thời gian 05 tháng, bao gồm các giai đoạn:
+
+Phân tích yêu cầu: Xác định các chức năng cần thiết cho mô hình kết hợp.
+Thiết kế: Xây dựng kiến trúc hệ thống và cơ sở dữ liệu.
+Phát triển: Viết mã nguồn và tích hợp các chức năng.
+Kiểm thử: Kiểm tra toàn diện để đảm bảo hệ thống ổn định.
+Triển khai và đánh giá: Đưa hệ thống vào sử dụng và thu thập phản hồi để cải tiến.
+1.3.5. Phạm vi kỹ thuật
+Frontend: ReactJS để xây dựng giao diện người dùng động, trực quan, và thân thiện.
+Backend: NestJS để phát triển API mạnh mẽ, có khả năng mở rộng và quản lý logic nghiệp vụ.
+Cơ sở dữ liệu: MySQL để lưu trữ và quản lý thông tin người học, khóa học, bài kiểm tra, và tài chính.
+Tính bảo mật: Áp dụng các biện pháp mã hóa và xác thực để bảo vệ dữ liệu người dùng.
+Hiệu năng: Tối ưu hóa truy vấn cơ sở dữ liệu và xử lý yêu cầu để phục vụ số lượng lớn người học.
+Khả năng mở rộng: Thiết kế kiến trúc linh hoạt để hỗ trợ thêm người dùng và chức năng trong tương lai.
+
+1.4. Những đóng góp chính của đề tài
+Xây dựng hệ thống eLearning tích hợp:
+
+Phát triển một hệ thống theo mô hình kết hợp, đáp ứng đồng thời nhu cầu giáo dục chính quy (Learning Management System - LMS) và học tập tự do (Market Course).
+Hỗ trợ quản lý người học, khóa học, bài kiểm tra, tài chính, và tương tác một cách hiệu quả thông qua cơ sở dữ liệu quan hệ được thiết kế tối ưu
+Tích hợp quản lý lớp học thuật và khóa học tự do, cho phép hỗ trợ cả người học chính quy và người học tự do.
+Tăng cường hiệu quả quản lý và học tập:
+
+Giúp giảng viên dễ dàng tạo và quản lý khóa học, theo dõi tiến độ người học, và cung cấp phản hồi qua bài kiểm tra hoặc thảo luận trực tuyến.
+Cho phép người học truy cập nội dung học tập đa dạng (video, slide, quiz, assignment,…), theo dõi tiến độ cá nhân, và hoàn thành khóa học để nhận chứng chỉ.
+Cung cấp công cụ quản lý điểm danh và lịch giảng dạy cho các lớp học thuật, nâng cao hiệu quả quản lý giáo dục chính quy.
+Tích hợp các tính năng hiện đại:
+
+Cung cấp chức năng gửi thông báo tự động qua email hoặc hệ thống về lịch học, kết quả kiểm tra, hoặc cập nhật khóa học, cải thiện trải nghiệm người dùng.
+Tích hợp thanh toán trực tuyến qua các cổng thanh toán an toàn, hỗ trợ người học tự do mua khóa học dễ dàng với các phương thức như ZaloPay.
+Áp dụng RAG (Retrieval-Augmented Generation) vào chatbot, cho phép trả lời câu hỏi của người học dựa trên tài liệu khóa học hoặc cơ sở tri thức, tăng cường tính tương tác và hỗ trợ tự động.
+Giao diện và trải nghiệm người dùng:
+
+Xây dựng giao diện web thân thiện, trực quan với ReactJS, đảm bảo dễ sử dụng cho người học, giảng viên, và quản trị viên, đồng thời hỗ trợ responsive design trên nhiều thiết bị.
+Đảm bảo hệ thống hoạt động ổn định, bảo mật, và có khả năng mở rộng với NestJS (backend framework) và MySQL (cơ sở dữ liệu), tận dụng kiến trúc module hóa và TypeScript để tăng cường bảo trì.
+Đóng góp kỹ thuật nâng cao:
+
+Thiết kế và triển khai API RESTful với NestJS, cung cấp các endpoint hiệu quả để quản lý khóa học, bài tập, bài kiểm tra, và tương tác người dùng, tích hợp tốt với frontend ReactJS.
+Ứng dụng RAG để tối ưu hóa chức năng tìm kiếm và trả lời tự động trong hệ thống, hỗ trợ người học tra cứu nội dung bài học dựa trên từ khóa.
+Đảm bảo bảo mật dữ liệu với xác thực JWT, mã hóa mật khẩu, và hỗ trợ xác thực hai yếu tố, phù hợp với yêu cầu giáo dục trực tuyến.
+1.5. Bố cục luận văn
+Bố cục quyển báo cáo luận văn gồm có 6 chương chính như sau:
+
+Chương 1: Giới thiệu
+
+Chương này đặt nền tảng cho luận văn bằng cách trình bày lý do và tầm quan trọng của việc phát triển hệ thống eLearning trong bối cảnh giáo dục hiện đại. Nội dung giải thích các vấn đề mà đề tài hướng đến giải quyết, chẳng hạn như nhu cầu học tập trực tuyến hiệu quả và linh hoạt. Đồng thời, chương xác định rõ phạm vi nghiên cứu, đối tượng áp dụng, và những đóng góp nổi bật của đề tài, như cung cấp một nền tảng học tập tích hợp, hỗ trợ quản lý khóa học và tương tác người dùng.
+
+Chương 2: Cơ sở lý thuyết
+
+Chương này trình bày các phương pháp nghiên cứu, cung cấp nền tảng lý thuyết và công nghệ cần thiết để xây dựng hệ thống eLearning. Nội dung bao quát các quy định của Bộ Giáo dục về giáo dục trực tuyến tại Việt Nam, quy trình nghiệp vụ của một hệ thống eLearning, và các công nghệ cốt lõi được sử dụng như hệ quản trị cơ sở dữ liệu MySQL, các ngôn ngữ lập trình và framework như TypeScript, ReactJS, NestJS, cùng các công cụ hỗ trợ như Nodemailer, JWT, và các API như Web API, OpenAI API, và RAG. Phần này cũng đề cập đến các công cụ phát triển khác, làm nền tảng cho việc triển khai hệ thống.
+
+Chương 3: Phân tích hệ thống
+
+Chương này tập trung vào việc phân tích chi tiết hệ thống eLearning, mô tả tổng quan về cách hệ thống hoạt động và các thành phần chính. Nội dung bao gồm việc phân tích mô hình Retrieval-Augmented Generation (RAG) để hỗ trợ tìm kiếm thông tin, mô hình hóa các chức năng của hệ thống thông qua các biểu đồ như phân cấp chức năng, ngữ cảnh hệ thống, và các sơ đồ thể hiện tương tác giữa các tác nhân và chức năng. Phần này cung cấp cái nhìn rõ ràng về cách hệ thống được tổ chức và vận hành.
+
+Chương 4: Thiết kế dữ liệu
+
+Chương này trình bày quá trình thiết kế cơ sở dữ liệu cho hệ thống eLearning. Nội dung tập trung vào việc xác định các thực thể chính, xây dựng mô hình quan hệ thực thể (ERD), mô hình vật lý (PDM), và lược đồ cơ sở dữ liệu chi tiết. Ngoài ra, chương cũng mô tả cách tổ chức và lưu trữ dữ liệu thông qua các lưu đồ, đảm bảo hệ thống có thể quản lý thông tin người dùng, khóa học, và kết quả học tập một cách hiệu quả.
+
+Chương 5: Kết quả đề tài
+
+Chương này trình bày các kết quả cụ thể đạt được từ việc triển khai đề tài, bao gồm hệ thống eLearning hoàn chỉnh với các tính năng như quản lý khóa học, bài tập, trắc nghiệm, và tương tác trực tuyến. Nội dung đánh giá hiệu quả của hệ thống thông qua các kết quả thực tế, chẳng hạn như khả năng hỗ trợ học tập, chấm điểm tự động, và cung cấp phản hồi cho người dùng, đồng thời nhấn mạnh những thành công trong việc đáp ứng mục tiêu đề ra.
+
+Chương 6: Tổng kết và đánh giá
+
+Chương này tổng hợp các thành tựu của đề tài, đánh giá mức độ hoàn thành các mục tiêu ban đầu, và phân tích những ưu điểm cũng như hạn chế của hệ thống. Nội dung cũng đưa ra các đề xuất cải tiến và định hướng phát triển trong tương lai, chẳng hạn như tích hợp thêm tính năng mới, mở rộng quy mô hệ thống, hoặc tối ưu hóa hiệu suất để đáp ứng nhu cầu học tập ngày càng tăng.
+
+
+CHƯƠNG 2: CƠ SỞ LÝ THUYẾT
+2.1. Quy định của Bộ Giáo dục và Đào tạo về eLearning hỗ trợ học tập
+Bộ Giáo dục và Đào tạo (Bộ GD&ĐT) Việt Nam đã ban hành các văn bản quy định nhằm quản lý và thúc đẩy hình thức học trực tuyến (eLearning) như một phương thức hỗ trợ giáo dục hiệu quả, đặc biệt trong bối cảnh chuyển đổi số và các tình huống bất khả kháng như thiên tai, dịch bệnh. Các quy định này đảm bảo chất lượng, tính công bằng, và hiệu quả của quá trình dạy học trực tuyến, đồng thời định hướng phát triển giáo dục theo hướng hiện đại. Dưới đây là các quy định chính của Bộ GD&ĐT liên quan đến eLearning trong giáo dục phổ thông và giáo dục thường xuyên, dựa trên Thông tư 09/2021/TT-BGDĐT và các văn bản liên quan.
+
+2.1.1. Tổ chức dạy học trực tuyến
+Theo Thông tư 09/2021/TT-BGDĐT ban hành ngày 30/3/2021, Bộ GD&ĐT cho phép các cơ sở giáo dục phổ thông và cơ sở giáo dục thường xuyên tổ chức dạy học trực tuyến theo hai hình thức: hỗ trợ dạy học trực tiếp (thực hiện một phần nội dung bài học hoặc chủ đề) và thay thế dạy học trực tiếp (thực hiện toàn bộ nội dung bài học hoặc chủ đề) trong các trường hợp người học tự do không thể đến trường do thiên tai, dịch bệnh, hoặc lý do bất khả kháng. Việc dạy học trực tuyến phải đảm bảo nội dung đáp ứng mức độ cần đạt hoặc yêu cầu cần đạt của chương trình giáo dục phổ thông, được thực hiện qua hệ thống phần mềm cho phép truyền tải nội dung thông qua kênh hình, kênh tiếng, kênh chữ (chia sẻ màn hình), và hỗ trợ tương tác thời gian thực giữa giáo viên và người học tự do. Người đứng đầu cơ sở giáo dục chịu trách nhiệm quyết định hình thức dạy học trực tuyến, xây dựng kế hoạch phù hợp, và đảm bảo các điều kiện triển khai để duy trì chất lượng giáo dục (Bộ Giáo dục và Đào tạo, 2021a).
+
+2.1.2. Kiểm tra và đánh giá
+Thông tư 09/2021/TT-BGDĐT quy định kiểm tra, đánh giá kết quả học tập trực tuyến phải đảm bảo tính chính xác, công bằng, khách quan, và trung thực. Kiểm tra thường xuyên được thực hiện trong quá trình dạy học trực tuyến thông qua các hoạt động như bài tập, câu hỏi, hoặc tương tác trực tiếp, tuân theo quy định về kiểm tra, đánh giá thường xuyên của Bộ GD&ĐT. Kiểm tra định kỳ ưu tiên tổ chức trực tiếp tại cơ sở giáo dục phổ thông. Tuy nhiên, trong trường hợp người học tự do không thể tham gia trực tiếp do lý do bất khả kháng, kiểm tra định kỳ có thể được tổ chức trực tuyến với sự phê duyệt của người đứng đầu cơ sở giáo dục, đảm bảo tuân thủ các quy định về kiểm tra, đánh giá định kỳ. Kết quả kiểm tra, đánh giá trực tuyến có giá trị tương đương hình thức trực tiếp và phải được lưu trữ trong hồ sơ dạy học trực tuyến để phục vụ công tác quản lý (Bộ Giáo dục và Đào tạo, 2021b).
+
+2.1.3. Yêu cầu về hạ tầng kỹ thuật và phần mềm
+Thông tư 09/2021/TT-BGDĐT yêu cầu các cơ sở giáo dục sử dụng hệ thống phần mềm dạy học trực tuyến, bao gồm: (1) phần mềm tổ chức dạy học trực tuyến trực tiếp, hỗ trợ giảng bài, chia sẻ học liệu, và tương tác thời gian thực; (2) hệ thống quản lý học tập trực tuyến, hỗ trợ lưu trữ học liệu, giao nhiệm vụ, kiểm tra, đánh giá, và theo dõi tiến trình học tập; (3) hệ thống quản lý nội dung học tập trực tuyến, cho phép giáo viên thiết kế nội dung và học liệu. Các phần mềm này phải đảm bảo khả năng truy cập từ xa, kết nối Internet ổn định, và hỗ trợ đa dạng định dạng học liệu như văn bản, video, bài tập, và bài kiểm tra. Hạ tầng kỹ thuật cần đáp ứng các yêu cầu về đường truyền Internet, máy tính, thiết bị đầu cuối có cấu hình phù hợp, và không gian lắp đặt thiết bị đáp ứng tính khoa học, sư phạm. Ngoài ra, việc triển khai phải tuân thủ các quy định về an toàn thông tin, bảo mật dữ liệu cá nhân, và sở hữu trí tuệ theo Nghị định 64/2007/NĐ-CP ngày 10/4/2007 của Chính phủ về ứng dụng công nghệ thông tin trong hoạt động của cơ quan nhà nước (Bộ Giáo dục và Đào tạo, 2021c).
+
+2.2. Quy trình nghiệp vụ của hệ thống eLearning
+Hệ thống hỗ trợ học tập elearning trên nền tảng web được thiết kế để đáp ứng nhu cầu học tập trực tuyến của người học, người học chính quy, và giảng viên, đồng thời hỗ trợ quản lý hiệu quả các hoạt động học thuật và đào tạo. Quy trình nghiệp vụ của hệ thống bao gồm các luồng chính sau, phản ánh các hoạt động từ khi người dùng truy cập hệ thống đến khi hoàn thành quá trình học tập.
+
+2.2.1. Đăng nhập và phân quyền người dùng  
+Người dùng (người học, người học chính quy, giảng viên, hoặc quản trị viên) truy cập hệ thống thông qua màn hình đăng nhập bằng cách nhập tên đăng nhập và mật khẩu. Hệ thống sử dụng JWT để xác thực và phân quyền truy cập theo vai trò. Sau khi đăng nhập thành công, người dùng được chuyển hướng đến giao diện tương ứng: người học truy cập danh sách khóa học, giảng viên vào phần quản lý lớp học/khóa học, và quản trị viên vào phần quản lý hệ thống.
+
+2.2.2. Quản lý khóa học và lớp học thuật  
+Đối với giảng viên: Giảng viên có thể tạo và quản lý khóa học hoặc lớp học thuật. Khi tạo khóa học, giảng viên nhập các thông tin như tiêu đề, mô tả, danh mục, mức độ, giá (nếu có), và liên kết khóa học với khoa, ngành, chương trình đào tạo (ví dụ: Cử nhân Công nghệ Thông tin, Kỹ thuật Xây dựng), và học kỳ (ví dụ: Học kỳ 1, Năm học 2025-2026). Khóa học được chia thành các phần và bài học, bao gồm nội dung như video, tài liệu PDF, bài tập, hoặc bài kiểm tra. Đối với lớp học thuật, giảng viên tạo lớp với mã lớp, học kỳ, khoa, ngành, chương trình đào tạo, và liên kết với các khóa học tương ứng.
+
+Đối với người học: Người học tự do hoặc người học chính quy có thể đăng ký tham gia khóa học hoặc lớp học. Người học tự do đăng ký sau khi thanh toán học phí, trong khi người học chính quy được gán vào lớp học.
+
+2.2.3. Thanh toán học phí  
+Đối với các khóa học có phí, người học tự do thực hiện thanh toán thông qua cổng ZaloPay. Sau khi thanh toán thành công, trạng thái giao dịch được cập nhật, và người học được ghi danh vào khóa học. Hệ thống gửi thông báo xác nhận qua email.
+
+2.2.4. Học tập và tương tác  
+Truy cập nội dung học tập: Người học truy cập các bài học trong khóa học hoặc lớp học thuật. Mỗi bài học có thể chứa nội dung đa dạng như video, tài liệu, hoặc bài kiểm tra. Hệ thống theo dõi tiến độ học tập, ghi nhận thời gian hoàn thành và thời gian truy cập cuối.
+
+Tham gia buổi học trực tuyến qua Google Meet: Đối với lớp học thuật, giảng viên tạo lịch học với thời gian bắt đầu, kết thúc, và liên kết Google Meet. Người học tham gia buổi học qua liên kết này, và hệ thống ghi nhận điểm danh tự động với thời gian tham gia, rời đi, và thời lượng.
+
+- Thảo luận và diễn đàn: Người học có thể tham gia thảo luận trong bài học hoặc diễn đàn của khóa học. Họ có thể đăng bài, trả lời, và thích bài viết, tăng tính tương tác trong quá trình học.
+
+2.2.5. Tạo bài trắc nghiệm tự động bằng AI
+Hệ thống cho phép giảng viên tải tài liệu (PDF, Word, văn bản thô) lên để AI tự động phân tích nội dung và tạo bài trắc nghiệm sát với tài liệu. Tính năng này giúp tiết kiệm thời gian soạn câu hỏi, đảm bảo chất lượng và đa dạng.
+
+2.2.6. Làm bài tập và bài kiểm tra  
+Giảng viên tạo bài tập hoặc bài kiểm tra với các thông số như thời hạn nộp, điểm tối đa, hoặc thời gian làm bài. Người học nộp bài tập hoặc làm bài kiểm tra, và hệ thống lưu kết quả cùng phản hồi từ giảng viên. Hệ thống gửi thông báo nhắc nhở thời hạn nộp bài qua email.
+
+2.2.7. Hỗ trợ thông minh bằng chatbot
+Người học và giảng viên có thể sử dụng chatbot để đặt câu hỏi và nhận câu trả lời tự động. Chatbot truy xuất tài liệu và cung cấp câu trả lời nhanh chóng. Tuy nhiên, do dữ liệu huấn luyện còn hạn chế, khả năng trả lời của chatbot chưa thực sự thông minh.
+
+2.2.8. Điểm danh và theo dõi thời gian học  
+Trong các buổi học qua Google Meet, hệ thống tự động ghi nhận điểm danh dựa trên thời gian tham gia của người học chính quy. Giảng viên có thể xem báo cáo điểm danh và thời lượng học của từng người học chính quy, hỗ trợ quản lý lớp học thuật hiệu quả.
+
+2.2.9. Thông báo và giao tiếp  
+Hệ thống gửi thông báo đến người dùng qua email hoặc hiển thị trên giao diện. Các loại thông báo bao gồm nhắc nhở lịch học, kết quả bài kiểm tra, hoặc thông tin hệ thống. Ngoài ra, người dùng có thể giao tiếp qua tin nhắn nội bộ, hỗ trợ trao đổi giữa người học và giảng viên.
+
+2.2.10. Đánh giá và cấp chứng chỉ  
+Sau khi hoàn thành khóa học, người học nhận điểm số từ giảng viên và có thể đánh giá khóa học hoặc giảng viên. Nếu đạt yêu cầu, người học được cấp chứng chỉ với mã số và đường dẫn tải.
+
+2.2.11. Quản lý hệ thống 
+Quản trị viên có thể quản lý người dùng, khóa học, lớp học, và các tài liệu. Họ cũng có thể xem thống kê về tiến độ học tập, doanh thu từ học phí, và xuất báo cáo dưới định dạng Excel.
+
+2.3. Phương pháp nghiên cứu
+Đề tài “Xây dựng hệ thống hỗ trợ học tập elearning trên nền tảng web” là một nghiên cứu ứng dụng công nghệ thông tin nhằm xây dựng một nền tảng học tập trực tuyến tích hợp hệ thống quản lý học tập (LMS) và thị trường khóa học (Market Course), giúp tối ưu hóa quy trình giảng dạy, học tập và cung cấp các khóa học đa dạng, đồng thời hỗ trợ các nhà cung cấp khóa học tiếp cận người học hiệu quả.
+
+2.3.1. Phương pháp nghiên cứu
+Quá trình nghiên cứu được thực hiện thông qua việc thu thập thông tin từ các nguồn đáng tin cậy, chủ yếu là các website chính thức của các nền tảng eLearning uy tín trong và ngoài nước như Moodle, Canvas, Udemy, và Coursera. Việc khai thác dữ liệu từ các tài liệu chuyên ngành về công nghệ giáo dục (EdTech), quy trình giảng dạy trực tuyến, và mô hình quản lý học tập tại các cơ sở giáo dục giúp hình thành cơ sở lý thuyết vững chắc, đồng thời cung cấp nền tảng thực tiễn cần thiết cho quá trình phát triển hệ thống.
+
+Bên cạnh đó, phương pháp khảo sát được sử dụng để thu thập ý kiến từ các nhóm người dùng chính bao gồm người học, giáo viên, nhà cung cấp khóa học, và quản trị viên hệ thống. Các khảo sát tập trung vào nhu cầu về chức năng LMS (quản lý khóa học, bài tập, điểm số, tương tác), yêu cầu của Market Course (tìm kiếm khóa học, thanh toán, đánh giá), và trải nghiệm người dùng (giao diện, hiệu suất).
+
+Phương pháp phân tích được áp dụng nhằm đánh giá và so sánh các nền tảng eLearning đã triển khai trên thị trường. Phân tích tập trung vào các chức năng cốt lõi (quản lý khóa học, tương tác, thanh toán), giao diện sử dụng, hiệu quả hoạt động (tốc độ, khả năng xử lý nhiều người dùng), và khả năng tích hợp công nghệ (AI, video streaming). Thông qua đó, xác định được các điểm mạnh có thể kế thừa (như giao diện trực quan của Udemy, quản lý hiệu quả của Moodle) và những hạn chế cần khắc phục (như thiếu tích hợp giữa LMS và Market Course), góp phần định hướng xây dựng hệ thống phù hợp với mục tiêu nghiên cứu.
+
+2.3.2. Phương pháp thực hiện
+Phương pháp phân tích – tổng hợp tài liệu được sử dụng nhằm khảo sát, đánh giá các nền tảng eLearning hiện có trên thị trường như Moodle, Canvas, Udemy, và Coursera. Thông qua việc thu thập thông tin từ tài liệu hướng dẫn, bài viết đánh giá, và lập bảng so sánh tính năng, các chức năng của từng nền tảng được phân tích chi tiết theo các tiêu chí cụ thể như quản lý khóa học, tương tác, thanh toán, và trải nghiệm người dùng. Trên cơ sở đó, tổng hợp những hạn chế như thiếu tích hợp giữa LMS và Market Course, giao diện chưa tối ưu, hoặc hiệu suất chưa đáp ứng được số lượng lớn người dùng, từ đó xây dựng cơ sở lý thuyết cho hệ thống đề xuất. Kết quả phân tích này đóng vai trò định hướng trong việc xác định các chức năng trọng tâm cần phát triển cho hệ thống eLearning của đề tài.
+
+Phân tích hệ thống được áp dụng để xác định các yếu tố cốt lõi trong quá trình thiết kế và xây dựng nền tảng. Trước hết, các đối tượng sử dụng hệ thống như người học, giáo viên, nhà cung cấp khóa học, và quản trị viên được xác định rõ vai trò và quyền hạn. Từ đó, các tác nhân trong hệ thống được mô hình hóa để làm rõ mối quan hệ giữa người dùng và phần mềm. Ngoài ra, các đối tượng cần quản lý như khóa học, bài tập, điểm số, lịch sử giao dịch, và đánh giá khóa học cũng được phân tích để xác định các yếu tố đầu vào, đầu ra, cùng các quy tắc xử lý dữ liệu tương ứng. Việc áp dụng phương pháp này giúp đảm bảo hệ thống thiết kế có tính logic, dễ mở rộng, và đáp ứng nhu cầu thực tế trong lĩnh vực giáo dục trực tuyến.
+
+2.4. Nội dung nghiên cứu
+Nghiên cứu tập trung vào việc thiết kế và phát triển hệ thống eLearning trên nền tảng web theo mô hình kết hợp, kết hợp Learning Management System (LMS) và Market Course. Đề tài được mô tả thông qua các sơ đồ như ERD (Entity-Relationship Diagram) minh họa kiến trúc của hệ thống.
+
+Về lý thuyết
+
+Phân tích và thiết kế hệ thống:
+Xây dựng sơ đồ ERD để mô hình hóa cơ sở dữ liệu, xác định các thực thể như người học, giảng viên, quản trị viên, khóa học, bài kiểm tra, bài trắc nghiệm, v.v.
+
+Thiết kế sơ đồ hoạt động (Activity Diagram), Sơ đồ ngữ cảnh, sơ đồ BFD, Sơ đồ Usecase để mô tả quy trình xử lý trong hệ thống, bao gồm quản lý khóa học, thanh toán, gửi thông báo, và truy xuất thông tin bằng RAG.
+
+Nghiên cứu công nghệ:
+Tìm hiểu các công nghệ lập trình web: ReactJS cho giao diện người dùng, NestJS cho backend, và MySQL cho hệ quản trị cơ sở dữ liệu.
+
+ReactJS: Sử dụng các thư viện như Axios (gửi yêu cầu HTTP), React Router (quản lý định tuyến).
+
+NestJS: Tích hợp TypeORM cho truy vấn MySQL, JWT (JSON Web Token) và Passport cho xác thực người dùng.
+
+MySQL: Thiết kế cơ sở dữ liệu hiệu quả với các bảng liên quan đến người học, khóa học, và giao dịch.
+
+RAG (Retrieval-Augmented Generation): Nghiên cứu kỹ thuật AI kết hợp truy xuất thông tin và tạo văn bản, sử dụng các công cụ như vector database (Qdrant) và mô hình ngôn ngữ lớn (LLM) để hỗ trợ chatbot thông minh, đề xuất khóa học, và trả lời câu hỏi của người học.
+
+OpenAI API để tạo trắc nghiệm: Sử dụng OpenAI API (như GPT-4) để tự động tạo câu hỏi trắc nghiệm từ file nội dung tải lên. Các câu hỏi được lưu vào MySQL và hiển thị qua giao diện ReactJS, hỗ trợ giảng viên tiết kiệm thời gian và cá nhân hóa bài kiểm tra.
+
+Về thực tế
+
+Hệ thống được phát triển dựa trên quy trình hoạt động thực tế của các nền tảng eLearning:
+
+Tìm hiểu quy trình quản lý khóa học, bài kiểm tra, và tiến độ học tập trong môi trường LMS và Market Course.
+
+Phân tích nhu cầu của người học, giảng viên, và quản trị viên để đảm bảo hệ thống đáp ứng đầy đủ các yêu cầu.
+
+Nghiên cứu cách tích hợp các chức năng như gửi mail thông báo (qua email) và thanh toán trực tuyến (qua cổng thanh toán ZaloPay), và chatbot thông minh sử dụng RAG để hỗ trợ người học.
+
+2.5. Hệ quản trị cơ sở dữ liệu MySQL
+MySQL là một hệ quản trị cơ sở dữ liệu quan hệ (RDBMS) mã nguồn mở, sử dụng Ngôn ngữ Truy vấn Có cấu trúc (SQL) để quản lý dữ liệu. Được phát triển bởi MySQL AB và hiện thuộc sở hữu của Tập đoàn Oracle, MySQL được sử dụng rộng rãi nhờ vào độ tin cậy, tốc độ và tính dễ sử dụng của nó. MySQL là một phần quan trọng trong nhiều ứng dụng web, đóng vai trò nền tảng cho các trang web và dịch vụ phổ biến. Nó cho phép người dùng tạo, chỉnh sửa và duy trì cơ sở dữ liệu, hỗ trợ các thao tác như chèn dữ liệu, truy vấn, cập nhật và xóa. MySQL phù hợp cho cả ứng dụng nhỏ lẫn hệ thống quy mô lớn, từ dự án cá nhân đến môi trường doanh nghiệp phức tạp (GeeksforGeeks, 2024).
+
+
+2.6. Ngôn ngữ lập trình TypeScript
+TypeScript kế thừa toàn bộ các tính năng của JavaScript và bổ sung một lớp bảo vệ bằng hệ thống kiểu, giúp kiểm tra và quản lý dữ liệu hiệu quả hơn (Microsoft, 2025). Bổ sung hệ thống kiểu tĩnh và các tính năng lập trình hướng đối tượng nâng cao. TypeScript được biên dịch thành JavaScript để chạy trên mọi trình duyệt hoặc môi trường Node.js, khiến nó trở thành lựa chọn lý tưởng cho việc phát triển các ứng dụng web hiện đại như hệ thống eLearning trên nền tảng web.
+
+Trong hệ thống eLearning, TypeScript được sử dụng ở cả frontend (với ReactJS) và backend (với NestJS) để xây dựng giao diện người dùng động và API mạnh mẽ, hỗ trợ quản lý người học, khóa học, bài kiểm tra, gửi mail thông báo, và tích hợp thanh toán.
+
+Vai trò trong hệ thống eLearning
+
+TypeScript đóng vai trò quan trọng trong việc phát triển hệ thống eLearning theo mô hình kết hợp:
+
+Frontend (ReactJS): Xây dựng giao diện người dùng thân thiện, cho phép người học đăng ký khóa học, theo dõi tiến độ học tập, thực hiện thanh toán, và nhận thông báo.
+
+Backend (NestJS): Phát triển API RESTful để quản lý người học, khóa học, bài kiểm tra, giao dịch tài chính, và gửi mail thông báo tự động.
+
+Bảo trì và mở rộng: Hệ thống kiểu tĩnh và tính năng OOP của TypeScript giúp mã nguồn dễ đọc, dễ bảo trì, và dễ mở rộng khi thêm chức năng mới (ví dụ: tích hợp AI hoặc báo cáo nâng cao).
+
+Hiệu suất và bảo mật: TypeScript đảm bảo mã nguồn đáng tin cậy, giảm lỗi runtime, và hỗ trợ các cơ chế xác thực (JWT) để bảo vệ dữ liệu người học.
+
+2.7. Thư viện ReactJS
+React là một thư viện chứ không phải một framework. Nó được Facebook phát triển để giải quyết những thách thức riêng của họ (GeeksforGeeks, 2025). ReactJS là một thư viện JavaScript mã nguồn mở, phát triển bởi Facebook, dùng để xây dựng giao diện người dùng (UI) động, tương tác, và hiệu suất cao. ReactJS sử dụng mô hình component-based, cho phép tái sử dụng và quản lý giao diện một cách hiệu quả.
+
+Vai trò trong hệ thống eLearning
+
+Xây dựng giao diện thân thiện cho người học để đăng ký khóa học, xem nội dung học tập, thực hiện thanh toán, và nhận thông báo qua email.
+
+Hiển thị danh mục khóa học, bảng điều khiển tiến độ, và báo cáo thống kê một cách trực quan với Material UI.
+
+Tích hợp với API NestJS qua Axios để gửi yêu cầu (đăng ký khóa học, nộp bài kiểm tra) và nhận phản hồi (kết quả, thông báo).
+
+2.8. Framework NestJS
+NestJS là một framework tiên tiến của NodeJS, giúp xây dựng các ứng dụng phía server hiệu quả, đáng tin cậy và có khả năng mở rộng tốt (GeeksforGeeks, 2024). NestJS là một framework Node.js mã nguồn mở, sử dụng TypeScript để xây dựng các ứng dụng backend mạnh mẽ, có khả năng mở rộng. NestJS kết hợp các khái niệm từ lập trình hướng đối tượng, lập trình chức năng, và lập trình phản ứng (reactive programming).
+
+Vai trò trong hệ thống eLearning
+
+Phát triển API RESTful để quản lý người học, khóa học, bài kiểm tra, giao dịch tài chính, và gửi mail thông báo.
+
+Tích hợp với MySQL qua TypeORM để xử lý dữ liệu và với Nodemailer/Stripe SDK để hỗ trợ gửi mail và thanh toán.
+
+Đảm bảo backend ổn định, bảo mật (qua JWT), và xử lý nhiều yêu cầu đồng thời từ người học.
+
+2.9. Thư viện Material UI
+Material UI là một thư viện thành phần React mã nguồn mở, triển khai giao diện Material Design của Google. Nó có đầy đủ tính năng và có thể được sử dụng ngay trong môi trường sản xuất (MUI, n.d). Material UI (MUI) là một thư viện giao diện người dùng mã nguồn mở, dựa trên nguyên tắc thiết kế Material Design của Google. MUI cung cấp các component giao diện sẵn có, giúp xây dựng giao diện web đẹp, đồng nhất, và đáp ứng cho hệ thống eLearning.
+
+Vai trò trong hệ thống eLearning
+
+Tạo giao diện trực quan cho người học khi đăng ký khóa học, xem nội dung học tập, thực hiện thanh toán, hoặc nhận thông báo.
+
+Hỗ trợ hiển thị danh mục khóa học, bảng điều khiển tiến độ, và báo cáo thống kê một cách thẩm mỹ.
+
+Cải thiện trải nghiệm người dùng với các component như form thanh toán, modal thông báo, và bảng điểm thi.
+
+2.10. Thư viện TypeORM
+TypeORM là một thư viện Object-Relational Mapper (ORM) chạy trên Node.js và được viết bằng TypeScript (TutorialsPoint, n.d). TypeORM là một thư viện mã nguồn mở, hỗ trợ ánh xạ dữ liệu giữa cơ sở dữ liệu quan hệ (như MySQL) và các đối tượng trong ứng dụng. TypeORM được viết bằng TypeScript, tích hợp tốt với NestJS.
+
+Vai trò trong hệ thống eLearning
+
+Quản lý dữ liệu MySQL cho các thực thể như người học, khóa học, bài kiểm tra, giao dịch thanh toán, và thông báo.
+
+Hỗ trợ truy vấn dữ liệu để tạo báo cáo (tiến độ học tập, doanh thu Market Course).
+
+Đảm bảo tính toàn vẹn dữ liệu khi xử lý giao dịch tài chính và lưu trữ lịch sử thông báo.
+
+2.11. Công cụ Json Web Token (JWT)
+JSON Web Token (JWT) là một tiêu chuẩn mở (RFC 7519) cung cấp một phương thức gọn nhẹ và độc lập để truyền thông tin an toàn giữa các bên dưới dạng đối tượng JSON (Auth0, n.d). JWT là một tiêu chuẩn mở để tạo token xác thực, được sử dụng để xác minh danh tính người dùng và bảo vệ các API. JWT gồm ba phần: Header, Payload, và Signature, được mã hóa dưới dạng chuỗi Base64.
+
+Vai trò trong hệ thống eLearning
+
+Xác thực người dùng khi đăng nhập, đăng ký khóa học, hoặc thực hiện thanh toán.
+
+Bảo vệ các API (quản lý khóa học, gửi mail thông báo, thanh toán) khỏi truy cập trái phép.
+
+Hỗ trợ phân quyền để giới hạn chức năng theo vai trò (người học chỉ xem khóa học, giảng viên tạo bài kiểm tra).
+
+2.12. Thư viện NodeMailer
+Nodemailer giúp gửi email từ ứng dụng Node.js một cách đơn giản và an toàn mà không cần thêm bất kỳ phụ thuộc nào vào runtime (Andris Reinman, n.d). Nodemailer là một thư viện Node.js mã nguồn mở, dùng để gửi email từ ứng dụng. Nodemailer hỗ trợ gửi email qua các dịch vụ SMTP (Gmail, SendGrid, Outlook) với cấu hình đơn giản và hiệu quả.
+
+Vai trò trong hệ thống eLearning
+
+Gửi mail thông báo tự động đến người học về lịch học, hạn nộp bài, kết quả kiểm tra, hoặc cập nhật khóa học.
+
+Thông báo cho giảng viên về tiến độ người học hoặc các sự kiện quan trọng.
+
+Lưu trữ lịch sử email trong MySQL (qua TypeORM) để theo dõi giao tiếp.
+
+2.13. Giao diện lập trình Web API
+Web API là một API có thể được truy cập qua web thông qua giao thức HTTP. Đây là một framework giúp tạo và phát triển các dịch vụ RESTful dựa trên HTTP. Web API có thể được xây dựng bằng nhiều công nghệ khác nhau (GeeksforGeeks, 2020). Web API là một giao diện lập trình ứng dụng (API) sử dụng giao thức HTTP để cung cấp dữ liệu hoặc chức năng giữa client (frontend) và server (backend). Trong hệ thống eLearning, Web API được xây dựng với NestJS theo chuẩn RESTful.
+
+Vai trò trong hệ thống eLearning
+
+Cung cấp các endpoint API để quản lý người học, khóa học, bài kiểm tra, giao dịch thanh toán, và gửi mail thông báo.
+
+Hỗ trợ tích hợp thanh toán qua cổng thanh toán (Stripe) và gửi email qua
+
+Nodemailer.
+
+Đảm bảo giao tiếp mượt mà giữa frontend (ReactJS) và backend (NestJS), cải thiện trải nghiệm người dùng.
+
+2.14. Nền tảng tích hợp OpenAI API
+OpenAI API là một nền tảng giúp tích hợp trí tuệ nhân tạo vào ứng dụng. Nó cung cấp các mô hình tạo văn bản như GPT-4 để xử lý ngôn ngữ, trợ lý AI thực hiện tác vụ, embeddings giúp phân tích dữ liệu, và tokens để tối ưu hóa văn bản. Công cụ này hỗ trợ lập trình viên phát triển ứng dụng thông minh và mở rộng khả năng AI (OpenAI, n.d).
+
+OpenAI API là giao diện lập trình ứng dụng sử dụng các mô hình ngôn ngữ lớn như GPT-4 để tự động tạo câu hỏi trắc nghiệm dựa trên nội dung file tải lên (PDF, DOCX, hoặc văn bản). Trong hệ thống eLearning, OpenAI API được tích hợp hỗ trợ tạo bài kiểm tra.
+
+Vai trò trong hệ thống eLearning
+
+Tự động tạo bài kiểm tra trắc nghiệm từ nội dung file tải lên, lưu vào MySQL qua API NestJS, và hiển thị trên giao diện ReactJS. Hỗ trợ giáo viên và người học với bài kiểm tra cá nhân hóa, cải thiện trải nghiệm học tập. Đảm bảo giao tiếp mượt mà giữa các thành phần hệ thống, nâng cao hiệu quả quản lý khóa học và kết quả học tập.
+
+2.15. Mô hình Retrieval-Augmented Generation (RAG)
+Retrieval-Augmented Generation (RAG) là phương pháp tối ưu hóa đầu ra của mô hình ngôn ngữ lớn (LLM) bằng cách tham chiếu đến một nguồn kiến thức đáng tin cậy bên ngoài dữ liệu huấn luyện trước khi tạo phản hồi (Amazon Web Services, n.d). RAG là một kỹ thuật trí tuệ nhân tạo (AI) kết hợp truy xuất thông tin (Retrieval) và tạo văn bản (Generation) để cung cấp câu trả lời chính xác, ngữ cảnh hóa dựa trên kho dữ liệu bên ngoài. Trong hệ thống eLearning, RAG sử dụng Qdrant, một cơ sở dữ liệu vector mã nguồn mở được viết bằng Rust, để lưu trữ và tìm kiếm các vector nhúng (vector embeddings) của tài liệu học tập, từ đó hỗ trợ chatbot thông minh, đề xuất khóa học, và trả lời câu hỏi của người học. Qdrant cung cấp khả năng tìm kiếm tương tự vector (vector similarity search) hiệu quả, giúp RAG truy xuất nhanh thông tin liên quan từ cơ sở tri thức.
+
+Vai trò trong hệ thống eLearning
+
+RAG với Qdrant nâng cao tính thông minh và tương tác của hệ thống eLearning theo mô hình kết hợp:
+
+Chatbot hỗ trợ người học: Qdrant truy xuất tài liệu khóa học từ MySQL (qua TypeORM) hoặc tài liệu PDF, sau đó LLM tạo câu trả lời chi tiết cho các câu hỏi như "Cách lập trình REST API với NestJS".
+
+Đề xuất khóa học: RAG phân tích lịch sử học tập (lưu trong MySQL) và sử dụng Qdrant để truy xuất khóa học tương tự, đề xuất các khóa học phù hợp từ Market Course, ví dụ: "Lập trình JavaScript" cho người học hoàn thành "HTML/CSS".
+
+Hỗ trợ giảng viên: Qdrant truy xuất câu hỏi mẫu hoặc tài liệu để giảng viên tạo bài kiểm tra hoặc nội dung khóa học mới.
+
+Tăng trải nghiệm người dùng: Chatbot sử dụng RAG với Qdrant cung cấp câu trả lời nhanh, chính xác, hiển thị qua giao diện ReactJS/Material UI, cải thiện tương tác trong cả LMS và Market Course.
+
+2.16. Các công cụ phát triển trong hệ thống eLearning
+Việc xây dựng và triển khai các hệ thống học trực tuyến (eLearning) đòi hỏi sự hỗ trợ của nhiều công cụ phát triển để đảm bảo hiệu quả trong thiết kế, lập trình, quản lý dữ liệu, kiểm thử, và triển khai. Các công cụ phát triển đóng vai trò quan trọng trong việc tối ưu hóa quy trình phát triển phần mềm và nâng cao chất lượng hệ thống. Dưới đây là các công cụ chính thường được sử dụng:
+
+Visual Studio Code (VSCode): Đây là trình soạn thảo mã nguồn mã nguồn mở, được ưa chuộng nhờ giao diện thân thiện và khả năng tùy chỉnh cao. VSCode hỗ trợ nhiều ngôn ngữ lập trình (như JavaScript, Python, SQL) thông qua các tiện ích mở rộng, giúp lập trình viên viết, chỉnh sửa, và gỡ lỗi mã nguồn một cách hiệu quả. Công cụ này thường được dùng để phát triển giao diện người dùng hoặc backend của hệ thống eLearning.
+
+MySQL Workbench: Công cụ quản lý cơ sở dữ liệu chuyên dụng cho MySQL, hỗ trợ thiết kế, tạo, và quản lý cấu trúc cơ sở dữ liệu. MySQL Workbench cung cấp giao diện đồ họa để lập mô hình cơ sở dữ liệu, thực hiện các truy vấn SQL, và tối ưu hóa hiệu suất, rất hữu ích trong việc quản lý dữ liệu người học, khóa học, và kết quả học tập trong hệ thống eLearning.
+
+Postman: Công cụ kiểm thử API, cho phép lập trình viên tạo, gửi, và phân tích các yêu cầu API (API requests) để kiểm tra tính năng và hiệu suất của hệ thống. Postman rất phù hợp để kiểm tra các endpoint liên quan đến quản lý người dùng, đăng ký khóa học, hoặc gửi thông báo trong môi trường eLearning.
+
+Github: Hệ thống quản lý phiên bản phân tán, được sử dụng để theo dõi và quản lý mã nguồn trong suốt quá trình phát triển. Git giúp lưu trữ lịch sử thay đổi, hỗ trợ làm việc nhóm thông qua các nhánh (branches), và tích hợp với các nền tảng như GitHub hoặc GitLab để triển khai hệ thống một cách hiệu quả.
+
+Docker: Công cụ container hóa giúp đóng gói ứng dụng và các phụ thuộc (như server, cơ sở dữ liệu, thư viện) thành các container độc lập. Docker đảm bảo tính nhất quán giữa các môi trường phát triển, kiểm thử, rất hữu ích trong việc triển khai hệ thống eLearning trên nhiều nền tảng khác nhau.
+
+CHƯƠNG 3: PHÂN TÍCH THIẾT KẾ HỆ THỐNG
+3.1. Mô tả hệ thống
+Hệ thống eLearning trên nền tảng web là một giải pháp toàn diện hỗ trợ học tập, kết hợp Learning Management System (LMS) và Market Course, đáp ứng nhu cầu học tập chính quy và tự do của người học tự do/người học chính quy. Hệ thống được xây dựng với ReactJS (giao diện người dùng), NestJS (backend), và MySQL (cơ sở dữ liệu), sử dụng Material UI để tạo giao diện thân thiện, TypeORM để quản lý dữ liệu, JWT và Passport để xác thực người dùng, Nodemailer để gửi mail thông báo, và Zalo Pay để tích hợp thanh toán. Đặc biệt, hệ thống tích hợp RAG (Retrieval-Augmented Generation) với Qdrant, một cơ sở dữ liệu vector mã nguồn mở, để cung cấp chatbot thông minh và đề xuất khóa học, nâng cao trải nghiệm học tập và quản lý.
+
+Hệ thống hỗ trợ ba vai trò người dùng chính: Quản trị viên, Giảng viên, Người học chính quy, người học tự do, mỗi vai trò có các chức năng cụ thể để đảm bảo vận hành hiệu quả và trải nghiệm học tập tối ưu.
+
+Đối với người dùng Quản trị viên
+Quản trị viên là trung tâm quản lý toàn diện, chịu trách nhiệm giám sát và điều phối mọi hoạt động của hệ thống eLearning. Các chức năng chính bao gồm:
+
+Quản lý thông tin: Quản lý dữ liệu người học tự do/người học chính quy (hồ sơ, tiến độ học tập, chứng nhận), giảng viên (thông tin cá nhân, lịch dạy), và khóa học (nội dung, danh mục LMS và Market Course), lưu trữ trong MySQL thông qua TypeORM.
+
+Quản lý người dùng: Tạo, cập nhật, và phân quyền tài khoản cho giảng viên và người học tự do/người học chính quy, sử dụng JWT và Passport để đảm bảo bảo mật.
+
+Phân công giảng viên: Gán giảng viên cho từng khóa học hoặc lớp học thuật (LMS), dựa trên chuyên môn và lịch dạy của giảng viên.
+
+Quản lý lịch dạy trực tuyến: Quản trị viên có thể điều chỉnh lịch, theo dõi trạng thái buổi học (hoàn thành, hủy, hoặc tạm hoãn), và đảm bảo sự đồng bộ giữa lịch dạy và tiến độ học tập của người học.
+
+Quản lý tài chính: Theo dõi doanh thu từ học phí và khóa học Market Course, xử lý thanh toán trực tuyến qua ZaloPay, và tạo báo cáo tài chính.
+
+Gửi thông báo: Sử dụng Nodemailer để gửi email tự động cập nhật thông tin về lịch học, kết quả kiểm tra, hoặc thông báo hệ thống đến người học tự do/người học chính quy và giảng viên.
+
+Tương tác với RAG: Sử dụng chatbot RAG với Qdrant để truy xuất tài liệu khóa học, phân tích dữ liệu học tập, hoặc đề xuất chiến lược phát triển khóa học (ví dụ: thêm khóa học mới dựa trên nhu cầu người học tự do).
+
+Báo cáo và thống kê: Tạo báo cáo về tiến độ học tập, doanh thu, và hiệu suất giảng dạy, sử dụng truy vấn MySQL để phân tích dữ liệu.
+
+Đối với người dùng Giảng viên
+Giảng viên chịu trách nhiệm quản lý nội dung học tập và tương tác với người học tự do/người học chính quy trong các khóa học thuộc LMS hoặc Market Course. Các chức năng chính bao gồm:
+
+Tạo và quản lý khóa học: Phát triển nội dung khóa học (bao gồm bài giảng, tài liệu, bài tập, và bài kiểm tra), phân bổ thời gian giảng dạy, và cập nhật tiến độ học tập của người học.
+
+Tạo trắc nghiệm tự động: Sử dụng OpenAI API (dựa trên GPT-4) để tự động tạo câu hỏi trắc nghiệm từ nội dung file tải lên (PDF, DOCX, TXT), hỗ trợ giảng viên tiết kiệm thời gian và cá nhân hóa bài kiểm tra.
+
+Quản lý lớp học thuật: Quản lý người học chính quy có trong lớp học, thêm, sửa, xóa người học chính quy, tạo bài kiểm tra dành riêng cho lớp học
+
+Quản lý lịch dạy trực tuyến: Lên kế hoạch và quản lý lịch dạy trực tuyến cho các khóa học hoặc lớp học, bao gồm thiết lập thời gian bắt đầu, kết thúc, và liên kết đến các nền tảng như Google Meet.
+
+Quản lý điểm danh: Theo dõi và ghi nhận sự tham gia của người học trong các buổi học trực tuyến (ví dụ: qua Google Meet). Giảng viên có thể kiểm tra thời gian tham gia, rời đi, và thời lượng học tập của từng người học, sau đó cập nhật thông tin điểm danh để hỗ trợ quản lý lớp học và đánh giá sự tham gia.
+
+Chấm bài tập và phản hồi: Xem bài tập đã nộp từ người học tự do/người học chính quy (bài luận/tự luận), chấm điểm và nhận xét bài làm.
+
+Quản lý thông tin: Rà soát và cập nhật thông tin người học tự do/người học chính quy (hồ sơ, tiến độ học tập) trong các khóa học được phân công.
+
+Gửi thông báo: Sử dụng Nodemailer để gửi email thông báo về bài tập, lịch học, hoặc kết quả kiểm tra đến người học tự do/người học chính quy.
+
+Hỗ trợ người học: Hướng dẫn, giải đáp thắc mắc, và tương tác với người học qua diễn đàn hoặc chat trực tuyến, đảm bảo quá trình học tập diễn ra hiệu quả.
+
+Tương tác với RAG: Sử dụng chatbot RAG với Qdrant để truy xuất tài liệu giảng dạy, câu hỏi mẫu, hoặc đề xuất nội dung bài kiểm tra dựa trên chương trình học.
+
+Giới hạn truy cập: Chỉ quản lý dữ liệu liên quan đến các khóa học và người học tự do/người học chính quy được phân công..
+
+Đối với người dùng Người học chính quy
+Người học chính quy là đối tượng chính sử dụng hệ thống trong môi trường học tập chính quy (Learning Management System - LMS). Các chức năng chính bao gồm:
+
+Nội dung học tập: Truy cập nội dung khóa học (bài giảng, video, văn bản, slide) qua "Chi tiết khóa học", "Chi tiết nội dung học video", "Chi tiết nội dung học văn bản", "Chi tiết nội dung học slide", tham gia bài kiểm tra, và theo dõi tiến độ học tập, lưu trữ trong MySQL.
+
+Học trực tuyến và điểm danh: Tham gia các lớp học trực tuyến thông qua Google Meet tại "Tham gia học trực tuyến", học trực tiếp với giảng viên, tự động điểm danh khi tham gia.
+
+Làm bài tập/bài trắc nghiệm: Truy cập bài tập hoặc bài trắc nghiệm do giảng viên tạo qua "Các bài tập và trắc nghiệm" dành riêng cho lớp học thuật, nộp bài trực tuyến (tải file hoặc nhập văn bản) qua "Nộp bài tập". Bài trắc nghiệm có thời gian bắt đầu và kết thúc được cài đặt, chấm điểm tự động, xem điểm và đáp án qua "Hiển thị điểm và đáp án" và "Kết quả bài tập".
+
+Đăng ký khóa học: Đăng ký khóa học trong LMS theo sự chỉ định của giảng viên hoặc chương trình đào tạo qua "Chương trình đào tạo của người học chính quy", không yêu cầu thanh toán học phí trực tiếp.
+
+Nhận thông báo: Nhận email thông báo về lịch học, kết quả kiểm tra, hoặc cập nhật khóa học qua Nodemailer tại "Thông báo" và "Thông báo mail".
+
+Tương tác với Chatbot: Sử dụng chatbot RAG với Qdrant qua "Giao diện chatbot" để đặt câu hỏi về nội dung khóa học (ví dụ: "Giải thích REST API trong NestJS") hoặc nhận gợi ý tài liệu học tập dựa trên lịch sử học tập.
+
+Quản lý hồ sơ: Xem và cập nhật thông tin cá nhân, điểm số qua "Trang cá nhân".
+
+Tổng quan học tập: Xem thông báo, khóa học nổi bật qua "Trang chủ".
+
+Tham gia diễn đàn: Thảo luận, đăng bài qua "Chi tiết diễn đàn".
+
+Tìm kiếm thông tin: Tìm khóa học, tài liệu, giảng viên qua "Tìm kiếm thông tin".
+
+Tương tác qua chat: Trò chuyện với giảng viên, người học qua "Hộp thoại chat".
+
+Theo dõi chương trình đào tạo: Xem học kỳ, môn học, tín chỉ qua "Chương trình đào tạo của người học chính quy".
+
+Tương tác nhóm: Trò chuyện trong nhóm lớp qua "Hộp thoại chat nhóm".
+
+
+Đối với người dùng Người học tự do
+Người học tự do là đối tượng sử dụng hệ thống trong môi trường học tập tự do (Market Course). Các chức năng chính bao gồm:
+
+Nội dung học tập: Truy cập nội dung khóa học (bài giảng, video, văn bản, slide) qua "Chi tiết khóa học", "Chi tiết nội dung học video", "Chi tiết nội dung học văn bản", "Chi tiết nội dung học slide", tham gia bài kiểm tra, và theo dõi tiến độ học tập, lưu trữ trong MySQL.
+
+Làm bài tập/bài trắc nghiệm: Truy cập bài tập hoặc bài trắc nghiệm trong nội dung khóa học qua "Chi tiết nội dung học làm bài tập" và "Chi tiết nội dung học làm trắc nghiệm", nộp bài trực tuyến (tải file hoặc nhập văn bản). Bài trắc nghiệm có thời gian bắt đầu và kết thúc được cài đặt, chấm điểm tự động, xem điểm và đáp án qua "Kết quả bài tập".
+
+Đăng ký khóa học: Đăng ký khóa học tự chọn qua "Danh sách khóa học", thực hiện thanh toán học phí qua ZaloPay tại "Thanh toán ZaloPay". Tạo tài khoản qua "Đăng ký" và truy cập hệ thống qua "Đăng nhập".
+
+Nhận thông báo: Nhận email thông báo về lịch học, kết quả kiểm tra, hoặc cập nhật khóa học qua Nodemailer tại "Thông báo" và "Thông báo mail".
+
+Tương tác với Chatbot: Sử dụng chatbot RAG với Qdrant qua "Giao diện chatbot" để đặt câu hỏi về nội dung khóa học (ví dụ: "Giải thích REST API trong NestJS") hoặc nhận đề xuất khóa học phù hợp dựa trên lịch sử học tập.
+
+Quản lý hồ sơ: Xem và cập nhật thông tin cá nhân, điểm số, chứng nhận hoàn thành khóa học, lịch sử thanh toán qua "Trang cá nhân chứng chỉ" và "Trang cá nhân thanh toán".
+
+Tổng quan học tập: Xem thông báo, khóa học nổi bật qua "Trang chủ".
+
+Tham gia diễn đàn: Thảo luận, đăng bài qua "Chi tiết diễn đàn".
+
+Tìm kiếm thông tin: Tìm khóa học, tài liệu, giảng viên qua "Tìm kiếm thông tin".
+
+Tương tác qua chat: Trò chuyện với giảng viên, người học tự do qua "Hộp thoại chat".
+
+Khám phá khóa học: Xem danh sách khóa học qua "Danh sách khóa học".
+
+Theo dõi chứng chỉ: Kiểm tra, tải chứng chỉ qua "Trang cá nhân chứng chỉ".
+
+Theo dõi tài chính: Xem lịch sử giao dịch qua "Trang cá nhân thanh toán".
+
+3.2. Mô hình RAG (Retrieval-Augmented Generation) và các thành phần liên quan
+Mô hình RAG là một kiến trúc tích hợp giữa truy xuất thông tin (Retrieval) và sinh nội dung (Generation), được thiết kế để nâng cao khả năng phản hồi thông minh trong hệ thống eLearning. Dưới đây là các thực thể chính trong mô hình, được mô tả chi tiết (Nguồn: gradientflow.com):
+
+
+
+Nguồn: gradientflow.com
+
+Hình 3.1 Mô hình RAG (Retrieval-Augmented Generation)
+
+3.2.1. Dữ liệu thô (Raw Data)
+Vai trò: Đây là tập hợp dữ liệu ban đầu chưa qua xử lý, bao gồm các nguồn tri thức phong phú như bài giảng (PDF, video, slide), tài liệu tham khảo, câu hỏi thường gặp (FAQ), hoặc nội dung từ diễn đàn thảo luận trong hệ thống eLearning.  
+
+Ví dụ cụ thể: Tài liệu PDF về "Cơ sở dữ liệu", video bài giảng về "ReactJS", hoặc các câu hỏi từ người học trên diễn đàn.  
+
+Mối quan hệ: Raw Data là đầu vào cho quá trình trích xuất thông tin.
+
+3.2.2. Trích xuất thông tin (Information Extraction)
+Vai trò: Quá trình xử lý dữ liệu thô để trích xuất các thông tin có ý nghĩa, loại bỏ dữ liệu không liên quan và chuẩn bị cho các bước tiếp theo. Các kỹ thuật như phân tích cú pháp (parsing) hoặc tóm tắt nội dung được sử dụng.  
+
+Ví dụ cụ thể: Từ một tài liệu dài 50 trang, trích xuất các đoạn ngắn như "Khái niệm cơ bản về ERD" hoặc "Hướng dẫn thiết kế bảng trong MySQL".  
+
+Mối quan hệ: Dữ liệu sau khi trích xuất được chuyển đến bước phân đoạn (Chunking).
+
+3.2.3. Phân đoạn (Chunking)
+Vai trò: Chia các đoạn thông tin đã trích xuất thành các khối dữ liệu nhỏ hơn (chunks) để tối ưu hóa việc nhúng vector và tăng hiệu quả truy xuất. Các khối được chia dựa trên kích thước hoặc ngữ nghĩa.  
+
+Ví dụ cụ thể: Một đoạn văn về "Hướng dẫn sử dụng Market Course" có thể được chia thành các khối như "Đăng ký khóa học", "Thanh toán học phí", và "Xem lịch học".  
+
+Mối quan hệ: Các khối dữ liệu sau khi phân đoạn được chuyển đến bước nhúng vector (Embedding).
+
+3.2.4. Nhúng vector (Embedding)
+Vai trò: Chuyển đổi các khối dữ liệu (chunks) thành các vector số hóa (embeddings) thông qua mô hình ngôn ngữ tự nhiên (NLP), như BERT hoặc Sentence Transformers, để biểu diễn nội dung dưới dạng số, hỗ trợ so sánh ngữ nghĩa.  
+
+Ví dụ cụ thể: Cụm từ "Hướng dẫn đăng ký khóa học" được nhúng thành vector [0.12, -0.45, 0.78, ...].  
+
+Mối quan hệ: Các vector được lưu trữ trong Vector Database để sử dụng trong quá trình truy xuất.
+
+3.2.5. Cơ sở dữ liệu vector (Vector Database)
+Vai trò: Nơi lưu trữ các vector nhúng được tạo ra từ dữ liệu thô sau khi xử lý. Cơ sở dữ liệu này cho phép tìm kiếm nhanh chóng dựa trên độ tương đồng ngữ nghĩa, hỗ trợ truy xuất thông tin liên quan.  
+
+Ví dụ cụ thể: Chứa các vector biểu diễn nội dung bài giảng, câu trả lời mẫu, hoặc tài liệu hướng dẫn trong hệ thống eLearning.  
+
+Mối quan hệ: Vector Database cung cấp dữ liệu cho quá trình truy xuất dựa trên truy vấn.
+
+3.2.6. Truy vấn (Query)
+Vai trò: Yêu cầu hoặc câu hỏi mà người dùng (người học, giảng viên, hoặc quản trị viên) gửi đến hệ thống, khởi động quá trình xử lý.  
+
+Ví dụ cụ thể: Một người học có thể gửi truy vấn "Cách đăng ký khóa học trên Market Course?"  
+
+Mối quan hệ: Truy vấn được nhúng thành vector để so sánh với dữ liệu trong Vector Database.
+
+3.2.7. Dữ liệu liên quan (Relevant Data )
+Vai trò: Tập hợp các đoạn dữ liệu được truy xuất từ Vector Database, chứa thông tin có liên quan nhất đến truy vấn, cung cấp bối cảnh để tạo phản hồi.  
+
+Ví dụ cụ thể: Dữ liệu liên quan có thể là đoạn văn bản "Để đăng ký khóa học, vào mục Market Course và chọn khóa học mong muốn".  
+
+Mối quan hệ: Relevant Data được chuyển đến mô hình ngôn ngữ lớn (LLMs) để sinh phản hồi.
+
+3.2.8. Mô hình ngôn ngữ lớn (LLMs)
+Vai trò: Mô hình sinh học (như GPT hoặc BERT) kết hợp truy vấn với dữ liệu liên quan để tạo phản hồi tự nhiên, mạch lạc, và phù hợp ngữ cảnh.  
+
+Ví dụ cụ thể: Dựa trên dữ liệu liên quan, LLMs sinh ra câu trả lời: "Để đăng ký khóa học, bạn vào mục Market Course, chọn khóa học mong muốn, và nhấn nút Đăng ký."  
+
+Mối quan hệ: LLMs nhận đầu vào từ Relevant Data và Query, tạo ra Response.
+
+3.2.9. Phản hồi (Response)
+Vai trò: Kết quả cuối cùng mà hệ thống trả về cho người dùng, thể hiện câu trả lời hoặc thông tin được yêu cầu, đảm bảo tính chính xác và tự nhiên.  
+
+Ví dụ cụ thể: Phản hồi có thể là một đoạn hướng dẫn chi tiết hoặc câu trả lời ngắn gọn, tùy thuộc vào truy vấn.  
+
+Mối quan hệ: Response là đầu ra cuối cùng của mô hình, gửi trực tiếp đến người dùng.
+
+Luồng hoạt động tổng thể:
+
+Quá trình bắt đầu từ Raw Data, được xử lý qua Information Extraction, Chunking, và Embedding để tạo ra Vector Database. Từ đây, Query được nhúng thành vector, truy xuất Relevant Data từ Vector Database, sau đó được LLMs xử lý để sinh ra Response. Mô hình RAG giúp hệ thống eLearning cung cấp phản hồi thông minh, chính xác, và cá nhân hóa, hỗ trợ tối ưu cho người học và giảng viên.
+
+3.3. Mô hình phân cấp chức năng BFD (Business Function Diagram)
+
+
+Hình 3.2 Mô hình phân cấp chức năng BFD (Business Function Diagram)
+
+3.4. Sơ đồ use-case
+3.4.1. Sơ đồ use-case tổng quát
+
+
+Hình 3.3 Usecase tổng quát
+
+
+3.4.2. Sơ đồ use-case tác nhân quản trị viên
+
+
+Hình 3.4 Usecase tác nhân quản trị viên
+
+
+3.4.3. Sơ đồ use-case tác nhân giảng viên
+\
+
+
+
+Hình 3.5 Usecase tác nhân giảng viên
+
+
+3.4.4. Sơ đồ use-case tác nhân người học tự do
+
+
+Hình 3.6 Usecase tác nhân người học tự do
+
+
+3.4.5. Sơ đồ use-case tác nhân người học chính quy
+
+
+Hình 3.7 Usecase tác nhân người học chính quy
+
+
+3.5. Sơ đồ tuần tự chức năng
+3.5.1 Sơ đồ tuần tự chức năng đăng ký tài khoản
+
+
+Hình 3.8 Sơ đồ tuần tự chức năng đăng ký tài khoản
+
+3.5.2 Sơ đồ tuần tự chức năng đăng nhập
+
+
+Hình 3.9 Sơ đồ tuần tự chức năng đăng nhập tài khoản
+
+3.5.3 Sơ đồ tuần tự chức năng quên mật khẩu
+
+
+Hình 3.10 Sơ đồ tuần tự chức năng quên mật khẩu
+
+3.5.4 Sơ đồ tuần tự chức năng thêm mới dữ liệu
+
+
+Hình 3.11 Sơ đồ tuần tự chức năng thêm mới dữ liệu
+
+
+3.5.5 Sơ đồ tuần tự chức năng cập nhật dữ liệu
+
+
+Hình 3.12 Sơ đồ tuần tự chức năng cập nhật dữ liệu
+
+3.5.6 Sơ đồ tuần tự chức năng xóa dữ liệu
+
+
+Hình 3.13 Sơ đồ tuần tự chức năn xóa dữ liệu
+
+
+3.5.7 Sơ đồ tuần tự chức năng tìm kiếm và lọc thông tin
+
+
+Hình 3.14 Sơ đồ tuần tự chức năng tìm kiếm và lọc thông tin
+
+3.5.8 Sơ đồ tuần tự chức năng đăng ký khóa học
+
+
+Hình 3.15 Sơ đồ tuần tự chức năng tìm kiếm đăng ký khóa học
+
+
+3.5.9 Sơ đồ tuần tự chức năng thống kê
+
+
+Hình 3.16 Sơ đồ tuần tự chức năng thống kê
+
+
+3.5.10 Sơ đồ tuần tự chức năng gửi email
+
+
+Hình 3.17 Sơ đồ tuần tự chức năng gửi mail
+
+
+3.5.11 Sơ đồ tuần tự chức năng gửi tin nhắn thông thường
+
+
+Hình 3.18 Sơ đồ tuần tự chức năng gửi tin nhắn thông thường
+
+3.5.12 Sơ đồ tuần tự chức năng gửi tin nhắn chatbot
+
+
+Hình 3.19 Sơ đồ tuần tự chức năng gửi tin nhắn chatbot
+
+3.5.13 Sơ đồ tuần tự chức năng tự động tạo trắc nghiệm
+
+
+Hình 3.20 Sơ đồ tuần tự chức năng tự động tạo trắc nghiệm
+
+3.5.14 Sơ đồ tuần tự chức năng làm bài trắc nghiệm
+
+
+Hình 3.21 Sơ đồ tuần tự chức năng làm bài trắc nghiệm
+
+
+3.5.15 Sơ đồ tuần tự chức năng làm bài tập tự luận
+
+
+Hình 3.22 Sơ đồ tuần tự chức năng làm bài tập tự luận
+
+3.5.16 Sơ đồ tuần tự chức năng chấm điểm bài tập
+
+
+Hình 3.23 Sơ đồ tuần tự chức năng làm bài tập tự luận
+
+3.5.17 Sơ đồ tuần tự chức năng tương tác bài viết diễn đàn
+
+
+Hình 3.24 Sơ đồ tuần tự chức năng tương tác bài viết diễn đàn
+
+3.5.18 Sơ đồ tuần tự chức năng đánh giá
+
+
+Hình 3.25 Sơ đồ tuần tự chức năng đánh giá
+
+
+3.5.19 Sơ đồ tuần tự lên lịch dạy trực tuyến
+
+
+Hình 3.26 Sơ đồ tuần tự chức năng lên lịch dạy trực tuyến
+
+3.5.20 Sơ đồ tuần tự tham gia học trực tuyến và điểm danh
+
+
+Hình 3.27 Sơ đồ tuần tự chức năng tham gia học trực truyến và điểm danh
+
+3.5.21 Sơ đồ tuần tự cấp chứng chỉ
+
+
+Hình 3.28 Sơ đồ tuần tự cấp chứng chỉ
+
+3.5.22 Sơ đồ tuần tự chức năng tải file lên Google Drive
+
+
+Hình 3.29 Sơ đồ tuần tự chức năng tải file lên Google Drive
+
+CHƯƠNG 4: THIẾT KẾ CƠ SỞ DỮ LIỆU
+4.1. Xác định thực thể
+ 4.1.1 Thực thể khóa học lớp học (AcademicClassCourse)  
+ Thực thể dữ liệu "Khóa học lớp học (AcademicClassCourse)" bao gồm một bảng duy nhất có tên là "academic_class_courses" với các cột chứa thông tin chi tiết về mối quan hệ giữa lớp học và khóa học. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã lớp học ("academic_class_id", khóa ngoại tham chiếu bảng academic_classes), mã khóa học ("course_id", khóa ngoại tham chiếu bảng courses), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at"). Ngoài ra, bảng còn có các cột để lưu trữ thông tin về ngày xóa ("deleted_at") và người xóa ("deleted_by"), nhằm theo dõi các hoạt động quản lý dữ liệu liên quan đến việc xóa mềm.
+
+ 4.1.2 Thực thể giảng viên lớp học (AcademicClassInstructor)  
+ Thực thể dữ liệu "Giảng viên lớp học (AcademicClassInstructor)" bao gồm một bảng duy nhất có tên là "academic_class_instructors" với các cột chứa thông tin chi tiết về mối quan hệ giữa lớp học và giảng viên. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã lớp học ("class_id", khóa ngoại tham chiếu bảng academic_classes), mã giảng viên ("instructor_id", khóa ngoại tham chiếu bảng user_instructors), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+ 4.1.3 Thực thể lớp học thuật (AcademicClass)  
+Thực thể dữ liệu "Lớp học thuật (AcademicClass)" bao gồm một bảng duy nhất có tên là "academic_classes" với các cột chứa thông tin chi tiết về lớp học chính quy. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã lớp ("class_code", duy nhất), tên lớp ("class_name"), mã ngành ("major_id", khóa ngoại tham chiếu bảng majors), mã chương trình ("program_id", khóa ngoại tham chiếu bảng programs), học kỳ ("semester"), trạng thái ("status", active/completed/cancelled), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.4 Thực thể bài nộp bài tập (AssignmentSubmission)  
+ Thực thể dữ liệu "Bài nộp bài tập (AssignmentSubmission)" bao gồm một bảng duy nhất có tên là "assignment_submissions" với các cột chứa thông tin chi tiết về bài nộp của người dùng cho bài tập. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã bài tập ("assignment_id", khóa ngoại tham chiếu bảng assignments), mã người dùng ("user_id", khóa ngoại tham chiếu bảng users), nội dung bài nộp ("submission_text"), đường dẫn tệp nộp ("file_url"), thời gian nộp bài ("submitted_at"), trạng thái bài nộp ("status"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.5 Thực thể bài tập (Assignment)  
+Thực thể dữ liệu "Bài tập (Assignment)" bao gồm một bảng duy nhất có tên là "assignments" với các cột chứa thông tin chi tiết về bài tập. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã bài học ("lesson_id", khóa ngoại tham chiếu bảng course_lessons), mã lớp học ("academic_class_id", khóa ngoại tham chiếu bảng academic_classes), tiêu đề bài tập ("title"), mô tả ("description"), thời hạn nộp bài ("due_date"), điểm tối đa ("max_score"), yêu cầu tệp ("file_requirements"), liên kết tài liệu yêu cầu ("link_document_required"), loại bài tập ("assignment_type"), thời gian bắt đầu ("start_time"), thời gian kết thúc ("end_time"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.6 Thực thể danh mục khóa học (Category)  
+ Thực thể dữ liệu "Danh mục khóa học (Category)" bao gồm một bảng duy nhất có tên là "categories" với các cột chứa thông tin chi tiết về danh mục khóa học. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm tên danh mục ("name"), mô tả ("description"), trạng thái danh mục ("status"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.7 Thực thể chứng chỉ (Certificate)  
+ Thực thể dữ liệu "Chứng chỉ (Certificate)" bao gồm một bảng duy nhất có tên là "certificates" với các cột chứa thông tin chi tiết về chứng chỉ của người dùng. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã người dùng ("user_id", khóa ngoại tham chiếu bảng users), mã khóa học ("course_id", khóa ngoại tham chiếu bảng courses), số chứng chỉ ("certificate_number"), đường dẫn chứng chỉ ("certificate_url"), ngày cấp ("issue_date"), ngày hết hạn ("expiry_date"), trạng thái chứng chỉ ("status"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.8 Thực thể phản hồi chatbot (ChatbotResponse)  
+Thực thể dữ liệu "Phản hồi chatbot (ChatbotResponse)" bao gồm một bảng duy nhất có tên là "chatbot_response" với các cột chứa thông tin chi tiết về phản hồi của chatbot. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm từ khóa ("keywords"), nội dung phản hồi ("response"), danh mục ("category"), và độ tin cậy ("confidence").
+
+4.1.9 Thực thể thảo luận bài học (CourseLessonDiscussion)  
+Thực thể dữ liệu "Thảo luận bài học (CourseLessonDiscussion)" bao gồm một bảng duy nhất có tên là "course_lesson_discussions" với các cột chứa thông tin chi tiết về thảo luận trong bài học. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã bài học ("lesson_id", khóa ngoại tham chiếu bảng course_lessons), mã người dùng ("user_id", khóa ngoại tham chiếu bảng users), mã thảo luận cha ("parent_id", khóa ngoại tham chiếu chính bảng course_lesson_discussions), nội dung thảo luận ("content"), trạng thái thảo luận ("status"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.10 Thực thể bài học khóa học (CourseLesson)  
+Thực thể dữ liệu "Bài học khóa học (CourseLesson)" bao gồm một bảng duy nhất có tên là "course_lessons" với các cột chứa thông tin chi tiết về bài học trong khóa học. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã phần khóa học ("section_id", khóa ngoại tham chiếu bảng course_sections), tiêu đề bài học ("title"), loại nội dung ("content_type"), đường dẫn nội dung ("content_url"), nội dung bài học ("content"), thời lượng ("duration"), số thứ tự ("order_number"), trạng thái miễn phí ("is_free"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.11 Thực thể tiến độ khóa học (CourseProgress)  
+Thực thể dữ liệu "Tiến độ khóa học (CourseProgress)" bao gồm một bảng duy nhất có tên là "course_progress" với các cột chứa thông tin chi tiết về tiến độ học tập của người dùng. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã người dùng ("user_id", khóa ngoại tham chiếu bảng users), mã bài học ("lesson_id", khóa ngoại tham chiếu bảng course_lessons), thời gian hoàn thành ("completed_at"), và thời gian truy cập cuối ("last_accessed").
+
+4.1.12 Thực thể phần khóa học (CourseSection)  
+Thực thể dữ liệu "Phần khóa học (CourseSection)" bao gồm một bảng duy nhất có tên là "course_sections" với các cột chứa thông tin chi tiết về phần của khóa học. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã khóa học ("course_id", khóa ngoại tham chiếu bảng courses), tiêu đề phần ("title"), mô tả ("description"), số thứ tự ("order_number"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.13 Thực thể khóa học (Course)  
+Thực thể dữ liệu "Khóa học (Course)" bao gồm một bảng duy nhất có tên là "courses" với các cột chứa thông tin chi tiết về khóa học. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm tiêu đề khóa học ("title"), mô tả ("description"), mã danh mục ("category_id", khóa ngoại tham chiếu bảng categories), mã giảng viên ("instructor_id", khóa ngoại tham chiếu bảng user_instructors), giá ("price"), đối tượng học ("for"), cấp độ ("level"), trạng thái khóa học ("status"), đường dẫn hình ảnh ("thumbnail_url"), yêu cầu ("required"), nội dung học ("learned"), ngày bắt đầu ("start_date"), ngày kết thúc ("end_date"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.14 Thực thể tài liệu (Document)  
+Thực thể dữ liệu "Tài liệu (Document)" bao gồm một bảng duy nhất có tên là "documents" với các cột chứa thông tin chi tiết về tài liệu. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã giảng viên ("instructor_id", khóa ngoại tham chiếu bảng user_instructors), mã phần khóa học ("course_section_id", khóa ngoại tham chiếu bảng course_sections), tiêu đề tài liệu ("title"), mô tả ("description"), đường dẫn tệp ("file_url"), loại tệp ("file_type"), ngày tải lên ("upload_date"), số lượt tải ("download_count"), trạng thái tài liệu ("status"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.15 Thực thể đăng ký khóa học (Enrollment)  
+Thực thể dữ liệu "Đăng ký khóa học (Enrollment)" bao gồm một bảng duy nhất có tên là "enrollments" với các cột chứa thông tin chi tiết về việc đăng ký khóa học của người dùng. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã người dùng ("user_id", khóa ngoại tham chiếu bảng users), mã khóa học ("course_id", khóa ngoại tham chiếu bảng courses), ngày đăng ký ("enrollment_date"), trạng thái đăng ký ("status"), ngày hoàn thành ("completion_date"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.16 Thực thể lượt thích diễn đàn (ForumLike)  
+Thực thể dữ liệu "Lượt thích diễn đàn (ForumLike)" bao gồm một bảng duy nhất có tên là "forum_likes" với các cột chứa thông tin chi tiết về lượt thích bài viết trong diễn đàn. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã diễn đàn ("forum_id", khóa ngoại tham chiếu bảng forums), mã người dùng ("user_id", khóa ngoại tham chiếu bảng users), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.17 Thực thể trả lời diễn đàn (ForumReply)  
+Thực thể dữ liệu "Trả lời diễn đàn (ForumReply)" bao gồm một bảng duy nhất có tên là "forum_replies" với các cột chứa thông tin chi tiết về trả lời trong diễn đàn. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã diễn đàn ("forum_id", khóa ngoại tham chiếu bảng forums), mã người dùng ("user_id", khóa ngoại tham chiếu bảng users), mã trả lời cha ("reply_id", khóa ngoại tham chiếu chính bảng forum_replies), nội dung trả lời ("content"), trạng thái giải pháp ("is_solution"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.18 Thực thể diễn đàn (Forum)  
+Thực thể dữ liệu "Diễn đàn (Forum)" bao gồm một bảng duy nhất có tên là "forums" với các cột chứa thông tin chi tiết về diễn đàn của khóa học. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã khóa học ("course_id", khóa ngoại tham chiếu bảng courses), mã người dùng ("user_id", khóa ngoại tham chiếu bảng users), tiêu đề diễn đàn ("title"), mô tả ("description"), đường dẫn hình ảnh ("thumbnail_url"), trạng thái diễn đàn ("status"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.19 Thực thể tin nhắn (Message)  
+Thực thể dữ liệu "Tin nhắn (Message)" bao gồm một bảng duy nhất có tên là "messages" với các cột chứa thông tin chi tiết về tin nhắn giữa người dùng. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã người gửi ("sender_id", khóa ngoại tham chiếu bảng users), mã người nhận ("receiver_id", khóa ngoại tham chiếu bảng users), nội dung tin nhắn ("message_text"), liên kết tham chiếu ("reference_link"), trạng thái đã đọc ("is_read"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.20 Thực thể thông báo (Notification)  
+Thực thể dữ liệu "Thông báo (Notification)" bao gồm một bảng duy nhất có tên là "notifications" với các cột chứa thông tin chi tiết về thông báo gửi đến người dùng. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã người dùng ("user_id", khóa ngoại tham chiếu bảng users), tiêu đề thông báo ("title"), nội dung ("content"), loại thông báo ("type"), trạng thái đã đọc ("is_read"), mã lịch giảng dạy ("teaching_schedule_id", khóa ngoại tham chiếu bảng teaching_schedules), thời gian thông báo ("notification_time"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.21 Thực thể thanh toán (Payment)  
+Thực thể dữ liệu "Thanh toán (Payment)" bao gồm một bảng duy nhất có tên là "payments" với các cột chứa thông tin chi tiết về giao dịch thanh toán. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã người dùng ("user_id", khóa ngoại tham chiếu bảng users), mã khóa học ("course_id", khóa ngoại tham chiếu bảng courses), số tiền ("amount"), phương thức thanh toán ("payment_method"), mã giao dịch ("transaction_id"), trạng thái thanh toán ("status"), ngày thanh toán ("payment_date"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.22 Thực thể lượt làm bài kiểm tra (QuizAttempt)  
+Thực thể dữ liệu "Lượt làm bài kiểm tra (QuizAttempt)" bao gồm một bảng duy nhất có tên là "quiz_attempts" với các cột chứa thông tin chi tiết về lượt làm bài kiểm tra của người dùng. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã người dùng ("user_id", khóa ngoại tham chiếu bảng users), mã bài kiểm tra ("quiz_id", khóa ngoại tham chiếu bảng quizzes), thời gian bắt đầu ("start_time"), thời gian kết thúc ("end_time"), điểm số ("score"), trạng thái lượt làm bài ("status"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.23 Thực thể lựa chọn bài kiểm tra (QuizOption)  
+Thực thể dữ liệu "Lựa chọn bài kiểm tra (QuizOption)" bao gồm một bảng duy nhất có tên là "quiz_options" với các cột chứa thông tin chi tiết về lựa chọn trả lời trong bài kiểm tra. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã câu hỏi ("question_id", khóa ngoại tham chiếu bảng quiz_questions), nội dung lựa chọn ("option_text"), trạng thái đúng/sai ("is_correct"), số thứ tự ("order_number"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.24 Thực thể câu hỏi bài kiểm tra (QuizQuestion)  
+Thực thể dữ liệu "Câu hỏi bài kiểm tra (QuizQuestion)" bao gồm một bảng duy nhất có tên là "quiz_questions" với các cột chứa thông tin chi tiết về câu hỏi trong bài kiểm tra. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã bài kiểm tra ("quiz_id", khóa ngoại tham chiếu bảng quizzes), nội dung câu hỏi ("question_text"), loại câu hỏi ("question_type"), giải thích đáp án đúng ("correct_explanation"), điểm số ("points"), số thứ tự ("order_number"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.25 Thực thể phản hồi bài kiểm tra (QuizResponse)  
+Thực thể dữ liệu "Phản hồi bài kiểm tra (QuizResponse)" bao gồm một bảng duy nhất có tên là "quiz_responses" với các cột chứa thông tin chi tiết về phản hồi của người dùng cho câu hỏi bài kiểm tra. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã lượt làm bài ("attempt_id", khóa ngoại tham chiếu bảng quiz_attempts), mã câu hỏi ("question_id", khóa ngoại tham chiếu bảng quiz_questions), mã lựa chọn được chọn ("selected_option_id", khóa ngoại tham chiếu bảng quiz_options), điểm số ("score"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.26 Thực thể bài kiểm tra (Quiz)  
+Thực thể dữ liệu "Bài kiểm tra (Quiz)" bao gồm một bảng duy nhất có tên là "quizzes" với các cột chứa thông tin chi tiết về bài kiểm tra. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã bài học ("lesson_id", khóa ngoại tham chiếu bảng course_lessons), mã lớp học ("academic_class_id", khóa ngoại tham chiếu bảng academic_classes), tiêu đề bài kiểm tra ("title"), mô tả ("description"), thời gian giới hạn ("time_limit"), điểm tối thiểu ("passing_score"), số lượt làm bài tối đa ("attempts_allowed"), loại bài kiểm tra ("quiz_type"), hiển thị giải thích ("show_explanation"), sắp xếp ngẫu nhiên ("random"), thời gian bắt đầu ("start_time"), thời gian kết thúc ("end_time"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.27 Thực thể đánh giá (Review)  
+Thực thể dữ liệu "Đánh giá (Review)" bao gồm một bảng duy nhất có tên là "reviews" với các cột chứa thông tin chi tiết về đánh giá khóa học hoặc giảng viên. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã người học chính quy ("user_student_id", khóa ngoại tham chiếu bảng user_students), mã khóa học ("course_id", khóa ngoại tham chiếu bảng courses), loại đánh giá ("review_type"), điểm đánh giá ("rating"), nội dung đánh giá ("review_text"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.28 Thực thể điểm danh buổi học (SessionAttendance)  
+Thực thể dữ liệu "Điểm danh buổi học (SessionAttendance)" bao gồm một bảng duy nhất có tên là "session_attendances" với các cột chứa thông tin chi tiết về điểm danh của người học chính quy trong buổi học. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã lịch giảng dạy ("schedule_id", khóa ngoại tham chiếu bảng teaching_schedules), mã người học chính quy ("student_academic_id", khóa ngoại tham chiếu bảng user_students_academic), trạng thái điểm danh ("status"), thời gian tham gia ("join_time"), thời gian rời ("leave_time"), thời lượng tham gia ("duration_minutes"), ghi chú ("notes"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.29 Thực thể lịch giảng dạy (TeachingSchedule)  
+Thực thể dữ liệu "Lịch giảng dạy (TeachingSchedule)" bao gồm một bảng duy nhất có tên là "teaching_schedules" với các cột chứa thông tin chi tiết về lịch giảng dạy. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã lớp học ("academic_class_id", khóa ngoại tham chiếu bảng academic_classes), mã giảng viên lớp học ("academic_class_instructor_id", khóa ngoại tham chiếu bảng academic_class_instructors), mã khóa học lớp học ("academic_class_course_id", khóa ngoại tham chiếu bảng academic_class_courses), tiêu đề lịch ("title"), mô tả ("description"), thời gian bắt đầu ("start_time"), thời gian kết thúc ("end_time"), liên kết họp ("meeting_link"), mã họp ("meeting_id"), mật khẩu họp ("meeting_password"), trạng thái lịch ("status"), trạng thái lặp lại ("is_recurring"), mẫu lặp lại ("recurring_pattern"), đường dẫn ghi âm ("recording_url"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.30 Thực thể quản trị viên (UserAdmin)  
+Thực thể dữ liệu "Quản trị viên (UserAdmin)" bao gồm một bảng duy nhất có tên là "user_admins" với các cột chứa thông tin chi tiết về quản trị viên. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã người dùng ("user_id", khóa ngoại tham chiếu bảng users), họ tên ("full_name"), phòng ban ("department"), chức vụ ("position"), cấp độ quản trị ("admin_level"), quyền hạn ("permissions"), liên hệ khẩn cấp ("emergency_contact"), vị trí văn phòng ("office_location"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.31 Thực thể điểm số (UserGrade)  
+Thực thể dữ liệu "Điểm số (UserGrade)" bao gồm một bảng duy nhất có tên là "user_grades" với các cột chứa thông tin chi tiết về điểm số của người dùng. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã người dùng ("user_id", khóa ngoại tham chiếu bảng users), mã giảng viên chấm điểm ("graded_by", khóa ngoại tham chiếu bảng user_instructors), mã khóa học ("course_id", khóa ngoại tham chiếu bảng courses), mã bài học ("lesson_id", khóa ngoại tham chiếu bảng course_lessons), mã bài nộp ("assignment_submission_id", khóa ngoại tham chiếu bảng assignment_submissions), mã lượt làm bài kiểm tra ("quiz_attempt_id", khóa ngoại tham chiếu bảng quiz_attempts), loại điểm ("grade_type"), điểm số ("score"), điểm tối đa ("max_score"), trọng số ("weight"), phản hồi ("feedback"), thời gian chấm điểm ("graded_at"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.32 Thực thể giảng viên (UserInstructor)  
+Thực thể dữ liệu "Giảng viên (UserInstructor)" bao gồm một bảng duy nhất có tên là "user_instructors" với các cột chứa thông tin chi tiết về giảng viên. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã người dùng ("user_id", khóa ngoại tham chiếu bảng users), họ tên ("full_name"), danh hiệu chuyên môn ("professional_title"), chuyên môn ("specialization"), học vấn ("educ
+
+ation_background"), kinh nghiệm giảng dạy ("teaching_experience"), tiểu sử ("bio"), lĩnh vực chuyên môn ("expertise_areas"), chứng chỉ ("certificates"), hồ sơ LinkedIn ("linkedin_profile"), trang web ("website"), thông tin thanh toán ("payment_info"), trạng thái xác minh ("verification_status"), tài liệu xác minh ("verification_documents"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.33 Thực thể người học tự do (UserStudent)  
+Thực thể dữ liệu "Người học tự do (UserStudent)" bao gồm một bảng duy nhất có tên là "user_students" với các cột chứa thông tin chi tiết về người học tự do. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã người dùng ("user_id", khóa ngoại tham chiếu bảng users), họ tên ("full_name"), ngày sinh ("date_of_birth"), giới tính ("gender"), trình độ học vấn ("education_level"), nghề nghiệp ("occupation"), tiểu sử ("bio"), sở thích ("interests"), địa chỉ ("address"), thành phố ("city"), quốc gia ("country"), mục tiêu học tập ("learning_goals"), ngôn ngữ ưu tiên ("preferred_language"), tùy chọn thông báo ("notification_preferences"), tổng số khóa học đăng ký ("total_courses_enrolled"), tổng số khóa học hoàn thành ("total_courses_completed"), điểm thành tích ("achievement_points"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.34 Thực thể Người học chính quy (UserStudentAcademic)  
+Thực thể dữ liệu "Người học chính quy (UserStudentAcademic)" bao gồm một bảng duy nhất có tên là "user_students_academic" với các cột chứa thông tin chi tiết về người học chính quy. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã người dùng ("user_id", khóa ngoại tham chiếu bảng users), mã lớp học ("academic_class_id", khóa ngoại tham chiếu bảng academic_classes), mã người học chính quy ("student_code"), họ tên ("full_name"), khóa học ("academic_year"), trạng thái người học chính quy ("status"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.35 Thực thể Người dùng (User)  
+Thực thể dữ liệu "Người dùng (User)" bao gồm một bảng duy nhất có tên là "users" với các cột chứa thông tin chi tiết về người dùng hệ thống. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm tên người dùng ("username"), email ("email"), số điện thoại ("phone"), mật khẩu ("password"), vai trò ("role"), trạng thái người dùng ("status"), đường dẫn ảnh đại diện ("avatar_url"), trạng thái xác thực hai yếu tố ("two_factor_enabled"), mã bí mật xác thực hai yếu tố ("two_factor_secret"), nhà cung cấp đăng nhập xã hội ("social_login_provider"), mã đăng nhập xã hội ("social_login_id"), thời gian đăng nhập cuối ("last_login"), mã làm mới ("refresh_token"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.36 Thực thể Tin nhắn nhóm (GroupMessages)
+Thực thể dữ liệu "Tin nhắn nhóm (Group Messages)" bao gồm một bảng duy nhất có tên là "group_messages" với các cột chứa thông tin chi tiết về tin nhắn trong các nhóm lớp học của hệ thống eLearning. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã người gửi ("sender_id"), mã lớp học ("class_id"), nội dung tin nhắn ("message_text"), liên kết tham chiếu ("reference_link"), mã tin nhắn trả lời ("reply_to_id"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.37 Thực thể Khoa (Faculty)
+Thực thể dữ liệu "Khoa (Faculty)" bao gồm một bảng duy nhất có tên là "faculties" với các cột chứa thông tin chi tiết về khoa. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã khoa ("faculty_code", duy nhất), tên khoa ("faculty_name"), mô tả ("description"), trạng thái ("status", active/inactive), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.38 Thực thể Ngành (Major)
+Thực thể dữ liệu "Ngành (Major)" bao gồm một bảng duy nhất có tên là "majors" với các cột chứa thông tin chi tiết về ngành học. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã khoa ("faculty_id", khóa ngoại tham chiếu bảng faculties), mã ngành ("major_code", duy nhất), tên ngành ("major_name"), mô tả ("description"), trạng thái ("status", active/inactive), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.39 Thực thể Chương trình đào tạo (Program)
+Thực thể dữ liệu "Chương trình đào tạo (Program)" bao gồm một bảng duy nhất có tên là "programs" với các cột chứa thông tin chi tiết về chương trình đào tạo. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã ngành ("major_id", khóa ngoại tham chiếu bảng majors), mã chương trình ("program_code", duy nhất), tên chương trình ("program_name"), mô tả ("description"), tổng số tín chỉ ("total_credits"), thời gian đào tạo tính bằng năm ("duration_years"), trạng thái ("status", active/inactive), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.1.40 Thực thể Khóa học chương trình (ProgramCourse)
+Thực thể dữ liệu "Khóa học chương trình (ProgramCourse)" bao gồm một bảng duy nhất có tên là "program_courses" với các cột chứa thông tin chi tiết về mối quan hệ giữa chương trình đào tạo và khóa học. Cột "id" là khóa chính và được tự động tăng giá trị. Các thông tin khác bao gồm mã chương trình ("program_id", khóa ngoại tham chiếu bảng programs), mã khóa học ("course_id", khóa ngoại tham chiếu bảng courses), số tín chỉ ("credits"), học kỳ ("semester"), số giờ thực hành ("practice"), số giờ lý thuyết ("theory"), trạng thái môn bắt buộc hay tùy chọn ("is_mandatory"), ngày bắt đầu môn học ("start_time"), ngày kết thúc môn học ("end_time"), thời gian tạo bản ghi ("created_at"), và thời gian cập nhật bản ghi ("updated_at").
+
+4.2. Sơ đồ thực thể kết hợp ERD (Entity Relationship Diagram)
+A diagram of a flowchart
+
+AI-generated content may be incorrect.
+
+Hình 4.1 Sơ đồ thực thể ERD (Entity Relationship Diagram)
+
+4.3. Mô hình vật lý PDM (Physical Data Model)
+A diagram of a computer
+
+AI-generated content may be incorrect.
+
+Hình 4.2 Sơ đồ vật lý PDM (Physical Data Model)
+
+4.4. Lược đồ cơ sở dữ liệu quan hệ
+Gồm 40 lược đồ cơ sở dữ liệu quan hệ:
+
+Khóa học lớp học (AcademicClassCourses): (id (PK), academic_class_id (FK), course_id (FK), created_at, updated_at, deleted_at, deleted_by)
+Giảng viên lớp học (AcademicClassInstructors): (id (PK), class_id (FK), instructor_id (FK), created_at, updated_at)
+Lớp học thuật (AcademicClasses): (id (PK), class_code, class_name, semester, status, created_at, updated_at)
+Bài nộp bài tập (AssignmentSubmissions): (id (PK), assignment_id (FK), user_id (FK), submission_text, file_url, submitted_at, status, created_at, updated_at)
+Bài tập (Assignments): (id (PK), lesson_id (FK), academic_class_id (FK), title, description, due_date, max_score, file_requirements, link_document_required, assignment_type, start_time, end_time, created_at, updated_at)
+Danh mục khóa học (Categories): (id (PK), name, description, status, created_at, updated_at)
+Chứng chỉ (Certificates): (id (PK), user_id (FK), course_id (FK), certificate_number, certificate_url, issue_date, expiry_date, status, created_at, updated_at)
+Phản hồi chatbot (ChatbotResponse): (id (PK), keywords, response, category, confidence)
+Thảo luận bài học (CourseLessonDiscussions): (id (PK), lesson_id (FK), user_id (FK), parent_id (FK), content, status, created_at, updated_at)
+Bài học khóa học (CourseLessons): (id (PK), section_id (FK), title, content_type, content_url, content, duration, order_number, is_free, created_at, updated_at)
+Tiến độ khóa học (CourseProgress): (id (PK), user_id (FK), lesson_id (FK), completed_at, last_accessed)
+Phần khóa học (CourseSections): (id (PK), course_id (FK), title, description, order_number, created_at, updated_at)
+Khóa học (Courses): (id (PK), title, description, category_id (FK), instructor_id (FK), price, for, level, status, thumbnail_url, required, learned, start_date, end_date, created_at, updated_at)
+Tài liệu (Documents): (id (PK), instructor_id (FK), course_section_id (FK), title, description, file_url, file_type, upload_date, download_count, status, created_at, updated_at)
+Đăng ký khóa học (Enrollments): (id (PK), user_id (FK), course_id (FK), enrollment_date, status, completion_date, created_at, updated_at)
+Lượt thích diễn đàn (ForumLikes): (id (PK), forum_id (FK), user_id (FK), created_at, updated_at)
+Trả lời diễn đàn (ForumReplies): (id (PK), forum_id (FK), user_id (FK), reply_id (FK), content, is_solution, created_at, updated_at)
+Diễn đàn (Forums): (id (PK), course_id (FK), user_id (FK), title, description, thumbnail_url, status, created_at, updated_at)
+Tin nhắn (Messages): (id (PK), sender_id (FK), receiver_id (FK), message_text, reference_link, is_read, created_at, updated_at)
+Thông báo (Notifications): (id (PK), user_id (FK), title, content, type, is_read, teaching_schedule_id (FK), notification_time, created_at, updated_at)
+Thanh toán (Payments): (id (PK), user_id (FK), course_id (FK), amount, payment_method, transaction_id, status, payment_date, created_at, updated_at)
+Lượt làm bài kiểm tra (QuizAttempts): (id (PK), user_id (FK), quiz_id (FK), start_time, end_time, score, status, created_at, updated_at)
+Lựa chọn bài kiểm tra (QuizOptions): (id (PK), question_id (FK), option_text, is_correct, order_number, created_at, updated_at)
+Câu hỏi bài kiểm tra (QuizQuestions): (id (PK), quiz_id (FK), question_text, question_type, correct_explanation, points, order_number, created_at, updated_at)
+Phản hồi bài kiểm tra (QuizResponses): (id (PK), attempt_id (FK), question_id (FK), selected_option_id (FK), score, created_at, updated_at)
+Bài kiểm tra (Quizzes): (id (PK), lesson_id (FK), academic_class_id (FK), title, description, time_limit, passing_score, attempts_allowed, quiz_type, show_explanation, random, start_time, end_time, created_at, updated_at)
+Đánh giá (Reviews): (id (PK), user_student_id (FK), course_id (FK), review_type, rating, review_text, created_at, updated_at)
+Điểm danh buổi học (SessionAttendances): (id (PK), schedule_id (FK), student_academic_id (FK), status, join_time, leave_time, duration_minutes, notes, created_at, updated_at)
+Lịch giảng dạy (TeachingSchedules): (id (PK), academic_class_id (FK), academic_class_instructor_id (FK), academic_class_course_id (FK), title, description, start_time, end_time, meeting_link, meeting_id, meeting_password, status, is_recurring, recurring_pattern, recording_url, created_at, updated_at)
+Quản trị viên (UserAdmins): (id (PK), user_id (FK), full_name, department, position, admin_level, permissions, emergency_contact, office_location, created_at, updated_at)
+Điểm số (UserGrades): (id (PK), user_id (FK), graded_by (FK), course_id (FK), lesson_id (FK), assignment_submission_id (FK), quiz_attempt_id (FK), grade_type, score, max_score, weight, feedback, graded_at, created_at, updated_at)
+Giảng viên (UserInstructors): (id (PK), user_id (FK), full_name, professional_title, specialization, education_background, teaching_experience, bio, expertise_areas, certificates, linkedin_profile, website, payment_info, verification_status, verification_documents, created_at, updated_at)
+Người học chính quy (UserStudents): (id (PK), user_id (FK), full_name, date_of_birth, gender, education_level, occupation, bio, interests, address, city, country, learning_goals, preferred_language, notification_preferences, total_courses_enrolled, total_courses_completed, achievement_points, created_at, updated_at)
+Người học chính quy (UserStudentsAcademic): (id (PK), user_id (FK), academic_class_id (FK), student_code, full_name, academic_year, status, created_at, updated_at)
+Người dùng (Users): (id (PK), username, email, phone, password, role, status, avatar_url, two_factor_enabled, two_factor_secret, social_login_provider, social_login_id, last_login, refresh_token, created_at, updated_at)
+Tin nhắn nhóm (Group Messages): (id (PK), sender_id, class_id, message_text, reference_link, reply_to_id, created_at, updated_at)
+Khoa (faculties): (id (PK), faculty_code, faculty_name, description, status, created_at, updated_at)
+Ngành (majors): (id (PK), faculty_id (FK), major_code, major_name, description, status, created_at, updated_at)
+Chương trình đào tạo (programs): (id (PK), major_id (FK), program_code, program_name, description, total_credits, duration_years, status, created_at, updated_at)
+Khóa học chương trình (program_courses): (id (PK), program_id (FK), course_id (FK), credits, semester, practice, theory, is_mandatory, start_time, end_time, created_at, updated_at)
+
+CHƯƠNG 5: KẾT QUẢ ĐỀ TÀI
+Sau quá trình nghiên cứu và triển khai, hệ thống với đề tài “Xây dựng hệ thống hỗ trợ học tập eLearning trên nền tảng web” đã được hoàn thiện đúng theo các mục tiêu đã đề ra. Hệ thống được xây dựng đáp ứng đầy đủ các chức năng cốt lõi của một nền tảng hỗ trợ học tập trực tuyến, bao gồm: quản lý chương trình đào tạo theo ngành, học kỳ và môn học; quản lý tài khoản giảng viên và người học; tổ chức và phân phối nội dung bài giảng; thực hiện các bài kiểm tra và đánh giá; tự động tạo câu hỏi trắc nghiệm từ nội dung bài học; cấp chứng chỉ hoàn thành khóa học cho học viên; theo dõi tiến độ học tập; hỗ trợ thanh toán khóa học đối với người học tự do; và tích hợp chatbot AI hỗ trợ học tập.
+
+5.1. Giao diện phía người học
+Giao diện phía người học được thiết kế để phục vụ hai nhóm đối tượng chính: người học chính quy (sinh viên trong hệ thống đào tạo của nhà trường) và người học tự do (cá nhân ngoài trường đăng ký học các khóa ngắn hạn). Các chức năng được phân chia như sau:
+
+Các tính năng chung cho mọi người học
+
+Các chức năng sau đây đều được cung cấp cho cả người học chính quy và người học tự do:
+
+Truy cập khóa học: Xem thông tin, nội dung giảng dạy qua mục "Chi tiết khóa học".
+Thanh toán học phí: Thanh toán trực tuyến qua "Thanh toán ZaloPay".
+Tiếp cận nội dung học: Học qua đa dạng định dạng nội dung như "Chi tiết nội dung học video", "Chi tiết nội dung học văn bản", "Chi tiết nội dung học slide", "Chi tiết nội dung học làm bài tập", "Chi tiết nội dung học làm trắc nghiệm"
+Xem kết quả học tập: Theo dõi điểm và phản hồi qua "Hiển thị điểm và đáp án", "Kết quả bài tập"
+Tham gia diễn đàn: Thảo luận, hỏi đáp qua "Chi tiết diễn đàn".
+Tìm kiếm thông tin: Truy xuất tài liệu, giảng viên, khóa học qua "Tìm kiếm thông tin".
+Nhận thông báo: Nhận thông tin từ hệ thống qua "Thông báo" và "Thông báo mail".
+Tương tác qua chat và chatbot, chat với giảng viên và người học khác qua "Hộp thoại chat", tìm kiếm nhanh thông tin qua "Giao diện chatbot"
+Tính năng đặc thù cho người học chính quy
+
+Đây là những chức năng dành riêng cho người học chính quy đang theo học chính thức trong hệ thống:
+
+Trang chủ: Tổng quan học tập, hiển thị thông báo và khóa học nổi bật.
+Theo dõi chương trình đào tạo: Xem kế hoạch học kỳ, môn học, tín chỉ tại "Chương trình đào tạo của người học chính quy".
+Tương tác nhóm lớp: Thảo luận học tập trong lớp qua "Hộp thoại chat nhóm".
+Học trực tuyến: Tham gia lớp học qua Google Meet tại "Tham gia học trực tuyến".
+Làm bài tập và trắc nghiệm thuộc lớp: Quản lý và thực hiện tại "Các bài tập và trắc nghiệm".
+Theo dõi bảng điểm: Xem tổng hợp điểm qua "Trang cá nhân bảng điểm".
+Tính năng dành riêng cho người học tự do
+
+Người học tự do (người học tự do ngoài trường) sử dụng các tính năng sau để đăng ký, học và quản lý quá trình học:
+
+Đăng ký, đăng nhập: Tạo tài khoản qua "Đăng ký", đăng nhập hệ thống tại "Đăng nhập".
+Khám phá khóa học: Xem danh sách khóa học mở tại "Danh sách khóa học".
+Tìm kiếm giảng viên: Xem thông tin và liên hệ tại "Danh sách giảng viên".
+Theo dõi chứng chỉ: Kiểm tra và tải chứng chỉ hoàn thành tại "Trang cá nhân chứng chỉ".
+Quản lý tài chính: Xem lịch sử giao dịch, học phí tại "Trang cá nhân thanh toán".
+
+5.1.1 Trang chủ
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.1 Trang chủ
+
+Màn hình chính của hệ thống, cung cấp cái nhìn tổng quan về toàn bộ hoạt động học tập, thông báo mới nhất, các khóa học nổi bật và các chức năng truy cập nhanh. Người dùng có thể dễ dàng theo dõi tiến độ học tập, nhận thông báo quan trọng, truy cập nhanh vào các lớp học, bài tập, diễn đàn hoặc các tài liệu học tập. Đây là điểm khởi đầu giúp người học chính quy định hướng các hoạt động tiếp theo một cách thuận tiện và hiệu quả.
+
+
+5.1.2 Chương trình đào tạo của người học chính quy
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.2 Chương trình đào tạo của người học chính quy
+
+Màn hình hiển thị chương trình đào tạo của người học chính quy, bao gồm các học kỳ và môn học. Người học chính quy có thể xem thông tin chi tiết về từng môn học, bao gồm tên môn học, mã môn học, số tín chỉ, giảng viên phụ trách, thời gian học tập. Người học chính quy có thể theo dõi tiến độ học tập, xem điểm số từng môn học và nhận thông báo về các sự kiện học tập sắp tới. Chức năng này giúp người học chính quy quản lý lịch học một cách hiệu quả và đảm bảo không bỏ lỡ các hoạt động học tập quan trọng.
+
+5.1.3 Hộp thoại chat nhóm
+A screenshot of a chat
+
+AI-generated content may be incorrect.
+
+Hình 5.3 Hộp thoại chat nhóm
+
+Tính năng chat nhóm lớp cho phép giao tiếp giữa các thành viên trong lớp học, chia sẻ thông tin và tài liệu học tập. Người dùng có thể gửi file (tài liệu, hình ảnh, video) và sử dụng emoji để tăng tính tương tác và sinh động trong cuộc trò chuyện.
+
+5.1.4 Tham gia học trực tuyến
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.4 Tham gia học trực tuyến
+
+Màn hình cho phép người học tự do tham gia lớp học trực tuyến qua Google Meet, tích hợp điểm danh tự động và theo dõi thời gian. Người học tự do kết nối, xem lịch học, hệ thống ghi nhận hiện diện và thời lượng, đảm bảo quản lý học tập hiệu quả.
+
+5.1.5 Các bài tập và trắc nghiệm
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.5 Các bài tập và trắc nghiệm
+
+Màn hình tổng hợp tất cả các bài tập và bài kiểm tra trắc nghiệm cần hoàn thành. Người học chính quy có thể theo dõi hạn nộp, trạng thái hoàn thành và truy cập nhanh vào từng bài. Nếu là bài nghiệm sẽ có thời gian bắt đầu và kết thúc, người học chính quy cần thực hiện theo đúng thời gian.
+
+5.1.6 Trang cá nhân bảng điểm
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.6 Trang cá nhân bảng điểm
+
+Màn hình tổng hợp kết quả học tập, gồm điểm bài tập, kiểm tra, trắc nghiệm, và điểm tổng kết khóa học.
+
+5.1.7 Đăng ký
+A screenshot of a login form
+
+AI-generated content may be incorrect.
+
+Hình 5.7 Đăng ký
+
+Màn hình đăng ký cho người học tự do nhập thông tin cá nhân, email, số điện thoại, mật khẩu, và đăng ký qua Google. Sau thành công, người học tự do truy cập học tập, đảm bảo minh bạch, tiện lợi, và mở rộng người dùng.
+
+5.1.8 Đăng nhập
+A screenshot of a login form
+
+AI-generated content may be incorrect.
+
+Hình 5.8 Đăng nhập
+
+Màn hình đăng nhập cho người học tự do nhập tên, mật khẩu, hoặc đăng nhập qua Google để truy cập khóa học, bài tập, diễn đàn, và tiến độ. Đảm bảo an toàn, bảo mật, và phân quyền theo vai trò.
+
+5.1.9 Hộp thoại chat
+A screenshot of a chat
+
+AI-generated content may be incorrect.
+
+Hình 5.9 Hộp thoại chat
+
+Màn hình chat cho phép giảng viên trao đổi trực tiếp với người dùng (người học tự do, người học chính quy và quản trị viên), hỗ trợ giải đáp thắc mắc, xử lý sự cố, và lưu trữ lịch sử trò chuyện. Tính năng chat nhóm lớp cho phép giao tiếp giữa giảng viên và các thành viên trong lớp học, chia sẻ thông tin và tài liệu học tập. Người dùng có thể gửi file (tài liệu, hình ảnh, video) và sử dụng emoji để tăng tính tương tác và sinh động trong cuộc trò chuyện.
+
+5.1.10 Giao diện chatbot
+A screenshot of a chat
+
+AI-generated content may be incorrect.
+
+Hình 5.10 Giao diện chatbot
+
+Màn hình trò chuyện với chatbot hỗ trợ học tập, cho phép người học chính quy đặt câu hỏi, tìm kiếm tài liệu, nhận hướng dẫn sử dụng hệ thống hoặc giải đáp thắc mắc về bài học.
+
+5.1.11 Danh sách khóa học
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.11 Danh sách khóa học
+
+Màn hình tổng hợp tất cả các khóa học trong hệ thống, hỗ trợ tìm kiếm, lọc theo chuyên ngành, trạng thái, giảng viên phụ trách và đăng ký nhanh.
+
+5.1.12 Thanh toán ZaloPay
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.12 Thanh toán ZaloPay
+
+Màn hình hỗ trợ người học tự do thanh toán học phí qua ZaloPay, cho phép quét mã QR, kiểm tra giao dịch, nhận hóa đơn điện tử và xem lịch sử. Chức năng đảm bảo thanh toán nhanh, an toàn, minh bạch.
+
+5.1.13 Chi tiết khóa học
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.13 Chi tiết khóa học
+
+Màn hình hiển thị chi tiết khóa học: mô tả, mục tiêu, nội dung, bài tập, trắc nghiệm, tài liệu, và thông tin giảng viên, xem đánh giá khóa học
+
+5.1.14 Chi tiết nội dung học video
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.14 Chi tiết nội dung học video
+
+Màn hình phát video bài giảng với các tính năng điều chỉnh tốc độ, tua nhanh/chậm, bật/tắt phụ đề. Người học tự do có thể học mọi lúc, mọi nơi và chủ động kiểm soát quá trình học.
+
+5.1.15 Chi tiết nội dung học văn bản
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.15 Chi tiết nội dung học văn bản
+
+Màn hình trình bày nội dung bài học dạng văn bản, hỗ trợ định dạng phong phú, chèn hình ảnh, bảng biểu và liên kết. Người học tự do có thể đọc và tìm kiếm thông tin nhanh chóng.
+
+5.1.16 Chi tiết nội dung học slide
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.16 Chi tiết nội dung học slide
+
+Màn hình trình chiếu bài giảng dạng slide, hỗ trợ chuyển trang, phóng to/thu nhỏ, ghi chú và tải về slide. Người học tự do có thể học tập trực quan, dễ tiếp thu kiến thức.
+
+5.1.17 Chi tiết nội dung học làm trắc nghiệm
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.17 Chi tiết nội dung học làm trắc nghiệm
+
+Màn hình cung cấp bài kiểm tra trắc nghiệm trong nội dung học, với nhiều dạng câu hỏi, tính năng lưu tạm, xem lại đáp án và nhận kết quả ngay sau khi nộp. Người học tự do có thể luyện tập, kiểm tra kiến thức và nhận phản hồi tức thì.
+
+5.1.18 Hiển thị điểm và đáp án
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.18 Hiển thị điểm và đáp án
+
+Màn hình hiển thị chi tiết điểm số và đáp án đúng của các bài kiểm tra trắc nghiệm. người học chính quy có thể so sánh đáp án của mình với đáp án đúng, nhận nhận xét và rút kinh nghiệm cho các lần kiểm tra sau.
+
+5.1.19 Chi tiết nội dung học làm bài tập
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.19 Chi tiết nội dung học làm bài tập
+
+Màn hình hiển thị chi tiết một bài tập trong nội dung học, bao gồm yêu cầu, hướng dẫn, tài liệu tham khảo và nút nộp bài. Người học tự do có thể đọc kỹ yêu cầu, tải tài liệu, làm bài và nộp trực tiếp trên hệ thống.
+
+5.1.20 Kết quả bài tập
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.20 Kết quả bài tập
+
+Màn hình tổng hợp kết quả các bài tập đã nộp, điểm số, nhận xét của giảng viên và trạng thái hoàn thành. người học chính quy có thể xem lại bài đã nộp, nhận phản hồi chi tiết và cải thiện kết quả học tập.
+
+5.1.21 Danh sách giảng viên
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.21 Danh sách giảng viên
+
+Màn hình hiển thị danh sách tất cả giảng viên trong hệ thống, cho phép người học tự do xem thông tin, tìm kiếm theo chuyên ngành, liên hệ hoặc gửi phản hồi.
+
+5.1.22 Chi tiết diễn đàn
+A computer screen shot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.22 Chi tiết diễn đàn
+
+Màn hình hiển thị chi tiết một chủ đề thảo luận trong diễn đàn, bao gồm nội dung chủ đề, các bình luận, phản hồi từ người học tự do, người học chính quy và giảng viên. Người dùng có thể đăng bài mới, trả lời, trích dẫn, và nhận thông báo khi có phản hồi mới. Chức năng này tạo môi trường trao đổi học thuật sôi nổi, giúp người học chính quy giải đáp thắc mắc và học hỏi lẫn nhau.
+
+5.1.23 Trang cá nhân chứng chỉ
+A certificate of achievement with blue and orange border
+
+AI-generated content may be incorrect.
+
+Hình 5.23 Trang cá nhân chứng chỉ
+
+Màn hình hiển thị danh sách chứng chỉ đạt được, cho phép người học tự do tải về, xem chi tiết, và chia sẻ lên mạng xã hội. Chức năng ghi nhận và khích lệ thành tích học tập.
+
+5.1.24 Trang cá nhân thanh toán
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.24 Trang cá nhân thanh toán
+
+Màn hình hiển thị chi tiết thanh toán, lịch sử giao dịch, trạng thái học phí, và các khoản phí. Người học tự do kiểm tra, tải hóa đơn, thanh toán trực tuyến, nhận thông báo thay đổi tài chính, giúp quản lý tài chính học tập hiệu quả.
+
+5.1.25 Tìm kiếm thông tin
+A screenshot of a chat
+
+AI-generated content may be incorrect.
+
+Hình 5.25 Tìm kiếm thông tin
+
+Màn hình tìm kiếm toàn bộ nội dung trong hệ thống, bao gồm khóa học, bài học, tài liệu, giảng viên, diễn đàn và thông báo. người học chính quy có thể sử dụng bộ lọc nâng cao để tìm kiếm nhanh và chính xác.
+
+5.1.26 Thông báo
+A screenshot of a cell phone
+
+AI-generated content may be incorrect.
+
+Hình 5.26 Thông báo
+
+Màn hình tổng hợp tất cả các thông báo quan trọng từ hệ thống, giảng viên hoặc quản trị viên.
+
+5.1.27 Thông báo mail
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.27 Thông báo mail
+
+Đồng thời tích hợp gửi thông báo qua email, cho phép xem chi tiết, đánh dấu đã đọc, lọc theo loại (học tập, tài chính, sự kiện), nhận thông báo đẩy và email mới. Chức năng duy trì kết nối hiệu quả giữa hệ thống và người dùng.
+
+5.2. Giao diện phía giảng viên
+Giảng viên tổ chức và quản lý lớp học, khóa học, hỗ trợ người học tự do và người học chính quy:
+
+Đăng nhập: Truy cập hệ thống qua "Đăng nhập giảng viên".
+Quản lý chương trình đào tạo: Xem khoa, ngành, chương trình qua "Khoa, ngành, chương trình đào tạo của giảng viên".
+Quản lý khóa học: Tạo, chỉnh sửa khóa học qua "Quản lý khóa học", "Quản lý khóa học (hộp thoại)".
+Quản lý nội dung khóa học: Thêm, chỉnh sửa nội dung, tài liệu, bài tập, trắc nghiệm (hỗ trợ AI) qua "Quản lý nội dung khóa học", "Quản lý nội dung khóa học (thêm nội dung)", "Quản lý nội dung khóa học (thêm tài liệu)", "Quản lý nội dung khóa học (hộp thoại bài tập)", "Quản lý nội dung khóa học (hộp thoại trắc nghiệm)".
+Quản lý người học: Theo dõi tiến độ, điểm số, cảnh báo học vụ qua "Quản lý người học tự do, người học chính quy", "Quản lý người học tự do, người học chính quy (cảnh báo học vụ)", "Quản lý người học tự do, người học chính quy (bảng điểm)".
+Quản lý lớp học: Quản lý lớp, thêm người học chính quy/khóa học qua "Quản lý lớp học thuật", "Quản lý lớp học thuật (hộp thoại)", "Quản lý lớp học thuật (thêm người học chính quy)", "Quản lý lớp học thuật (thêm khóa học)".
+Quản lý bài tập: Tạo, chấm điểm bài tập qua "Quản lý bài tập", "Quản lý bài tập (thêm bài cho lớp học thuật)", "Quản lý bài tập (chấm điểm)".
+Quản lý bài trắc nghiệm: Tạo, xem bài làm qua "Quản lý bài trắc nghiệm", "Quản lý bài trắc nghiệm (thêm bài cho lớp học thuật)", "Quản lý bài trắc nghiệm (xem bài làm)".
+Tương tác qua chat: Trò chuyện với người học tự do qua "Hộp thoại chat".
+Quản lý lịch dạy: Sắp xếp, chỉnh sửa lịch qua "Quản lý lịch dạy", "Quản lý lịch dạy (hộp thoại)".
+Quản lý điểm danh: Điểm danh, xuất báo cáo qua "Quản lý điểm danh".
+Quản lý diễn đàn: Quản lý thảo luận qua "Quản lý diễn đàn", "Quản lý diễn đàn (hộp thoại)".
+Quản lý đánh giá: Xem, phản hồi đánh giá qua "Quản lý đánh giá".
+Quản lý thống kê: Xem báo cáo học tập, giảng dạy qua "Quản lý thống kê".
+Quản lý thông báo: Gửi, theo dõi thông báo qua "Quản lý thông báo".
+5.2.1 Đăng nhập giảng viên
+A screenshot of a login form
+
+AI-generated content may be incorrect.
+
+Hình 5.28 Đăng nhập giảng viên
+
+Màn hình đăng nhập dành riêng cho giảng viên, cho phép truy cập các chức năng quản lý lớp học, khóa học, bài tập, trắc nghiệm và trao đổi với người học tự do. Đảm bảo an toàn, bảo mật và phân quyền rõ ràng cho giảng viên.
+
+5.2.2 Khoa, ngành, chương trình đào tạo của giảng viên
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.29 Khoa, ngành, chương trình đào tạo của giảng viên
+
+Màn hình hiển thị thông tin chi tiết về khoa, ngành và chương trình đào tạo mà giảng viên phụ trách. Giảng viên có thể xem danh sách các khoa, ngành học, chương trình đào tạo, số lượng người học chính quy đang theo học, và các thông tin liên quan đến công tác giảng dạy. Màn hình này giúp giảng viên quản lý và theo dõi các hoạt động đào tạo trong phạm vi trách nhiệm của mình, bao gồm việc phân công giảng dạy, theo dõi tiến độ học tập của người học chính quy và đảm bảo chất lượng đào tạo theo từng chương trình.
+
+5.2.3 Quản lý nội dung khóa học
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.30 Quản lý nội dung khóa học
+
+Màn hình tổng quan về quản lý nội dung khóa học, cho phép giảng viên xem, tìm kiếm, chỉnh sửa, phân loại.
+
+5.2.4 Quản lý nội dung khóa học (thêm nội dung)
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.31 Quản lý nội dung khóa học (thêm nội dung)
+
+Màn hình cho phép giảng viên thêm mới nội dung bài học, bài tập, trắc nghiệm vào khóa học, thiết lập thứ tự, phân loại nội dung.
+
+5.2.5 Quản lý nội dung khóa học (thêm tài liệu)
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.32 Quản lý nội dung khóa học (thêm tài liệu)
+
+Màn hình cho phép giảng viên thêm mới tài liệu học tập vào khóa học, đính kèm file, mô tả chi tiết, phân loại tài liệu.
+
+5.2.6 Quản lý người học tự do, người học chính quy
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.33 Quản lý người học tự do, người học chính quy
+
+Màn hình tổng quan cho phép giảng viên quản lý toàn bộ người học tự do/người học chính quy trong các lớp học phụ trách. Giảng viên có thể xem danh sách người học tự do, tìm kiếm, lọc theo lớp học, khóa học hoặc trạng thái học tập. Ngoài ra, giảng viên có thể truy cập vào thông tin chi tiết của từng người học tự do để xem tiến độ học tập, điểm số, lịch sử tham gia các hoạt động học tập và các cảnh báo học vụ nếu có. Chức năng này giúp giảng viên theo dõi và hỗ trợ người học tự do một cách hiệu quả.
+
+5.2.7 Quản lý người học tự do, người học chính quy (cảnh báo học vụ)
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.34 Quản lý người học tự do, người học chính quy (cảnh báo học vụ)
+
+Màn hình cho phép giảng viên tạo và quản lý các cảnh báo học vụ cho người học tự do có kết quả học tập yếu hoặc vắng mặt nhiều. Giảng viên có thể thiết lập các tiêu chí cảnh báo, gửi mail thông báo đến người học tự do, theo dõi quá trình cải thiện và đánh giá hiệu quả của các biện pháp hỗ trợ. Chức năng này giúp phát hiện sớm và can thiệp kịp thời để nâng cao chất lượng học tập.
+
+5.2.8 Quản lý người học tự do, người học chính quy (bảng điểm)
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.35 Quản lý người học tự do, người học chính quy (bảng điểm)
+
+Màn hình cho phép giảng viên quản lý và theo dõi bảng điểm của người học tự do trong các lớp học.
+
+5.2.9 Quản lý lớp học thuật (thêm khóa học)
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.36 Quản lý lớp học thuật (thêm khóa học)
+
+Màn hình cho phép giảng viên thêm khóa học vào lớp học thuật để các người học chính quy có thể tham gia khóa học. Hệ thống hiển thị các khóa học đã được thêm sẵn bởi chương trình đào tạo, đồng thời cho phép giảng viên xem được các khóa học do các giảng viên khác đã thêm vào.
+
+5.2.10 Quản lý bài tập (thêm bài cho lớp học thuật)
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.37 Quản lý bài tập (thêm bài cho lớp học thuật)
+
+Màn hình cho phép giảng viên tạo mới bài tập cho từng lớp học thuật, thiết lập yêu cầu, thời hạn nộp, đính kèm tài liệu hướng dẫn, phân loại bài tập theo mức độ khó, chủ đề. Giảng viên có thể gửi thông báo giao bài tập đến người học tự do.
+
+5.2.11 Quản lý bài tập (chấm điểm)
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.38 Quản lý bài tập (chấm điểm)
+
+Màn hình cho phép giảng viên chấm điểm bài tập, nhập nhận xét chi tiết, gửi phản hồi cho từng người học tự do, xuất bảng điểm và thống kê kết quả học tập.
+
+5.2.12 Quản lý bài trắc nghiệm
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.39 Quản lý bài trắc nghiệm
+
+Màn hình tổng quan về quản lý bài trắc nghiệm, cho phép giảng viên tạo mới, chỉnh sửa, xóa, phân loại, xuất kết quả, thống kê điểm số và gửi thông báo cho người học tự do.
+
+5.2.13 Quản lý bài trắc nghiệm (thêm bài trắc nghiệm)
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.40 Quản lý bài trắc nghiệm (thêm bài trắc nghiệm)
+
+Màn hình cho phép giảng viên tạo mới bài trắc nghiệm cho lớp học thuật hoặc cho khóa học (thêm thủ công, tải file trắc nghiệm có sẵn các câu hỏi đúng theo mẫu định sẵn, hoặc sử dụng AI để tự động tạo trắc nghiệm dựa trên tài liệu tải lên), thiết lập câu hỏi, đáp án, thời gian làm bài, phân loại theo chủ đề, mức độ. Hệ thống AI hỗ trợ tạo số lượng câu hỏi trắc nghiệm theo yêu cầu, đồng thời đưa ra số câu hỏi tối đa có thể tạo dựa trên nội dung và độ dài của tài liệu tải lên. Lưu ý, tài liệu không nên quá ngắn để đảm bảo đủ dữ liệu tạo câu hỏi. Giảng viên có thể xem trước bài trắc nghiệm, gửi thông báo cho người học tự do.
+
+5.2.14 Quản lý bài trắc nghiệm (xem bài làm)
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.41 Quản lý bài trắc nghiệm (xem bài làm)
+
+Màn hình cho phép giảng viên xem chi tiết bài làm và điểm đạt được trắc nghiệm của từng người học tự do hoặc người học chính quy.
+
+5.2.15 Hộp thoại chat
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.42 Hộp thoại chat
+
+Màn hình chat cho phép giảng viên trao đổi trực tiếp với người dùng (người học tự do, người học chính quy và quản trị viên), hỗ trợ giải đáp thắc mắc, xử lý sự cố, và lưu trữ lịch sử trò chuyện. Tính năng chat nhóm lớp cho phép giao tiếp giữa giảng viên và các thành viên trong lớp học, chia sẻ thông tin và tài liệu học tập. Người dùng có thể gửi file (tài liệu, hình ảnh, video) và sử dụng emoji để tăng tính tương tác và sinh động trong cuộc trò chuyện.
+
+5.2.16 Quản lý lịch dạy
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.43 Quản lý lịch dạy
+
+Màn hình tổng quan về lịch dạy của giảng viên, hiển thị chi tiết các buổi học, lớp học, thời gian, nội dung giảng dạy. Giảng viên có thể xem, lọc, tìm kiếm lịch dạy theo tuần, tháng, xuất lịch ra file và nhận thông báo nhắc lịch.
+
+5.2.17 Quản lý lịch dạy (hộp thoại)
+A screenshot of a chat
+
+AI-generated content may be incorrect.
+
+Hình 5.44 Quản lý lịch dạy (hộp thoại)
+
+Màn hình hộp thoại cho phép giảng viên tạo mới, chỉnh sửa, xóa các buổi học, thiết lập lịch dạy, tạo link Google Meet, gửi thông báo nhắc lịch cho người học tự do.
+
+5.2.18 Quản lý điểm danh
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.45 Quản lý điểm danh
+
+Màn hình cho phép giảng viên điểm danh người học tự do trong từng buổi học, theo dõi lịch sử điểm danh, xuất báo cáo chuyên cần, gửi cảnh báo cho người học tự do vắng mặt nhiều lần. Chức năng này giúp nâng cao ý thức học tập, đảm bảo sự tham gia đầy đủ của người học tự do.
+
+5.2.19 Quản lý diễn đàn (hộp thoại)
+A screenshot of a chat
+
+AI-generated content may be incorrect.
+
+Hình 5.46 Quản lý diễn đàn (hộp thoại)
+
+Màn hình hộp thoại cho phép giảng viên tạo mới, chỉnh sửa hoặc xóa các chủ đề thảo luận, thiết lập quyền truy cập, đính kèm tài liệu, hình ảnh. Chức năng này giúp quản lý diễn đàn hiệu quả, tạo môi trường học tập tương tác, sáng tạo.
+
+5.2.20 Quản lý thông báo
+A white rectangular object with a black line
+
+AI-generated content may be incorrect.
+
+Hình 5.47 Quản lý thông báo
+
+Màn hình cho phép giảng viên quản lý các thông báo đến người học tự do và người học chính quy trong lớp hoặc toàn bộ hệ thống. Giảng viên có thể phân loại thông báo theo chủ đề, theo dõi trạng thái đã đọc/chưa đọc. Chức năng này giúp đảm bảo thông tin quan trọng được truyền tải kịp thời, tăng cường tương tác giữa giảng viên và người học tự do.
+
+5.3. Giao diện phía quản trị viên
+Quản trị viên điều hành hệ thống với các công cụ toàn diện:
+
+Đăng nhập: Truy cập hệ thống qua "Đăng nhập quản trị viên".
+Quản lý cấu trúc đào tạo: Tạo, chỉnh sửa khoa, ngành, chương trình qua "Khoa, ngành, chương trình đào tạo của quản trị viên".
+Quản lý khóa học: Tạo, chỉnh sửa, xem nội dung khóa học qua "Quản lý khóa học", "Quản lý khóa học (hộp thoại)", "Quản lý khóa học (xem nội dung khóa học)".
+Quản lý giảng viên: Quản lý thông tin, phân công, truy cập quyền giảng viên qua "Quản lý giảng viên", "Quản lý giảng viên (hộp thoại)", "Quản lý giảng viên (truy cập trang giảng viên)".
+Quản lý người học: Theo dõi, cập nhật thông tin, tiến độ qua "Quản lý người học tự do và người học chính quy", "Quản lý người học tự do và người học chính quy (xem thông tin)".
+Quản lý lớp học: Quản lý lớp, thêm người học chính quy, phân công giảng viên qua "Quản lý lớp học thuật", "Quản lý lớp học thuật (hộp thoại)", "Quản lý lớp học thuật (thêm người học chính quy)", "Quản lý lớp học thuật (phân công)".
+Tương tác qua chat: Hỗ trợ người dùng qua "Hộp thoại chat".
+Quản lý danh mục: Tạo, chỉnh sửa danh mục khóa học qua "Danh mục", "Danh mục (hộp thoại)".
+Quản lý thanh toán: Theo dõi doanh thu, xuất báo cáo qua "Quản lý thanh toán".
+Quản lý lịch dạy: Theo dõi lịch giảng viên qua "Quản lý lịch dạy các giảng viên".
+Quản lý thống kê: Xem báo cáo hệ thống qua "Quản lý thống kê".
+Quản lý đánh giá: Phân tích, phản hồi đánh giá qua "Quản lý đánh giá".
+5.3.1 Đăng nhập quản trị viên
+A screenshot of a login form
+
+AI-generated content may be incorrect.
+
+Hình 5.48 Đăng nhập quản trị viên
+
+Màn hình đăng nhập dành riêng cho quản trị viên hệ thống. Tại đây, quản trị viên nhập tên đăng nhập và mật khẩu để truy cập các chức năng quản lý, cấu hình hệ thống, kiểm soát người dùng, khóa học, tài chính và các nghiệp vụ quan trọng khác. Chức năng này đảm bảo an toàn, bảo mật và phân quyền truy cập rõ ràng giữa các vai trò trong hệ thống.
+
+5.3.2 Khoa, ngành, chương trình đào tạo của quản trị viên
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.49 Khoa, ngành, chương trình đào tạo của quản trị viên
+
+Màn hình quản lý toàn diện về khoa, ngành và chương trình đào tạo trong hệ thống. Quản trị viên có thể thực hiện tạo mới, xem, chỉnh sửa và xóa các khoa, ngành học, chương trình đào tạo. Màn hình này cho phép quản trị viên thiết lập cấu trúc tổ chức đào tạo, phân công giảng viên cho từng khoa/ngành, quản lý số lượng người học chính quy, thiết lập các quy định đào tạo và đảm bảo tính nhất quán trong hệ thống quản lý giáo dục. Chức năng này giúp quản trị viên duy trì và cập nhật thông tin đào tạo một cách hiệu quả và chính xác.
+
+5.3.3 Quản lý khóa học
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.50 Quản lý khóa học
+
+Đây là màn hình trung tâm cho phép quản trị viên hoặc giảng viên quản lý toàn bộ các khóa học trên hệ thống. Người dùng có thể xem danh sách các khóa học hiện có, tìm kiếm, lọc theo chuyên ngành, trạng thái hoặc giảng viên phụ trách. Ngoài ra, chức năng này còn hỗ trợ thêm mới khóa học, chỉnh sửa thông tin chi tiết (tên, mô tả, học phí, thời lượng, giảng viên phụ trách), xóa hoặc tạm ngưng khóa học. Người dùng cũng có thể truy cập vào từng khóa học để quản lý nội dung bài học, tài liệu, bài tập, trắc nghiệm, cũng như theo dõi số lượng người học tự do đăng ký và tiến độ học tập của từng lớp. Chức năng này giúp đảm bảo việc tổ chức, vận hành và cập nhật các khóa học được thực hiện hiệu quả, đáp ứng nhu cầu đào tạo đa dạng.
+
+5.3.4 Quản lý khóa học (hộp thoại)
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.51 Quản lý khóa học (hộp thoại)
+
+Màn hình hộp thoại cho phép quản trị viên quản lý thông tin chi tiết của khóa học, chỉnh sửa tên, mô tả, giảng viên phụ trách.
+
+5.3.5 Quản lý khóa học (xem nội dung khóa học)
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.52 Quản lý khóa học (xem nội dung khóa học)
+
+Màn hình cho phép quản trị viên xem chi tiết nội dung của từng khóa học, bao gồm bài học, bài tập, trắc nghiệm, tài liệu, giảng viên phụ trách.
+
+5.3.6 Quản lý giảng viên
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.53 Quản lý giảng viên
+
+Màn hình tổng quan về quản lý giảng viên, cho phép xem, tìm kiếm, lọc, xuất báo cáo danh sách giảng viên, phân công giảng dạy.
+
+5.3.7 Quản lý giảng viên (hộp thoại)
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.54 Quản lý giảng viên (hộp thoại)
+
+Màn hình hộp thoại cho phép quản trị viên quản lý thông tin giảng viên, chỉnh sửa hồ sơ, phân công lớp học.
+
+5.3.8 Quản lý người học tự do và người học chính quy
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.55 Quản lý người học tự do và người học chính quy
+
+Đây là màn hình tổng quan cho phép quản trị viên hoặc giảng viên quản lý toàn bộ danh sách người học tự do trong hệ thống. Người dùng có thể tìm kiếm, lọc, thêm mới, chỉnh sửa hoặc xóa người học tự do, cũng như truy cập vào chi tiết từng người học tự do để theo dõi tiến độ học tập, điểm số và các thông tin liên quan. Chức năng này giúp việc quản lý người học tự do trở nên dễ dàng, hiệu quả và chính xác
+
+5.3.9 Quản lý người học tự do và người học chính quy (xem thông tin)
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.56 Quản lý người học tự do và người học chính quy (xem thông tin)
+
+Màn hình cho phép quản trị viên xem chi tiết thông tin người học tự do hoặc người học chính quy, lịch sử học tập, điểm số, trạng thái học phí, cảnh báo học vụ.
+
+5.3.10 Quản lý lớp học thuật
+A white screen with many small letters
+
+AI-generated content may be incorrect.
+
+Hình 5.57 Quản lý lớp học thuật
+
+Màn hình tổng quan về quản lý lớp học thuật, cho phép quản trị viên xem, tìm kiếm, lọc, xuất báo cáo danh sách lớp, tiến độ học tập, phân công giảng dạy và phụ trách cho giảng viên.
+
+5.3.11 Quản lý lớp học thuật (hộp thoại)
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.58 Quản lý lớp học thuật (hộp thoại)
+
+Màn hình hộp thoại cho phép quản trị viên quản lý thông tin chi tiết của lớp học, chỉnh sửa Mã lớp, tên lớp, học kỳ, giảng viên phụ trách.
+
+5.3.12 Quản lý lớp học thuật (thêm người học chính quy)
+A screenshot of a phone
+
+AI-generated content may be incorrect.
+
+Hình 5.59 Quản lý lớp học thuật (thêm người học chính quy)
+
+Màn hình cho phép quản trị viên thêm người học chính quy vào lớp học thuật, tìm kiếm, lọc, gửi thông báo mời tham gia lớp.
+
+5.3.13 Quản lý lớp học thuật (phân công)
+A screenshot of a chat
+
+AI-generated content may be incorrect.
+
+Hình 5.60 Quản lý lớp học thuật (phân công)
+
+Màn hình cho phép quản trị viên phân công giảng viên cho từng lớp học thuật, gửi thông báo phân công.
+
+5.3.14 Danh mục (hộp thoại)
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.61 Danh mục (hộp thoại)
+
+Màn hình hộp thoại cho phép quản trị viên tạo mới, chỉnh sửa, xóa các danh mục khóa học, phân loại chuyên ngành, thiết lập phân loại, đảm bảo hệ thống danh mục luôn cập nhật, khoa học.
+
+5.3.15 Quản lý thanh toán
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.62 Quản lý thanh toán
+
+Màn hình tổng quan về quản lý thanh toán học phí, cho phép quản trị viên theo dõi doanh thu, các khoản thu/chi, xuất báo cáo tài chính, kiểm soát các khoản phí phát sinh và đảm bảo minh bạch tài chính trong hệ thống.
+
+5.3.16 Quản lý lịch dạy các giảng viên
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.63 Quản lý lịch dạy các giảng viên
+
+Màn hình tổng quan cho phép quản trị viên quản lý lịch dạy của tất cả giảng viên trong hệ thống. Quản trị viên có thể xem lịch dạy của từng giảng viên, theo dõi lịch học, lớp học, thời gian giảng dạy và nội dung bài giảng. Chức năng này hỗ trợ việc phân công giảng dạy, kiểm soát tải giảng viên, đảm bảo không có xung đột lịch dạy và tối ưu hóa việc sử dụng nguồn lực giảng viên. Quản trị viên có thể xuất báo cáo lịch dạy, gửi thông báo nhắc lịch cho giảng viên và theo dõi hiệu quả công tác giảng dạy.
+
+5.3.17 Quản lý thống kê
+A screenshot of a computer
+
+AI-generated content may be incorrect.
+
+Hình 5.64 Quản lý thống kê
+
+Màn hình này cung cấp các báo cáo, thống kê tổng hợp về hoạt động học tập, giảng dạy và vận hành hệ thống. Người dùng có thể xem thống kê số lượng người học tự do, giảng viên, khóa học, tỷ lệ hoàn thành khóa học, số lượng chứng chỉ đã cấp, doanh thu từ học phí, v.v. Ngoài ra, chức năng còn hỗ trợ lọc, xuất báo cáo theo từng khoảng thời gian, lớp học, khóa học hoặc giảng viên. Thông tin thống kê giúp nhà quản lý đưa ra quyết định kịp thời, tối ưu hóa hoạt động đào tạo và nâng cao chất lượng dịch vụ.
+
+CHƯƠNG 6: TỔNG KẾT VÀ ĐÁNH GIÁ
+6.1. Đánh giá chung
+Hệ thống quản lý học tập trực tuyến được phát triển trong luận văn này đã đạt được những kết quả đáng ghi nhận. Về mục tiêu ban đầu, hệ thống tập trung đáp ứng các yêu cầu cơ bản về quản lý học tập, giao tiếp và hỗ trợ người dùng, bao gồm quản lý khóa học, lớp học, bài tập, lịch học, và tích hợp AI hỗ trợ tìm kiếm tài liệu (RAG). Với việc ứng dụng các công nghệ hiện đại như React, NestJS, và AI, hệ thống mang lại giao diện thân thiện, thao tác đơn giản và hiệu quả, phù hợp với người học tự do, người học chính quy, giảng viên và quản trị viên.
+
+Bên cạnh các chức năng theo mục tiêu đề ra, đề tài cũng đã mở rộng thêm nhiều tính năng nhằm tăng hiệu quả sử dụng như điểm danh tự động qua Google Meet, xuất dữ liệu học tập ra Excel, thống kê quá trình học, tạo trắc nghiệm tự động từ tài liệu, gửi email thông báo, thanh toán học phí trực tuyến qua ZaloPay, và chatbot RAG hỗ trợ giải đáp thắc mắc. Những tính năng này đã góp phần tối ưu hóa quy trình học tập và quản lý.
+
+Tuy nhiên, hệ thống vẫn còn một số hạn chế về hiệu suất xử lý dữ liệu lớn, hỗ trợ đa ngôn ngữ và tích hợp thanh toán quốc tế, đòi hỏi những cải tiến và mở rộng trong tương lai. Các hướng phát triển được đề xuất bao gồm tích hợp AI cá nhân hóa học tập, phát triển ứng dụng mobile, và tăng cường bảo mật, hứa hẹn sẽ nâng cao trải nghiệm người dùng và mở rộng khả năng ứng dụng của hệ thống trên thị trường quốc tế.
+
+6.2. Ưu và khuyết điểm
+Ưu điểm:
+
+Giao diện hiện đại, thân thiện với người dùng nhờ sử dụng React.
+Thao tác đơn giản, không phức tạp, giúp người học tự do, người học chính quy và giảng viên dễ dàng sử dụng.
+Quản lý học tập hiệu quả, bao gồm khóa học, lớp học thuật, bài tập, và lịch học qua Google Meet.
+Web API được xây dựng bằng NestJS, tích hợp RAG, Qdrant, và Nodemailer.
+Hỗ trợ điểm danh tự động và theo dõi thời gian học trong Google Meet.
+Cung cấp thống kê tiến độ học tập, điểm số, và thời gian tham gia.
+Xuất dữ liệu dưới định dạng Excel cho giảng viên và quản trị viên.
+Bảo mật cao với JWT, phân quyền truy cập cho từng vai trò (người học tự do, người học chính quy, giảng viên, quản trị viên).
+Tính năng tìm kiếm linh hoạt, kết hợp phân trang dữ liệu để tăng hiệu suất.
+Soạn và gửi email thông báo nhanh chóng qua Nodemailer.
+Tập trung mạnh vào các tác vụ quản lý học tập.
+Hỗ trợ thanh toán học phí trực tuyến qua ZaloPay, đảm bảo tiện lợi và an toàn.
+Chatbot RAG hỗ trợ người học tự do và giảng viên nhanh chóng, cung cấp câu trả lời tự động cho các thắc mắc học tập.
+Tự động tạo trắc nghiệm bằng AI, tải file (PDF, Word, văn bản), AI phân tích nội dung, sinh câu hỏi dựa theo nội dung của tài liệu
+Khuyết điểm:
+
+Chưa hỗ trợ đa ngôn ngữ và lịch sử tương tác RAG.
+Chatbot RAG chưa đủ thông minh do thiếu dữ liệu huấn luyện, dẫn đến khả năng trả lời còn hạn chế.
+Hiệu suất chưa tối ưu khi xử lý dữ liệu lớn, như điểm danh hoặc theo dõi thời gian của nhiều người học tự do.
+Chưa tích hợp đầy đủ các phương thức thanh toán quốc tế ngoài ZaloPay, hạn chế đối với người học tự do nước ngoài.
+6.3. Hướng phát triển
+Hỗ trợ đa ngôn ngữ và lưu lịch sử tương tác RAG để nâng cao hiệu quả chatbot, trả lời chính xác hơn trên nhiều ngôn ngữ.
+Tối ưu hóa hiệu suất xử lý dữ liệu lớn, mở rộng hệ thống để xử lý mượt mà và hiệu quả hơn.
+Tích hợp thêm thanh toán quốc tế như PayPal, Stripe, nâng cao quản lý tài chính với báo cáo định kỳ qua email.
+Phát triển ứng dụng mobile bằng React Native, tối ưu giao diện trên thiết bị di động, thêm thông báo đẩy cho lịch học và bài tập.
+Hỗ trợ học tập ngoại tuyến, cho phép truy cập tài liệu và bài tập khi không có internet, đồng bộ khi có kết nối.
+Tích hợp AI phân tích hành vi học tập, báo cáo chi tiết về thời gian học, tỷ lệ hoàn thành bài tập cho giảng viên.
+Tăng cường bảo mật với xác thực 2FA, mã hóa end-to-end, tuân thủ GDPR để mở rộng thị trường quốc tế.
+Tích hợp AI để học tập cá nhân hóa, đề xuất lộ trình học tập và tài liệu phù hợp, cải thiện tìm kiếm nội dung.
+Tăng cường chatbot RAG với dữ liệu huấn luyện từ tài liệu và FAQ, tích hợp mô hình ngôn ngữ lớn, hỗ trợ đa kênh.
+Sử dụng AI để theo dõi thao tác và cử động của người học chính quy trong khi học trực tuyến, phân tích độ tập trung học bài, cung cấp báo cáo chi tiết cho giảng viên và đề xuất cải thiện.
+Chống gian lận khi làm bài trắc nghiệm bằng cách sử dụng AI để phát hiện hành vi bất thường (như chuyển tab, nhìn ra ngoài màn hình, sử dụng thiết bị thứ hai, …) sau đó gửi cảnh báo cho giảng viên qua email hoặc thông báo đẩy.
+
+6.4. Đề xuất
+Cần thêm 2-4 tháng để nghiên cứu và hoàn thiện tính năng.
+Đảm bảo kinh phí để triển khai và duy trì hệ thống trên máy chủ thực tế.
+Thực hiện khảo sát thực tế với người học tự do, người học chính quy, và giảng viên.
+Trao đổi trực tiếp với người dùng cuối để cải thiện hệ thống.
+
+KẾT LUẬN
+“Xây dựng hệ thống hỗ trợ học tập elearning trên nền tảng web” mà em đã phát triển đã đáp ứng được phần lớn nhu cầu của người dùng, bao gồm người học tự do, người học chính quy, và giảng viên, quản trị viên với các tính năng như quản lý khóa học, học trực tuyến qua Google Meet, điểm danh tự động, gửi thông báo qua email, và hỗ trợ truy xuất tài liệu bằng RAG. Tuy nhiên, do đây là lần đầu tiên em tự mình thực hiện một dự án eLearning với quy mô lớn, em đã gặp không ít khó khăn trong quá trình phát triển. Việc thiết kế cơ sở dữ liệu, tích hợp các công nghệ, cũng như đảm bảo hiệu suất hệ thống đòi hỏi nhiều thời gian nghiên cứu và thử nghiệm. So với các nền tảng eLearning chuyên nghiệp trên thị trường, hệ thống của em vẫn còn nhiều điểm cần cải thiện về cả tính năng và hiệu suất.
+
+Qua quá trình thực hiện đề tài, em đã học hỏi được rất nhiều, từ kỹ năng lập trình, quản lý dự án, đến cách giải quyết các vấn đề kỹ thuật phức tạp. Em xin gửi lời cảm ơn chân thành đến ThS. Võ Văn Phúc, người đã tận tình hướng dẫn, hỗ trợ và động viên em trong suốt quá trình thực hiện. Thầy không chỉ cung cấp những định hướng quý báu mà còn chia sẻ nhiều kinh nghiệm thực tiễn, giúp em vượt qua những khó khăn và hoàn thiện hệ thống đến mức tốt nhất có thể trong khả năng của mình. Tuy nhiên, do trình độ và kinh thức của bản thân còn hạn chế, hệ thống không tránh khỏi những thiếu sót, cả về mặt kỹ thuật lẫn trải nghiệm người dùng. Em rất mong nhận được những góp ý quý giá từ thầy cô và các bạn để có thể cải thiện và hoàn thiện đề tài hơn trong tương lai. Những ý kiến đóng góp sẽ là động lực để em tiếp tục phát triển hệ thống, biến nó thành một công cụ hỗ trợ học tập hiệu quả và thực sự hữu ích cho người dùng. Một lần nữa, em xin chân thành cảm ơn tất cả sự hỗ trợ và đồng hành trong quá trình thực hiện đề tài này!
+
+
+TÀI LIỆU THAM KHẢO
+Bộ Giáo dục và Đào tạo (2021). Thông tư 09/2021/TT-BGDDT Quy định quản lý và tổ chức dạy học trực tuyến trong cơ sở giáo dục phổ thông, Trang Thư viện Pháp luật, Công ty TNHH Thư viện Pháp luật. Từ https://thuvienphapluat.vn/van-ban/Giao-duc/Thong-tu-09-2021-TT-BGDDT-quan-ly-va-to-chuc-day-hoc-truc-tuyen-trong-co-so-giao-duc-pho-thong-449937.aspx
+GeeksforGeeks (2024). MySQL tutorial, Trang web GeeksforGeeks, GeeksforGeeks. Từ https://www.geeksforgeeks.org/mysql/mysql-tutorial/
+Microsoft (2025). TypeScript for JavaScript programmers, Trang web TypeScript, Microsoft. Từ https://www.TypeScriptlang.org/docs/handbook/TypeScript-in-5-minutes.html
+GeeksforGeeks (2025). React JS basic concepts reference, Trang web GeeksforGeeks, GeeksforGeeks. Từ https://www.geeksforgeeks.org/reactjs/reactjs-basics-concepts-complete-reference/
+GeeksforGeeks (2024). NestJS tutorial, Trang web GeeksforGeeks, GeeksforGeeks. Từ https://www.geeksforgeeks.org/javascript/nestjs/
+MUI (n.d). Material UI overview, Trang web MUI, MUI. Từ https://mui.com/material-ui/getting-started/
+TutorialsPoint (n.d). TypeORM quick guide, Trang web TutorialsPoint, Tutorials Point India Private Limited. Từ https://www.tutorialspoint.com/typeorm/typeorm_quick_guide.htm
+Auth0 (n.d). JWT introduction, Trang web JWT.io, Auth0. Từ https://jwt.io/introduction/
+Andris Reinman (n.d). Nodemailer documentation, Trang web Nodemailer, Andris Reinman. Từ https://nodemailer.com/about/
+GeeksforGeeks (2020). What is web API and why we use it, Trang web GeeksforGeeks, GeeksforGeeks. Từ https://www.geeksforgeeks.org/what-is-web-api-and-why-we-use-it/
+OpenAI (n.d). OpenAI API introduction, Trang web OpenAI, OpenAI. Từ https://platform.openai.com/docs/introduction
+Amazon Web Services (n.d). What is retrieval-augmented generation, Trang web AWS, Amazon Web Services. Từ https://aws.amazon.com/what-is/retrieval-augmented-generation/
+Gradient Flow (2023). Best practices in retrieval-augmented generation, Trang web Gradient Flow, Gradient Flow. Từ https://gradientflow.com/best-practices-in-retrieval-augmented-generation/
