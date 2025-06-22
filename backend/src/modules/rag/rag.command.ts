@@ -14,16 +14,13 @@ import { AcademicClass } from '../../entities/AcademicClass';
 import { UserInstructor } from '../../entities/UserInstructor';
 import { RagService } from './rag.service';
 import { User } from '../../entities/User';
-import { UserStudent } from '../../entities/UserStudent';
 import { UserGrade } from '../../entities/UserGrade';
 import { Review } from '../../entities/Review';
 import { Enrollment } from '../../entities/Enrollment';
-import { QuizAttempt } from '../../entities/QuizAttempt';
-import { QuizQuestion } from '../../entities/QuizQuestion';
-import { QuizOption } from '../../entities/QuizOption';
-import { QuizResponse } from '../../entities/QuizResponse';
-import { AssignmentSubmission } from '../../entities/AssignmentSubmission';
-import { Certificate } from '../../entities/Certificate';
+import { Faculty } from '../../entities/Faculty';
+import { Major } from '../../entities/Major';
+import { Program } from '../../entities/Program';
+import { ProgramCourse } from '../../entities/ProgramCourse';
 
 @Injectable()
 @Command({
@@ -71,24 +68,15 @@ export class RagCommand extends CommandRunner {
     private instructorRepo: Repository<UserInstructor>,
     private ragService: RagService,
     @InjectRepository(User) private userRepo: Repository<User>,
-    @InjectRepository(UserStudent)
-    private userStudentRepo: Repository<UserStudent>,
     @InjectRepository(UserGrade) private userGradeRepo: Repository<UserGrade>,
     @InjectRepository(Review) private reviewRepo: Repository<Review>,
     @InjectRepository(Enrollment)
     private enrollmentRepo: Repository<Enrollment>,
-    @InjectRepository(QuizAttempt)
-    private quizAttemptRepo: Repository<QuizAttempt>,
-    @InjectRepository(QuizQuestion)
-    private quizQuestionRepo: Repository<QuizQuestion>,
-    @InjectRepository(QuizOption)
-    private quizOptionRepo: Repository<QuizOption>,
-    @InjectRepository(QuizResponse)
-    private quizResponseRepo: Repository<QuizResponse>,
-    @InjectRepository(AssignmentSubmission)
-    private assignmentSubmissionRepo: Repository<AssignmentSubmission>,
-    @InjectRepository(Certificate)
-    private certificateRepo: Repository<Certificate>,
+    @InjectRepository(Faculty) private facultyRepo: Repository<Faculty>,
+    @InjectRepository(Major) private majorRepo: Repository<Major>,
+    @InjectRepository(Program) private programRepo: Repository<Program>,
+    @InjectRepository(ProgramCourse)
+    private programCourseRepo: Repository<ProgramCourse>,
   ) {
     super();
   }
@@ -97,7 +85,7 @@ export class RagCommand extends CommandRunner {
     try {
       this.logger.log('Bắt đầu nhập dữ liệu từ cơ sở dữ liệu vào RAG...');
 
-      // Get all data from database
+      // Get all data from database with correct relations
       this.logger.log('Đang lấy dữ liệu từ cơ sở dữ liệu...');
       const [
         courses,
@@ -111,38 +99,108 @@ export class RagCommand extends CommandRunner {
         academicClasses,
         instructors,
         users,
-        userStudents,
         userGrades,
         reviews,
         enrollments,
-        quizAttempts,
-        quizQuestions,
-        quizOptions,
-        quizResponses,
-        assignmentSubmissions,
-        certificates,
+        faculties,
+        majors,
+        programs,
+        programCourses,
       ] = await Promise.all([
-        this.courseRepo.find({ relations: ['category'] }),
-        this.documentRepo.find(),
-        this.forumRepo.find(),
+        this.courseRepo.find({
+          relations: [
+            'category',
+            'instructor',
+            'instructor.user',
+            'sections',
+            'sections.lessons',
+            'sections.lessons.quizzes',
+            'sections.lessons.assignments',
+            'sections.documents',
+            'reviews',
+            'reviews.student',
+            'reviews.student.user',
+            'enrollments',
+            'enrollments.user',
+          ],
+        }),
+        this.documentRepo.find({
+          relations: [
+            'instructor',
+            'instructor.user',
+            'courseSection',
+            'courseSection.course',
+          ],
+        }),
+        this.forumRepo.find({ relations: ['course', 'user'] }),
         this.categoryRepo.find(),
-        this.courseSectionRepo.find({ relations: ['course'] }),
-        this.courseLessonRepo.find({ relations: ['section'] }),
-        this.quizRepo.find({ relations: ['lesson', 'academicClass'] }),
-        this.assignmentRepo.find({ relations: ['lesson', 'academicClass'] }),
-        this.academicClassRepo.find(),
-        this.instructorRepo.find({ relations: ['user'] }),
+        this.courseSectionRepo.find({
+          relations: ['course', 'documents', 'lessons'],
+        }),
+        this.courseLessonRepo.find({
+          relations: ['section', 'quizzes', 'assignments'],
+        }),
+        this.quizRepo.find({
+          relations: [
+            'lesson',
+            'academicClass',
+            'questions',
+            'questions.options',
+          ],
+        }),
+        this.assignmentRepo.find({
+          relations: ['lesson', 'academicClass'],
+        }),
+        this.academicClassRepo.find({
+          relations: [
+            'major',
+            'program',
+            'instructors',
+            'instructors.instructor',
+            'instructors.instructor.user',
+            'studentsAcademic',
+            'studentsAcademic.user',
+            'classCourses',
+            'classCourses.course',
+          ],
+        }),
+        this.instructorRepo.find({
+          relations: [
+            'user',
+            'faculty',
+            'documents',
+            'courses',
+            'courses.category',
+          ],
+        }),
         this.userRepo.find(),
-        this.userStudentRepo.find(),
-        this.userGradeRepo.find(),
-        this.reviewRepo.find(),
-        this.enrollmentRepo.find(),
-        this.quizAttemptRepo.find(),
-        this.quizQuestionRepo.find(),
-        this.quizOptionRepo.find(),
-        this.quizResponseRepo.find(),
-        this.assignmentSubmissionRepo.find(),
-        this.certificateRepo.find(),
+        this.userGradeRepo.find({
+          relations: [
+            'user',
+            'course',
+            'lesson',
+            'instructor',
+            'instructor.user',
+          ],
+        }),
+        this.reviewRepo.find({
+          relations: ['course', 'student', 'student.user'],
+        }),
+        this.enrollmentRepo.find({
+          relations: ['course', 'user'],
+        }),
+        this.facultyRepo.find({
+          relations: ['majors', 'userInstructors'],
+        }),
+        this.majorRepo.find({
+          relations: ['faculty', 'programs', 'academicClasses'],
+        }),
+        this.programRepo.find({
+          relations: ['major', 'programCourses', 'academicClasses'],
+        }),
+        this.programCourseRepo.find({
+          relations: ['program', 'course'],
+        }),
       ]);
 
       this.logger.log(
@@ -152,10 +210,141 @@ export class RagCommand extends CommandRunner {
       // Prepare documents for RAG
       const documentsToAdd: string[] = [];
 
+      // Thêm thông tin giới thiệu hệ thống DNC
+      const systemIntroDocs = [
+        `Hệ thống DNC Learning Platform
+Tên hệ thống: DNC Learning Platform
+Chủ sở hữu: Lê Thanh Toàn
+Mô tả: Hệ thống học tập trực tuyến tích hợp đầy đủ tính năng cho việc quản lý khóa học, giảng dạy và học tập
+Loại hệ thống: E-Learning Platform
+Đối tượng sử dụng: Học viên, Giảng viên, Quản trị viên`,
+
+        `Từ khóa hệ thống: DNC, DNC Learning, Learning Platform, E-Learning, Học trực tuyến, Lê Thanh Toàn, Hệ thống giáo dục, Platform học tập
+Liên quan đến: DNC Learning Platform`,
+
+        `Tính năng chính hệ thống DNC:
+- Quản lý khóa học và bài giảng
+- Hệ thống bài tập và kiểm tra
+- Diễn đàn thảo luận
+- Quản lý lớp học và học viên
+- Hệ thống đánh giá và chứng chỉ
+- Chatbot hỗ trợ học tập
+- Quản lý tài liệu và tài nguyên học tập`,
+
+        `Thông tin chủ sở hữu:
+Tên: Lê Thanh Toàn
+Vai trò: Chủ sở hữu hệ thống DNC Learning Platform
+Hệ thống: DNC Learning Platform
+Mô tả: Hệ thống học tập trực tuyến toàn diện với đầy đủ tính năng hỗ trợ việc dạy và học`,
+      ];
+
+      documentsToAdd.push(...systemIntroDocs);
+      this.logger.log(
+        `Added ${systemIntroDocs.length} system introduction documents`,
+      );
+
       // Add courses with their categories and more fields
       this.logger.log(`Đang xử lý ${courses.length} khóa học...`);
       const courseDocs: string[] = [];
       courses.forEach((course) => {
+        // Tạo document chính cho khóa học với thông tin chi tiết
+        const courseMainDoc = `Khóa học: ${course.title}
+Mô tả: ${course.description || 'Không có mô tả'}
+Giá: ${course.price}
+Danh mục: ${course.category?.name || 'Chưa phân loại'}
+Giảng viên: ${course.instructor?.user?.username || 'Chưa có'}
+Email giảng viên: ${course.instructor?.user?.email || 'Chưa có'}
+Trình độ: ${course.level || 'Chưa xác định'}
+Trạng thái: ${course.status || 'Chưa xác định'}
+URL: ${process.env.JAVASCRIPT_ORIGINS}/course/${course.id}`;
+
+        // Thêm thông tin sections nếu có
+        let sectionsInfo = '';
+        if (course.sections && course.sections.length > 0) {
+          sectionsInfo = `\nPhần học (${course.sections.length} phần):`;
+          course.sections.forEach((section, index) => {
+            sectionsInfo += `\n- Phần ${index + 1}: ${section.title}`;
+            if (section.description) {
+              sectionsInfo += ` (${section.description})`;
+            }
+
+            // Thêm thông tin lessons trong section
+            if (section.lessons && section.lessons.length > 0) {
+              sectionsInfo += `\n  + ${section.lessons.length} bài học:`;
+              section.lessons.forEach((lesson, lessonIndex) => {
+                sectionsInfo += `\n    * Bài ${lessonIndex + 1}: ${lesson.title} `;
+              });
+            }
+          });
+        }
+
+        // Thêm thông tin documents từ sections nếu có
+        let documentsInfo = '';
+        if (course.sections) {
+          const allDocuments: any[] = [];
+          course.sections.forEach((section) => {
+            if (section.documents && section.documents.length > 0) {
+              allDocuments.push(...section.documents);
+            }
+          });
+
+          if (allDocuments.length > 0) {
+            documentsInfo = `\nTài liệu khóa học (${allDocuments.length} tài liệu):`;
+            allDocuments.forEach((doc, index) => {
+              documentsInfo += `\n- Tài liệu ${index + 1}: ${doc.title}`;
+              if (doc.description) {
+                documentsInfo += ` (${doc.description})`;
+              }
+              if (doc.fileType) {
+                documentsInfo += ` [${doc.fileType}]`;
+              }
+              if (doc.instructor?.user?.username) {
+                documentsInfo += ` - Upload bởi: ${doc.instructor.user.username}`;
+              }
+            });
+          }
+        }
+
+        // Thêm thông tin reviews nếu có
+        let reviewsInfo = '';
+        if (course.reviews && course.reviews.length > 0) {
+          const avgRating = (
+            course.reviews.reduce((sum, r) => sum + (r.rating || 0), 0) /
+            course.reviews.length
+          ).toFixed(1);
+          reviewsInfo = `\nĐánh giá: ${avgRating} sao (${course.reviews.length} đánh giá)`;
+
+          // Thêm một số đánh giá mẫu
+          const sampleReviews = course.reviews.slice(0, 3);
+          if (sampleReviews.length > 0) {
+            reviewsInfo += `\nMột số đánh giá:`;
+            sampleReviews.forEach((review, index) => {
+              reviewsInfo += `\n- ${review.rating} sao: ${review.reviewText || 'Không có nội dung'}`;
+              if (review.student?.user?.username) {
+                reviewsInfo += ` (${review.student.user.username})`;
+              }
+            });
+          }
+        }
+
+        // Thêm thông tin enrollments nếu có
+        let enrollmentsInfo = '';
+        if (course.enrollments && course.enrollments.length > 0) {
+          const activeEnrollments = course.enrollments.filter(
+            (e) => e.status === 'active',
+          ).length;
+          enrollmentsInfo = `\nSố học viên đăng ký: ${activeEnrollments}/${course.enrollments.length}`;
+        }
+
+        courseDocs.push(
+          courseMainDoc +
+            sectionsInfo +
+            documentsInfo +
+            reviewsInfo +
+            enrollmentsInfo,
+        );
+
+        // Tạo document riêng cho từ khóa
         const keywords = [
           course.title,
           course.title?.toLowerCase(),
@@ -163,260 +352,163 @@ export class RagCommand extends CommandRunner {
           course.title?.replace('Python', 'Py'),
           'khóa học ' + course.title,
           'học ' + course.title,
-          `Khóa học này giúp bạn làm chủ ${course.title}`,
-          `Tìm hiểu ${course.title} cho người mới bắt đầu`,
-          `Học ${course.title} nâng cao và thực hành`,
-        ]
-          .filter(Boolean)
-          .join(', ');
+          course.category?.name,
+          course.instructor?.user?.username,
+        ].filter(Boolean);
 
-        courseDocs.push(
-          `Khóa học: ${course.title}
-Mô tả: ${course.description}
-Từ khóa phụ: ${keywords}
-Giá: ${course.price}
-Danh mục: ${course.category?.name || 'Chưa phân loại'}
-Giảng viên: ${course.instructor?.user?.username || 'Chưa có'}
-URL: ${process.env.JAVASCRIPT_ORIGINS}/course/${course.id}
-Thống kê:
-- Tổng số khóa học: ${courses.length}`,
-        );
+        if (keywords.length > 0) {
+          courseDocs.push(
+            `Từ khóa khóa học: ${keywords.join(', ')}
+Liên quan đến: ${course.title}`,
+          );
+        }
+
+        // Tạo documents riêng cho từng section
+        if (course.sections && course.sections.length > 0) {
+          course.sections.forEach((section) => {
+            const sectionDoc = `Phần học: ${section.title}
+Thuộc khóa học: ${course.title}
+Mô tả: ${section.description || 'Không có mô tả'}`;
+
+            // Thêm thông tin lessons trong section
+            let lessonsInfo = '';
+            if (section.lessons && section.lessons.length > 0) {
+              lessonsInfo = `\nBài học (${section.lessons.length} bài):`;
+              section.lessons.forEach((lesson, index) => {
+                lessonsInfo += `\n- Bài ${index + 1}: ${lesson.title} (${lesson.duration || 0} phút)`;
+              });
+            }
+
+            courseDocs.push(sectionDoc + lessonsInfo);
+
+            // Tạo document từ khóa cho section
+            const sectionKeywords = [
+              section.title,
+              section.title?.toLowerCase(),
+              'phần học ' + section.title,
+              'section ' + section.title,
+              course.title,
+            ].filter(Boolean);
+
+            if (sectionKeywords.length > 0) {
+              courseDocs.push(
+                `Từ khóa phần học: ${sectionKeywords.join(', ')}
+Liên quan đến: ${section.title} (${course.title})`,
+              );
+            }
+          });
+        }
+
+        // Tạo documents riêng cho từng lesson
+        if (course.sections) {
+          course.sections.forEach((section) => {
+            if (section.lessons && section.lessons.length > 0) {
+              section.lessons.forEach((lesson) => {
+                const lessonDoc = `Bài học: ${lesson.title}
+Thuộc phần: ${section.title}
+Thuộc khóa học: ${course.title}
+Thời lượng: ${lesson.duration || 0} phút`;
+
+                courseDocs.push(lessonDoc);
+
+                // Tạo document từ khóa cho lesson
+                const lessonKeywords = [
+                  lesson.title,
+                  lesson.title?.toLowerCase(),
+                  'bài học ' + lesson.title,
+                  'lesson ' + lesson.title,
+                  section.title,
+                  course.title,
+                ].filter(Boolean);
+
+                if (lessonKeywords.length > 0) {
+                  courseDocs.push(
+                    `Từ khóa bài học: ${lessonKeywords.join(', ')}
+Liên quan đến: ${lesson.title} (${section.title} - ${course.title})`,
+                  );
+                }
+              });
+            }
+          });
+        }
       });
       documentsToAdd.push(...courseDocs);
       this.logger.log(`Added ${courseDocs.length} course documents`);
 
-      // Add course sections
-      const sectionDocs: string[] = [];
-      courseSections.forEach((section) => {
-        const keywords = [
-          section.title,
-          section.title?.toLowerCase(),
-          'phần học ' + section.title,
-          'section ' + section.title,
-          section.course?.title ? `thuộc khóa học ${section.course.title}` : '',
-        ]
-          .filter(Boolean)
-          .join(', ');
-
-        sectionDocs.push(
-          `Phần học: ${section.title}
-Thuộc khóa học: ${section.course?.title || 'Không có'}
-Mô tả: ${section.description}
-Từ khóa phụ: ${keywords}
-Thống kê:
-- Tổng số phần học: ${courseSections.length}
-- Số phần học có khóa học: ${courseSections.filter((s) => s.course).length}
-- Số phần học có mô tả: ${courseSections.filter((s) => s.description).length}`,
-        );
-      });
-      documentsToAdd.push(...sectionDocs);
-      this.logger.log(`Added ${sectionDocs.length} section documents`);
-
-      // Add course lessons
-      const lessonDocs: string[] = [];
-      courseLessons.forEach((lesson) => {
-        const keywords = [
-          lesson.title,
-          lesson.title?.toLowerCase(),
-          'bài học ' + lesson.title,
-          'lesson ' + lesson.title,
-          lesson.section?.title ? `thuộc phần ${lesson.section.title}` : '',
-        ]
-          .filter(Boolean)
-          .join(', ');
-
-        lessonDocs.push(
-          `Bài học: ${lesson.title}
-Thuộc phần: ${lesson.section?.title || 'Không có'}
-Thời lượng: ${lesson.duration} phút
-Từ khóa phụ: ${keywords}
-Thống kê:
-- Tổng số bài học: ${courseLessons.length}
-- Số bài học có phần: ${courseLessons.filter((l) => l.section).length}
-- Thời lượng trung bình: ${Math.round(courseLessons.reduce((sum, l) => sum + (l.duration || 0), 0) / courseLessons.length)} phút`,
-        );
-      });
-      documentsToAdd.push(...lessonDocs);
-      this.logger.log(`Added ${lessonDocs.length} lesson documents`);
-
-      // Add documents
-      const docDocs: string[] = [];
-      documents.forEach((doc) => {
-        const keywords = [
-          doc.title,
-          doc.title?.toLowerCase(),
-          'tài liệu ' + doc.title,
-          doc.fileType ? `loại file ${doc.fileType}` : '',
-        ]
-          .filter(Boolean)
-          .join(', ');
-
-        docDocs.push(
-          `Tài liệu: ${doc.title}
-Mô tả: ${doc.description}
-Từ khóa phụ: ${keywords}
-Thống kê:
-- Tổng số tài liệu: ${documents.length}
-- Số tài liệu có loại file: ${documents.filter((d) => d.fileType).length}
-- Số tài liệu có mô tả: ${documents.filter((d) => d.description).length}`,
-        );
-      });
-      documentsToAdd.push(...docDocs);
-      this.logger.log(`Added ${docDocs.length} document files`);
-
-      // Add forums
-      const forumDocs: string[] = [];
-      forums.forEach((forum) => {
-        const keywords = [
-          forum.title,
-          forum.title?.toLowerCase(),
-          'diễn đàn ' + forum.title,
-          forum.status,
-        ]
-          .filter(Boolean)
-          .join(', ');
-
-        forumDocs.push(
-          `Diễn đàn: ${forum.title}
-Mô tả: ${forum.description}
-Trạng thái: ${forum.status}
-Từ khóa phụ: ${keywords}
-Thống kê:
-- Tổng số diễn đàn: ${forums.length}
-- Số diễn đàn đang hoạt động: ${forums.filter((f) => f.status === 'active').length}
-- Số diễn đàn có mô tả: ${forums.filter((f) => f.description).length}`,
-        );
-      });
-      documentsToAdd.push(...forumDocs);
-      this.logger.log(`Added ${forumDocs.length} forum documents`);
-
-      // Add categories
-      const categoryDocs: string[] = [];
-      categories.forEach((category) => {
-        const keywords = [
-          category.name,
-          category.name?.toLowerCase(),
-          'danh mục ' + category.name,
-        ]
-          .filter(Boolean)
-          .join(', ');
-
-        categoryDocs.push(
-          `Danh mục: ${category.name}
-Mô tả: ${category.description}
-Từ khóa phụ: ${keywords}
-Thống kê:
-- Tổng số danh mục: ${categories.length}
-- Số danh mục có mô tả: ${categories.filter((c) => c.description).length}`,
-        );
-      });
-      documentsToAdd.push(...categoryDocs);
-      this.logger.log(`Added ${categoryDocs.length} category documents`);
-
-      // Add quizzes
-      const quizDocs: string[] = [];
-      quizzes.forEach((quiz) => {
-        const keywords = [
-          quiz.title,
-          quiz.title?.toLowerCase(),
-          'bài kiểm tra ' + quiz.title,
-          quiz.quizType,
-          quiz.lesson?.title ? `bài học ${quiz.lesson.title}` : '',
-          quiz.academicClass?.className
-            ? `lớp ${quiz.academicClass.className}`
-            : '',
-        ]
-          .filter(Boolean)
-          .join(', ');
-
-        quizDocs.push(
-          `Bài kiểm tra: ${quiz.title}
-Mô tả: ${quiz.description}
-Loại bài kiểm tra: ${quiz.quizType}
-Thời gian làm bài: ${quiz.timeLimit} phút
-Điểm đạt: ${quiz.passingScore}
-Số lần làm lại: ${quiz.attemptsAllowed}
-Bài học: ${quiz.lesson?.title || 'Không có'}
-Lớp học: ${quiz.academicClass?.className || 'Không có'}
-Từ khóa phụ: ${keywords}
-Thống kê:
-- Tổng số bài kiểm tra: ${quizzes.length}
-- Số bài kiểm tra có bài học: ${quizzes.filter((q) => q.lesson).length}
-- Số bài kiểm tra có lớp học: ${quizzes.filter((q) => q.academicClass).length}
-- Thời gian làm bài trung bình: ${Math.round(quizzes.reduce((sum, q) => sum + (q.timeLimit || 0), 0) / quizzes.length)} phút
-- Điểm đạt trung bình: ${Math.round(quizzes.reduce((sum, q) => sum + (q.passingScore || 0), 0) / quizzes.length)}`,
-        );
-      });
-      documentsToAdd.push(...quizDocs);
-      this.logger.log(`Added ${quizDocs.length} quiz documents`);
-
-      // Add assignments
-      const assignmentDocs: string[] = [];
-      assignments.forEach((assignment) => {
-        const keywords = [
-          assignment.title,
-          assignment.title?.toLowerCase(),
-          'bài tập ' + assignment.title,
-          assignment.assignmentType,
-          assignment.lesson?.title ? `bài học ${assignment.lesson.title}` : '',
-          assignment.academicClass?.className
-            ? `lớp ${assignment.academicClass.className}`
-            : '',
-        ]
-          .filter(Boolean)
-          .join(', ');
-
-        assignmentDocs.push(
-          `Bài tập: ${assignment.title}
-Mô tả: ${assignment.description}
-Loại bài tập: ${assignment.assignmentType}
-Hạn nộp: ${assignment.dueDate}
-Điểm tối đa: ${assignment.maxScore}
-Yêu cầu file: ${assignment.fileRequirements || 'Không có'}
-Bài học: ${assignment.lesson?.title || 'Không có'}
-Lớp học: ${assignment.academicClass?.className || 'Không có'}
-Từ khóa phụ: ${keywords}
-Thống kê:
-- Tổng số bài tập: ${assignments.length}
-- Số bài tập có bài học: ${assignments.filter((a) => a.lesson).length}
-- Số bài tập có lớp học: ${assignments.filter((a) => a.academicClass).length}
-- Điểm tối đa trung bình: ${Math.round(assignments.reduce((sum, a) => sum + (a.maxScore || 0), 0) / assignments.length)}`,
-        );
-      });
-      documentsToAdd.push(...assignmentDocs);
-      this.logger.log(`Added ${assignmentDocs.length} assignment documents`);
-
       // Add academic classes
       const classDocs: string[] = [];
       academicClasses.forEach((academicClass) => {
-        const keywords = [
-          academicClass.className,
-          academicClass.className?.toLowerCase(),
-          'lớp học ' + academicClass.className,
-          academicClass.classCode,
-          academicClass.semester,
-        ]
-          .filter(Boolean)
-          .join(', ');
-
-        classDocs.push(
-          `Lớp học: ${academicClass.className}
+        // Document chính cho lớp học
+        const classMainDoc = `Lớp học: ${academicClass.className}
 Mã lớp: ${academicClass.classCode}
 Học kỳ: ${academicClass.semester}
 Trạng thái: ${academicClass.status}
-Từ khóa phụ: ${keywords}
-Thống kê:
-- Tổng số lớp học: ${academicClasses.length}
-- Số lớp học đang hoạt động: ${academicClasses.filter((c) => c.status === 'active').length}
-- Số lớp học theo học kỳ: ${Object.entries(
-            academicClasses.reduce((acc, c) => {
-              acc[c.semester] = (acc[c.semester] || 0) + 1;
-              return acc;
-            }, {}),
-          )
-            .map(([semester, count]) => `${semester}: ${count}`)
-            .join(', ')}`,
+Ngành: ${academicClass.major?.majorName || 'Không có'}
+Chương trình: ${academicClass.program?.programName || 'Không có'}`;
+
+        // Thêm thông tin giảng viên
+        let instructorsInfo = '';
+        if (academicClass.instructors && academicClass.instructors.length > 0) {
+          instructorsInfo = `\nGiảng viên (${academicClass.instructors.length} người):`;
+          academicClass.instructors.forEach((classInstructor, index) => {
+            instructorsInfo += `\n- ${classInstructor.instructor?.user?.username || 'Không có'}`;
+            if (classInstructor.instructor?.fullName) {
+              instructorsInfo += ` (${classInstructor.instructor.fullName})`;
+            }
+            if (classInstructor.instructor?.professionalTitle) {
+              instructorsInfo += ` - ${classInstructor.instructor.professionalTitle}`;
+            }
+          });
+        }
+
+        // Thêm thông tin học viên
+        let studentsInfo = '';
+        if (
+          academicClass.studentsAcademic &&
+          academicClass.studentsAcademic.length > 0
+        ) {
+          studentsInfo = `\nHọc viên (${academicClass.studentsAcademic.length} người):`;
+          academicClass.studentsAcademic.forEach((student, index) => {
+            studentsInfo += `\n- ${student.user?.username || 'Không có'}`;
+            if (student.fullName) {
+              studentsInfo += ` (${student.fullName})`;
+            }
+          });
+        }
+
+        // Thêm thông tin khóa học
+        let coursesInfo = '';
+        if (
+          academicClass.classCourses &&
+          academicClass.classCourses.length > 0
+        ) {
+          coursesInfo = `\nKhóa học (${academicClass.classCourses.length} khóa):`;
+          academicClass.classCourses.forEach((classCourse, index) => {
+            coursesInfo += `\n- ${classCourse.course?.title || 'Không có'}`;
+          });
+        }
+
+        classDocs.push(
+          classMainDoc + instructorsInfo + studentsInfo + coursesInfo,
         );
+
+        // Tạo document từ khóa cho lớp học
+        const classKeywords = [
+          academicClass.className,
+          academicClass.className?.toLowerCase(),
+          academicClass.classCode,
+          'lớp học ' + academicClass.className,
+          academicClass.major?.majorName,
+          academicClass.program?.programName,
+          academicClass.semester,
+        ].filter(Boolean);
+
+        if (classKeywords.length > 0) {
+          classDocs.push(
+            `Từ khóa lớp học: ${classKeywords.join(', ')}
+Liên quan đến: ${academicClass.className}`,
+          );
+        }
       });
       documentsToAdd.push(...classDocs);
       this.logger.log(`Added ${classDocs.length} academic class documents`);
@@ -424,89 +516,249 @@ Thống kê:
       // Add instructors
       const instructorDocs: string[] = [];
       instructors.forEach((instructor) => {
-        const keywords = [
-          instructor.user.username,
-          instructor.user.username?.toLowerCase(),
-          'giảng viên ' + instructor.user.username,
-          instructor.user.email,
-        ]
-          .filter(Boolean)
-          .join(', ');
-
-        instructorDocs.push(
-          `Giảng viên: ${instructor.user.username}
+        // Document chính cho giảng viên
+        const instructorMainDoc = `Giảng viên: ${instructor.user.username}
 Email: ${instructor.user.email}
 Số điện thoại: ${instructor.user.phone || 'Chưa cập nhật'}
-Từ khóa phụ: ${keywords}
-Thống kê:
-- Tổng số giảng viên: ${instructors.length}
-- Số giảng viên có số điện thoại: ${instructors.filter((i) => i.user.phone).length}
-- Số giảng viên có email: ${instructors.filter((i) => i.user.email).length}`,
-        );
+Họ tên: ${instructor.fullName}
+Chức danh: ${instructor.professionalTitle || 'Chưa cập nhật'}
+Chuyên môn: ${instructor.specialization || 'Chưa cập nhật'}
+Khoa: ${instructor.faculty?.facultyName || 'Chưa cập nhật'}`;
+
+        // Thêm thông tin courses
+        let coursesInfo = '';
+        if (instructor.courses && instructor.courses.length > 0) {
+          coursesInfo = `\nKhóa học (${instructor.courses.length} khóa):`;
+          instructor.courses.forEach((course, index) => {
+            coursesInfo += `\n- ${course.title}`;
+            if (course.category?.name) {
+              coursesInfo += ` (${course.category.name})`;
+            }
+          });
+        }
+
+        // Thêm thông tin documents
+        let documentsInfo = '';
+        if (instructor.documents && instructor.documents.length > 0) {
+          documentsInfo = `\nTài liệu (${instructor.documents.length} tài liệu):`;
+          instructor.documents.forEach((doc, index) => {
+            documentsInfo += `\n- ${doc.title}`;
+            if (doc.fileType) {
+              documentsInfo += ` [${doc.fileType}]`;
+            }
+          });
+        }
+
+        instructorDocs.push(instructorMainDoc + coursesInfo + documentsInfo);
+
+        // Tạo document từ khóa cho giảng viên
+        const instructorKeywords = [
+          instructor.user.username,
+          instructor.user.username?.toLowerCase(),
+          instructor.fullName,
+          instructor.fullName?.toLowerCase(),
+          'giảng viên ' + instructor.user.username,
+          'giảng viên ' + instructor.fullName,
+          instructor.professionalTitle,
+          instructor.specialization,
+          instructor.faculty?.facultyName,
+        ].filter(Boolean);
+
+        if (instructorKeywords.length > 0) {
+          instructorDocs.push(
+            `Từ khóa giảng viên: ${instructorKeywords.join(', ')}
+Liên quan đến: ${instructor.fullName}`,
+          );
+        }
       });
       documentsToAdd.push(...instructorDocs);
       this.logger.log(`Added ${instructorDocs.length} instructor documents`);
 
+      // Add documents
+      const docDocs: string[] = [];
+      documents.forEach((doc) => {
+        // Document chính cho tài liệu
+        const docMainDoc = `Tài liệu: ${doc.title}
+Mô tả: ${doc.description || 'Không có mô tả'}
+Loại file: ${doc.fileType || 'Không xác định'}
+Upload bởi: ${doc.instructor?.user?.username || 'Không có'}
+Thuộc phần: ${doc.courseSection?.title || 'Không có'}
+Thuộc khóa học: ${doc.courseSection?.course?.title || 'Không có'}`;
+
+        docDocs.push(docMainDoc);
+
+        // Document riêng cho từ khóa
+        const keywords = [
+          doc.title,
+          doc.title?.toLowerCase(),
+          'tài liệu ' + doc.title,
+          doc.instructor?.user?.username,
+          doc.instructor?.fullName,
+          doc.courseSection?.title,
+          doc.courseSection?.course?.title,
+        ].filter(Boolean);
+
+        if (keywords.length > 0) {
+          docDocs.push(
+            `Từ khóa tài liệu: ${keywords.join(', ')}
+Liên quan đến: ${doc.title}`,
+          );
+        }
+      });
+      documentsToAdd.push(...docDocs);
+      this.logger.log(`Added ${docDocs.length} document files`);
+
+      // Add forums
+      const forumDocs: string[] = [];
+      forums.forEach((forum) => {
+        // Document chính cho diễn đàn
+        const forumMainDoc = `Diễn đàn: ${forum.title}
+Mô tả: ${forum.description || 'Không có mô tả'}
+Trạng thái: ${forum.status}
+Tạo bởi: ${forum.user?.username || 'Không có'}
+Thuộc khóa học: ${forum.course?.title || 'Không có'}`;
+
+        forumDocs.push(forumMainDoc);
+
+        // Document riêng cho từ khóa
+        const keywords = [
+          forum.title,
+          forum.title?.toLowerCase(),
+          'diễn đàn ' + forum.title,
+          forum.user?.username,
+          forum.course?.title,
+        ].filter(Boolean);
+
+        if (keywords.length > 0) {
+          forumDocs.push(
+            `Từ khóa diễn đàn: ${keywords.join(', ')}
+Liên quan đến: ${forum.title}`,
+          );
+        }
+      });
+      documentsToAdd.push(...forumDocs);
+      this.logger.log(`Added ${forumDocs.length} forum documents`);
+
+      // Add categories
+      const categoryDocs: string[] = [];
+      categories.forEach((category) => {
+        // Document chính cho danh mục
+        categoryDocs.push(
+          `Danh mục: ${category.name}
+Mô tả: ${category.description || 'Không có mô tả'}`,
+        );
+
+        // Document riêng cho từ khóa
+        const keywords = [
+          category.name,
+          category.name?.toLowerCase(),
+          'danh mục ' + category.name,
+        ].filter(Boolean);
+
+        if (keywords.length > 0) {
+          categoryDocs.push(
+            `Từ khóa danh mục: ${keywords.join(', ')}
+Liên quan đến: ${category.name}`,
+          );
+        }
+      });
+      documentsToAdd.push(...categoryDocs);
+      this.logger.log(`Added ${categoryDocs.length} category documents`);
+
+      // Add quizzes
+      const quizDocs: string[] = [];
+      quizzes.forEach((quiz) => {
+        // Document chính cho bài kiểm tra
+        quizDocs.push(
+          `Bài kiểm tra: ${quiz.title}
+Mô tả: ${quiz.description || 'Không có mô tả'}
+Loại bài kiểm tra: ${quiz.quizType}
+Thời gian làm bài: ${quiz.timeLimit || 'Không giới hạn'} phút
+Điểm đạt: ${quiz.passingScore || 'Chưa xác định'}
+Số lần làm lại: ${quiz.attemptsAllowed}
+Bài học: ${quiz.lesson?.title || 'Không có'}
+Lớp: ${quiz.academicClass?.className || 'Không có'}`,
+        );
+
+        // Document riêng cho từ khóa
+        const keywords = [
+          quiz.title,
+          quiz.title?.toLowerCase(),
+          'bài kiểm tra ' + quiz.title,
+          quiz.quizType,
+        ].filter(Boolean);
+
+        if (keywords.length > 0) {
+          quizDocs.push(
+            `Từ khóa bài kiểm tra: ${keywords.join(', ')}
+Liên quan đến: ${quiz.title}`,
+          );
+        }
+      });
+      documentsToAdd.push(...quizDocs);
+      this.logger.log(`Added ${quizDocs.length} quiz documents`);
+
+      // Add assignments
+      const assignmentDocs: string[] = [];
+      assignments.forEach((assignment) => {
+        // Document chính cho bài tập
+        assignmentDocs.push(
+          `Bài tập: ${assignment.title}
+Mô tả: ${assignment.description || 'Không có mô tả'}
+Loại bài tập: ${assignment.assignmentType}
+Hạn nộp: ${assignment.dueDate || 'Chưa xác định'}
+Điểm tối đa: ${assignment.maxScore || 'Chưa xác định'}
+Yêu cầu file: ${assignment.fileRequirements || 'Không có'}
+Bài học: ${assignment.lesson?.title || 'Không có'}
+Lớp: ${assignment.academicClass?.className || 'Không có'}`,
+        );
+
+        // Document riêng cho từ khóa
+        const keywords = [
+          assignment.title,
+          assignment.title?.toLowerCase(),
+          'bài tập ' + assignment.title,
+          assignment.assignmentType,
+        ].filter(Boolean);
+
+        if (keywords.length > 0) {
+          assignmentDocs.push(
+            `Từ khóa bài tập: ${keywords.join(', ')}
+Liên quan đến: ${assignment.title}`,
+          );
+        }
+      });
+      documentsToAdd.push(...assignmentDocs);
+      this.logger.log(`Added ${assignmentDocs.length} assignment documents`);
+
       // Add users
       const userDocs: string[] = [];
       users.forEach((user) => {
-        const keywords = [
-          user.username,
-          user.username?.toLowerCase(),
-          'người dùng ' + user.username,
-          user.email,
-          user.role,
-        ]
-          .filter(Boolean)
-          .join(', ');
-
+        // Document chính cho người dùng
         userDocs.push(
           `Người dùng: ${user.username}
 Email: ${user.email}
 Số điện thoại: ${user.phone || 'Chưa cập nhật'}
-Vai trò: ${user.role}
-Từ khóa phụ: ${keywords}
-Thống kê:
-- Tổng số người dùng: ${users.length}
-- Số người dùng có số điện thoại: ${users.filter((u) => u.phone).length}
-- Số người dùng có email: ${users.filter((u) => u.email).length}
-- Phân bố theo vai trò: ${Object.entries(
-            users.reduce((acc, u) => {
-              acc[u.role] = (acc[u.role] || 0) + 1;
-              return acc;
-            }, {}),
-          )
-            .map(([role, count]) => `${role}: ${count}`)
-            .join(', ')}`,
+Vai trò: ${user.role}`,
         );
+
+        // Document riêng cho từ khóa
+        const keywords = [
+          user.username,
+          user.username?.toLowerCase(),
+          'người dùng ' + user.username,
+          user.role,
+        ].filter(Boolean);
+
+        if (keywords.length > 0) {
+          userDocs.push(
+            `Từ khóa người dùng: ${keywords.join(', ')}
+Liên quan đến: ${user.username}`,
+          );
+        }
       });
       documentsToAdd.push(...userDocs);
       this.logger.log(`Added ${userDocs.length} user documents`);
-
-      // Add user students
-      const studentDocs: string[] = [];
-      userStudents.forEach((student) => {
-        const keywords = [
-          student.user?.username,
-          student.user?.username?.toLowerCase(),
-          'học viên ' + (student.user?.username || ''),
-          student.user?.email,
-        ]
-          .filter(Boolean)
-          .join(', ');
-
-        studentDocs.push(
-          `Học viên: ${student.user?.username || 'Không rõ'}
-Email: ${student.user?.email || 'Không rõ'}
-Từ khóa phụ: ${keywords}
-Thống kê:
-- Tổng số học viên: ${userStudents.length}
-- Số học viên có email: ${userStudents.filter((s) => s.user?.email).length}
-- Số học viên có username: ${userStudents.filter((s) => s.user?.username).length}`,
-        );
-      });
-      documentsToAdd.push(...studentDocs);
-      this.logger.log(`Added ${studentDocs.length} student documents`);
 
       // Add user grades
       const gradeDocs: string[] = [];
@@ -543,17 +795,24 @@ Thống kê:
       // Add reviews
       const reviewDocs: string[] = [];
       reviews.forEach((review) => {
+        const reviewMainDoc = `Đánh giá: ${review.rating} sao
+Nội dung: ${review.reviewText || 'Không có nội dung'}
+Loại đánh giá: ${review.reviewType}
+Đánh giá bởi: ${review.student?.user?.username || 'Không có'}
+Thuộc khóa học: ${review.course?.title || 'Không có'}`;
+
         const keywords = [
           String(review.rating) + ' sao',
           review.reviewText,
           'đánh giá',
+          review.student?.user?.username,
+          review.course?.title,
         ]
           .filter(Boolean)
           .join(', ');
 
         reviewDocs.push(
-          `Đánh giá: ${review.rating} sao
-Nội dung: ${review.reviewText}
+          `${reviewMainDoc}
 Từ khóa phụ: ${keywords}
 Thống kê:
 - Tổng số đánh giá: ${reviews.length}
@@ -594,150 +853,212 @@ Thống kê:
       documentsToAdd.push(...enrollmentDocs);
       this.logger.log(`Added ${enrollmentDocs.length} enrollment documents`);
 
-      // Add quiz attempts
-      const attemptDocs: string[] = [];
-      quizAttempts.forEach((attempt) => {
-        const keywords = [
-          String(attempt.score),
-          attempt.status,
-          'làm bài kiểm tra',
-        ]
-          .filter(Boolean)
-          .join(', ');
+      // Add faculties
+      const facultyDocs: string[] = [];
+      faculties.forEach((faculty) => {
+        // Document chính cho khoa
+        const facultyMainDoc = `Khoa: ${faculty.facultyName}
+Mã khoa: ${faculty.facultyCode}
+Mô tả: ${faculty.description || 'Không có mô tả'}
+Trạng thái: ${faculty.status}`;
 
-        attemptDocs.push(
-          `Lần làm bài kiểm tra: Điểm: ${attempt.score}
-Trạng thái: ${attempt.status}
-Từ khóa phụ: ${keywords}
-Thống kê:
-- Tổng số lần làm bài: ${quizAttempts.length}
-- Số lần làm bài đã hoàn thành: ${quizAttempts.filter((a) => a.status === 'completed').length}
-- Điểm trung bình: ${Math.round(quizAttempts.reduce((sum, a) => sum + (a.score || 0), 0) / quizAttempts.length)}
-- Phân bố theo trạng thái: ${Object.entries(
-            quizAttempts.reduce((acc, a) => {
-              acc[a.status] = (acc[a.status] || 0) + 1;
-              return acc;
-            }, {}),
-          )
-            .map(([status, count]) => `${status}: ${count}`)
-            .join(', ')}`,
-        );
+        // Thêm thông tin ngành
+        let majorsInfo = '';
+        if (faculty.majors && faculty.majors.length > 0) {
+          majorsInfo = `\nNgành (${faculty.majors.length} ngành):`;
+          faculty.majors.forEach((major, index) => {
+            majorsInfo += `\n- ${major.majorName} (${major.majorCode})`;
+            if (major.description) {
+              majorsInfo += ` - ${major.description}`;
+            }
+          });
+        }
+
+        // Thêm thông tin giảng viên
+        let instructorsInfo = '';
+        if (faculty.userInstructors && faculty.userInstructors.length > 0) {
+          instructorsInfo = `\nGiảng viên (${faculty.userInstructors.length} người):`;
+          faculty.userInstructors.forEach((instructor, index) => {
+            instructorsInfo += `\n- ${instructor.user?.username || 'Không có'}`;
+            if (instructor.fullName) {
+              instructorsInfo += ` (${instructor.fullName})`;
+            }
+          });
+        }
+
+        facultyDocs.push(facultyMainDoc + majorsInfo + instructorsInfo);
+
+        // Tạo document từ khóa cho khoa
+        const facultyKeywords = [
+          faculty.facultyName,
+          faculty.facultyName?.toLowerCase(),
+          faculty.facultyCode,
+          'khoa ' + faculty.facultyName,
+          'faculty ' + faculty.facultyName,
+        ].filter(Boolean);
+
+        if (facultyKeywords.length > 0) {
+          facultyDocs.push(
+            `Từ khóa khoa: ${facultyKeywords.join(', ')}
+Liên quan đến: ${faculty.facultyName}`,
+          );
+        }
       });
-      documentsToAdd.push(...attemptDocs);
-      this.logger.log(`Added ${attemptDocs.length} quiz attempt documents`);
+      documentsToAdd.push(...facultyDocs);
+      this.logger.log(`Added ${facultyDocs.length} faculty documents`);
 
-      // Add quiz questions
-      const questionDocs: string[] = [];
-      quizQuestions.forEach((question) => {
-        const keywords = [
-          question.questionText,
-          question.questionText?.toLowerCase(),
-          'câu hỏi',
-        ]
-          .filter(Boolean)
-          .join(', ');
+      // Add majors
+      const majorDocs: string[] = [];
+      majors.forEach((major) => {
+        // Document chính cho ngành
+        const majorMainDoc = `Ngành: ${major.majorName}
+Mã ngành: ${major.majorCode}
+Mô tả: ${major.description || 'Không có mô tả'}
+Trạng thái: ${major.status}
+Thuộc khoa: ${major.faculty?.facultyName || 'Không có'}`;
 
-        questionDocs.push(`Câu hỏi: ${question.questionText}
-Từ khóa phụ: ${keywords}
-Thống kê:
-- Tổng số câu hỏi: ${quizQuestions.length}
-- Số câu hỏi có nội dung: ${quizQuestions.filter((q) => q.questionText).length}
-- Số câu hỏi có đáp án: ${quizQuestions.filter((q) => q.options?.length > 0).length}`);
+        // Thêm thông tin chương trình
+        let programsInfo = '';
+        if (major.programs && major.programs.length > 0) {
+          programsInfo = `\nChương trình (${major.programs.length} chương trình):`;
+          major.programs.forEach((program, index) => {
+            programsInfo += `\n- ${program.programName} (${program.programCode})`;
+            if (program.description) {
+              programsInfo += ` - ${program.description}`;
+            }
+            programsInfo += ` - ${program.totalCredits} tín chỉ, ${program.durationYears} năm`;
+          });
+        }
+
+        // Thêm thông tin lớp học
+        let classesInfo = '';
+        if (major.academicClasses && major.academicClasses.length > 0) {
+          classesInfo = `\nLớp học (${major.academicClasses.length} lớp):`;
+          major.academicClasses.forEach((academicClass, index) => {
+            classesInfo += `\n- ${academicClass.className} (${academicClass.classCode})`;
+            classesInfo += ` - Học kỳ: ${academicClass.semester}`;
+          });
+        }
+
+        majorDocs.push(majorMainDoc + programsInfo + classesInfo);
+
+        // Tạo document từ khóa cho ngành
+        const majorKeywords = [
+          major.majorName,
+          major.majorName?.toLowerCase(),
+          major.majorCode,
+          'ngành ' + major.majorName,
+          'major ' + major.majorName,
+          major.faculty?.facultyName,
+        ].filter(Boolean);
+
+        if (majorKeywords.length > 0) {
+          majorDocs.push(
+            `Từ khóa ngành: ${majorKeywords.join(', ')}
+Liên quan đến: ${major.majorName}`,
+          );
+        }
       });
-      documentsToAdd.push(...questionDocs);
-      this.logger.log(`Added ${questionDocs.length} quiz question documents`);
+      documentsToAdd.push(...majorDocs);
+      this.logger.log(`Added ${majorDocs.length} major documents`);
 
-      // Add quiz options
-      const optionDocs: string[] = [];
-      quizOptions.forEach((option) => {
-        const keywords = [
-          option.optionText,
-          option.optionText?.toLowerCase(),
-          option.isCorrect ? 'đáp án đúng' : 'đáp án sai',
-        ]
-          .filter(Boolean)
-          .join(', ');
+      // Add programs
+      const programDocs: string[] = [];
+      programs.forEach((program) => {
+        // Document chính cho chương trình
+        const programMainDoc = `Chương trình: ${program.programName}
+Mã chương trình: ${program.programCode}
+Mô tả: ${program.description || 'Không có mô tả'}
+Tổng tín chỉ: ${program.totalCredits}
+Thời gian đào tạo: ${program.durationYears} năm
+Trạng thái: ${program.status}
+Thuộc ngành: ${program.major?.majorName || 'Không có'}
+Thuộc khoa: ${program.major?.faculty?.facultyName || 'Không có'}`;
 
-        optionDocs.push(
-          `Lựa chọn: ${option.optionText}
-Đúng/Sai: ${option.isCorrect ? 'Đúng' : 'Sai'}
-Từ khóa phụ: ${keywords}
-Thống kê:
-- Tổng số lựa chọn: ${quizOptions.length}
-- Số lựa chọn đúng: ${quizOptions.filter((o) => o.isCorrect).length}
-- Số lựa chọn sai: ${quizOptions.filter((o) => !o.isCorrect).length}
-- Tỷ lệ lựa chọn đúng: ${((quizOptions.filter((o) => o.isCorrect).length / quizOptions.length) * 100).toFixed(1)}%`,
-        );
+        // Thêm thông tin khóa học
+        let coursesInfo = '';
+        if (program.programCourses && program.programCourses.length > 0) {
+          coursesInfo = `\nKhóa học (${program.programCourses.length} khóa):`;
+          program.programCourses.forEach((programCourse, index) => {
+            coursesInfo += `\n- ${programCourse.course?.title || 'Không có'}`;
+            coursesInfo += ` - ${programCourse.credits} tín chỉ`;
+            coursesInfo += ` - Học kỳ: ${programCourse.semester}`;
+            coursesInfo += ` - Bắt buộc: ${programCourse.isMandatory ? 'Có' : 'Không'}`;
+          });
+        }
+
+        // Thêm thông tin lớp học
+        let classesInfo = '';
+        if (program.academicClasses && program.academicClasses.length > 0) {
+          classesInfo = `\nLớp học (${program.academicClasses.length} lớp):`;
+          program.academicClasses.forEach((academicClass, index) => {
+            classesInfo += `\n- ${academicClass.className} (${academicClass.classCode})`;
+            classesInfo += ` - Học kỳ: ${academicClass.semester}`;
+          });
+        }
+
+        programDocs.push(programMainDoc + coursesInfo + classesInfo);
+
+        // Tạo document từ khóa cho chương trình
+        const programKeywords = [
+          program.programName,
+          program.programName?.toLowerCase(),
+          program.programCode,
+          'chương trình ' + program.programName,
+          'program ' + program.programName,
+          program.major?.majorName,
+          program.major?.faculty?.facultyName,
+        ].filter(Boolean);
+
+        if (programKeywords.length > 0) {
+          programDocs.push(
+            `Từ khóa chương trình: ${programKeywords.join(', ')}
+Liên quan đến: ${program.programName}`,
+          );
+        }
       });
-      documentsToAdd.push(...optionDocs);
-      this.logger.log(`Added ${optionDocs.length} quiz option documents`);
+      documentsToAdd.push(...programDocs);
+      this.logger.log(`Added ${programDocs.length} program documents`);
 
-      // Add quiz responses
-      const responseDocs: string[] = [];
-      quizResponses.forEach((response) => {
-        const keywords = [String(response.id), 'trả lời kiểm tra']
-          .filter(Boolean)
-          .join(', ');
+      // Add program courses
+      const programCourseDocs: string[] = [];
+      programCourses.forEach((programCourse) => {
+        // Document chính cho khóa học trong chương trình
+        const programCourseMainDoc = `Khóa học trong chương trình: ${programCourse.course?.title || 'Không có'}
+Thuộc chương trình: ${programCourse.program?.programName || 'Không có'}
+Số tín chỉ: ${programCourse.credits}
+Học kỳ: ${programCourse.semester}
+Số tiết lý thuyết: ${programCourse.theory}
+Số tiết thực hành: ${programCourse.practice}
+Bắt buộc: ${programCourse.isMandatory ? 'Có' : 'Không'}
+Thời gian bắt đầu: ${programCourse.start_time}
+Thời gian kết thúc: ${programCourse.end_time}`;
 
-        responseDocs.push(`Trả lời kiểm tra: ID: ${response.id}
-Từ khóa phụ: ${keywords}
-Thống kê:
-- Tổng số trả lời: ${quizResponses.length}`);
+        programCourseDocs.push(programCourseMainDoc);
+
+        // Tạo document từ khóa cho khóa học trong chương trình
+        const programCourseKeywords = [
+          programCourse.course?.title,
+          programCourse.course?.title?.toLowerCase(),
+          programCourse.program?.programName,
+          programCourse.program?.programCode,
+          'khóa học ' + programCourse.course?.title,
+          'course ' + programCourse.course?.title,
+          String(programCourse.credits) + ' tín chỉ',
+          'học kỳ ' + programCourse.semester,
+        ].filter(Boolean);
+
+        if (programCourseKeywords.length > 0) {
+          programCourseDocs.push(
+            `Từ khóa khóa học chương trình: ${programCourseKeywords.join(', ')}
+Liên quan đến: ${programCourse.course?.title} (${programCourse.program?.programName})`,
+          );
+        }
       });
-      documentsToAdd.push(...responseDocs);
-      this.logger.log(`Added ${responseDocs.length} quiz response documents`);
-
-      // Add assignment submissions
-      const submissionDocs: string[] = [];
-      assignmentSubmissions.forEach((submission) => {
-        const keywords = [submission.status, 'nộp bài tập']
-          .filter(Boolean)
-          .join(', ');
-
-        submissionDocs.push(`Nộp bài tập: Trạng thái: ${submission.status}
-Từ khóa phụ: ${keywords}
-Thống kê:
-- Tổng số bài nộp: ${assignmentSubmissions.length}
-- Phân bố theo trạng thái: ${Object.entries(
-          assignmentSubmissions.reduce((acc, s) => {
-            acc[s.status] = (acc[s.status] || 0) + 1;
-            return acc;
-          }, {}),
-        )
-          .map(([status, count]) => `${status}: ${count}`)
-          .join(', ')}`);
-      });
-      documentsToAdd.push(...submissionDocs);
+      documentsToAdd.push(...programCourseDocs);
       this.logger.log(
-        `Added ${submissionDocs.length} assignment submission documents`,
+        `Added ${programCourseDocs.length} program course documents`,
       );
-
-      // Add certificates
-      const certificateDocs: string[] = [];
-      certificates.forEach((cert) => {
-        const keywords = [String(cert.id), 'chứng chỉ', cert.issueDate]
-          .filter(Boolean)
-          .join(', ');
-
-        certificateDocs.push(
-          `Chứng chỉ: ID: ${cert.id}
-Ngày cấp: ${cert.issueDate}
-Từ khóa phụ: ${keywords}
-Thống kê:
-- Tổng số chứng chỉ: ${certificates.length}
-- Số chứng chỉ theo năm: ${Object.entries(
-            certificates.reduce((acc, c) => {
-              const year = new Date(c.issueDate).getFullYear();
-              acc[year] = (acc[year] || 0) + 1;
-              return acc;
-            }, {}),
-          )
-            .map(([year, count]) => `${year}: ${count}`)
-            .join(', ')}`,
-        );
-      });
-      documentsToAdd.push(...certificateDocs);
-      this.logger.log(`Added ${certificateDocs.length} certificate documents`);
 
       this.logger.log(
         `Tìm thấy tổng cộng ${documentsToAdd.length} tài liệu để thêm vào`,

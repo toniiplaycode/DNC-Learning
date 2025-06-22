@@ -9,6 +9,16 @@ export class RagController {
     private readonly openaiService: OpenAIService,
   ) {}
 
+  @Get('status')
+  async getStatus() {
+    try {
+      const status = await this.ragService.getQdrantStatus();
+      return { success: true, ...status };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
   @Post('test-openai')
   async testOpenAI(@Body('prompt') prompt: string) {
     try {
@@ -28,6 +38,16 @@ export class RagController {
         embeddingSize: embedding.length,
         embeddingPreview: embedding.slice(0, 5), // Show first 5 dimensions
       };
+    } catch (error) {
+      return { success: false, error: error.message };
+    }
+  }
+
+  @Post('test-chunking')
+  async testChunking(@Body('text') text: string) {
+    try {
+      const result = await this.ragService.testChunking(text);
+      return { success: true, ...result };
     } catch (error) {
       return { success: false, error: error.message };
     }

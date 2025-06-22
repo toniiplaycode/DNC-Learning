@@ -19,13 +19,17 @@ import { CourseSection } from '../../entities/CourseSection';
 import { CourseLesson } from '../../entities/CourseLesson';
 import { AcademicClass } from '../../entities/AcademicClass';
 import { User } from '../../entities/User';
-import { UserStudent } from '../../entities/UserStudent';
-import { UserGrade } from '../../entities/UserGrade';
-import { QuizAttempt } from '../../entities/QuizAttempt';
-import { QuizQuestion } from '../../entities/QuizQuestion';
-import { QuizOption } from '../../entities/QuizOption';
-import { QuizResponse } from '../../entities/QuizResponse';
-import { AssignmentSubmission } from '../../entities/AssignmentSubmission';
+import { UserStudent } from 'src/entities/UserStudent';
+import { UserGrade } from 'src/entities/UserGrade';
+import { QuizAttempt } from 'src/entities/QuizAttempt';
+import { QuizQuestion } from 'src/entities/QuizQuestion';
+import { QuizOption } from 'src/entities/QuizOption';
+import { QuizResponse } from 'src/entities/QuizResponse';
+import { AssignmentSubmission } from 'src/entities/AssignmentSubmission';
+import { Faculty } from 'src/entities/Faculty';
+import { Major } from 'src/entities/Major';
+import { Program } from 'src/entities/Program';
+import { ProgramCourse } from 'src/entities/ProgramCourse';
 
 @Module({
   imports: [
@@ -52,13 +56,10 @@ import { AssignmentSubmission } from '../../entities/AssignmentSubmission';
       QuizOption,
       QuizResponse,
       AssignmentSubmission,
-      CourseSection,
-      CourseLesson,
-      AcademicClass,
-      User,
-      UserStudent,
-      UserGrade,
-      QuizAttempt,
+      Faculty,
+      Major,
+      Program,
+      ProgramCourse,
     ]),
     RagModule,
   ],

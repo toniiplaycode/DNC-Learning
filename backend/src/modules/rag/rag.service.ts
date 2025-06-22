@@ -16,6 +16,7 @@ export class RagService {
   private vectorStore: QdrantVectorStore | null = null;
   private readonly collectionName = 'chatbot_documents';
   private isInitialized = false;
+  private readonly textSplitter: RecursiveCharacterTextSplitter;
 
   constructor(
     private configService: ConfigService,
@@ -23,6 +24,13 @@ export class RagService {
   ) {
     // Initialize embeddings (this doesn't require Qdrant)
     this.embeddings = new OpenAIEmbeddings(this.openaiService);
+
+    // Initialize text splitter for chunking
+    this.textSplitter = new RecursiveCharacterTextSplitter({
+      chunkSize: 500, // Giảm kích thước chunk (tokens)
+      chunkOverlap: 100, // Giảm overlap
+      separators: ['\n\n', '\n', '* ', '. ', '! ', '? ', ' ', ''], // Thứ tự ưu tiên tách
+    });
 
     // Try to initialize Qdrant, but don't throw if it fails
     this.initializeQdrant().catch((error) => {
@@ -100,20 +108,133 @@ export class RagService {
     }
   }
 
+  /**
+   * Chuẩn hóa văn bản tiếng Việt cho tìm kiếm (giữ nguyên dấu)
+   */
+  private normalizeText(str: string): string {
+    // Giữ nguyên dấu tiếng Việt, chỉ chuyển về lowercase
+    const normalized = str.toLowerCase();
+    // Chỉ loại bỏ các ký tự đặc biệt, giữ nguyên dấu cách và dấu tiếng Việt
+    return normalized
+      .replace(/[^a-zA-ZÀ-ỹ0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /**
+   * Chuẩn hóa văn bản tiếng Việt cho tìm kiếm (loại bỏ dấu)
+   */
+  private normalizeTextWithoutAccents(str: string): string {
+    // Loại bỏ dấu tiếng Việt
+    const withoutAccents = removeAccents(str.toLowerCase());
+    // Chỉ loại bỏ các ký tự đặc biệt, giữ nguyên dấu cách
+    return withoutAccents
+      .replace(/[^a-zA-Z0-9\s]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
+  /**
+   * Tách từ khóa từ văn bản đã chuẩn hóa (giữ nguyên dấu)
+   */
+  private extractKeywords(text: string): string[] {
+    return this.normalizeText(text)
+      .split(' ')
+      .filter((word) => word.length > 0);
+  }
+
+  /**
+   * Kiểm tra và khởi tạo lại Qdrant nếu cần thiết
+   */
+  private async checkAndReinitializeQdrant(): Promise<boolean> {
+    if (this.isInitialized && this.qdrantClient) {
+      try {
+        // Test connection
+        await this.qdrantClient.getCollections();
+        return true;
+      } catch (error) {
+        this.logger.warn(
+          'Qdrant connection lost, attempting to reinitialize...',
+        );
+        this.isInitialized = false;
+        this.qdrantClient = null;
+        this.vectorStore = null;
+      }
+    }
+
+    // Try to reinitialize
+    try {
+      await this.initializeQdrant();
+      return this.isInitialized;
+    } catch (error) {
+      this.logger.error('Failed to reinitialize Qdrant:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Phân đoạn văn bản thành các chunk nhỏ hơn
+   */
+  private async chunkDocuments(documents: string[]): Promise<string[]> {
+    this.logger.log(`Bắt đầu phân đoạn ${documents.length} tài liệu...`);
+
+    const allChunks: string[] = [];
+
+    for (let i = 0; i < documents.length; i++) {
+      const doc = documents[i];
+      this.logger.debug(`Đang phân đoạn tài liệu ${i + 1}/${documents.length}`);
+
+      try {
+        // Tạo LangChain Document object
+        const langchainDoc = new Document({
+          pageContent: doc,
+          metadata: { source: `document_${i}` },
+        });
+
+        // Phân đoạn văn bản
+        const chunks = await this.textSplitter.splitDocuments([langchainDoc]);
+
+        // Chuyển đổi chunks thành strings
+        const chunkTexts = chunks.map((chunk) => chunk.pageContent);
+        allChunks.push(...chunkTexts);
+
+        this.logger.debug(
+          `Tài liệu ${i + 1} được phân thành ${chunks.length} chunks`,
+        );
+      } catch (error) {
+        this.logger.warn(`Lỗi khi phân đoạn tài liệu ${i + 1}:`, error);
+        // Nếu không thể phân đoạn, giữ nguyên tài liệu gốc
+        allChunks.push(doc);
+      }
+    }
+
+    this.logger.log(
+      `Hoàn thành phân đoạn: ${documents.length} tài liệu → ${allChunks.length} chunks`,
+    );
+    return allChunks;
+  }
+
   async addDocuments(documents: string[]): Promise<void> {
-    if (!this.isInitialized || !this.qdrantClient) {
+    // Kiểm tra và khởi tạo lại Qdrant nếu cần
+    const isAvailable = await this.checkAndReinitializeQdrant();
+    if (!isAvailable) {
       throw new Error('Qdrant service is not available');
     }
+
     try {
       this.logger.log(`Bắt đầu thêm ${documents.length} tài liệu vào RAG`);
 
-      // Xử lý theo lô để tránh vượt quá giới hạn kích thước payload
-      const batchSize = 100; // Kích thước lô nhỏ hơn để an toàn
+      // Bước 1: Phân đoạn văn bản thành chunks
+      const chunkedDocuments = await this.chunkDocuments(documents);
+      this.logger.log(`Sau khi phân đoạn: ${chunkedDocuments.length} chunks`);
 
-      for (let i = 0; i < documents.length; i += batchSize) {
-        const batch = documents.slice(i, i + batchSize);
+      // Bước 2: Xử lý theo lô để tránh vượt quá giới hạn kích thước payload
+      const batchSize = 50; // Giảm batch size vì có nhiều chunks hơn
+
+      for (let i = 0; i < chunkedDocuments.length; i += batchSize) {
+        const batch = chunkedDocuments.slice(i, i + batchSize);
         this.logger.log(
-          `Đang xử lý lô ${Math.floor(i / batchSize) + 1}/${Math.ceil(documents.length / batchSize)} (${batch.length} tài liệu)`,
+          `Đang xử lý lô ${Math.floor(i / batchSize) + 1}/${Math.ceil(chunkedDocuments.length / batchSize)} (${batch.length} chunks)`,
         );
 
         const embeddings = await Promise.all(
@@ -126,7 +247,7 @@ export class RagService {
           payload: { text: doc },
         }));
 
-        await this.qdrantClient.upsert(this.collectionName, {
+        await this.qdrantClient!.upsert(this.collectionName, {
           points,
         });
 
@@ -141,10 +262,10 @@ export class RagService {
       const greetingEmbedding =
         await this.openaiService.getEmbedding(greetingDoc);
 
-      await this.qdrantClient.upsert(this.collectionName, {
+      await this.qdrantClient!.upsert(this.collectionName, {
         points: [
           {
-            id: documents.length, // Sử dụng ID sau tất cả tài liệu
+            id: chunkedDocuments.length, // Sử dụng ID sau tất cả chunks
             vector: greetingEmbedding,
             payload: { text: greetingDoc },
           },
@@ -152,7 +273,7 @@ export class RagService {
       });
 
       this.logger.log(
-        `Đã thêm thành công tất cả ${documents.length} tài liệu và lời chào`,
+        `Đã thêm thành công tất cả ${chunkedDocuments.length} chunks và lời chào`,
       );
     } catch (error) {
       this.logger.error('Error adding documents:', error);
@@ -161,27 +282,27 @@ export class RagService {
   }
 
   async keywordSearch(query: string): Promise<string[]> {
-    if (!this.isInitialized || !this.qdrantClient) {
+    // Kiểm tra và khởi tạo lại Qdrant nếu cần
+    const isAvailable = await this.checkAndReinitializeQdrant();
+    if (!isAvailable) {
       return [];
     }
 
     try {
-      const result = await this.qdrantClient.scroll(this.collectionName, {
+      const result = await this.qdrantClient!.scroll(this.collectionName, {
         limit: 1000,
         with_payload: true,
         with_vector: false,
       });
 
       // Chuẩn hóa query
-      const normalize = (str: string) =>
-        removeAccents(str.toLowerCase().replace(/[^a-zA-Z0-9 ]/g, ' '));
-      const queryWords = normalize(query).split(' ').filter(Boolean);
+      const queryWords = this.extractKeywords(query);
 
       const matched = result.points
         .filter((point) => {
           if (!point.payload || typeof point.payload.text !== 'string')
             return false;
-          const textNorm = normalize(point.payload.text);
+          const textNorm = this.normalizeText(point.payload.text);
           const isMatch = queryWords.every((word) => textNorm.includes(word));
           this.logger.debug(
             `[KeywordSearch] QueryWords: ${JSON.stringify(queryWords)} | TextNorm: "${textNorm}" | isMatch: ${isMatch}`,
@@ -258,7 +379,9 @@ export class RagService {
   }
 
   async testRag(query: string) {
-    if (!this.isInitialized || !this.qdrantClient) {
+    // Kiểm tra và khởi tạo lại Qdrant nếu cần
+    const isAvailable = await this.checkAndReinitializeQdrant();
+    if (!isAvailable) {
       this.logger.debug('Qdrant not available, returning fallback response');
       return {
         success: false,
@@ -287,15 +410,11 @@ export class RagService {
       );
 
       // Chuẩn hóa câu hỏi và tách từ khóa
-      const normalize = (str: string) =>
-        removeAccents(str.toLowerCase().replace(/[^a-zA-Z0-9 ]/g, ' '));
-      const keywords = normalize(query)
-        .split(' ')
-        .filter((word) => !!word);
+      const keywords = this.extractKeywords(query);
       this.logger.debug(`[RAG] Normalized keywords:`, keywords);
 
       // Lấy toàn bộ vector từ Qdrant
-      const result = await this.qdrantClient.scroll(this.collectionName, {
+      const result = await this.qdrantClient!.scroll(this.collectionName, {
         limit: 1000,
         with_payload: true,
         with_vector: false,
@@ -307,7 +426,7 @@ export class RagService {
         .map((point) => {
           if (!point.payload || typeof point.payload.text !== 'string')
             return null;
-          const textNorm = normalize(point.payload.text);
+          const textNorm = this.normalizeText(point.payload.text);
           if (textNorm.includes(phrase)) {
             // Add bonus score for vectors with URL field only if course-related
             const hasUrl = point.payload.text.includes('URL: http');
@@ -342,7 +461,7 @@ export class RagService {
         .map((point) => {
           if (!point.payload || typeof point.payload.text !== 'string')
             return null;
-          const textNorm = normalize(point.payload.text);
+          const textNorm = this.normalizeText(point.payload.text);
           const matchedKeywords = keywords.filter((keyword) =>
             textNorm.includes(keyword),
           );
@@ -415,7 +534,9 @@ export class RagService {
   }
 
   async listVectors() {
-    if (!this.isInitialized || !this.qdrantClient) {
+    // Kiểm tra và khởi tạo lại Qdrant nếu cần
+    const isAvailable = await this.checkAndReinitializeQdrant();
+    if (!isAvailable) {
       return {
         success: false,
         error: 'Qdrant service is not available',
@@ -424,7 +545,7 @@ export class RagService {
       };
     }
     try {
-      const result = await this.qdrantClient.scroll(this.collectionName, {
+      const result = await this.qdrantClient!.scroll(this.collectionName, {
         limit: 100,
         with_payload: true,
         with_vector: false,
@@ -445,15 +566,98 @@ export class RagService {
   }
 
   async clearAllVectors() {
-    if (!this.isInitialized || !this.qdrantClient) {
+    // Kiểm tra và khởi tạo lại Qdrant nếu cần
+    const isAvailable = await this.checkAndReinitializeQdrant();
+    if (!isAvailable) {
       throw new Error('Qdrant service is not available');
     }
-    await this.qdrantClient.deleteCollection(this.collectionName);
-    await this.qdrantClient.createCollection(this.collectionName, {
+    await this.qdrantClient!.deleteCollection(this.collectionName);
+    await this.qdrantClient!.createCollection(this.collectionName, {
       vectors: {
         size: 1536,
         distance: 'Cosine',
       },
     });
+  }
+
+  /**
+   * Test chức năng phân đoạn văn bản
+   */
+  async testChunking(text: string): Promise<{
+    originalLength: number;
+    chunks: string[];
+    chunkCount: number;
+    averageChunkLength: number;
+  }> {
+    try {
+      this.logger.log('Testing chunking functionality...');
+
+      const originalLength = text.length;
+      const chunkedDocuments = await this.chunkDocuments([text]);
+
+      const averageChunkLength =
+        chunkedDocuments.length > 0
+          ? Math.round(
+              chunkedDocuments.reduce((sum, chunk) => sum + chunk.length, 0) /
+                chunkedDocuments.length,
+            )
+          : 0;
+
+      return {
+        originalLength,
+        chunks: chunkedDocuments,
+        chunkCount: chunkedDocuments.length,
+        averageChunkLength,
+      };
+    } catch (error) {
+      this.logger.error('Error testing chunking:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Lấy trạng thái hiện tại của Qdrant
+   */
+  async getQdrantStatus(): Promise<{
+    isInitialized: boolean;
+    isConnected: boolean;
+    collectionExists: boolean;
+    collectionName: string;
+    error?: string;
+  }> {
+    try {
+      const isAvailable = await this.checkAndReinitializeQdrant();
+
+      if (!isAvailable) {
+        return {
+          isInitialized: false,
+          isConnected: false,
+          collectionExists: false,
+          collectionName: this.collectionName,
+          error: 'Qdrant service is not available',
+        };
+      }
+
+      // Kiểm tra collection có tồn tại không
+      const collections = await this.qdrantClient!.getCollections();
+      const collectionExists = collections.collections.some(
+        (c) => c.name === this.collectionName,
+      );
+
+      return {
+        isInitialized: this.isInitialized,
+        isConnected: true,
+        collectionExists,
+        collectionName: this.collectionName,
+      };
+    } catch (error) {
+      return {
+        isInitialized: this.isInitialized,
+        isConnected: false,
+        collectionExists: false,
+        collectionName: this.collectionName,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      };
+    }
   }
 }

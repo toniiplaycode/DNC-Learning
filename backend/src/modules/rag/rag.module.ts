@@ -27,6 +27,10 @@ import { AssignmentSubmission } from 'src/entities/AssignmentSubmission';
 import { Certificate } from 'src/entities/Certificate';
 import { QuizResponse } from 'src/entities/QuizResponse';
 import { QuizOption } from 'src/entities/QuizOption';
+import { Faculty } from 'src/entities/Faculty';
+import { Major } from 'src/entities/Major';
+import { Program } from 'src/entities/Program';
+import { ProgramCourse } from 'src/entities/ProgramCourse';
 
 @Module({
   imports: [
@@ -54,6 +58,10 @@ import { QuizOption } from 'src/entities/QuizOption';
       QuizResponse,
       AssignmentSubmission,
       Certificate,
+      Faculty,
+      Major,
+      Program,
+      ProgramCourse,
     ]),
     OpenAIModule,
   ],
