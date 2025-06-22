@@ -2113,25 +2113,31 @@ const ChatCommon = () => {
                   style={{ display: "none" }}
                   accept="*/*"
                 />
-                <Tooltip title="Tải file lên">
-                  <IconButton
-                    size="small"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploading}
-                    sx={{ mb: 2 }}
-                  >
-                    <AttachFile color={isUploading ? "disabled" : "primary"} />
-                  </IconButton>
-                </Tooltip>
-                <Tooltip title="Chọn emoji">
-                  <IconButton
-                    size="small"
-                    onClick={handleEmojiButtonClick}
-                    sx={{ mb: 2 }}
-                  >
-                    <EmojiEmotions color="primary" />
-                  </IconButton>
-                </Tooltip>
+                {selectedRoom?.id !== -1 && (
+                  <>
+                    <Tooltip title="Tải file lên">
+                      <IconButton
+                        size="small"
+                        onClick={() => fileInputRef.current?.click()}
+                        disabled={isUploading}
+                        sx={{ mb: 2 }}
+                      >
+                        <AttachFile
+                          color={isUploading ? "disabled" : "primary"}
+                        />
+                      </IconButton>
+                    </Tooltip>
+                    <Tooltip title="Chọn emoji">
+                      <IconButton
+                        size="small"
+                        onClick={handleEmojiButtonClick}
+                        sx={{ mb: 2 }}
+                      >
+                        <EmojiEmotions color="primary" />
+                      </IconButton>
+                    </Tooltip>
+                  </>
+                )}
                 <TextField
                   fullWidth
                   multiline
