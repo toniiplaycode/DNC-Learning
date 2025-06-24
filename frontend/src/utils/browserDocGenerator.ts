@@ -27,9 +27,18 @@ export const generateDocxFromTemplate = async () => {
               heading: HeadingLevel.TITLE,
               children: [
                 new TextRun({
-                  text: "MẪU ĐỊNH DẠNG CÂU HỎI TRẮC NGHIỆM",
+                  text: "BÀI TRẮC NGHIỆM",
                   bold: true,
                   size: 32,
+                }),
+              ],
+            }),
+            new Paragraph({}),
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: "Tiêu đề: Nhập tiêu đề bài trắc nghiệm tại đây",
+                  bold: true,
                 }),
               ],
             }),
@@ -38,24 +47,19 @@ export const generateDocxFromTemplate = async () => {
             new Paragraph({
               children: [
                 new TextRun({
-                  text: "--Question: Câu hỏi?",
+                  text: "Câu 1 (1 điểm): Phần tử HTML được đặt trong dấu ngoặc nào?",
                   bold: true,
                 }),
               ],
             }),
-            new Paragraph({ children: [new TextRun("-A. Đáp án 1")] }),
-            new Paragraph({ children: [new TextRun("-B. Đáp án 2")] }),
-            new Paragraph({ children: [new TextRun("-C. Đáp án 3")] }),
-            new Paragraph({ children: [new TextRun("-D. Đáp án 4")] }),
-            new Paragraph({
-              children: [
-                new TextRun({ text: "--Correct: 1", color: "2E74B5" }),
-              ],
-            }),
+            new Paragraph({ children: [new TextRun("A. <, > (Đáp án đúng)")] }),
+            new Paragraph({ children: [new TextRun("B. [, ]")] }),
+            new Paragraph({ children: [new TextRun("C. {, }")] }),
+            new Paragraph({ children: [new TextRun("D. (, )")] }),
             new Paragraph({
               children: [
                 new TextRun({
-                  text: "--Explanation: Đáp án 1 đúng vì...",
+                  text: "Giải thích: Phần tử HTML được định nghĩa bằng cách sử dụng cặp dấu ngoặc nhọn < và >.",
                   color: "548235",
                 }),
               ],
@@ -69,11 +73,13 @@ export const generateDocxFromTemplate = async () => {
               ],
             }),
             ...[
-              "Bắt đầu câu hỏi với '--Question:'",
-              "Các đáp án bắt đầu với dấu gạch ngang '-A.', '-B.', '-C.', '-D.'",
-              "Đáp án đúng đánh dấu bằng '--Correct: X' (X là số thứ tự đáp án)",
-              "Giải thích bắt đầu bằng '--Explanation:'",
-              "Các câu hỏi cách nhau bởi một dòng trống",
+              "- Dòng đầu tiên: 'BÀI TRẮC NGHIỆM' (in hoa)",
+              "- Dòng tiếp theo: 'Tiêu đề: ...' (ghi tiêu đề bài trắc nghiệm)",
+              "- Mỗi câu hỏi bắt đầu bằng: 'Câu X (Y điểm): Nội dung câu hỏi'",
+              "- Các đáp án bắt đầu bằng: 'A. ...', 'B. ...', 'C. ...', 'D. ...'",
+              "- Đáp án đúng thêm '(Đáp án đúng)' ở cuối đáp án đó",
+              "- Thêm dòng 'Giải thích: ...' nếu muốn giải thích cho câu hỏi",
+              "- Các câu hỏi cách nhau bởi một dòng trống",
             ].map(
               (text) =>
                 new Paragraph({

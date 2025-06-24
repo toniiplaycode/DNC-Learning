@@ -1,82 +1,68 @@
 import mammoth from "mammoth";
 import { QuestionType, QuizOption, QuizQuestion } from "../types/quiz.types";
 
-interface ParsedQuestion {
-  questionText: string;
-  options: string[];
-  correctAnswer: number;
-  explanation: string;
-}
+// Hàm parse từng block câu hỏi theo định dạng mới
+const parseCustomQuestionBlock = (
+  block: string,
+  index: number
+): QuizQuestion => {
+  // Tách dòng
+  const lines = block
+    .split(/\r?\n/)
+    .map((l) => l.trim())
+    .filter(Boolean);
+  if (lines.length === 0) throw new Error("Empty question block");
 
-const parseQuestionBlock = (block: string): ParsedQuestion => {
-  // Clean up and standardize the text
-  const cleanBlock = block
-    .replace(/\r\n/g, "\n")
-    .replace(/([A-D])\./g, "\n$1.") // Add line break before options
-    .replace(/Correct:/g, "\nCorrect:")
-    .replace(/Explanation:/g, "\nExplanation:")
-    .replace(/[-]+\s*$/gm, ""); // Remove dashes at the end of lines
+  // Lấy dòng đầu là nội dung câu hỏi
+  // Ví dụ: Câu 1 (1 điểm): Phần tử HTML được đặt trong dấu ngoặc nào?
+  const questionLine = lines[0];
+  const questionMatch = questionLine.match(/^Câu \d+ \((\d+) điểm\):(.+)$/i);
+  if (!questionMatch)
+    throw new Error("Sai định dạng dòng câu hỏi: " + questionLine);
+  const points = parseInt(questionMatch[1]) || 1;
+  const questionText = questionMatch[2].trim();
 
-  const lines = cleanBlock
-    .split("\n")
-    .map((line) => line.trim().replace(/[-]+$/, "")) // Remove trailing dashes from each line
-    .filter((line) => line.length > 0);
-
-  let questionText = "";
-  const options: string[] = [];
-  let correctAnswer = -1;
+  // Lấy các đáp án (A. ...)
+  const options: QuizOption[] = [];
   let explanation = "";
-
-  // Process each line
-  for (let i = 0; i < lines.length; i++) {
+  for (let i = 1; i < lines.length; i++) {
     const line = lines[i];
-
-    // Handle question
-    if (line.startsWith("Question:")) {
-      questionText = line.replace(/^Question:\s*/i, "").trim();
+    // Đáp án: A. ... (Đáp án đúng)
+    const optMatch = line.match(/^([A-D])\.\s*(.+?)(\s*\(Đáp án đúng\))?$/);
+    if (optMatch) {
+      options.push({
+        optionText: optMatch[2].trim(),
+        isCorrect: !!optMatch[3],
+        orderNumber: options.length + 1,
+        id: Date.now() + Math.random(),
+        questionId: Date.now(),
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      });
       continue;
     }
-
-    // Handle options (A., B., C., D.)
-    const optionMatch = line.match(/^([A-D])\.\s*(.+?)[-]*$/i); // Added [-]* to match optional dashes at end
-    if (optionMatch) {
-      const [, , text] = optionMatch;
-      options.push(text.trim());
-      continue;
-    }
-
-    // Handle correct answer
-    if (line.startsWith("Correct:")) {
-      correctAnswer = parseInt(line.replace(/Correct:\s*/i, "").trim()) - 1;
-      continue;
-    }
-
-    // Handle explanation
-    if (line.startsWith("Explanation:")) {
-      explanation = line.replace(/Explanation:\s*/i, "").trim();
-      continue;
+    // Giải thích
+    if (line.startsWith("Giải thích:")) {
+      explanation = line.replace("Giải thích:", "").trim();
     }
   }
+  if (options.length < 2)
+    throw new Error("Cần ít nhất 2 đáp án cho câu hỏi: " + questionText);
+  if (!options.some((o) => o.isCorrect))
+    throw new Error("Chưa đánh dấu đáp án đúng cho câu hỏi: " + questionText);
 
-  // Validation
-  if (!questionText) {
-    throw new Error("Question text is missing");
-  }
-  if (options.length === 0) {
-    throw new Error(
-      `No options found for question: "${questionText.slice(0, 50)}..."`
-    );
-  }
-  if (correctAnswer === -1) {
-    throw new Error(
-      `No correct answer specified for question: "${questionText.slice(
-        0,
-        50
-      )}..."`
-    );
-  }
-
-  return { questionText, options, correctAnswer, explanation };
+  return {
+    questionText,
+    questionType: QuestionType.MULTIPLE_CHOICE,
+    points,
+    orderNumber: index + 1,
+    options,
+    correctExplanation: explanation,
+    id: Date.now() + Math.random(),
+    quizId: Date.now(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
 };
 
 export const parseQuizDocument = async (
@@ -84,62 +70,50 @@ export const parseQuizDocument = async (
 ): Promise<QuizQuestion[]> => {
   try {
     let textContent = "";
-
-    // Extract text content from file
-    const result = await mammoth.extractRawText({
-      arrayBuffer: await file.arrayBuffer(),
-      preserveLineBreaks: true,
-    });
-    textContent = result.value;
-
-    // Remove header and footer sections
-    textContent = textContent
-      .replace(
-        /MẪU ĐỊNH DẠNG CÂU HỎI TRẮC NGHIỆM[\s\S]*?Question:/i,
-        "Question:"
-      ) // Remove header
-      .replace(/HƯỚNG DẪN ĐỊNH DẠNG[\s\S]*$/i, ""); // Remove footer
-
-    // Split into question blocks and filter out empty blocks
-    const blocks = textContent
-      .split(/Question:/i)
-      .slice(1) // Remove anything before first Question:
-      .map((block) => "Question:" + block.trim())
-      .filter((block) => block.length > 0);
-
-    if (blocks.length === 0) {
-      throw new Error("No questions found in document");
+    if (file.name.endsWith(".docx")) {
+      const result = await mammoth.extractRawText({
+        arrayBuffer: await file.arrayBuffer(),
+      });
+      textContent = result.value;
+    } else {
+      textContent = await file.text();
     }
 
-    // Parse each question block
-    const questions = blocks.map((block, index) => {
-      const parsed = parseQuestionBlock(block);
+    // Kiểm tra toàn bộ file, nếu có dòng bắt đầu bằng 'Câu' mà không đúng định dạng, báo lỗi luôn
+    const allLines = textContent
+      .split(/\r?\n/)
+      .map((l) => l.trim())
+      .filter(Boolean);
+    for (const line of allLines) {
+      if (line.startsWith("Câu")) {
+        const match = line.match(/^Câu \d+ \(\d+ điểm\):(.+)$/i);
+        if (!match) {
+          throw new Error(
+            `Câu hỏi phải có định dạng: Câu 1 (1 điểm): Nội dung câu hỏi. Sai: ${line}`
+          );
+        }
+      }
+    }
 
-      return {
-        questionText: parsed.questionText,
-        questionType: QuestionType.MULTIPLE_CHOICE,
-        points: 1,
-        orderNumber: index + 1,
-        options: parsed.options.map((text, i) => ({
-          optionText: text, // Remove the A., B., C., D. prefix
-          isCorrect: i === parsed.correctAnswer,
-          orderNumber: i + 1,
-          id: Date.now() + Math.random(),
-          questionId: Date.now(),
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-        })),
-        correctExplanation: parsed.explanation,
-        id: Date.now() + Math.random(),
-        quizId: Date.now(),
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-    });
+    // Lấy phần tiêu đề (nếu có)
+    // BÀI TRẮC NGHIỆM\nTiêu đề: ...\n\n...
+    let title = "";
+    const titleMatch = textContent.match(/Tiêu đề:\s*(.+)/i);
+    if (titleMatch) title = titleMatch[1].trim();
 
+    // Tách các block câu hỏi dựa trên "Câu X (Y điểm):"
+    const questionBlocks = textContent
+      .split(/(?=Câu \d+ \(\d+ điểm\):)/g)
+      .filter((b) => b.trim().startsWith("Câu"));
+    if (questionBlocks.length === 0)
+      throw new Error("Không tìm thấy câu hỏi nào trong file");
+
+    // Parse từng block
+    const questions = questionBlocks.map((block, idx) =>
+      parseCustomQuestionBlock(block, idx)
+    );
     return questions;
-  } catch (error) {
-    console.error("Error parsing document:", error);
-    throw new Error(`Could not parse quiz document: ${error.message}`);
+  } catch (error: any) {
+    throw new Error(`${error.message}`);
   }
 };

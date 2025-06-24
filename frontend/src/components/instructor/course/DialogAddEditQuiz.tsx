@@ -751,11 +751,14 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
       setQuestions((prevQuestions) => [...prevQuestions, ...normalized]);
 
       toast.success(`Đã nhập ${normalized.length} câu hỏi từ tệp`);
-    } catch (error) {
-      console.error("Error importing questions:", error);
-      toast.error("Không thể đọc tệp. Vui lòng kiểm tra định dạng tệp.");
+    } catch (error: any) {
+      toast.error(
+        error.message || "Không thể đọc tệp. Vui lòng kiểm tra định dạng tệp.",
+        { autoClose: 5000 }
+      );
     } finally {
       setIsLoading(false);
+      event.target.value = "";
     }
   };
 
@@ -1645,6 +1648,13 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
                       ],
                     });
                     setEditingQuestionIndex(null);
+
+                    // Scroll tới phần chỉnh sửa/thêm câu hỏi
+                    setTimeout(() => {
+                      editSectionRef.current?.scrollIntoView({
+                        behavior: "smooth",
+                      });
+                    }, 100); // delay nhẹ để render xong form
                   }}
                 >
                   Thêm câu hỏi
