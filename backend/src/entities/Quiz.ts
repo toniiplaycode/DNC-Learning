@@ -73,6 +73,9 @@ export class Quiz {
   })
   quizType: QuizType;
 
+  @Column({ type: 'float', default: 0.1 })
+  weight: number;
+
   @Column({
     name: 'show_explanation',
     type: 'tinyint',

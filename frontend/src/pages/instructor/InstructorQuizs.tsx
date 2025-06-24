@@ -163,6 +163,7 @@ interface Quiz {
       orderNumber: number;
     }>;
   }>;
+  weight?: number;
 }
 
 // Add this interface at the top with other interfaces
@@ -1723,7 +1724,8 @@ const QuizList = ({ quizzes, onQuizClick, onEditClick }: QuizListProps) => {
           <TableRow>
             <TableCell>Tên bài trắc nghiệm</TableCell>
             <TableCell>Thuộc</TableCell>
-            <TableCell>Loại bài (trọng số)</TableCell>
+            <TableCell>Loại bài</TableCell>
+            <TableCell>Trọng số</TableCell>
             <TableCell>Khóa học/Lớp học</TableCell>
             <TableCell align="center">Số bài làm</TableCell>
             <TableCell align="center">Số câu hỏi</TableCell>
@@ -1759,18 +1761,18 @@ const QuizList = ({ quizzes, onQuizClick, onEditClick }: QuizListProps) => {
 
               <TableCell>
                 {quiz.quizType === QuizType.PRACTICE ? (
-                  <Chip label="Luyện tập (0.1)" size="small" />
+                  <Chip label="Luyện tập" size="small" />
                 ) : quiz.quizType === QuizType.HOMEWORK ? (
-                  <Chip label="Bài tập (0.2)" color="primary" size="small" />
+                  <Chip label="Bài tập" color="primary" size="small" />
                 ) : quiz.quizType === QuizType.MIDTERM ? (
-                  <Chip label="Giữa kì (0.3)" color="info" size="small" />
+                  <Chip label="Giữa kì" color="info" size="small" />
                 ) : quiz.quizType === QuizType.FINAL ? (
-                  <Chip label="Cuối kì (0.6)" color="error" size="small" />
+                  <Chip label="Cuối kì" color="error" size="small" />
                 ) : (
                   <Chip label="Bài trắc nghiệm" color="default" size="small" />
                 )}
               </TableCell>
-
+              <TableCell>{quiz.weight}</TableCell>
               <TableCell>
                 {quiz.lessonId
                   ? quiz.lesson?.section.course.title

@@ -124,7 +124,7 @@ const Assessment = () => {
         if (tabValue === 4)
           return (
             (assessment.quizType &&
-            quizStatus?.status === "upcoming" &&
+              quizStatus?.status === "upcoming" &&
               matchesSearch) ||
             (assessment.assignmentType &&
               assignmentStatus?.status === "ongoing" &&
@@ -134,7 +134,7 @@ const Assessment = () => {
         if (tabValue === 5)
           return (
             (assessment.quizType &&
-            quizStatus?.status === "active" &&
+              quizStatus?.status === "active" &&
               matchesSearch) ||
             (assessment.assignmentType &&
               assignmentStatus?.status === "ongoing" &&
@@ -144,7 +144,7 @@ const Assessment = () => {
         if (tabValue === 6)
           return (
             (assessment.quizType &&
-            quizStatus?.status === "ended" &&
+              quizStatus?.status === "ended" &&
               matchesSearch) ||
             (assessment.assignmentType &&
               assignmentStatus?.status === "overdue" &&
@@ -586,13 +586,33 @@ const Assessment = () => {
                         {(() => {
                           switch (assessment.quizType) {
                             case QuizType.PRACTICE:
-                              return "Luyện tập (trọng số 0.1)";
+                              return (
+                                "Luyện tập " +
+                                (assessment?.weight
+                                  ? "(trọng số " + assessment.weight + ")"
+                                  : "")
+                              );
                             case QuizType.HOMEWORK:
-                              return "Bài tập (trọng số 0.2)";
+                              return (
+                                "Bài tập " +
+                                (assessment?.weight
+                                  ? "(trọng số " + assessment.weight + ")"
+                                  : "")
+                              );
                             case QuizType.MIDTERM:
-                              return "Giữa kì (trọng số 0.3)";
+                              return (
+                                "Giữa kì " +
+                                (assessment?.weight
+                                  ? "(trọng số " + assessment.weight + ")"
+                                  : "")
+                              );
                             case QuizType.FINAL:
-                              return "Cuối kì (trọng số 0.6)";
+                              return (
+                                "Cuối kì " +
+                                (assessment?.weight
+                                  ? "(trọng số " + assessment.weight + ")"
+                                  : "")
+                              );
                             default:
                               return "Không xác định";
                           }

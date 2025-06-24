@@ -86,7 +86,11 @@ const Login = () => {
     );
     console.log("result", result);
 
-    if (result.payload.error) {
+    if (result.payload?.message.includes("Bạn đang làm bài trắc nghiệm")) {
+      toast.error(
+        "Không thể đăng nhập trùng tài khoản khi đang làm bài kiểm tra!"
+      );
+    } else if (result.payload?.error) {
       toast.error("Sai email hoặc mật khẩu !");
     }
   };

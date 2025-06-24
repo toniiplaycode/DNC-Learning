@@ -131,6 +131,7 @@ interface Quiz {
   startTime?: Date | null;
   endTime?: Date | null;
   questions?: QuizQuestion[];
+  weight?: number;
 }
 
 enum QuizType {
@@ -665,7 +666,14 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
           orderNumber: optIndex + 1,
         })),
       })),
+      weight: quizForm.weight, // truyền weight lên backend
     };
+
+    // Validate weight
+    if (!quizForm.weight || quizForm.weight < 0.1 || quizForm.weight > 1) {
+      toast.error("Trọng số phải từ 0.1 đến 1.0");
+      return;
+    }
 
     if (!editMode) {
       await dispatch(createQuiz(quizData));
@@ -1142,6 +1150,92 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
             </FormControl>
           )}
 
+          <Box sx={{ display: "flex", gap: 2 }}>
+            {/* Thêm trường nhập trọng số */}
+            <FormControl sx={{ minWidth: 200, flex: 1 }}>
+              <InputLabel>Loại bài trắc nghiệm</InputLabel>
+              <Select
+                value={quizForm.quizType}
+                label="Loại Bài trắc nghiệm"
+                onChange={(e) =>
+                  setQuizForm({
+                    ...quizForm,
+                    quizType: e.target.value as QuizType,
+                  })
+                }
+              >
+                <MenuItem value={QuizType.PRACTICE}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      width: "100%",
+                    }}
+                  >
+                    <span>Luyện tập</span>
+                  </Box>
+                </MenuItem>
+                <MenuItem value={QuizType.HOMEWORK}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      width: "100%",
+                    }}
+                  >
+                    <span>Bài tập</span>
+                  </Box>
+                </MenuItem>
+                <MenuItem value={QuizType.MIDTERM}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      width: "100%",
+                    }}
+                  >
+                    <span>Thi giữa kỳ</span>
+                  </Box>
+                </MenuItem>
+                <MenuItem value={QuizType.FINAL}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      width: "100%",
+                    }}
+                  >
+                    <span>Thi cuối kỳ</span>
+                  </Box>
+                </MenuItem>
+              </Select>
+            </FormControl>
+
+            <TextField
+              label="Trọng số (0.1 - 1.0)"
+              type="number"
+              value={quizForm.weight ?? ""}
+              onChange={(e) => {
+                let value = parseFloat(e.target.value);
+                if (isNaN(value)) value = 0.1;
+                setQuizForm({ ...quizForm, weight: value });
+              }}
+              InputProps={{ inputProps: { min: 0.1, max: 1, step: 0.01 } }}
+              required
+              helperText="Trọng số tính vào điểm tổng kết. Ví dụ: 0.2 = 20% điểm tổng kết."
+              error={
+                quizForm.weight === undefined ||
+                quizForm.weight < 0.1 ||
+                quizForm.weight > 1
+              }
+              sx={{ flex: 1, minWidth: 200 }}
+            />
+          </Box>
+
           {/* Thời gian làm bài */}
           <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
             <TextField
@@ -1150,7 +1244,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
               value={quizForm.timeLimit}
               onChange={handleTimeLimitChange}
               InputProps={{ inputProps: { min: 0 } }}
-              sx={{ minWidth: 200 }}
+              sx={{ minWidth: 320 }}
               helperText="0 = không giới hạn thời gian"
             />
 
@@ -1216,83 +1310,9 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
 
           {/* Cài đặt quiz */}
           <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
-            <FormControl sx={{ minWidth: 200 }}>
-              <InputLabel>Loại bài trắc nghiệm</InputLabel>
-              <Select
-                value={quizForm.quizType}
-                label="Loại Bài trắc nghiệm"
-                onChange={(e) =>
-                  setQuizForm({
-                    ...quizForm,
-                    quizType: e.target.value as QuizType,
-                  })
-                }
-              >
-                <MenuItem value={QuizType.PRACTICE}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      width: "100%",
-                    }}
-                  >
-                    <span>Luyện tập</span>
-                    <Typography variant="caption" color="text.secondary">
-                      (trọng số 0.1)
-                    </Typography>
-                  </Box>
-                </MenuItem>
-                <MenuItem value={QuizType.HOMEWORK}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      width: "100%",
-                    }}
-                  >
-                    <span>Bài tập</span>
-                    <Typography variant="caption" color="text.secondary">
-                      (trọng số 0.2)
-                    </Typography>
-                  </Box>
-                </MenuItem>
-                <MenuItem value={QuizType.MIDTERM}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      width: "100%",
-                    }}
-                  >
-                    <span>Thi giữa kỳ</span>
-                    <Typography variant="caption" color="text.secondary">
-                      (trọng số 0.3)
-                    </Typography>
-                  </Box>
-                </MenuItem>
-                <MenuItem value={QuizType.FINAL}>
-                  <Box
-                    sx={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      width: "100%",
-                    }}
-                  >
-                    <span>Thi cuối kỳ</span>
-                    <Typography variant="caption" color="text.secondary">
-                      (trọng số 0.6)
-                    </Typography>
-                  </Box>
-                </MenuItem>
-              </Select>
-            </FormControl>
-
             <TextField
               label="Số lần làm tối đa"
+              sx={{ width: 150 }}
               type="number"
               value={quizForm.attemptsAllowed}
               onChange={(e) =>
@@ -1306,6 +1326,7 @@ const DialogAddEditQuiz: React.FC<DialogAddEditQuizProps> = ({
 
             <TextField
               label="Điểm đạt (%)"
+              sx={{ width: 150 }}
               type="number"
               value={quizForm.passingScore}
               onChange={(e) =>

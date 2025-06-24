@@ -6,6 +6,8 @@ import {
   IsString,
   IsDate,
   Min,
+  IsNumber,
+  Max,
 } from 'class-validator';
 import { QuizType } from '../../../entities/Quiz';
 import { Type } from 'class-transformer';
@@ -64,4 +66,9 @@ export class CreateQuizDto {
   @IsOptional()
   @Type(() => Date)
   endTime?: Date;
+
+  @IsNumber()
+  @Min(0.1)
+  @Max(1)
+  weight: number;
 }

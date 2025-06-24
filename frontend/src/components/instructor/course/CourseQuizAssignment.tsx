@@ -33,6 +33,7 @@ import {
   Assignment as AssignmentIcon,
   Schedule,
   EditNote,
+  Grade,
 } from "@mui/icons-material";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { selectAllQuizzes } from "../../../features/quizzes/quizzesSelectors";
@@ -275,6 +276,13 @@ const CourseQuizAssignment: React.FC<CourseQuizAssignmentProps> = ({
                         <EditNote fontSize="small" color="error" />
                         <Typography variant="body2">
                           Tối đa {quiz.attemptsAllowed} lần làm bài
+                        </Typography>
+                      </Stack>
+
+                      <Stack direction="row" alignItems="center" spacing={1}>
+                        <Grade fontSize="small" color="error" />
+                        <Typography variant="body2">
+                          Trọng số {quiz.weight}
                         </Typography>
                       </Stack>
 

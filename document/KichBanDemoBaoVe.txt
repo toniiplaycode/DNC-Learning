@@ -2,7 +2,7 @@
 - Đăng nhập hệ thống.
 - Trang chủ hiển thị tổng quan học tập.
 - Xem chương trình đào tạo theo học kỳ.
-- Làm bài tập và trắc nghiệm theo lớp.
+- Làm bài tập và trắc nghiệm theo lớp (không cho đăng nhập 2 thiết bị khi đang làm trắc nghiệm).
 - Xem bảng điểm tại trang cá nhân.
 - Tham gia học trực tuyến qua Google Meet.
 - Chat cá nhân, chatBot, chat nhóm lớp để thảo luận.

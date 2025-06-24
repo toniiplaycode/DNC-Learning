@@ -760,6 +760,7 @@ CREATE TABLE `quizzes` (
   `passing_score` int DEFAULT NULL,
   `attempts_allowed` int DEFAULT '1',
   `quiz_type` enum('practice','homework','midterm','final') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT 'practice',
+  `weight` float DEFAULT '0.1',
   `show_explanation` tinyint(1) DEFAULT '1',
   `random` tinyint(1) DEFAULT '1',
   `start_time` datetime DEFAULT NULL COMMENT 'Thời gian bắt đầu làm bài',

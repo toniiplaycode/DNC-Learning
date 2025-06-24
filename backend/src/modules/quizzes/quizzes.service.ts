@@ -885,24 +885,12 @@ export class QuizzesService {
         newGrade.maxScore = 100;
 
         // Set weight based on quiz type
-        let weight: number;
-        switch (attempt.quiz.quizType) {
-          case QuizType.PRACTICE:
-            weight = 0.1;
-            break;
-          case QuizType.HOMEWORK:
-            weight = 0.2;
-            break;
-          case QuizType.MIDTERM:
-            weight = 0.3;
-            break;
-          case QuizType.FINAL:
-            weight = 0.6;
-            break;
-          default:
-            weight = 0.2; // fallback to default
+        if (attempt.quiz.weight == null) {
+          throw new BadRequestException(
+            'Quiz chưa có trọng số (weight). Vui lòng cập nhật trọng số cho quiz!',
+          );
         }
-        newGrade.weight = weight;
+        newGrade.weight = attempt.quiz.weight;
         newGrade.gradedAt = new Date();
 
         // Optional fields with proper null handling
@@ -948,6 +936,7 @@ export class QuizzesService {
         random: createQuizDto.random,
         startTime: createQuizDto.startTime,
         endTime: createQuizDto.endTime,
+        weight: createQuizDto.weight,
       });
 
       const savedQuiz = await queryRunner.manager.save(Quiz, quiz);
@@ -1033,6 +1022,7 @@ export class QuizzesService {
         random: updateQuizDto.random,
         startTime: updateQuizDto.startTime,
         endTime: updateQuizDto.endTime,
+        weight: updateQuizDto.weight,
       });
 
       await queryRunner.manager.save(Quiz, quiz);

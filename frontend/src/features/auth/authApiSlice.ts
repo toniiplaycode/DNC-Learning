@@ -105,6 +105,8 @@ export const login = createAsyncThunk("auth/login", async (data: LoginData) => {
 // Đăng xuất
 export const logout = createAsyncThunk("auth/logout", async () => {
   // Xóa token khỏi localStorage
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  await api.post(`/auth/set-null-last-login/${user.id}`);
   localStorage.removeItem("token");
   localStorage.removeItem("refreshToken");
   localStorage.removeItem("user");

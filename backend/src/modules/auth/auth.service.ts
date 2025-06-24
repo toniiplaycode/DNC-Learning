@@ -11,12 +11,13 @@ import { JwtService } from '@nestjs/jwt';
 import { RegisterStudentDto } from './dto/register-student.dto';
 import { User, UserRole, UserStatus } from '../../entities/User';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, DataSource } from 'typeorm';
+import { Repository, DataSource, MoreThan } from 'typeorm';
 import { UserStudent } from '../../entities/UserStudent';
 import * as bcrypt from 'bcrypt';
 import { EmailService } from './services/email.service';
 import { ConfigService } from '@nestjs/config';
 import * as crypto from 'crypto';
+import { QuizAttempt, AttemptStatus } from '../../entities/QuizAttempt';
 
 // Note: Cần cài đặt @nestjs-modules/mailer và nodemailer:
 // npm install @nestjs-modules/mailer nodemailer
@@ -42,11 +43,15 @@ export class AuthService {
 
   // dùng để tạo token cho người dùng đã đăng nhập
   async login(user: any) {
+    // Kiểm tra đăng nhập đồng thời khi đang làm bài
+    await this.checkQuizInProgressAndLastLogin(user.id);
+
     const payload = { sub: user.id, email: user.email };
     const refreshToken = this.jwtService.sign(payload, {
       expiresIn: process.env.JWT_REFRESH_TOKEN_EXPIRES_IN, // thời gian sống của refresh token
     });
     await this.userService.updateRefreshToken(user.id, refreshToken);
+    await this.userRepository.update(user.id, { lastLogin: new Date() });
     const userData = await this.userService.findByEmail(user.email);
     if (!userData) {
       throw new UnauthorizedException('User not found');
@@ -145,6 +150,9 @@ export class AuthService {
   async loginWithGoogle(googleUser: any) {
     // Tìm user theo email
     let user = await this.userService.findByEmail(googleUser.email);
+    if (user) {
+      await this.checkQuizInProgressAndLastLogin(user.id);
+    }
     if (!user) {
       // Nếu chưa có, tạo user mới và userStudent trong transaction
       user = await this.userRepository.manager.transaction(
@@ -157,6 +165,7 @@ export class AuthService {
             role: UserRole.STUDENT,
             status: UserStatus.ACTIVE,
             avatarUrl: googleUser.picture,
+            lastLogin: new Date(),
             socialLoginProvider: 'google',
             socialLoginId: googleUser.accessToken,
           });
@@ -323,6 +332,34 @@ export class AuthService {
         throw error;
       }
       throw new BadRequestException('Failed to reset password');
+    }
+  }
+
+  async setNullLastLogin(userId: number) {
+    await this.userRepository.update(userId, { lastLogin: '' });
+  }
+
+  async checkQuizInProgressAndLastLogin(userId: number) {
+    // Kiểm tra lastLogin
+    const user = await this.userRepository.findOne({ where: { id: userId } });
+    if (user?.lastLogin) {
+      // Kiểm tra có bài trắc nghiệm đang làm không
+      const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+
+      const quizAttempt = await this.dataSource
+        .getRepository(QuizAttempt)
+        .findOne({
+          where: {
+            userId,
+            status: AttemptStatus.IN_PROGRESS,
+            createdAt: MoreThan(oneDayAgo),
+          },
+        });
+      if (quizAttempt) {
+        throw new UnauthorizedException(
+          'Bạn đang làm bài trắc nghiệm ở thiết bị khác. Không thể đăng nhập đồng thời!',
+        );
+      }
     }
   }
 }
