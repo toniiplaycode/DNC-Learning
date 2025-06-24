@@ -358,7 +358,8 @@ const teachingSchedulesSlice = createSlice({
         state.error = null;
       })
       .addCase(createTeachingSchedule.rejected, (state, action) => {
-        state.status = "failed";
+        console.log(action.payload);
+        state.status = "idle";
         state.error = action.payload as string;
       })
 
@@ -390,7 +391,7 @@ const teachingSchedulesSlice = createSlice({
         state.error = null;
       })
       .addCase(updateTeachingSchedule.rejected, (state, action) => {
-        state.status = "failed";
+        state.status = "idle";
         state.error = action.payload as string;
       })
 

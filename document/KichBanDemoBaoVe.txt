@@ -1,0 +1,37 @@
+⏱ Demo tính năng cho người học chính quy (linh.phamthimai@gmail.com)
+- Đăng nhập hệ thống.
+- Trang chủ hiển thị tổng quan học tập.
+- Xem chương trình đào tạo theo học kỳ.
+- Làm bài tập và trắc nghiệm theo lớp.
+- Xem bảng điểm tại trang cá nhân.
+- Tham gia học trực tuyến qua Google Meet.
+- Chat cá nhân, chatBot, chat nhóm lớp để thảo luận.
+⏱ Demo tính năng cho người học tự do (toan@gmail.com)
+- Đăng ký tài khoản học viên.
+- Xem danh sách khóa học.
+- Xem chi tiết nội dung khóa học.
+- Trang cá nhân thanh toán.
+- Trang cá nhân chứng chỉ.
+⏱ Demo tính năng cho giảng viên (quanghieu@edu.vn)
+- Đăng nhập giảng viên.
+- Xem chương trình đào tạo.
+- Quản lý khóa học.
+- Quản lý nội dung khóa học.
+- Quản lý lớp học.
+- Quản lý người học.
+- Tạo và chấm bài tập.
+- Tạo và xem bài trắc nghiệm.
+- Quản lý điểm danh.
+- Quản lý lịch dạy.
+- Trò chuyện với người học, quản trị viên.
+- Quản lý diễn đàn.
+- Theo dõi thông báo.
+⏱ Demo tính năng cho quản trị viên (thuha@edu.vn)
+- Đăng nhập quản trị viên.
+- Quản lý khoa, ngành, chương trình đào tạo.
+- Quản lý khóa học.
+- Quản lý giảng viên.
+- Quản lý lớp học.
+- Quản lý danh mục khóa học.
+- Quản lý lịch dạy giảng viên.
+- Quản lý thống kê.

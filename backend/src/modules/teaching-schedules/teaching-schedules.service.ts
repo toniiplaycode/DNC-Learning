@@ -99,6 +99,13 @@ export class TeachingSchedulesService {
       }
     }
 
+    // Check for schedule conflicts
+    await this.checkScheduleConflict(
+      academicClassInstructorId,
+      new Date(scheduleData.startTime),
+      new Date(scheduleData.endTime),
+    );
+
     // Create schedule entity
     const newSchedule = this.teachingSchedulesRepository.create({
       ...scheduleData,
@@ -445,5 +452,201 @@ export class TeachingSchedulesService {
         attendances: scheduleAttendances,
       };
     });
+  }
+
+  // Add this new method to check for schedule conflicts
+  private async checkScheduleConflict(
+    academicClassInstructorId: number,
+    startTime: Date,
+    endTime: Date,
+  ): Promise<void> {
+    // Kiểm tra thời gian hợp lệ
+    if (startTime >= endTime) {
+      throw new BadRequestException(
+        'Thời gian bắt đầu phải trước thời gian kết thúc',
+      );
+    }
+
+    // Kiểm tra thời gian không được trong quá khứ
+    const now = new Date();
+    if (startTime < now) {
+      throw new BadRequestException('Không thể tạo lịch dạy trong quá khứ');
+    }
+
+    // Lấy thông tin giảng viên từ academicClassInstructorId
+    const academicClassInstructor =
+      await this.academicClassInstructorRepository.findOne({
+        where: { id: academicClassInstructorId },
+        relations: ['instructor'],
+      });
+
+    if (!academicClassInstructor) {
+      throw new BadRequestException('Không tìm thấy thông tin giảng viên');
+    }
+
+    const instructorId = academicClassInstructor.instructorId;
+
+    // Lấy tất cả academicClassInstructorId của giảng viên này
+    const allClassInstructors =
+      await this.academicClassInstructorRepository.find({
+        where: { instructorId },
+        select: ['id'],
+      });
+
+    const allClassInstructorIds = allClassInstructors.map((ci) => ci.id);
+
+    // Lấy ngày của lịch mới để kiểm tra trùng ngày
+    const newDate = new Date(startTime);
+    newDate.setHours(0, 0, 0, 0);
+
+    // Tìm tất cả lịch dạy của giảng viên trong cùng ngày (từ tất cả các lớp)
+    const conflictingSchedules = await this.teachingSchedulesRepository
+      .createQueryBuilder('schedule')
+      .where('schedule.academicClassInstructorId IN (:...instructorIds)', {
+        instructorIds: allClassInstructorIds,
+      })
+      .andWhere('schedule.status != :cancelledStatus', {
+        cancelledStatus: ScheduleStatus.CANCELLED,
+      })
+      .andWhere('DATE(schedule.startTime) = DATE(:newDate)', { newDate })
+      .orderBy('schedule.startTime', 'ASC')
+      .getMany();
+
+    // Kiểm tra từng lịch dạy trong ngày để tìm trùng giờ
+    for (const existingSchedule of conflictingSchedules) {
+      const existingStart = new Date(existingSchedule.startTime);
+      const existingEnd = new Date(existingSchedule.endTime);
+
+      // Kiểm tra trùng giờ chính xác
+      const hasTimeConflict = this.checkTimeConflict(
+        startTime,
+        endTime,
+        existingStart,
+        existingEnd,
+      );
+
+      if (hasTimeConflict) {
+        const conflictMessage = this.getConflictMessage(
+          startTime,
+          endTime,
+          existingStart,
+          existingEnd,
+          existingSchedule.title,
+          existingSchedule.academicClass?.className || 'Không xác định',
+        );
+        throw new BadRequestException(conflictMessage);
+      }
+    }
+
+    // Kiểm tra khoảng cách tối thiểu giữa các lịch dạy (15 phút)
+    const minGapMinutes = 15;
+    const minGapMs = minGapMinutes * 60 * 1000;
+
+    // Kiểm tra lịch trước đó quá gần
+    const tooCloseBefore = conflictingSchedules.filter((schedule) => {
+      const existingEnd = new Date(schedule.endTime);
+      return (
+        existingEnd.getTime() > startTime.getTime() - minGapMs &&
+        existingEnd.getTime() <= startTime.getTime()
+      );
+    });
+
+    if (tooCloseBefore.length > 0) {
+      const conflict = tooCloseBefore[0];
+      const existingEnd = new Date(conflict.endTime);
+      throw new BadRequestException(
+        `Lịch dạy quá gần với lịch trước: ${conflict.title} - kết thúc lúc ${existingEnd.toLocaleString('vi-VN')}, cần cách ít nhất ${minGapMinutes} phút`,
+      );
+    }
+
+    // Kiểm tra lịch sau đó quá gần
+    const tooCloseAfter = conflictingSchedules.filter((schedule) => {
+      const existingStart = new Date(schedule.startTime);
+      return (
+        existingStart.getTime() >= endTime.getTime() &&
+        existingStart.getTime() < endTime.getTime() + minGapMs
+      );
+    });
+
+    if (tooCloseAfter.length > 0) {
+      const conflict = tooCloseAfter[0];
+      const existingStart = new Date(conflict.startTime);
+      throw new BadRequestException(
+        `Lịch dạy quá gần với lịch sau: ${conflict.title} - bắt đầu lúc ${existingStart.toLocaleString('vi-VN')}, cần cách ít nhất ${minGapMinutes} phút`,
+      );
+    }
+  }
+
+  // Helper method để kiểm tra trùng thời gian
+  private checkTimeConflict(
+    newStart: Date,
+    newEnd: Date,
+    existingStart: Date,
+    existingEnd: Date,
+  ): boolean {
+    // Kiểm tra các trường hợp trùng thời gian:
+
+    // 1. Lịch mới bắt đầu trong khoảng thời gian của lịch cũ
+    if (newStart >= existingStart && newStart < existingEnd) {
+      return true;
+    }
+
+    // 2. Lịch mới kết thúc trong khoảng thời gian của lịch cũ
+    if (newEnd > existingStart && newEnd <= existingEnd) {
+      return true;
+    }
+
+    // 3. Lịch mới bao trọn lịch cũ
+    if (newStart <= existingStart && newEnd >= existingEnd) {
+      return true;
+    }
+
+    // 4. Lịch cũ bao trọn lịch mới
+    if (existingStart <= newStart && existingEnd >= newEnd) {
+      return true;
+    }
+
+    // 5. Trùng chính xác thời gian bắt đầu hoặc kết thúc
+    if (
+      newStart.getTime() === existingStart.getTime() ||
+      newEnd.getTime() === existingEnd.getTime() ||
+      newStart.getTime() === existingEnd.getTime() ||
+      newEnd.getTime() === existingStart.getTime()
+    ) {
+      return true;
+    }
+
+    return false;
+  }
+
+  // Helper method để tạo thông báo lỗi chi tiết
+  private getConflictMessage(
+    newStart: Date,
+    newEnd: Date,
+    existingStart: Date,
+    existingEnd: Date,
+    existingTitle: string,
+    existingClassName: string,
+  ): string {
+    let conflictType = '';
+
+    if (newStart >= existingStart && newEnd <= existingEnd) {
+      conflictType = 'Lịch mới nằm hoàn toàn trong lịch đã có';
+    } else if (newStart <= existingStart && newEnd >= existingEnd) {
+      conflictType = 'Lịch mới bao trọn lịch đã có';
+    } else if (newStart < existingStart && newEnd > existingStart) {
+      conflictType = 'Lịch mới bắt đầu trước và kết thúc trong lịch đã có';
+    } else if (newStart < existingEnd && newEnd > existingEnd) {
+      conflictType = 'Lịch mới bắt đầu trong lịch đã có và kết thúc sau';
+    } else if (
+      newStart.getTime() === existingStart.getTime() ||
+      newEnd.getTime() === existingEnd.getTime()
+    ) {
+      conflictType = 'Trùng chính xác thời gian bắt đầu hoặc kết thúc';
+    } else {
+      conflictType = 'Trùng thời gian với lịch đã có';
+    }
+
+    return `${conflictType}: ${existingTitle} - ${existingStart.toLocaleString('vi-VN')} - ${existingEnd.toLocaleString('vi-VN')}`;
   }
 }

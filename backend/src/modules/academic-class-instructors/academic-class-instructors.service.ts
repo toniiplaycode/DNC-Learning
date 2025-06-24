@@ -14,6 +14,7 @@ import { UpdateClassInstructorDto } from './dto/update-class-instructor.dto';
 import { plainToInstance } from 'class-transformer';
 import { ClassInstructorResponseDto } from './dto/class-instructor-response.dto';
 import { In } from 'typeorm';
+import { TeachingSchedule } from '../../entities/TeachingSchedule';
 
 @Injectable()
 export class AcademicClassInstructorsService {
@@ -24,6 +25,8 @@ export class AcademicClassInstructorsService {
     private readonly academicClassRepository: Repository<AcademicClass>,
     @InjectRepository(UserInstructor)
     private readonly userInstructorRepository: Repository<UserInstructor>,
+    @InjectRepository(TeachingSchedule)
+    private readonly teachingSchedulesRepository: Repository<TeachingSchedule>,
   ) {}
 
   async create(
@@ -57,6 +60,9 @@ export class AcademicClassInstructorsService {
         where: { classId: createDto.classId },
       });
 
+    console.log('currentAssignments', currentAssignments);
+    console.log('instructorIds', instructorIds);
+
     // Check if all instructors exist
     const instructors = await this.userInstructorRepository.find({
       where: { id: In(instructorIds) },
@@ -72,17 +78,33 @@ export class AcademicClassInstructorsService {
 
     // Remove instructors that are not in the new list
     const instructorsToRemove = currentAssignments.filter(
-      (assignment) => !instructorIds.includes(assignment.instructorId),
+      (assignment) =>
+        !instructorIds.map(String).includes(String(assignment.instructorId)),
     );
 
+    console.log('instructorsToRemove', instructorsToRemove);
+
     if (instructorsToRemove.length > 0) {
+      // Kiểm tra xem có teaching schedule liên quan không
+      const teachingSchedules = await this.teachingSchedulesRepository.find({
+        where: {
+          academicClassInstructorId: In(instructorsToRemove.map((a) => a.id)),
+        },
+      });
+      if (teachingSchedules.length > 0) {
+        throw new ConflictException(
+          'Không thể xóa phân công giảng viên vì có lịch giảng dạy liên quan. Vui lòng xóa các lịch dạy trước.',
+        );
+      }
       await this.academicClassInstructorRepository.remove(instructorsToRemove);
     }
 
     // Add new instructors
-    const existingInstructorIds = currentAssignments.map((a) => a.instructorId);
+    const existingInstructorIds = currentAssignments.map((a) =>
+      Number(a.instructorId),
+    );
     const newInstructorIds = instructorIds.filter(
-      (id) => !existingInstructorIds.includes(id),
+      (id) => !existingInstructorIds.includes(Number(id)),
     );
 
     const newAssignments = newInstructorIds.map((instructorId) =>

@@ -157,13 +157,14 @@ const InstructorSchedules = ({
 
   const handleAddSchedule = () => {
     const now = new Date();
-    const endTime = new Date(now.getTime() + 90 * 60000); // 90 phút sau
+    const startTime = new Date(now.getTime() + 2 * 60000); // Thời gian hiện tại + 1 phút
+    const endTime = new Date(startTime.getTime() + 90 * 60000); // 90 phút sau startTime
 
     setEditingSchedule(null);
     setFormData({
       title: "",
       description: "",
-      startTime: format(now, "yyyy-MM-dd'T'HH:mm"),
+      startTime: format(startTime, "yyyy-MM-dd'T'HH:mm"),
       endTime: format(endTime, "yyyy-MM-dd'T'HH:mm"),
       meetingLink: "",
       status: ScheduleStatus.SCHEDULED,
@@ -212,6 +213,16 @@ const InstructorSchedules = ({
         }
       } catch (error) {
         toast.error("Không thể xóa lịch dạy");
+        dispatch(fetchAllTeachingSchedules());
+        dispatch(fetchAcademicClasses());
+        if (currentUser?.userInstructor?.id) {
+          // Chế độ instructor - chỉ refresh teaching schedules của instructor
+          dispatch(
+            fetchTeachingSchedulesByInstructor(
+              Number(currentUser.userInstructor.id)
+            )
+          );
+        }
       }
     }
     setOpenDeleteDialog(false);
@@ -426,11 +437,26 @@ const InstructorSchedules = ({
       }
     } catch (error: any) {
       console.error("Error saving schedule:", error);
-      toast.error(
-        typeof error === "object"
-          ? JSON.stringify(error)
-          : error.message || "Có lỗi xảy ra khi lưu lịch dạy"
-      );
+
+      // Nếu có thông báo lỗi cụ thể từ backend, hiển thị nó
+      if (error && error.trim() !== "") {
+        toast.error(error);
+      } else {
+        // Chỉ hiển thị thông báo chung khi không có thông báo cụ thể
+        toast.error("Có lỗi xảy ra khi lưu lịch dạy. Vui lòng thử lại.");
+      }
+
+      // Reset status về idle để không làm gián đoạn UI
+      if (isAdmin) {
+        dispatch(fetchAllTeachingSchedules());
+        dispatch(fetchAcademicClasses());
+      } else if (currentUser?.userInstructor?.id) {
+        dispatch(
+          fetchTeachingSchedulesByInstructor(
+            Number(currentUser.userInstructor.id)
+          )
+        );
+      }
     }
   };
 
@@ -1473,12 +1499,12 @@ const InstructorSchedules = ({
     if (sortOption === "newest") {
       filtered.sort(
         (a, b) =>
-          new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
+          new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
       );
     } else if (sortOption === "oldest") {
       filtered.sort(
         (a, b) =>
-          new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+          new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
       );
     } else if (sortOption === "az") {
       filtered.sort((a, b) => a.title.localeCompare(b.title));
@@ -2011,9 +2037,6 @@ const InstructorSchedules = ({
                 InputLabelProps={{
                   shrink: true,
                 }}
-                inputProps={{
-                  step: 300, // 5 phút
-                }}
                 error={!formData.startTime}
                 helperText={
                   !formData.startTime
@@ -2035,10 +2058,6 @@ const InstructorSchedules = ({
                 required
                 InputLabelProps={{
                   shrink: true,
-                }}
-                inputProps={{
-                  step: 300, // 5 phút
-                  min: formData.startTime || undefined,
                 }}
                 error={!!timeError || !formData.endTime}
                 helperText={

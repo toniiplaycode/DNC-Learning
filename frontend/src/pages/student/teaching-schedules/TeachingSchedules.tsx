@@ -165,6 +165,9 @@ const TeachingSchedules = () => {
       };
     }) as TeachingScheduleWithAttendance[];
 
+    // Sắp xếp mới nhất lên đầu
+    processedSchedules.sort((a, b) => b.date.getTime() - a.date.getTime());
+
     const upcomingSchedules = processedSchedules.filter(
       (schedule) =>
         new Date(schedule.date) > now ||

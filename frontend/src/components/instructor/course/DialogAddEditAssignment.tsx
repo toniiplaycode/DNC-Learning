@@ -144,6 +144,10 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
   >(null);
   const referenceFileInputRef = useRef<HTMLInputElement>(null);
 
+  // State cho lỗi ngày hạn nộp và lỗi chọn lớp
+  const [dueDateError, setDueDateError] = useState<string | null>(null);
+  const [classError, setClassError] = useState<string | null>(null);
+
   // Cập nhật form khi mở modal và có dữ liệu ban đầu
   useEffect(() => {
     if (open) {
@@ -292,6 +296,24 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
 
   // Gửi form
   const handleSubmit = async () => {
+    // Nếu là bài tập academic thì phải chọn ngày hạn nộp
+    if (additionalInfo?.targetType === "academic" && !assignmentForm.dueDate) {
+      setDueDateError("Vui lòng chọn ngày hạn nộp cho bài tập học thuật");
+      return;
+    } else {
+      setDueDateError(null);
+    }
+    // Nếu là bài tập academic thì phải chọn lớp
+    if (
+      additionalInfo?.targetType === "academic" &&
+      (!assignmentForm.academicClassId || assignmentForm.academicClassId === 0)
+    ) {
+      setClassError("Vui lòng chọn lớp học thuật");
+      return;
+    } else {
+      setClassError(null);
+    }
+
     // Only upload the reference file if it hasn't been uploaded already
     if (
       referenceFile &&
@@ -437,7 +459,7 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
           )}
           {/* Chọn lớp học thuật */}
           {additionalInfo && additionalInfo.targetType === "academic" && (
-            <FormControl fullWidth>
+            <FormControl fullWidth error={!!classError}>
               <InputLabel>Chọn lớp học thuật</InputLabel>
               <Select
                 value={assignmentForm.academicClassId || 0}
@@ -448,6 +470,7 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
                     academicClassId: Number(e.target.value),
                   })
                 }
+                required
               >
                 <MenuItem value={0}>Chọn lớp học</MenuItem>
                 {/* @ts-ignore - Using type assertion since we know the structure at runtime */}
@@ -463,7 +486,7 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
                   ))}
               </Select>
               <FormHelperText>
-                Chọn lớp học để gán bài tập cho sinh viên
+                {classError || "Chọn lớp học để gán bài tập cho sinh viên"}
               </FormHelperText>
             </FormControl>
           )}
@@ -573,6 +596,9 @@ const DialogAddEditAssignment: React.FC<DialogAddEditAssignmentProps> = ({
                 </InputAdornment>
               ),
             }}
+            required={additionalInfo?.targetType === "academic"}
+            error={!!dueDateError}
+            helperText={dueDateError || undefined}
           />
 
           {/* Điểm tối đa */}

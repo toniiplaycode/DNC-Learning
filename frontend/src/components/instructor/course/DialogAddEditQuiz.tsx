@@ -217,15 +217,6 @@ async function generateQuizDocx(
             ])
             .flat(),
           new Paragraph({ text: "" }), // Final spacing
-          new Paragraph({
-            text: "Lưu ý: Các câu hỏi có thể được sử dụng để làm bài offline. Đáp án đúng được đánh dấu trong ngoặc đơn.",
-            children: [
-              new TextRun({
-                text: "Lưu ý: Các câu hỏi có thể được sử dụng để làm bài offline. Đáp án đúng được đánh dấu trong ngoặc đơn.",
-                italics: true,
-              }),
-            ],
-          }),
         ],
       },
     ],

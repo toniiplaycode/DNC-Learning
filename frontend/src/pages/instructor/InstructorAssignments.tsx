@@ -1840,7 +1840,7 @@ const AcademicClassAssignments: React.FC<AcademicClassAssignmentsProps> = ({
                         </Typography>
                       </>
                     ) : (
-                      "Không có"
+                      "-"
                     )}
                   </TableCell>
                   <TableCell align="center">

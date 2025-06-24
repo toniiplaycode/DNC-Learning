@@ -331,10 +331,18 @@ export class RagService {
       // Check if the query is related to courses
       const courseKeywords = [
         'khóa học',
+        'học',
         'khoá học',
         'bài học',
         'course',
         'courses',
+        'ghi danh',
+        'tham gia',
+        'đăng ký',
+        'enroll',
+        'enrollment',
+        'register',
+        'registration',
       ];
       const queryLower = query.toLowerCase();
       const isCourseQuery = courseKeywords.some((keyword) =>
@@ -403,6 +411,13 @@ export class RagService {
         'bài học',
         'course',
         'courses',
+        'ghi danh',
+        'tham gia',
+        'đăng ký',
+        'enroll',
+        'enrollment',
+        'register',
+        'registration',
       ];
       const queryLower = query.toLowerCase();
       const isCourseQuery = courseKeywords.some((keyword) =>
@@ -492,10 +507,10 @@ export class RagService {
         );
 
       if (scoredVectors.length > 0) {
-        // Nếu có ít nhất 1 từ khớp, trả về top 3-5 kết quả, kèm cảnh báo nếu score thấp
+        // Nếu có ít nhất 1 từ khớp, trả về top 10 kết quả, kèm cảnh báo nếu score thấp
         const topVectors = scoredVectors
           .sort((a, b) => b.score - a.score)
-          .slice(0, 5);
+          .slice(0, 10);
         const context = topVectors.map((v) => v.text);
         let response;
         if (topVectors[0].score === 1) {
