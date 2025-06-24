@@ -204,10 +204,21 @@ const CourseContent = () => {
           (attempt) => attempt.quiz.lessonId === lessonId
         );
 
-        // Only allow marking as completed if quiz is completed
+        // Only allow marking as completed if quiz is completed and score >= passingScore
         if (!quizAttempt || quizAttempt.status !== "completed") {
           toast.warning(
             "Bạn cần hoàn thành bài kiểm tra này trước khi đánh dấu hoàn thành!"
+          );
+          return;
+        }
+        // Check score >= passingScore
+        if (
+          typeof quizAttempt.score === "string" &&
+          typeof quizAttempt.quiz.passingScore === "number" &&
+          Number(quizAttempt.score) < quizAttempt.quiz.passingScore
+        ) {
+          toast.warning(
+            `Bạn cần đạt ít nhất ${quizAttempt.quiz.passingScore} điểm để được đánh dấu hoàn thành bài kiểm tra này!`
           );
           return;
         }

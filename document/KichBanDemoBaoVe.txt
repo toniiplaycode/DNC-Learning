@@ -9,7 +9,7 @@
 ⏱ Demo tính năng cho người học tự do (toan@gmail.com)
 - Đăng ký tài khoản học viên.
 - Xem danh sách khóa học.
-- Xem chi tiết nội dung khóa học.
+- Xem chi tiết nội dung khóa học. (làm trắc nghiệm >= phần trăm điểm đạt tối thiểu mới được học tiếp)
 - Trang cá nhân thanh toán.
 - Trang cá nhân chứng chỉ.
 ⏱ Demo tính năng cho giảng viên (quanghieu@edu.vn)

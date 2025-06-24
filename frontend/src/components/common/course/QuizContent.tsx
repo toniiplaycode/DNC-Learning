@@ -32,6 +32,7 @@ import {
   AccessTime,
   QuestionAnswer,
   School,
+  Grade,
 } from "@mui/icons-material";
 import {
   createAttempt,
@@ -1378,6 +1379,54 @@ const QuizContent: React.FC<QuizContentProps> = ({
                           return "0.2";
                       }
                     })()}
+                  </Typography>
+                </Paper>
+              </Box>
+
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "center",
+                  flexWrap: "wrap",
+                  gap: 3,
+                  my: 4,
+                }}
+              >
+                <Paper
+                  elevation={1}
+                  sx={{
+                    p: 2,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    minWidth: "150px",
+                  }}
+                >
+                  <Grade color="primary" sx={{ mb: 1 }} />
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Điểm đạt
+                  </Typography>
+                  <Typography variant="h5" sx={{ mt: 1 }}>
+                    {activeQuiz?.passingScore}%
+                  </Typography>
+                </Paper>
+
+                <Paper
+                  elevation={1}
+                  sx={{
+                    p: 2,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    minWidth: "150px",
+                  }}
+                >
+                  <Timer color="primary" sx={{ mb: 1 }} />
+                  <Typography variant="subtitle2" color="text.secondary">
+                    Số lần làm lại bài
+                  </Typography>
+                  <Typography variant="h5" sx={{ mt: 1 }}>
+                    {activeQuiz?.attemptsAllowed}
                   </Typography>
                 </Paper>
               </Box>

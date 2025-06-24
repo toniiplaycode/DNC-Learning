@@ -28,6 +28,7 @@ import {
   CheckCircle,
   AccessTime,
   Schedule,
+  Grade,
 } from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import CustomContainer from "../../../components/common/CustomContainer";
@@ -679,6 +680,15 @@ const Assessment = () => {
                       <Typography variant="body2" color="text.secondary">
                         Số lần làm tối đa:{" "}
                         {assessment.attemptsAllowed || "Không giới hạn"}
+                      </Typography>
+                    </Stack>
+                  )}
+
+                  {assessment.quizType && (
+                    <Stack direction="row" spacing={1}>
+                      <Grade fontSize="small" color="action" />
+                      <Typography variant="body2" color="text.secondary">
+                        Điểm đạt: {assessment.passingScore || "Không giới hạn"}%
                       </Typography>
                     </Stack>
                   )}
