@@ -42,6 +42,8 @@ import {
   EmojiEvents,
   Timer,
   AutoStories,
+  LockOpen,
+  Lock,
 } from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
 import CustomContainer from "../../components/common/CustomContainer";
@@ -52,12 +54,17 @@ import { formatDate } from "date-fns";
 import { fetchInstructorById } from "../../features/user_instructors/instructorsApiSlice";
 import { selectCurrentInstructor } from "../../features/user_instructors/instructorsSelectors";
 import CourseRating from "../../components/common/course/CourseRating";
-import { fetchUserEnrollments } from "../../features/enrollments/enrollmentsApiSlice";
+import {
+  enrollInCourse,
+  fetchUserEnrollments,
+} from "../../features/enrollments/enrollmentsApiSlice";
 import { selectCurrentUser } from "../../features/auth/authSelectors";
 import { selectUserEnrollments } from "../../features/enrollments/enrollmentsSelectors";
 import { fetchStudentAcademicCourses } from "../../features/users/usersApiSlice";
 import { selectStudentAcademicCourses } from "../../features/users/usersSelectors";
 import { alpha } from "@mui/material/styles";
+import { EnrollmentStatus } from "../../types/enrollment.types";
+import { toast } from "react-toastify";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -518,12 +525,7 @@ const CourseDetail: React.FC = () => {
                                 }
                               />
                               {true && (
-                                <Chip
-                                  label="Khóa"
-                                  size="small"
-                                  color="default"
-                                  variant="outlined"
-                                />
+                                <Lock color="error" sx={{ fontSize: 20 }} />
                               )}
                             </ListItem>
                           ))}
@@ -769,7 +771,9 @@ const CourseDetail: React.FC = () => {
                         color="primary"
                         textAlign="center"
                       >
-                        {formatPrice(currentCourse?.price || 0)}
+                        {currentCourse && currentCourse?.price > 0
+                          ? formatPrice(currentCourse?.price)
+                          : "Miễn phí"}
                       </Typography>
                     )}
                   </Typography>
@@ -1038,40 +1042,105 @@ const CourseDetail: React.FC = () => {
                 </Grid>
               </Box>
 
-              <Button
-                variant="contained"
-                fullWidth
-                size="large"
-                sx={{ mb: 2 }}
-                onClick={() => {
-                  if (isEnrolled) {
-                    navigate(`/course/${id}/learn`);
-                  } else if (
-                    currentCourse?.for === "student_academic" &&
-                    currentUser?.role === "student_academic"
-                  ) {
-                    // No navigation for academic students who aren't enrolled - they need to contact instructor
-                  } else {
-                    navigate(`/purchase/${id}`);
+              {currentCourse &&
+              currentCourse?.price == 0 &&
+              currentCourse?.for !== "student_academic" &&
+              !isEnrolled ? (
+                <Button
+                  variant="contained"
+                  fullWidth
+                  size="large"
+                  onClick={async () => {
+                    if (!currentUser?.id) {
+                      toast.error("Vui lòng đăng nhập để đăng ký khóa học");
+                      navigate("/login");
+                      return;
+                    }
+
+                    try {
+                      await dispatch(
+                        enrollInCourse({
+                          userId: Number(currentUser.id),
+                          courseId: Number(id),
+                        })
+                      ).unwrap();
+
+                      toast.success("Đăng ký khóa học thành công!");
+                      navigate(`/enrolled-courses`);
+                    } catch (error: any) {
+                      console.error("Enrollment error:", error);
+                      toast.error(
+                        error?.message || "Có lỗi xảy ra khi đăng ký khóa học"
+                      );
+                    }
+                  }}
+                  sx={{ mb: 2 }}
+                >
+                  Đăng ký miễn phí
+                </Button>
+              ) : (
+                <Button
+                  variant="contained"
+                  fullWidth
+                  size="large"
+                  sx={{ mb: 2 }}
+                  onClick={() => {
+                    if (isEnrolled) {
+                      navigate(`/course/${id}/learn`);
+                    } else if (
+                      currentCourse?.for === "student_academic" &&
+                      currentUser?.role === "student_academic"
+                    ) {
+                      // No navigation for academic students who aren't enrolled - they need to contact instructor
+                    } else {
+                      navigate(`/purchase/${id}`);
+                    }
+                  }}
+                  disabled={
+                    !canEnroll() ||
+                    (currentCourse?.for === "student_academic" &&
+                      currentUser?.role === "student_academic" &&
+                      !isEnrolled)
                   }
-                }}
-                disabled={
-                  !canEnroll() ||
-                  (currentCourse?.for === "student_academic" &&
-                    currentUser?.role === "student_academic" &&
-                    !isEnrolled)
-                }
-              >
-                {isEnrolled
-                  ? "Tiếp tục học"
-                  : currentCourse?.for === "student_academic" &&
-                    currentUser?.role === "student_academic" &&
-                    !isEnrolled
-                  ? "Liên hệ giảng viên phụ trách"
-                  : canEnroll()
-                  ? "Đăng ký ngay"
-                  : "Không có quyền đăng ký"}
-              </Button>
+                >
+                  {isEnrolled
+                    ? "Tiếp tục học"
+                    : currentCourse?.for === "student_academic" &&
+                      currentUser?.role === "student_academic" &&
+                      !isEnrolled
+                    ? "Liên hệ giảng viên phụ trách"
+                    : canEnroll()
+                    ? "Đăng ký ngay"
+                    : "Không có quyền đăng ký"}
+                </Button>
+              )}
+
+              {(!isEnrolled || // Kiểm tra enrollment trong khóa học thuật
+                (currentCourse?.for === "student_academic" &&
+                  currentUser?.role === "student_academic")) &&
+                (() => {
+                  // Tìm lesson đầu tiên trong tất cả sections
+                  let firstLesson = null;
+                  for (const section of currentCourse?.sections || []) {
+                    if (section.lessons && section.lessons.length > 0) {
+                      firstLesson = section.lessons[0];
+                      break;
+                    }
+                  }
+                  return firstLesson && firstLesson.isFree == "1";
+                })() && (
+                  <Button
+                    variant="contained"
+                    fullWidth
+                    size="large"
+                    sx={{ mb: 2 }}
+                    onClick={() => {
+                      navigate(`/course/${id}/learn`);
+                    }}
+                  >
+                    Học thử khóa học
+                  </Button>
+                )}
 
               {!canEnroll() && (
                 <Typography

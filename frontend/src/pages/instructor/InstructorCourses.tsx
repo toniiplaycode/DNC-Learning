@@ -272,7 +272,7 @@ const InstructorCourses = () => {
                   <MenuItem value="student">
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <School fontSize="small" sx={{ color: "primary.main" }} />
-                      <Typography>Học viên thông thường</Typography>
+                      <Typography>Học viên tự do</Typography>
                     </Box>
                   </MenuItem>
                   <MenuItem value="student_academic">
@@ -394,7 +394,7 @@ const InstructorCourses = () => {
                                       course.for === "both"
                                         ? "Tất cả người học"
                                         : course.for === "student"
-                                        ? "Học viên thông thường"
+                                        ? "Học viên tự do"
                                         : "Sinh viên học thuật"
                                     }
                                     size="small"
@@ -535,7 +535,7 @@ const InstructorCourses = () => {
                       {audienceType === "both"
                         ? "Khóa học cho tất cả người học"
                         : audienceType === "student"
-                        ? "Khóa học cho học viên thông thường"
+                        ? "Khóa học cho học viên tự do"
                         : "Khóa học cho sinh viên học thuật"}
                     </Typography>
                     <Typography
@@ -642,7 +642,7 @@ const InstructorCourses = () => {
                                           course.for === "both"
                                             ? "Tất cả người học"
                                             : course.for === "student"
-                                            ? "Học viên thông thường"
+                                            ? "Học viên tự do"
                                             : "Sinh viên học thuật"
                                         }
                                         size="small"

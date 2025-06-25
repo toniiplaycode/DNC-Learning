@@ -41,6 +41,7 @@ interface Lesson {
   createdAt: string;
   updatedAt: string;
   completed?: boolean;
+  isFree?: boolean;
 }
 
 interface Document {
@@ -297,6 +298,33 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
                       }
                     }}
                   >
+                    {lesson.isFree && (
+                      <Typography
+                        sx={{
+                          position: "absolute",
+                          top: 4,
+                          left: 4,
+                          transformOrigin: "center",
+                          background:
+                            "linear-gradient(135deg, #4caf50 0%, #45a049 100%)",
+                          color: "white",
+                          padding: "2px 4px",
+                          borderRadius: "6px",
+                          fontSize: "0.65rem",
+                          fontWeight: 700,
+                          letterSpacing: "0.5px",
+                          textTransform: "uppercase",
+                          zIndex: 1,
+                          boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                          border: "1px solid rgba(255,255,255,0.3)",
+                          textShadow: "0 1px 2px rgba(0,0,0,0.3)",
+                        }}
+                        variant="caption"
+                      >
+                        Free
+                      </Typography>
+                    )}
+
                     <ListItemIcon>
                       {locked ? (
                         <Tooltip title="Hoàn thành bài học trước để mở khóa">

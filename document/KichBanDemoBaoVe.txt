@@ -2,14 +2,19 @@
 - Đăng nhập hệ thống.
 - Trang chủ hiển thị tổng quan học tập.
 - Xem chương trình đào tạo theo học kỳ.
-- Làm bài tập và trắc nghiệm theo lớp (không cho đăng nhập 2 thiết bị khi đang làm trắc nghiệm).
+- Làm bài tập và trắc nghiệm theo lớp (không cho đăng nhập 2 thiết bị khi đang làm trắc nghiệm, có thời gian bắt đầu làm bài).
 - Xem bảng điểm tại trang cá nhân.
 - Tham gia học trực tuyến qua Google Meet.
 - Chat cá nhân, chatBot, chat nhóm lớp để thảo luận.
+- Thông báo, tự động gửi mail khi có nội dung học tập, bài tập mới,...
 ⏱ Demo tính năng cho người học tự do (toan@gmail.com)
 - Đăng ký tài khoản học viên.
 - Xem danh sách khóa học.
-- Xem chi tiết nội dung khóa học. (làm trắc nghiệm >= phần trăm điểm đạt tối thiểu mới được học tiếp)
+- Xem chi tiết nội dung khóa học. (có vài khóa học sẽ học thử, miễn phí , làm trắc nghiệm >= phần trăm điểm đạt tối thiểu mới được học tiếp)
+	Số thẻ	4111111111111111
+	Tên	NGUYEN VAN A
+	Ngày hết hạn	01/26
+	Mã CVV	123
 - Trang cá nhân thanh toán.
 - Trang cá nhân chứng chỉ.
 ⏱ Demo tính năng cho giảng viên (quanghieu@edu.vn)

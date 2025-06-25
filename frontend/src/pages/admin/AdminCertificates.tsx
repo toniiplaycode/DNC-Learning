@@ -44,6 +44,7 @@ import {
   MoreVert,
   Block,
   CheckCircle,
+  EmojiEvents,
 } from "@mui/icons-material";
 import { useAppDispatch, useAppSelector } from "../../app/hooks";
 import {
@@ -57,6 +58,7 @@ import { Certificate, CertificateStatus } from "../../types/certificate.types";
 import { toast } from "react-toastify";
 import { fetchAllUsersCourseProgress } from "../../features/course-progress/courseProgressSlice";
 import { selectAllUsersCourseProgress } from "../../features/course-progress/courseProgressSelectors";
+import EmptyState from "../../components/common/EmptyState";
 
 interface CourseProgress {
   userId: number;
@@ -79,6 +81,7 @@ const AdminCertificates: React.FC = () => {
   const [page, setPage] = useState(1);
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [courseFilter, setCourseFilter] = useState("all");
   const [openDeleteDialog, setOpenDeleteDialog] = useState(false);
   const [openRevokeDialog, setOpenRevokeDialog] = useState(false);
   const [selectedCertificate, setSelectedCertificate] = useState<number | null>(
@@ -108,13 +111,26 @@ const AdminCertificates: React.FC = () => {
     setPage(1);
     setSearchQuery("");
     setStatusFilter("all");
+    setCourseFilter("all");
     setSelectedCertificate(null);
   };
 
   // Lọc danh sách chứng chỉ
   const filteredCertificates = certificates.filter((certificate) => {
+    // Lọc theo trạng thái
     if (statusFilter !== "all" && certificate.status !== statusFilter)
       return false;
+
+    // Lọc theo khóa học
+    if (courseFilter !== "all") {
+      const selectedCourseId = Number(courseFilter);
+      const certificateCourseId = Number(certificate.courseId);
+      if (certificateCourseId !== selectedCourseId) {
+        return false;
+      }
+    }
+
+    // Lọc theo tìm kiếm
     if (
       searchQuery &&
       !certificate.certificateNumber
@@ -285,16 +301,17 @@ const AdminCertificates: React.FC = () => {
     (item) => item.courseId === Number(selectedCourseId)
   );
 
-  const handleCreateCertificates = () => {
-    console.log(selectedUserIds, selectedCourseId);
-    dispatch(
+  const handleCreateCertificates = async () => {
+    await dispatch(
       createMultipleCertificates({
         userIds: selectedUserIds.map(Number),
         courseId: Number(selectedCourseId),
         issueDate: new Date(issueDate),
         expiryDate: expiryDate ? new Date(expiryDate) : undefined,
       })
-    );
+    ).unwrap();
+    dispatch(fetchCertificates());
+    toast.success("Tạo chứng chỉ thành công");
     setOpenCreateDialog(false);
     setSelectedUserIds([]);
     setSelectedCourseId("");
@@ -353,6 +370,29 @@ const AdminCertificates: React.FC = () => {
                   </Select>
                 </FormControl>
 
+                <FormControl size="small" sx={{ minWidth: 150 }}>
+                  <InputLabel>Khóa học</InputLabel>
+                  <Select
+                    value={courseFilter}
+                    onChange={(e) => setCourseFilter(e.target.value)}
+                    label="Khóa học"
+                  >
+                    <MenuItem value="all">Tất cả khóa học</MenuItem>
+                    {Array.from(
+                      new Set(certificates.map((cert) => cert.courseId))
+                    ).map((courseId) => {
+                      const course = certificates.find(
+                        (cert) => cert.courseId === courseId
+                      )?.course;
+                      return (
+                        <MenuItem key={courseId} value={courseId}>
+                          {course?.title || `Khóa học ${courseId}`}
+                        </MenuItem>
+                      );
+                    })}
+                  </Select>
+                </FormControl>
+
                 <Button
                   variant="contained"
                   startIcon={<Add />}
@@ -366,67 +406,73 @@ const AdminCertificates: React.FC = () => {
 
           {/* Bảng chứng chỉ */}
           <TableContainer component={Paper}>
-            <Table stickyHeader>
-              <TableHead>
-                <TableRow>
-                  <TableCell>Số chứng chỉ</TableCell>
-                  <TableCell>Học viên</TableCell>
-                  <TableCell>Khóa học</TableCell>
-                  <TableCell>Ngày cấp</TableCell>
-                  <TableCell>Ngày hết hạn</TableCell>
-                  <TableCell>Trạng thái</TableCell>
-                  <TableCell align="center">Thao tác</TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {paginatedCertificates.map((certificate) => (
-                  <TableRow key={certificate.id}>
-                    <TableCell>{certificate.certificateNumber}</TableCell>
-                    <TableCell>
-                      <Box sx={{ display: "flex", alignItems: "center" }}>
-                        <Avatar
-                          src={certificate.user?.avatarUrl}
-                          sx={{ mr: 2 }}
-                        />
-                        {certificate.user?.fullName ||
-                          certificate.user?.username}
-                      </Box>
-                    </TableCell>
-                    <TableCell>{certificate.course?.title}</TableCell>
-                    <TableCell>{formatDate(certificate.issueDate)}</TableCell>
-                    <TableCell>
-                      {certificate.expiryDate
-                        ? formatDate(certificate.expiryDate)
-                        : "Không có"}
-                    </TableCell>
-                    <TableCell>
-                      {certificate.status ? (
-                        <Chip
-                          label={getStatusInfo(certificate.status).label}
-                          color={getStatusInfo(certificate.status).color}
-                          size="small"
-                        />
-                      ) : null}
-                    </TableCell>
-                    <TableCell align="center">
-                      <IconButton
-                        onClick={(e) => handleMenuOpen(e, certificate.id)}
-                        size="small"
-                      >
-                        <MoreVert />
-                      </IconButton>
-                    </TableCell>
-                  </TableRow>
-                ))}
-                {paginatedCertificates.length === 0 && (
+            {paginatedCertificates.length > 0 ? (
+              <Table stickyHeader>
+                <TableHead>
                   <TableRow>
-                    <TableCell colSpan={7} align="center">
-                      Không có dữ liệu
-                    </TableCell>
+                    <TableCell>Số chứng chỉ</TableCell>
+                    <TableCell>Học viên</TableCell>
+                    <TableCell>Khóa học</TableCell>
+                    <TableCell>Ngày cấp</TableCell>
+                    <TableCell>Ngày hết hạn</TableCell>
+                    <TableCell>Trạng thái</TableCell>
+                    <TableCell align="center">Thao tác</TableCell>
                   </TableRow>
-                )}
-              </TableBody>
-            </Table>
+                </TableHead>
+                <TableBody>
+                  {paginatedCertificates.map((certificate) => (
+                    <TableRow key={certificate.id}>
+                      <TableCell>{certificate.certificateNumber}</TableCell>
+                      <TableCell>
+                        <Box sx={{ display: "flex", alignItems: "center" }}>
+                          <Avatar
+                            src={certificate.user?.avatarUrl}
+                            sx={{ mr: 2 }}
+                          />
+                          {certificate.user?.fullName ||
+                            certificate.user?.username}
+                        </Box>
+                      </TableCell>
+                      <TableCell>{certificate.course?.title}</TableCell>
+                      <TableCell>{formatDate(certificate.issueDate)}</TableCell>
+                      <TableCell>
+                        {certificate.expiryDate
+                          ? formatDate(certificate.expiryDate)
+                          : "-"}
+                      </TableCell>
+                      <TableCell>
+                        {certificate.status ? (
+                          <Chip
+                            label={getStatusInfo(certificate.status).label}
+                            color={getStatusInfo(certificate.status).color}
+                            size="small"
+                          />
+                        ) : null}
+                      </TableCell>
+                      <TableCell align="center">
+                        <IconButton
+                          onClick={(e) => handleMenuOpen(e, certificate.id)}
+                          size="small"
+                        >
+                          <MoreVert />
+                        </IconButton>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            ) : (
+              <EmptyState
+                icon={<EmojiEvents />}
+                title="Chưa có chứng chỉ nào"
+                description={
+                  filteredCertificates.length === 0 && certificates.length > 0
+                    ? "Không tìm thấy chứng chỉ phù hợp với bộ lọc hiện tại. Hãy thử thay đổi bộ lọc hoặc từ khóa tìm kiếm."
+                    : "Hệ thống chưa có chứng chỉ nào được tạo. Hãy tạo chứng chỉ đầu tiên cho học viên đã hoàn thành khóa học."
+                }
+                height={320}
+              />
+            )}
           </TableContainer>
 
           {/* Phân trang */}
@@ -780,45 +826,65 @@ const AdminCertificates: React.FC = () => {
                 >
                   {allUsersCourseProgress
                     .filter((item) => item.courseId === selectedCourseId)
-                    .map((item) => (
-                      <MenuItem
-                        key={item.userId}
-                        value={item.userId}
-                        disabled={item.completionPercentage < 100}
-                      >
-                        <Box
-                          sx={{
-                            display: "flex",
-                            alignItems: "center",
-                            width: "100%",
-                          }}
+                    .map((item) => {
+                      // Kiểm tra xem học viên đã có chứng chỉ cho khóa học này chưa
+                      const alreadyHasCertificate = certificates.some(
+                        (cert) =>
+                          String(cert.userId) === String(item.userId) &&
+                          String(cert.courseId) === String(selectedCourseId)
+                      );
+
+                      return (
+                        <MenuItem
+                          key={item.userId}
+                          value={item.userId}
+                          disabled={
+                            item.completionPercentage < 100 ||
+                            alreadyHasCertificate
+                          }
                         >
-                          <Box sx={{ flex: 1 }}>
-                            <Typography variant="body1">
-                              {item.fullName}
-                            </Typography>
-                            <Typography
-                              variant="caption"
-                              color="text.secondary"
-                            >
-                              {item.studentId} - {item.userName}
-                            </Typography>
+                          <Box
+                            sx={{
+                              display: "flex",
+                              alignItems: "center",
+                              width: "100%",
+                            }}
+                          >
+                            <Box sx={{ flex: 1 }}>
+                              <Typography variant="body1">
+                                {item.fullName}
+                              </Typography>
+                              <Typography
+                                variant="caption"
+                                color="text.secondary"
+                              >
+                                {item.studentId} - {item.userName}
+                              </Typography>
+                            </Box>
+                            <Box sx={{ ml: 2 }}>
+                              <Chip
+                                label={`${item.completionPercentage}%`}
+                                size="small"
+                                color={
+                                  item.completionPercentage === 100
+                                    ? "success"
+                                    : "warning"
+                                }
+                                sx={{ minWidth: "60px" }}
+                              />
+                              {alreadyHasCertificate && (
+                                <Chip
+                                  label="Đã có chứng chỉ"
+                                  size="small"
+                                  color="info"
+                                  sx={{ ml: 1 }}
+                                />
+                              )}
+                            </Box>
                           </Box>
-                          <Box sx={{ ml: 2 }}>
-                            <Chip
-                              label={`${item.completionPercentage}%`}
-                              size="small"
-                              color={
-                                item.completionPercentage === 100
-                                  ? "success"
-                                  : "warning"
-                              }
-                              sx={{ minWidth: "60px" }}
-                            />
-                          </Box>
-                        </Box>
-                      </MenuItem>
-                    ))}
+                        </MenuItem>
+                      );
+                    })}
                 </Select>
               </FormControl>
             </Grid>

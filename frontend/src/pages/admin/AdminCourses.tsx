@@ -376,9 +376,7 @@ const AdminCourses = () => {
                   <MenuItem value="student">
                     <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                       <School fontSize="small" sx={{ color: "primary.main" }} />
-                      <Typography variant="body2">
-                        Học viên thông thường
-                      </Typography>
+                      <Typography variant="body2">Học viên tự do</Typography>
                     </Box>
                   </MenuItem>
                   <MenuItem value="student_academic">
@@ -501,7 +499,7 @@ const AdminCourses = () => {
                         course.for === "both"
                           ? "Tất cả học viên"
                           : course.for === "student"
-                          ? "Học viên thông thường"
+                          ? "Học viên tự do"
                           : "Sinh viên học thuật"
                       }
                       size="small"

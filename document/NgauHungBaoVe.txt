@@ -86,4 +86,5 @@ năm nay của các bạn khác, có rất nhiều đề tài có thể tích h�
 
 *phần 8: kết luận: 
 - đề tài của e không dừng lại khi hoàn thành luận văn, e xem đây là dự án cá nhân mà e cực kì tâm huyết và muốn đầu tư cho nó hơn nữa với các đề xuất và hướng phát triển được nêu bên trên, e với thầy Phúc cũng đã có những trao đổi và định hướng về dự án này sau luận văn
+- hiện tại hệ thống chỉ chạy local, nhưng về sau e sẽ deploy lên, nếu có thầy cô trong khoa hoặc trường mình có nhu cầu dùng hệ thống của e để hỗ trợ cho việc giảng dạy, e sẽ cấp tài khoản giảng viên và mong thầy cô sẽ xây dựng các khóa học với nội dung chất lượng và sẵn test hệ thống giúp e luôn.
 ------------------------------------

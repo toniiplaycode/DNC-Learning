@@ -18,9 +18,10 @@ export class isUppercase implements ValidatorConstraintInterface {
 export default class UpdateCourseDto {
   id: number;
 
+  @IsOptional()
   @IsString()
-  @Length(5, 255, { message: 'Title must be between 5 and 255 characters' })
-  title: string;
+  @Length(1, 255, { message: 'Title must be between 1 and 255 characters' })
+  title?: string;
 
   @IsOptional()
   @IsString()

@@ -383,6 +383,26 @@ const Header = () => {
                   horizontal: "left",
                 }}
               >
+                <Box
+                  sx={{
+                    px: 2,
+                    bgcolor: alpha(theme.palette.primary.main, 0.03),
+                  }}
+                >
+                  <Button
+                    fullWidth
+                    variant="outlined"
+                    color="primary"
+                    onClick={() => navigate("/courses")}
+                    sx={{
+                      borderRadius: "8px",
+                      fontWeight: 500,
+                      boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+                    }}
+                  >
+                    Xem tất cả khóa học
+                  </Button>
+                </Box>
                 {categories.map((category) => (
                   <MenuItem
                     key={category.id}
@@ -411,28 +431,6 @@ const Header = () => {
                     </Stack>
                   </MenuItem>
                 ))}
-                <Box
-                  sx={{
-                    p: 2,
-                    borderTop: 1,
-                    borderColor: "divider",
-                    bgcolor: alpha(theme.palette.primary.main, 0.03),
-                  }}
-                >
-                  <Button
-                    fullWidth
-                    variant="outlined"
-                    color="primary"
-                    onClick={() => navigate("/courses")}
-                    sx={{
-                      borderRadius: "8px",
-                      fontWeight: 500,
-                      boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-                    }}
-                  >
-                    Xem tất cả khóa học
-                  </Button>
-                </Box>
               </Menu>
 
               <NavButton

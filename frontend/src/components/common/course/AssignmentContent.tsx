@@ -827,6 +827,18 @@ const AssignmentContent: React.FC<AssignmentContentProps> = ({
                         onChange={(e) => {
                           const file = e.target.files?.[0];
                           if (file) {
+                            const maxBytes =
+                              assignmentData.maxFileSize * 1024 * 1024;
+                            if (file.size > maxBytes) {
+                              setDriveUploadError(
+                                `File vượt quá dung lượng tối đa (${assignmentData.maxFileSize}MB)`
+                              );
+                              setSelectedDriveFile(null);
+                              toast.error(
+                                `File vượt quá dung lượng tối đa (${assignmentData.maxFileSize}MB)`
+                              );
+                              return;
+                            }
                             setSelectedDriveFile(file);
                             setDriveUploadError(null);
                           }

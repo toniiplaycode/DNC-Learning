@@ -16,6 +16,8 @@ import {
   Stack,
   FormHelperText,
   LinearProgress,
+  FormControlLabel,
+  Switch,
 } from "@mui/material";
 import { Close, CloudUpload } from "@mui/icons-material";
 import {
@@ -467,6 +469,26 @@ const DialogAddEditLesson: React.FC<DialogAddEditLessonProps> = ({
               })
             }
           />
+
+          {/* Miễn phí */}
+          <FormControlLabel
+            control={
+              <Switch
+                checked={contentForm.isFree}
+                onChange={(e) =>
+                  setContentForm({
+                    ...contentForm,
+                    isFree: e.target.checked,
+                  })
+                }
+              />
+            }
+            label="Nội dung miễn phí"
+          />
+          <FormHelperText>
+            Nếu được bật, học viên có thể xem nội dung này mà không cần đăng ký
+            khóa học
+          </FormHelperText>
 
           {/* Upload file */}
           {(contentForm.contentType === "video" ||

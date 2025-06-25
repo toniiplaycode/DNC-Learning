@@ -11,8 +11,29 @@ import {
   Tabs,
   Tab,
   CardContent,
+  Chip,
+  IconButton,
+  Collapse,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Divider,
+  Avatar,
+  Tooltip,
 } from "@mui/material";
-import { ArrowBack, ErrorOutline } from "@mui/icons-material";
+import {
+  ArrowBack,
+  ErrorOutline,
+  PlayCircle,
+  CheckCircle,
+  ExpandMore,
+  ExpandLess,
+  Quiz,
+  Assignment,
+  Book,
+  VideoLibrary,
+} from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
 import ContentDocuments from "../../../components/common/course/ContentDocuments";
 import CourseRating from "../../../components/common/course/CourseRating";
@@ -105,23 +126,20 @@ const CourseContent = () => {
   const [selectedLesson, setSelectedLesson] = useState<ContentItem | null>();
 
   // Add check for course access
-  const hasAccess = useMemo(() => {
-    // Check normal enrollment
-    const isEnrolled = userEnrollments?.some(
-      (enrollment) => enrollment.courseId == Number(courseId)
-    );
-
-    // Check academic course access
-    const isAcademicCourse = studentAcademicCourses?.some(
-      (academic) => academic.course.id == Number(courseId)
-    );
-
-    return isEnrolled || isAcademicCourse;
-  }, [courseId, userEnrollments, studentAcademicCourses]);
+  const isEnrolled = userEnrollments?.some(
+    (enrollment) => enrollment.courseId == Number(courseId)
+  );
+  const isAcademicCourse = studentAcademicCourses?.some(
+    (academic) => academic.course.id == Number(courseId)
+  );
+  // Check if course has at least one free lesson
+  const hasFreeLesson = course?.sections?.some((section: any) =>
+    section.lessons?.some((lesson: any) => lesson.isFree == "1")
+  );
+  const hasAccess = isEnrolled || isAcademicCourse;
 
   useEffect(() => {
     if (!currentUser) {
-      navigate("/login");
       return;
     }
     dispatch(fetchUserEnrollments(Number(currentUser?.id)));
@@ -149,10 +167,12 @@ const CourseContent = () => {
     });
 
     let selectedLesson = null;
+    let foundLesson: any = null;
 
-    course?.sections?.forEach((section) => {
-      const lesson = section.lessons.find((lesson) => lesson.id === id);
+    course?.sections?.forEach((section: any) => {
+      const lesson = section.lessons.find((lesson: any) => lesson.id === id);
       if (lesson) {
+        foundLesson = lesson;
         selectedLesson = {
           id: lesson.id,
           assignmentId: lesson.assignments ? lesson.assignments[0]?.id : null,
@@ -167,13 +187,28 @@ const CourseContent = () => {
       }
     });
 
+    // Nếu lesson không miễn phí (isFree == '0') và chưa đăng ký thì chuyển sang login
+    if (
+      foundLesson &&
+      foundLesson.isFree == "0" &&
+      !isEnrolled &&
+      !isAcademicCourse
+    ) {
+      navigate(`/purchase/${courseId}`);
+      return;
+    }
+
     if (selectedLesson) {
       setSelectedLesson(selectedLesson);
     }
   };
 
   const handleMarkAsCompleted = async (lessonId: string) => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      toast.warning("Bạn cần đăng nhập để đánh dấu hoàn thành bài học!");
+      navigate("/login");
+      return;
+    }
 
     try {
       // Find the lesson in course sections
@@ -309,7 +344,7 @@ const CourseContent = () => {
 
   return (
     <Container maxWidth="xl" sx={{ py: 4, mt: 2 }}>
-      {hasAccess ? (
+      {hasAccess || hasFreeLesson ? (
         <>
           {/* Existing content */}
           <Box sx={{ mb: 3, display: "flex", alignItems: "center", gap: 2 }}>
@@ -527,39 +562,68 @@ const CourseContent = () => {
                     ) : (
                       /* Original content for non-academic students */
                       <Stack spacing={1}>
-                        <Typography variant="body2" color="text.secondary">
-                          •{" "}
-                          {courseProgress?.sections?.filter(
-                            (section: any) =>
-                              section.completionPercentage === 100
-                          ).length || 0}
-                          /{courseProgress?.sections?.length || 0} chương hoàn
-                          thành
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          • {courseProgress?.completedLessons || 0}/
-                          {courseProgress?.totalLessons || 0} bài học hoàn thành
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          •{" "}
-                          {courseProgress?.sections
-                            ?.flatMap((s: any) => s.lessons)
-                            .filter(
-                              (l: any) =>
-                                l.completed &&
-                                (l.contentType === "quiz" ||
-                                  l.contentType === "assignment")
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <Book fontSize="small" color="primary" />
+                          <Typography variant="body2" color="text.secondary">
+                            {courseProgress?.sections?.filter(
+                              (section: any) =>
+                                section.completionPercentage === 100
                             ).length || 0}
-                          /
-                          {courseProgress?.sections
-                            ?.flatMap((s: any) => s.lessons)
-                            .filter(
-                              (l: any) =>
-                                l.contentType === "quiz" ||
-                                l.contentType === "assignment"
-                            ).length || 0}{" "}
-                          Bài trắc nghiệm hoàn thành
-                        </Typography>
+                            /{courseProgress?.sections?.length || 0} chương hoàn
+                            thành
+                          </Typography>
+                        </Box>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <VideoLibrary fontSize="small" color="primary" />
+                          <Typography variant="body2" color="text.secondary">
+                            {courseProgress?.completedLessons || 0}/
+                            {courseProgress?.totalLessons || 0} bài học hoàn
+                            thành
+                          </Typography>
+                        </Box>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <Quiz fontSize="small" color="warning" />
+                          <Typography variant="body2" color="text.secondary">
+                            {courseProgress?.sections
+                              ?.flatMap((s: any) => s.lessons)
+                              .filter(
+                                (l: any) =>
+                                  l.completed && l.contentType === "quiz"
+                              ).length || 0}
+                            /
+                            {courseProgress?.sections
+                              ?.flatMap((s: any) => s.lessons)
+                              .filter((l: any) => l.contentType === "quiz")
+                              .length || 0}{" "}
+                            Bài trắc nghiệm hoàn thành
+                          </Typography>
+                        </Box>
+                        <Box
+                          sx={{ display: "flex", alignItems: "center", gap: 1 }}
+                        >
+                          <Assignment fontSize="small" color="info" />
+                          <Typography variant="body2" color="text.secondary">
+                            {courseProgress?.sections
+                              ?.flatMap((s: any) => s.lessons)
+                              .filter(
+                                (l: any) =>
+                                  l.completed && l.contentType === "assignment"
+                              ).length || 0}
+                            /
+                            {courseProgress?.sections
+                              ?.flatMap((s: any) => s.lessons)
+                              .filter(
+                                (l: any) => l.contentType === "assignment"
+                              ).length || 0}{" "}
+                            Bài tập hoàn thành
+                          </Typography>
+                        </Box>
                       </Stack>
                     )}
                   </CardContent>
@@ -569,11 +633,11 @@ const CourseContent = () => {
                 <Card>
                   <CardContent>
                     <CourseStructure
-                      sections={course?.sections}
+                      sections={(course?.sections as any[]) || []}
                       handleLessonClick={handleLessonClick}
                       setActiveTab={setActiveTab}
                       onMarkAsCompleted={handleMarkAsCompleted}
-                      userProgress={userProgress}
+                      userProgress={userProgress as any[]}
                     />
                   </CardContent>
                 </Card>
@@ -603,7 +667,9 @@ const CourseContent = () => {
 
                     <TabPanel value={activeTab} index={1}>
                       <Box sx={{ mb: 4 }}>
-                        <ContentDocuments />
+                        <ContentDocuments
+                          handleOpenEditDocumentModal={() => {}}
+                        />
                       </Box>
                     </TabPanel>
 

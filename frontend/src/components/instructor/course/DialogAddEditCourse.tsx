@@ -285,8 +285,8 @@ const DialogAddEditCourse: React.FC<DialogAddEditCourseProps> = ({
                 })
               }
             >
-              <MenuItem value="both">Tất cả học viên</MenuItem>
-              <MenuItem value="student">Chỉ học viên thông thường</MenuItem>
+              <MenuItem value="both">Tất cả người học</MenuItem>
+              <MenuItem value="student">Chỉ học viên tự do</MenuItem>
               <MenuItem value="student_academic">
                 Chỉ sinh viên học thuật
               </MenuItem>

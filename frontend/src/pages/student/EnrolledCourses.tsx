@@ -792,6 +792,7 @@ export const EnrolledCourses: React.FC = () => {
               </Typography>
               <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
                 Các khóa học bổ sung không thuộc chương trình đào tạo chính thức
+                do giảng viên phụ trách thêm vào.
               </Typography>
               <Grid container spacing={3}>
                 {nonProgramAcademicCourses.map((course) => (
@@ -847,6 +848,9 @@ export const EnrolledCourses: React.FC = () => {
           <Box>
             <Typography variant="h5" fontWeight="bold" sx={{ mb: 2 }}>
               Khóa học đã đăng ký
+            </Typography>
+            <Typography variant="body1" color="text.secondary" sx={{ mb: 3 }}>
+              Các khóa học bạn đã đăng ký.
             </Typography>
             <Grid container spacing={3}>
               {filteredEnrollments.map((course) => (
