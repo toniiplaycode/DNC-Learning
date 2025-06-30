@@ -195,45 +195,48 @@ const CourseRating = () => {
   }, [courseReviews, currentUser?.userStudent?.id]);
 
   return (
-    <Box>
+    <Box sx={{ my: 2 }}>
       {/* Only show form if user hasn't already submitted a review and isn't editing */}
-      {showForm && !editMode && !hasUserReview && (
-        <>
-          <Typography variant="h6" gutterBottom>
-            Đánh giá khóa học
-          </Typography>
-          {/* Form đánh giá */}
-          <Paper elevation={1} sx={{ p: 2, mb: 4 }}>
-            <Stack spacing={2}>
-              <Box>
-                <Rating
-                  name="rating"
-                  value={rating}
-                  onChange={(event, newValue) => {
-                    setRating(newValue);
-                  }}
-                  size="large"
+      {showForm &&
+        !editMode &&
+        !hasUserReview &&
+        currentUser?.role !== "student_academic" && (
+          <>
+            <Typography variant="h6" gutterBottom>
+              Đánh giá khóa học
+            </Typography>
+            {/* Form đánh giá */}
+            <Paper elevation={1} sx={{ p: 2, mb: 4 }}>
+              <Stack spacing={2}>
+                <Box>
+                  <Rating
+                    name="rating"
+                    value={rating}
+                    onChange={(event, newValue) => {
+                      setRating(newValue);
+                    }}
+                    size="large"
+                  />
+                </Box>
+                <TextField
+                  fullWidth
+                  multiline
+                  rows={4}
+                  placeholder="Nhập nhận xét của bạn về khóa học..."
+                  value={reviewText}
+                  onChange={(e) => setReviewText(e.target.value)}
                 />
-              </Box>
-              <TextField
-                fullWidth
-                multiline
-                rows={4}
-                placeholder="Nhập nhận xét của bạn về khóa học..."
-                value={reviewText}
-                onChange={(e) => setReviewText(e.target.value)}
-              />
-              <Button
-                variant="contained"
-                onClick={handleSubmitReview}
-                disabled={!rating}
-              >
-                Gửi đánh giá
-              </Button>
-            </Stack>
-          </Paper>
-        </>
-      )}
+                <Button
+                  variant="contained"
+                  onClick={handleSubmitReview}
+                  disabled={!rating}
+                >
+                  Gửi đánh giá
+                </Button>
+              </Stack>
+            </Paper>
+          </>
+        )}
 
       {/* Edit form - shows when in edit mode */}
       {editMode && (

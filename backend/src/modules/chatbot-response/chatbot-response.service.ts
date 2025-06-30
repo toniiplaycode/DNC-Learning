@@ -242,13 +242,28 @@ export class ChatbotService {
   }
 
   private textToHtml(text: string): string {
+    text = text
+      .replace(/```html/gi, '')
+      .replace(/```/g, '')
+      .trim();
+
     const lines = text
       .split('\n')
       .map((line) => line.trim())
       .filter(Boolean);
+
     let html = '';
     let inList = false;
     for (const line of lines) {
+      if (/^<.*>.*<\/.*>$/.test(line) || /^<.*\/>$/.test(line)) {
+        if (inList) {
+          html += '</ol>';
+          inList = false;
+        }
+        html += line;
+        continue;
+      }
+
       const match = line.match(/^\d+\.\s*(.+)$/);
       if (match) {
         if (!inList) {

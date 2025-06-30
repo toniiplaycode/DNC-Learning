@@ -146,7 +146,11 @@ const DialogDetailCourse: React.FC<DialogDetailCourseProps> = ({
 
             <Grid item xs={12} md={4} sx={{ textAlign: { md: "right" } }}>
               <Typography variant="h6" color="primary" gutterBottom>
-                {formatPrice(course?.price)} đ
+                {course.for == "student_academic"
+                  ? "Dành cho sinh viên"
+                  : course?.price == 0
+                  ? "Miễn phí"
+                  : formatPrice(course?.price)}
               </Typography>
               <Stack
                 direction="row"

@@ -538,7 +538,7 @@ const AdminCourses = () => {
                 <TableCell align="right">
                   {course.for === "student_academic"
                     ? "Dành cho sinh viên"
-                    : course.price === 0
+                    : course.price == 0
                     ? "Miễn phí"
                     : formatPrice(course.price)}
                 </TableCell>

@@ -47,7 +47,7 @@ import {
   CalendarMonth,
   MenuBook as MenuBookIcon,
 } from "@mui/icons-material";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import NotificationCenter from "../../../components/student/notification/NotificationCenter";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
@@ -155,11 +155,29 @@ const Header = () => {
       currentUser.role !== "student" &&
       currentUser.role !== "student_academic"
     ) {
-      dispatch(logout());
-      navigate("/login");
-      toast.error("Hãy nhập với tài khoản học viên hoặc sinh viên !");
+      // Kiểm tra xem đã hiển thị toast trong session này chưa
+      const hasShownToast = sessionStorage.getItem("unauthorizedToastShown");
+
+      if (!hasShownToast) {
+        // Đánh dấu đã hiển thị toast
+        sessionStorage.setItem("unauthorizedToastShown", "true");
+        dispatch(logout());
+        navigate("/login");
+        toast.error("Hãy nhập với tài khoản học viên hoặc sinh viên !");
+      } else {
+        // Chỉ logout và navigate, không hiển thị toast
+        dispatch(logout());
+        navigate("/login");
+      }
+    } else if (
+      currentUser &&
+      (currentUser.role === "student" ||
+        currentUser.role === "student_academic")
+    ) {
+      // Reset flag khi user hợp lệ
+      sessionStorage.removeItem("unauthorizedToastShown");
     }
-  }, [currentUser, navigate]);
+  }, [currentUser, navigate, dispatch]);
 
   // Lấy danh sách danh mục khi component được mount
   useEffect(() => {

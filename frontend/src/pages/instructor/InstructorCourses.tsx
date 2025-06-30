@@ -46,12 +46,15 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 import { toast } from "react-toastify";
 import { setISODay } from "date-fns";
+import { fetchInstructorFaculty } from "../../features/faculties/facultiesSlice";
+import { selectInstructorFaculty } from "../../features/faculties/facultiesSelectors";
 
 const InstructorCourses = () => {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
   const currentUser = useAppSelector(selectCurrentUser);
   const courses = useAppSelector(selectCoursesByInstructor);
+  const instructorFaculty = useAppSelector(selectInstructorFaculty);
   const [searchQuery, setSearchQuery] = useState("");
   const [studentsFilter, setStudentsFilter] = useState("all");
   const [ratingFilter, setRatingFilter] = useState("all");
@@ -68,6 +71,7 @@ const InstructorCourses = () => {
 
   useEffect(() => {
     dispatch(fetchCoursesByInstructor(currentUser?.userInstructor?.id));
+    dispatch(fetchInstructorFaculty(currentUser?.userInstructor?.id));
   }, [dispatch, currentUser]);
 
   const handleMenuOpen = (
@@ -86,10 +90,32 @@ const InstructorCourses = () => {
   const handleDeleteCourse = (courseId: string) => {
     const course = courses.find((c) => c.id === courseId);
     if (course) {
+      // Kiểm tra xem khóa học có thuộc chương trình đào tạo của giảng viên không
+      let isInAcademicProgram = false;
+
+      if (instructorFaculty?.majors) {
+        for (const major of instructorFaculty.majors) {
+          if (major.programs) {
+            for (const program of major.programs) {
+              if (program.programCourses) {
+                const programCourse = program.programCourses.find(
+                  (pc) => pc.courseId === course.id
+                );
+                if (programCourse) {
+                  isInAcademicProgram = true;
+                  break;
+                }
+              }
+            }
+            if (isInAcademicProgram) break;
+          }
+        }
+      }
+
       setDeleteConfirmDialog({
         open: true,
         courseId,
-        hasEnrollments: course.enrollments.length > 0,
+        hasEnrollments: course.enrollments?.length > 0 || isInAcademicProgram,
       });
     }
     handleMenuClose();
@@ -817,9 +843,78 @@ const InstructorCourses = () => {
         </DialogTitle>
         <DialogContent>
           <DialogContentText>
-            {deleteConfirmDialog.hasEnrollments
-              ? "Không thể xóa khóa học này vì đã có học viên đăng ký. Vui lòng xem xét ẩn hoặc lưu trữ khóa học thay vì xóa."
-              : "Bạn có chắc chắn muốn xóa khóa học này? Hành động này không thể hoàn tác."}
+            {(() => {
+              if (deleteConfirmDialog.courseId) {
+                const course = courses.find(
+                  (c) => c.id === deleteConfirmDialog.courseId
+                );
+
+                // Kiểm tra xem khóa học có thuộc chương trình đào tạo không
+                let isInAcademicProgram = false;
+                if (instructorFaculty?.majors) {
+                  for (const major of instructorFaculty.majors) {
+                    if (major.programs) {
+                      for (const program of major.programs) {
+                        if (program.programCourses) {
+                          const programCourse = program.programCourses.find(
+                            (pc) => pc.courseId === course?.id
+                          );
+                          if (programCourse) {
+                            isInAcademicProgram = true;
+                            break;
+                          }
+                        }
+                      }
+                      if (isInAcademicProgram) break;
+                    }
+                  }
+                }
+
+                // Ưu tiên hiển thị thông báo về chương trình đào tạo trước
+                if (isInAcademicProgram) {
+                  return (
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
+                    >
+                      <School
+                        sx={{
+                          color: "primary.main",
+                          fontSize: "3rem",
+                          flexShrink: 0,
+                        }}
+                      />
+                      <Typography>
+                        Khóa học thuộc chương trình đào tạo không thể xóa phía
+                        giảng viên. Vui lòng liên hệ quản trị viên để được hỗ
+                        trợ.
+                      </Typography>
+                    </Box>
+                  );
+                }
+
+                // Sau đó mới kiểm tra học viên đăng ký
+                if (course?.enrollments?.length > 0) {
+                  return (
+                    <Box
+                      sx={{ display: "flex", alignItems: "center", gap: 1.5 }}
+                    >
+                      <People
+                        sx={{
+                          color: "warning.main",
+                          fontSize: "3rem",
+                          flexShrink: 0,
+                        }}
+                      />
+                      <Typography>
+                        Không thể xóa khóa học này vì đã có học viên đăng ký.
+                        Vui lòng xem xét ẩn hoặc lưu trữ khóa học thay vì xóa.
+                      </Typography>
+                    </Box>
+                  );
+                }
+              }
+              return "Bạn có chắc chắn muốn xóa khóa học này? Hành động này không thể hoàn tác.";
+            })()}
           </DialogContentText>
         </DialogContent>
         <DialogActions>
@@ -834,15 +929,48 @@ const InstructorCourses = () => {
           >
             Hủy
           </Button>
-          {!deleteConfirmDialog.hasEnrollments && (
-            <Button
-              onClick={handleConfirmDelete}
-              color="error"
-              variant="contained"
-            >
-              Xóa
-            </Button>
-          )}
+          {(() => {
+            if (deleteConfirmDialog.courseId) {
+              const course = courses.find(
+                (c) => c.id === deleteConfirmDialog.courseId
+              );
+
+              // Kiểm tra xem khóa học có thuộc chương trình đào tạo không
+              let isInAcademicProgram = false;
+              if (instructorFaculty?.majors) {
+                for (const major of instructorFaculty.majors) {
+                  if (major.programs) {
+                    for (const program of major.programs) {
+                      if (program.programCourses) {
+                        const programCourse = program.programCourses.find(
+                          (pc) => pc.courseId === course?.id
+                        );
+                        if (programCourse) {
+                          isInAcademicProgram = true;
+                          break;
+                        }
+                      }
+                    }
+                    if (isInAcademicProgram) break;
+                  }
+                }
+              }
+
+              // Chỉ hiển thị nút Xóa nếu khóa học không thuộc chương trình đào tạo và không có học viên đăng ký
+              if (!isInAcademicProgram && course?.enrollments?.length === 0) {
+                return (
+                  <Button
+                    onClick={handleConfirmDelete}
+                    color="error"
+                    variant="contained"
+                  >
+                    Xóa
+                  </Button>
+                );
+              }
+            }
+            return null;
+          })()}
         </DialogActions>
       </Dialog>
     </Box>

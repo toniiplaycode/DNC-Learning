@@ -23,6 +23,7 @@ export interface Course {
   price: number;
   level?: CourseLevel;
   status: CourseStatus;
+  for: string;
   thumbnailUrl?: string;
   required?: string;
   learned?: string;

@@ -369,7 +369,11 @@ export class RagService {
       - Ưu tiên sử dụng thông tin trong ngữ cảnh để trả lời.
       - Nếu ngữ cảnh không đủ thông tin, hãy nói rõ là không tìm thấy thông tin phù hợp.
       - Trả lời ngắn gọn, dễ hiểu.
-      - KHÔNG thêm các cụm từ như "Bạn có thể tham khảo thêm", "Xem thêm", "Truy cập" vào câu trả lời.${urlInfo}
+      - TUYỆT ĐỐI KHÔNG thêm các cụm từ như "Bạn có thể tham khảo thêm", "Xem thêm", "Truy cập",... vào câu trả lời.
+      - TUYỆT ĐỐI KHÔNG đính kèm link vào câu trả lời.
+      - Hãy trả về kết quả dưới dạng HTML với inline CSS đẹp mắt, sử dụng màu sắc, in đậm, căn lề, block rõ ràng, chỉ dùng style trực tiếp trên thẻ HTML (không dùng class).
+      - Chủ yếu sử dụng thẻ trình bày cho chữ, không dùng thẻ div, hạn chế dùng các thuộc tính CSS như padding, margin, tránh làm thay đổi layout tổng thể của khung chat.
+      ${urlInfo}
 
       Ngữ cảnh:
       ${context.join('\n')}

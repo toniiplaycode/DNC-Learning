@@ -146,6 +146,10 @@ export const AddStudentsDialog = ({
     });
   };
 
+  const trimField = (value: any): string => {
+    return String(value || "").trim();
+  };
+
   const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
     if (!file) return;
@@ -158,13 +162,22 @@ export const AddStudentsDialog = ({
       const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
       const jsonData = XLSX.utils.sheet_to_json(firstSheet);
 
-      const formattedData = jsonData.map((row: any) => ({
-        studentCode: String(row["Mã sinh viên"] || "").trim(),
-        fullName: String(row["Họ và tên"] || "").trim(),
-        email: String(row["Email"] || "").trim(),
-        phone: String(row["Số điện thoại"] || "").trim(),
-        academicYear: String(row["Khóa"] || "K71").trim(),
-      }));
+      const formattedData = jsonData.map((row: any) => {
+        // Create a new row object with trimmed column names
+        const trimmedRow: any = {};
+        Object.keys(row).forEach((key) => {
+          const trimmedKey = key.trim();
+          trimmedRow[trimmedKey] = row[key];
+        });
+
+        return {
+          studentCode: trimField(trimmedRow["Mã sinh viên"]),
+          fullName: trimField(trimmedRow["Họ và tên"]),
+          email: trimField(trimmedRow["Email"]),
+          phone: trimField(trimmedRow["Số điện thoại"]),
+          academicYear: trimField(trimmedRow["Khóa"]) || "K71",
+        };
+      });
 
       setImportedStudents(formattedData);
       validateData(formattedData);

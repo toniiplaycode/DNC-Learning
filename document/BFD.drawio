@@ -1,6 +1,6 @@
-<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36 Edg/137.0.0.0" version="27.1.6">
+<mxfile host="app.diagrams.net" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/138.0.0.0 Safari/537.36 Edg/138.0.0.0" version="27.1.6">
   <diagram name="Page-1" id="I-7YPhFpCVGjYqoQ73Ly">
-    <mxGraphModel dx="2930" dy="1254" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
+    <mxGraphModel dx="4997" dy="2377" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="850" pageHeight="1100" math="0" shadow="0">
       <root>
         <mxCell id="0" />
         <mxCell id="1" parent="0" />
@@ -119,8 +119,8 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="hVVMpaapmV8Wa0ZIryD7-2" value="&lt;font style=&quot;font-size: 19px;&quot;&gt;Hệ thống hỗ trợ học tập eLearning trên nền tảng web&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontStyle=1;fontSize=15;fillColor=#FEFFAA;strokeColor=light-dark(#5c5e61, #babdc0);" parent="1" vertex="1">
-          <mxGeometry x="949.99" y="10" width="330" height="60" as="geometry" />
+        <mxCell id="hVVMpaapmV8Wa0ZIryD7-2" value="&lt;font style=&quot;font-size: 23px;&quot;&gt;Hệ thống hỗ trợ học tập e-learning trên nền tảng web&lt;/font&gt;" style="rounded=1;whiteSpace=wrap;html=1;fontStyle=1;fontSize=15;fillColor=#FEFFAA;strokeColor=light-dark(#5c5e61, #babdc0);" parent="1" vertex="1">
+          <mxGeometry x="760" y="10" width="710" height="60" as="geometry" />
         </mxCell>
         <mxCell id="hVVMpaapmV8Wa0ZIryD7-15" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;fontStyle=1;fontSize=15;fillColor=#f5f5f5;strokeColor=light-dark(#5c5e61, #babdc0);" parent="1" source="hVVMpaapmV8Wa0ZIryD7-3" target="hVVMpaapmV8Wa0ZIryD7-7" edge="1">
           <mxGeometry relative="1" as="geometry">
@@ -1023,7 +1023,7 @@
             </Array>
           </mxGeometry>
         </mxCell>
-        <mxCell id="HFK8DrwnakwH5OigyKS2-424" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=light-dark(#5c5e61, #babdc0);" edge="1" parent="1" source="ZhgXvfHGEHcza7X1Rqpc-30" target="HFK8DrwnakwH5OigyKS2-421">
+        <mxCell id="HFK8DrwnakwH5OigyKS2-424" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;entryX=0;entryY=0.5;entryDx=0;entryDy=0;strokeColor=light-dark(#5c5e61, #babdc0);" parent="1" source="ZhgXvfHGEHcza7X1Rqpc-30" target="HFK8DrwnakwH5OigyKS2-421" edge="1">
           <mxGeometry relative="1" as="geometry">
             <Array as="points">
               <mxPoint x="2270" y="475" />
@@ -1121,7 +1121,7 @@
         <mxCell id="d4mhX9AN3Qhngk1k2WE8-16" value="Tìm kiếm" style="rounded=1;whiteSpace=wrap;html=1;horizontal=1;fontStyle=1;fontSize=15;fillColor=#f5f5f5;strokeColor=light-dark(#5c5e61, #babdc0);fontColor=#333333;" parent="1" vertex="1">
           <mxGeometry x="-170" y="510" width="130" height="50" as="geometry" />
         </mxCell>
-        <mxCell id="HFK8DrwnakwH5OigyKS2-421" value="Xuất danh sách excel" style="rounded=1;whiteSpace=wrap;html=1;horizontal=1;fontStyle=1;fontSize=15;fillColor=#f5f5f5;strokeColor=light-dark(#5c5e61, #babdc0);fontColor=#333333;" vertex="1" parent="1">
+        <mxCell id="HFK8DrwnakwH5OigyKS2-421" value="Xuất danh sách excel" style="rounded=1;whiteSpace=wrap;html=1;horizontal=1;fontStyle=1;fontSize=15;fillColor=#f5f5f5;strokeColor=light-dark(#5c5e61, #babdc0);fontColor=#333333;" parent="1" vertex="1">
           <mxGeometry x="2299.97" y="450" width="130" height="50" as="geometry" />
         </mxCell>
       </root>

@@ -1961,68 +1961,69 @@ const ChatBox = () => {
                                         : null}
                                     </div>
 
-                                    {msg.referenceLink && (
-                                      <Box
-                                        sx={{
-                                          display: "flex",
-                                          alignItems: "center",
-                                          gap: 1,
-                                          mt: 1,
-                                          bgcolor:
-                                            msg.sender === "user"
-                                              ? "rgba(255, 244, 229, 0.7)"
-                                              : "#f5f7fa",
-                                          borderRadius: 1,
-                                          px: 1.5,
-                                          py: 1,
-                                          boxShadow:
-                                            "0 1px 4px rgba(0,0,0,0.04)",
-                                          maxWidth: 400,
-                                          border:
-                                            msg.sender === "user"
-                                              ? "1px solid rgba(255, 244, 229, 0.9)"
-                                              : "1px solid rgba(0,0,0,0.1)",
-                                        }}
-                                      >
-                                        {getLinkIcon(msg.referenceLink)}
-                                        <Typography
-                                          variant="body2"
+                                    {msg.senderId !== "-1" &&
+                                      msg.referenceLink && (
+                                        <Box
                                           sx={{
-                                            color: "primary.main",
-                                            fontWeight: 500,
-                                            overflow: "hidden",
-                                            textOverflow: "ellipsis",
-                                            whiteSpace: "nowrap",
-                                            maxWidth: 180,
-                                          }}
-                                          title={msg.referenceLink}
-                                        >
-                                          {msg.referenceLink.replace(
-                                            /^https?:\/\//,
-                                            ""
-                                          )}
-                                        </Typography>
-                                        <Button
-                                          variant="contained"
-                                          color="primary"
-                                          size="small"
-                                          endIcon={<OpenInNew />}
-                                          href={msg.referenceLink}
-                                          target="_blank"
-                                          rel="noopener noreferrer"
-                                          sx={{
-                                            textTransform: "none",
-                                            fontWeight: 500,
-                                            fontSize: 13,
-                                            ml: "auto",
-                                            minWidth: 100,
-                                            boxShadow: "none",
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: 1,
+                                            mt: 1,
+                                            bgcolor:
+                                              msg.sender === "user"
+                                                ? "rgba(255, 244, 229, 0.7)"
+                                                : "#f5f7fa",
+                                            borderRadius: 1,
+                                            px: 1.5,
+                                            py: 1,
+                                            boxShadow:
+                                              "0 1px 4px rgba(0,0,0,0.04)",
+                                            maxWidth: 400,
+                                            border:
+                                              msg.sender === "user"
+                                                ? "1px solid rgba(255, 244, 229, 0.9)"
+                                                : "1px solid rgba(0,0,0,0.1)",
                                           }}
                                         >
-                                          Truy cập
-                                        </Button>
-                                      </Box>
-                                    )}
+                                          {getLinkIcon(msg.referenceLink)}
+                                          <Typography
+                                            variant="body2"
+                                            sx={{
+                                              color: "primary.main",
+                                              fontWeight: 500,
+                                              overflow: "hidden",
+                                              textOverflow: "ellipsis",
+                                              whiteSpace: "nowrap",
+                                              maxWidth: 180,
+                                            }}
+                                            title={msg.referenceLink}
+                                          >
+                                            {msg.referenceLink.replace(
+                                              /^https?:\/\//,
+                                              ""
+                                            )}
+                                          </Typography>
+                                          <Button
+                                            variant="contained"
+                                            color="primary"
+                                            size="small"
+                                            endIcon={<OpenInNew />}
+                                            href={msg.referenceLink}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            sx={{
+                                              textTransform: "none",
+                                              fontWeight: 500,
+                                              fontSize: 13,
+                                              ml: "auto",
+                                              minWidth: 100,
+                                              boxShadow: "none",
+                                            }}
+                                          >
+                                            Truy cập
+                                          </Button>
+                                        </Box>
+                                      )}
 
                                     <Box
                                       sx={{

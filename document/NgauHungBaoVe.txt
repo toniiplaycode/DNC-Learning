@@ -1,9 +1,8 @@
-- Giới thiệu bản thân + thực hiện đề tài
+- Giới thiệu bản thân + đề tài
 - hãy thuyết trình tổng quát về RAG, chuẩn 3NF, đừng quá chi tiết, chi tiết để dành cho phản biện bị hỏi
 - Phương pháp nghiên cứu của đề tài là so sánh và nghiên cứu chức năng, nghiệp vụ của các hệ thống khác trên thị trường
 - MOOC của FUNiX (FPT education) (Massive Open Online Course): mô hình học tập trực tuyến mở, chủ yếu các khóa học về CNTT
 - RAG (retrieval-augmented generation): thế hệ tăng cường truy xuất, mô hình kết hợp giữa truy xuất thông tin và sinh văn bản bằng AI.
-- hệ thống mà e đã làm, đã vượt qua những yêu cầu ban đầu của đề tài mà thầy Phúc mô tả, ban đầu thầy định hướng cho e làm 1 hệ thống thuần LMS, nhưng e cảm rằng, tại sao cốt lỗi của hệ thống là các khóa học thì tại sao mình không kết hợp cả 2 hệ thống LMS và market course (khóa học thương mại) lại với nhau. Cộng thêm e cũng đã có kinh nghiệm từ đồ án 2 về hệ thống market course, thì luận văn lần này kết hợp cả 2 hệ thống là điều e muốn thực hiện chứ không bị giới hạn bởi LMS thuần.
 ------------------------------------
 
 *phần 1. lý do chọn đề tài: 
@@ -12,10 +11,10 @@
 
 *phần 3. nội dung nghiên cứu: 
 - sau khi nói so sánh một số hệ thống LMS và Market Course phổ biến:
-	+ vấn đề lớn nhất đối với các hệ thống market course đó chính là nguồn giảng viên, người hướng dẫn chất lượng. đồ án 2 e đã e làm hệ thống market course và tham thảo chức năng, nghiệp vụ, giao diện của Udemy, thì e nhận thấy hệ thống quá là dễ dàng để 1 người chưa được xác thực và trở thành giảng viên. e đã thử đăng ký trở thành giảng viên và hệ thống cho e làm giảng viên 1 cách dễ dàng. nếu nguồn đầu vào dễ dàng như thế sẽ ảnh hưởng đến nội dung của khóa học/môn học của hệ thống đó. vì vậy hệ thống kết hợp giữa LMS + market course sẽ giải quyết được vấn đề chất lượng giảng viên này. Vì các giảng viên trong LMS thật sự là những người đang giảng dạy ở các trường giáo dục chính quy
+	+ hệ thống của e, e không chắc là tốt nhất khi so với các hệ thống trên thị trường, nhưng e hệ thống của e rất linh hoạt cho mô hình elearning kết hợp
+	+ vấn đề lớn nhất đối với các hệ thống market course đó chính là nguồn giảng viên, người hướng dẫn chất lượng. đồ án 2 e đã e làm hệ thống market course và tham thảo chức năng, nghiệp vụ, giao diện của Udemy, thì e nhận thấy hệ thống quá là dễ dàng để 1 người chưa được xác thực trình độ, kỹ năng để trở thành giảng viên. e đã thử đăng ký trở thành giảng viên và hệ thống cho e làm giảng viên 1 cách dễ dàng. nếu nguồn đầu vào dễ dàng như thế sẽ ảnh hưởng đến nội dung của khóa học/môn học của hệ thống đó. vì vậy hệ thống kết hợp giữa LMS + market course sẽ giải quyết được vấn đề chất lượng giảng viên này. Vì các giảng viên trong LMS thật sự là những người đang giảng dạy ở các trường giáo dục chính quy
 - Phân tích, thiết kế cơ sở dữ liệu:
-	+ về sơ đồ ERD cơ sở dữ liệu gồm 40 bảng: các khóa chính, khóa ngoại giữa các bảng được liên kết ràng buộc chặt chẽ, chuẩn 3NF, e sắp xếp 2 bảng users và courses là trung tâm để các bảng khác có thể liên kết vào, do tới 40 bảng khá là nhiều, nên việc e sắp xếp các bảng theo nhóm màu để các thầy cô có thể xem hệ thống CSDL của e được dễ dàng hơn.
-	+ chuẩn 3NF (Third Normal Form, loại bỏ các dư thừa dữ liệu & đảm bảo tính nhất quán) là chuẩn hóa cơ sở dữ liệu đến mức loại bỏ phụ thuộc bắc cầu, đảm bảo các thuộc tính chỉ phụ thuộc vào khóa chính. Mục tiêu là giảm dư thừa, tăng tính toàn vẹn và dễ bảo trì. Cơ sở dữ liệu với 40 bảng đạt chuẩn 3NF vì:
+	+ chuẩn 3NF (Third Normal Form) là chuẩn hóa cơ sở dữ liệu đến mức loại bỏ phụ thuộc bắc cầu, đảm bảo các thuộc tính chỉ phụ thuộc vào khóa chính. Mục tiêu là giảm dư thừa, tăng tính toàn vẹn và dễ bảo trì.
 	+ thỏa mãn 1NF (không có nhóm lặp, giá trị nguyên tử, khóa chính duy nhất).
 		> ví dụ: 
 			Bảng không đạt 1NF: Một cột lưu tên danh sách môn học của bảng Bảng Sinh Viên (VD: "Toán, Lý, Hóa").
@@ -24,11 +23,12 @@
 			Bảng: {Mã_Sinh_Viên, Mã_Môn, Tên_Sinh_Viên, Tên_Môn}, Khóa chính: (Mã_Sinh_Viên, Mã_Môn)
 			Vấn đề: Tên_Sinh_Viên chỉ phụ thuộc vào Mã_Sinh_Viên (phụ thuộc bộ phận).
 			Cách chuẩn hóa: tách ra thành 2 bảng: Bảng Sinh Viên: {Mã_Sinh_Viên, Tên_Sinh_Viên} & Bảng Đăng Ký Môn Học {Mã_Sinh_Viên, Mã_Môn, Tên_Môn}
-	+ thỏa mãn 3NF (thỏa mãn 2NF, không có phụ thuộc hàm bắc cầu; các thuộc tính không khóa chỉ phụ thuộc trực tiếp vào khóa chính, không phụ thuộc vào thuộc tính không khóa khác).
+	+ thỏa mãn 3NF (thỏa mãn 2NF, không có phụ thuộc hàm bắc cầu; các thuộc tính chỉ phụ thuộc trực tiếp vào khóa chính).
 		> ví dụ: 
 			Bảng: {Mã_Sinh_Viên, Tên_Sinh_Viên, Mã_Khoa, Tên_Khoa}
 			Vấn đề: Tên_Khoa phụ thuộc vào Mã_Khoa, mà Mã_Khoa phụ thuộc vào Mã_Sinh_Viên (phụ thuộc bắc cầu).
 			Cách chuẩn hóa: Tách thành 2 bảng: Bảng Sinh Viên: {Mã_Sinh_Viên, Tên_Sinh_Viên, Mã_Khoa} và Bảng Khoa: {Mã_Khoa, Tên_Khoa}
+	------**------
 	+ Ví dụ cho chuẩn 1NF trong số 40 bảng
 		Tất cả giá trị trong cột là nguyên tử (không chia nhỏ được nữa).
 		Không có nhóm lặp (repeating groups).
@@ -37,32 +37,31 @@
 	+ Ví dụ cho chuẩn 2NF trong số 40 bảng
 		Đã thỏa mãn 1NF.
 		Chỉ áp dụng cho bảng có khóa chính tổng hợp (composite key).
-		Tất cả thuộc tính không khóa phải phụ thuộc hoàn toàn vào toàn bộ khóa chính, không phụ thuộc vào một phần của khóa chính (tránh phụ thuộc hàm bộ phận).
+		Tất cả thuộc tính phải phụ thuộc hoàn toàn vào toàn bộ khóa chính, không phụ thuộc vào một phần của khóa chính (tránh phụ thuộc hàm bộ phận).
 		Bảng tiêu biểu: academic_class_courses
 			Giả sử bảng academic_class_courses có thêm cột class_name (tên lớp học). Lúc này, class_name chỉ phụ thuộc vào class_id, không phụ thuộc vào course_id, dẫn đến phụ thuộc hàm bộ phận, vi phạm 2NF.	
 	+ Ví dụ cho chuẩn 3NF trong số 40 bảng
 		Đã thỏa mãn 2NF.
-		Không có phụ thuộc hàm bắc cầu, tức là các thuộc tính không khóa chỉ phụ thuộc trực tiếp vào khóa chính, không phụ thuộc vào thuộc tính không khóa khác.
+		Không có phụ thuộc hàm bắc cầu, tức là các thuộc tính chỉ phụ thuộc trực tiếp vào khóa chính, không phụ thuộc vào thuộc tính khác.
 		Bảng tiêu biểu: courses	
 			Bảng đã đạt 1NF (các giá trị đều là nguyên tử, có khóa chính id).
 			Vì khóa chính là id (khóa đơn), không có khóa tổng hợp, nên không có phụ thuộc hàm bộ phận, tự động đạt 2NF.
 			Giả sử bảng courses có thêm cột instructor_name (tên giảng viên). Lúc này, instructor_name phụ thuộc vào instructor_id, không phải trực tiếp vào id, dẫn đến phụ đến phụ thuộc bắc cầu (id → instructor_id → instructor_name).
-	+ Nếu bị hỏi sâu hơn, có thể giải thích rằng cả 40 bảng trong cơ sở dữ liệu đều được thiết kế để đạt 3NF
 	+ các chuẩn cao hơn 3NF: BCNF, 4NF, 5NF ít phổ biến hơn trong thực tế vì nó làm giảm hiệu xuất truy vấn do cần nhiều phép nối (join), vì vậy chuẩn 3NF để đảm bảo tính hiệu quả và dễ bảo trì.
-- RAG (retrieval-augmented generation): 
+- RAG (retrieval-augmented generation): có 2 luồng chính, chuẩn bị dữ liệu ABCD, người dùng truy vấn 12345
 	+ luồng tổng quát: Dữ liệu thô từ CSDL → trích xuất → phân đoạn → nhúng vector → lưu vào Qdrant → người dùng truy vấn → tìm đoạn phù hợp → LLMs sinh phản hồi
-		> A. Dữ liệu ban đầu từ CSDL (Raw data): Tập hợp các dữ liệu trong CSDL, đây chỉ là dữ liệu "thô" chưa xử lý.
-		> B. Trích xuất thông tin (Information Extraction): Truy xuất nội dung cần thiết từ CSDL (thông qua truy vấn SQL hoặc ORM), đây là bước “trích lọc” những gì cần nhúng như mô tả, giá của khóa học, email, tên của giảng viên,...
-		> C. Phân đoạn (Chunking): Chia nhỏ nội dung thành các đoạn ngắn để embedding hiệu quả hơn, từ 1 mô tả khóa học dài 1000 từ → bạn chia thành các chunk khoảng 300–500 từ (dùng thư viện "langchain/text_splitter"), mỗi chunk sẽ được nhúng riêng → giúp hệ thống tìm chính xác hơn khi người dùng hỏi.
-		> D. Nhúng vector (Embedding): Chuyển từng chunk thành vector số học (embeddings) thông qua mô hình ngôn ngữ như OpenAI (model: "text-embedding-3-small"), vector này chính là đại diện toán học cho ngữ nghĩa của đoạn văn bản.
+		> A. Dữ liệu ban đầu từ CSDL (Raw data): Tập hợp các dữ liệu trong CSDL, đây chỉ là dữ liệu "thô" chưa xử lý (40 bảng CSDL).
+		> B. Trích xuất thông tin (Information Extraction): Truy xuất nội dung cần thiết từ CSDL (thông qua truy vấn SQL hoặc ORM), đây là bước “trích lọc” những gì cần nhúng như các thông tin liên quan đến khóa học, chương trình đào tạo, tài liệu,...
+		> C. Phân đoạn (Chunking): Chia nhỏ nội dung thành các đoạn ngắn để nhúng (embedding) hiệu quả hơn, từ 1 thông tin khóa học dài 1000 từ → bạn chia thành các chunk khoảng 300–500 từ (dùng thư viện "langchain/text_splitter"), mỗi chunk sẽ được nhúng riêng → giúp hệ thống tìm chính xác hơn khi người dùng hỏi.
+		> D. Nhúng vector (Embedding): Chuyển từng chunk (ngôn ngữ tự nhiên) thành vector số học (embeddings) thông qua mô hình ngôn ngữ như OpenAI (model: "text-embedding-3-small").
 		> E. Cơ sở dữ liệu vector (Vector Database): Lưu các vector + thông tin metadata để phục vụ việc tìm kiếm nhanh (thư viện: qdrant/js-client-rest), đây là nơi lưu trữ toàn bộ tri thức đã nhúng vector để phục vụ truy xuất.
 		> 1. Truy vấn (Query): Câu hỏi hoặc yêu cầu từ người dùng gửi lên, nhúng các câu này thành vector
 		> 2. Truy xuất vector (Search): Dùng vector của truy vấn để tìm K vector gần nhất (top-K) trong cơ sở dữ liệu vector (thư viện: qdrant/js-client-rest, phép đo Cosine Similarity), ví dụ top-K = 5 nghĩa là lấy 5 đoạn nội dung gần nhất về mặt ngữ nghĩa so với truy vấn.
 		> 3. Dữ liệu liên quan (Relevant Data): Tập hợp các đoạn đã truy xuất từ cơ sở dữ liệu vector.
 		> 4. Mô hình ngôn ngữ lớn (LLMs): Nhận tập hợp các đoạn đã truy xuất + dữ liệu liên quan → sinh ra câu trả lời hoàn chỉnh.
 		> 5. Phản hồi (Response): Phản hồi câu trả lời cuối cùng cho người dùng (model: "gpt-4o-mini")
-		==> Các giải thuật như phân đoạn văn bản, nhúng vector, và truy vấn tìm Top-K vector gần nhất đều được em triển khai thông qua các thư viện sẵn có của OpenAI hoặc tích hợp trong framework RAG. Trong phạm vi đề tài này, em tập trung vào việc tìm hiểu cách hoạt động tổng thể của mô hình RAG và áp dụng vào hệ thống thực tế, thay vì đi sâu vào chi tiết giải thuật của các thư viện trên.
-		==> Toàn bộ quá trình giúp chatbot trong hệ thống eLearning trả lời câu hỏi của người học dựa trên dữ liệu thực tế từ CSDL, đảm bảo chính xác và có căn cứ, không bịa đặt nội dung.
+		==> Các giải thuật như phân đoạn văn bản, nhúng vector, và truy vấn tìm Top-K vector gần nhất đều được em triển khai thông qua các thư viện sẵn có của OpenAI hoặc tích hợp trong thư viện. Trong phạm vi đề tài này, em tập trung vào việc tìm hiểu cách hoạt động tổng thể của mô hình RAG và áp dụng vào hệ thống thực tế, thay vì đi sâu nghiên cứu chi tiết giải thuật của các thư viện trên.
+		==> Toàn bộ quá trình giúp chatbot trong hệ thống eLearning trả lời câu hỏi của người dùng dựa trên dữ liệu thực tế từ CSDL, đảm bảo chính xác và có căn cứ, không bịa đặt nội dung.
 	+ Các yếu tố ảnh hưởng đến chất lượng phản hồi
 		| STT | Yếu tố ảnh hưởng      	| Tác động                           | Gợi ý cải thiện                         |
 		| --- | --------------------- 	| ---------------------------------- | --------------------------------------- |
@@ -76,15 +75,15 @@
 ------------------------------------
 
 *phần 5. kết quả đề tài: 
-- về các sơ đồ quy trình các chức năng nào có quy trình tương tự nhau thì e sẽ vẽ chung 1 sơ đồ, các sơ đồ có quy trình đặc thù e sẽ vẽ riêng. các sơ đồ này e chỉ vẽ ở mức tổng quát
+- e sẽ trình bày các chức năng nổi bật mà đề tài đã đạt được, còn chi tiết hơn e sẽ dành cho phần demo 
+- về các sơ đồ quy trình các chức năng nào có quy trình tương tự nhau thì e sẽ vẽ chung 1 sơ đồ, các sơ đồ có quy trình đặc thù e sẽ vẽ riêng. các sơ đồ này e chỉ vẽ ở mức tổng quát, các thầy cô muốn xem kỉ hơn hãy xem 22 sơ đồ tuần tự trong quyển báo cáo ở chương 3
 ------------------------------------
 
 *phần 6: Đánh giá và hướng phát triển:
-- Hệ thống của e là một hệ thống nền tảng để mọi công nghệ liên quan đến elearning có thể dễ dàng tích hợp vào, e đã xem qua 44 đề tài luận văn 
-năm nay của các bạn khác, có rất nhiều đề tài có thể tích hợp vào hệ thống của e
+- Hệ thống của e là một hệ thống nền tảng để mọi công nghệ liên quan đến elearning có thể dễ dàng tích hợp vào
 ------------------------------------
 
-*phần 8: kết luận: 
+*phần 7: giới hạn đề tài và kết luận:
 - đề tài của e không dừng lại khi hoàn thành luận văn, e xem đây là dự án cá nhân mà e cực kì tâm huyết và muốn đầu tư cho nó hơn nữa với các đề xuất và hướng phát triển được nêu bên trên, e với thầy Phúc cũng đã có những trao đổi và định hướng về dự án này sau luận văn
-- hiện tại hệ thống chỉ chạy local, nhưng về sau e sẽ deploy lên, nếu có thầy cô trong khoa hoặc trường mình có nhu cầu dùng hệ thống của e để hỗ trợ cho việc giảng dạy, e sẽ cấp tài khoản giảng viên và mong thầy cô sẽ xây dựng các khóa học với nội dung chất lượng và sẵn test hệ thống giúp e luôn.
+- hiện tại hệ thống chỉ chạy local, nhưng về sau e sẽ deploy lên, e mong các thầy cô trong khoa hoặc trường mình có nhu cầu dùng hệ thống của e để hỗ trợ cho việc giảng dạy, e sẽ cấp tài khoản giảng viên và mong thầy cô sẽ xây dựng các khóa học với nội dung chất lượng và sẵn test hệ thống giúp e luôn.
 ------------------------------------

@@ -984,7 +984,7 @@ const AdminAcademicClasses: React.FC = () => {
                     <Box>
                       {academicClass.instructors?.map((instructor) => (
                         <Box key={instructor.id} sx={{ mb: 1 }}>
-                          <Typography variant="body2">
+                          <Typography variant="body2" fontWeight="bold">
                             {instructor?.instructor?.fullName || "N/A"}
                           </Typography>
                         </Box>

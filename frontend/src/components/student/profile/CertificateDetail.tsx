@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef } from "react";
 import {
   Dialog,
   DialogTitle,
@@ -16,6 +16,7 @@ import {
 } from "@mui/icons-material";
 import { useTheme } from "@mui/material/styles";
 import "../../../styles/fonts.css";
+import html2canvas from "html2canvas";
 
 interface CertificateDetailProps {
   open: boolean;
@@ -38,8 +39,19 @@ const CertificateDetail: React.FC<CertificateDetailProps> = ({
   certificate,
 }) => {
   const theme = useTheme();
+  const certificateRef = useRef<HTMLDivElement>(null);
 
   console.log("certificate", certificate);
+
+  const handleDownload = async () => {
+    if (certificateRef.current) {
+      const canvas = await html2canvas(certificateRef.current, { scale: 2 });
+      const link = document.createElement("a");
+      link.download = `certificate-${certificate.id}.png`;
+      link.href = canvas.toDataURL("image/png");
+      link.click();
+    }
+  };
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth>
@@ -56,6 +68,7 @@ const CertificateDetail: React.FC<CertificateDetailProps> = ({
         <Box sx={{ p: 2 }}>
           {/* Certificate Template */}
           <Box
+            ref={certificateRef}
             sx={{
               width: "100%",
               aspectRatio: "1.414/1",
@@ -331,13 +344,11 @@ const CertificateDetail: React.FC<CertificateDetailProps> = ({
               mt: 2,
             }}
           >
-            <Button variant="outlined" startIcon={<ShareIcon />} size="small">
-              Chia sẻ
-            </Button>
             <Button
               variant="contained"
               startIcon={<DownloadIcon />}
               size="small"
+              onClick={handleDownload}
             >
               Tải về
             </Button>

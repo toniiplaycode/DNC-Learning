@@ -58,13 +58,17 @@
             <mxPoint x="290" y="420" as="targetPoint" />
           </mxGeometry>
         </mxCell>
-        <mxCell id="32" value="Kiểm tra tài liệu không trống" style="rectangle;whiteSpace=wrap;html=1;fontStyle=1" parent="1" vertex="1">
+        <mxCell id="32" value="Tải file tài liệu học tập" style="rectangle;whiteSpace=wrap;html=1;fontStyle=1" parent="1" vertex="1">
           <mxGeometry x="500" y="220" width="180" height="40" as="geometry" />
         </mxCell>
-        <mxCell id="33" value="Tự động" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontStyle=1" parent="1" source="5" target="32" edge="1">
-          <mxGeometry width="50" height="50" relative="1" as="geometry">
-            <mxPoint x="440" y="170" as="sourcePoint" />
-            <mxPoint x="590" y="220" as="targetPoint" />
+        <mxCell id="33" value="Tự động bằng AI" style="edgeStyle=orthogonalEdgeStyle;rounded=0;orthogonalLoop=1;jettySize=auto;html=1;fontStyle=1" parent="1" edge="1">
+          <mxGeometry x="-0.2621" width="50" height="50" relative="1" as="geometry">
+            <mxPoint x="480.96190476190475" y="170.0285714285714" as="sourcePoint" />
+            <mxPoint x="591.0285714285715" y="220" as="targetPoint" />
+            <Array as="points">
+              <mxPoint x="591" y="170" />
+            </Array>
+            <mxPoint as="offset" />
           </mxGeometry>
         </mxCell>
         <mxCell id="35" value="Kiểm tra tài liệu" style="rhombus;whiteSpace=wrap;html=1;fontStyle=1" parent="1" vertex="1">

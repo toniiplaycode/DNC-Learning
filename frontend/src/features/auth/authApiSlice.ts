@@ -104,13 +104,24 @@ export const login = createAsyncThunk("auth/login", async (data: LoginData) => {
 
 // Đăng xuất
 export const logout = createAsyncThunk("auth/logout", async () => {
-  // Xóa token khỏi localStorage
+  // Lấy thông tin user từ localStorage
   const user = JSON.parse(localStorage.getItem("user") || "{}");
-  await api.post(`/auth/set-null-last-login/${user.id}`);
+
+  // Gọi API để set null last login (silent - không báo lỗi)
+  if (user.id) {
+    try {
+      await api.post(`/auth/set-null-last-login/${user.id}`);
+    } catch {
+      // Bỏ qua lỗi API - không cần log gì cả
+    }
+  }
+
+  // Xóa token khỏi localStorage
   localStorage.removeItem("token");
   localStorage.removeItem("refreshToken");
   localStorage.removeItem("user");
   localStorage.removeItem("saved_quiz_state");
+
   return null;
 });
 

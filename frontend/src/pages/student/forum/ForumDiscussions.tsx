@@ -16,8 +16,21 @@ import {
   Tab,
   CardMedia,
   Button,
+  CardActions,
+  Divider,
+  useTheme,
 } from "@mui/material";
-import { Search, ThumbUp, Comment } from "@mui/icons-material";
+import {
+  Search,
+  ThumbUp,
+  Comment,
+  Forum,
+  AccessTime,
+  Person,
+  Visibility,
+  KeyboardArrowRight,
+  Login,
+} from "@mui/icons-material";
 import { useNavigate } from "react-router-dom";
 import { useAppDispatch, useAppSelector } from "../../../app/hooks";
 import { fetchForums } from "../../../features/forums/forumsApiSlice";
@@ -25,9 +38,13 @@ import {
   selectAllForums,
   selectForumsStatus,
 } from "../../../features/forums/forumsSelectors";
-import { selectIsAuthenticated } from "../../../features/auth/authSelectors";
+import {
+  selectIsAuthenticated,
+  selectCurrentUser,
+} from "../../../features/auth/authSelectors";
 import CustomContainer from "../../../components/common/CustomContainer";
 import logo from "../../../assets/logo.png";
+import EmptyState from "../../../components/common/EmptyState";
 
 const ForumDiscussions = () => {
   const navigate = useNavigate();
@@ -35,6 +52,7 @@ const ForumDiscussions = () => {
   const forums = useAppSelector(selectAllForums);
   const status = useAppSelector(selectForumsStatus);
   const isAuthenticated = useAppSelector(selectIsAuthenticated);
+  const currentUser = useAppSelector(selectCurrentUser);
 
   const [tabValue, setTabValue] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
@@ -132,20 +150,20 @@ const ForumDiscussions = () => {
             flexDirection: "column",
             alignItems: "center",
             justifyContent: "center",
-            py: 8,
+            py: 5,
           }}
         >
-          <Typography
-            variant="h5"
-            textAlign="center"
-            color="text.secondary"
-            gutterBottom
-          >
-            Vui lòng đăng nhập để xem các diễn đàn thảo luận
-          </Typography>
+          <EmptyState
+            icon={<Forum />}
+            title="Vui lòng đăng nhập để xem các diễn đàn thảo luận"
+            description="Đăng nhập để tham gia thảo luận và chia sẻ kiến thức với cộng đồng học tập"
+            maxWidth={500}
+            height={400}
+          />
           <Button
             variant="contained"
             color="primary"
+            startIcon={<Login />}
             sx={{ mt: 3 }}
             onClick={() => navigate("/login")}
           >

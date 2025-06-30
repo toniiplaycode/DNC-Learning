@@ -1,26 +1,27 @@
+Các khóa học thêm đủ dữ liệu: Python, C#, Tin học Văn phòng
+
 ⏱ Demo tính năng cho người học chính quy (linh.phamthimai@gmail.com)
 - Đăng nhập hệ thống.
 - Trang chủ hiển thị tổng quan học tập.
-- Xem chương trình đào tạo theo học kỳ.
+- Xem chương trình đào tạo theo học kỳ. (các khóa học thuộc chương trình đào tạo đúng thời gian mới được truy cập, các khóa học chỉ dành cho SV thì HV không thể tham gia và ngược lại, khóa học dành cho cả hai thì tự do tham gia)
 - Làm bài tập và trắc nghiệm theo lớp (không cho đăng nhập 2 thiết bị khi đang làm trắc nghiệm, có thời gian bắt đầu làm bài).
-- Xem bảng điểm tại trang cá nhân.
 - Tham gia học trực tuyến qua Google Meet.
 - Chat cá nhân, chatBot, chat nhóm lớp để thảo luận.
 - Thông báo, tự động gửi mail khi có nội dung học tập, bài tập mới,...
 ⏱ Demo tính năng cho người học tự do (toan@gmail.com)
-- Đăng ký tài khoản học viên.
 - Xem danh sách khóa học.
-- Xem chi tiết nội dung khóa học. (có vài khóa học sẽ học thử, miễn phí , làm trắc nghiệm >= phần trăm điểm đạt tối thiểu mới được học tiếp)
+- Xem chi tiết nội dung khóa học. (có vài khóa học được học thử, miễn phí , làm trắc nghiệm >= phần trăm điểm đạt tối thiểu mới được học tiếp)
 	Số thẻ	4111111111111111
 	Tên	NGUYEN VAN A
 	Ngày hết hạn	01/26
 	Mã CVV	123
-- Trang cá nhân thanh toán.
 - Trang cá nhân chứng chỉ.
+- Trang cá nhân bảng điểm.
+- Trang cá nhân thanh toán.
 ⏱ Demo tính năng cho giảng viên (quanghieu@edu.vn)
 - Đăng nhập giảng viên.
 - Xem chương trình đào tạo.
-- Quản lý khóa học.
+- Quản lý khóa học (không thể xóa các khóa học thuộc chương trình đào tạo, xóa khóa học tự do thì được).
 - Quản lý nội dung khóa học.
 - Quản lý lớp học.
 - Quản lý người học.
@@ -37,6 +38,9 @@
 - Quản lý khóa học.
 - Quản lý giảng viên.
 - Quản lý lớp học.
+- Quản lý chứng chỉ.
 - Quản lý danh mục khóa học.
 - Quản lý lịch dạy giảng viên.
 - Quản lý thống kê.
+
+Demo email: giảng viên (toan13022017@gmail.com), học viên (toniimemories@gmail.com), học viên đăng ký khóa học "Lập trình website", làm bài trắc nghiệm

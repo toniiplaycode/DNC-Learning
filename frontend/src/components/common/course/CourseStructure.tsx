@@ -255,7 +255,20 @@ const CourseStructure: React.FC<CourseStructureProps> = ({
                   )}
                 </Box>
               }
-              secondary={section.description}
+              secondary={
+                <span
+                  style={{
+                    display: "-webkit-box",
+                    WebkitLineClamp: 2,
+                    WebkitBoxOrient: "vertical",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "normal",
+                  }}
+                >
+                  {section.description}
+                </span>
+              }
             />
             {expandedSections[section.id] ? <ExpandLess /> : <ExpandMore />}
           </ListItemButton>

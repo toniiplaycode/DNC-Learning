@@ -165,8 +165,24 @@ const TeachingSchedules = () => {
       };
     }) as TeachingScheduleWithAttendance[];
 
-    // Sắp xếp mới nhất lên đầu
-    processedSchedules.sort((a, b) => b.date.getTime() - a.date.getTime());
+    // Sắp xếp theo thứ tự ưu tiên: đang diễn ra > sắp tới > đã qua
+    processedSchedules.sort((a, b) => {
+      const aInProgress = isScheduleInProgress(a);
+      const bInProgress = isScheduleInProgress(b);
+
+      // Ưu tiên buổi học đang diễn ra lên đầu
+      if (aInProgress && !bInProgress) return -1;
+      if (!aInProgress && bInProgress) return 1;
+
+      // Nếu cả hai đều đang diễn ra hoặc không đang diễn ra, sắp xếp theo thời gian
+      if (aInProgress && bInProgress) {
+        // Nếu đều đang diễn ra, sắp xếp theo thời gian bắt đầu (sớm hơn lên đầu)
+        return a.date.getTime() - b.date.getTime();
+      }
+
+      // Nếu không đang diễn ra, sắp xếp theo thời gian (mới nhất lên đầu)
+      return b.date.getTime() - a.date.getTime();
+    });
 
     const upcomingSchedules = processedSchedules.filter(
       (schedule) =>
@@ -388,9 +404,9 @@ const TeachingSchedules = () => {
       return null;
     }
 
-    let color;
-    let label;
-    let icon;
+    let color: "success" | "warning" | "error" | "info";
+    let label: string;
+    let icon: React.ReactElement;
 
     switch (schedule.userAttendance.status) {
       case AttendanceStatus.PRESENT:
@@ -422,16 +438,17 @@ const TeachingSchedules = () => {
         <Chip
           icon={icon}
           label={label}
-          color={color}
+          color={color as any}
           size="small"
           sx={{ fontWeight: "medium" }}
         />
 
-        {schedule.userAttendance.durationMinutes > 0 && (
-          <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
-            • {schedule.userAttendance.durationMinutes} phút
-          </Typography>
-        )}
+        {schedule.userAttendance.durationMinutes !== undefined &&
+          schedule.userAttendance.durationMinutes > 0 && (
+            <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+              • {schedule.userAttendance.durationMinutes} phút
+            </Typography>
+          )}
 
         {/* Display join and leave times */}
         <Box sx={{ mt: 0.5 }}>
@@ -1055,12 +1072,8 @@ const TeachingSchedules = () => {
                 </Stack>
 
                 {upcoming.length > 2 && (
-                  <Button
-                    sx={{ mt: 2 }}
-                    endIcon={<ArrowForwardIos fontSize="small" />}
-                    onClick={() => setTabValue(0)}
-                  >
-                    Xem tất cả {upcoming.length} buổi học
+                  <Button sx={{ mt: 2 }} onClick={() => setTabValue(0)}>
+                    ........
                   </Button>
                 )}
               </Box>

@@ -44,6 +44,7 @@ import {
   AutoStories,
   LockOpen,
   Lock,
+  InfoOutlined,
 } from "@mui/icons-material";
 import { useParams, useNavigate } from "react-router-dom";
 import CustomContainer from "../../components/common/CustomContainer";
@@ -65,6 +66,8 @@ import { selectStudentAcademicCourses } from "../../features/users/usersSelector
 import { alpha } from "@mui/material/styles";
 import { EnrollmentStatus } from "../../types/enrollment.types";
 import { toast } from "react-toastify";
+import { selectStudentAcademicProgram } from "../../features/programs/programsSelectors";
+import { fetchStudentAcademicProgram } from "../../features/programs/programsSlice";
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -92,6 +95,7 @@ const CourseDetail: React.FC = () => {
   const userEnrollments = useAppSelector(selectUserEnrollments);
   const studentAcademicCourses = useAppSelector(selectStudentAcademicCourses);
   const currentInstructor = useAppSelector(selectCurrentInstructor);
+  const studentAcademicProgram = useAppSelector(selectStudentAcademicProgram);
   const [isEnrolled, setIsEnrolled] = useState(false);
   const [courseProgress, setCourseProgress] = useState(0);
   const [expandedSections, setExpandedSections] = useState<number[]>([0]);
@@ -104,6 +108,14 @@ const CourseDetail: React.FC = () => {
     if (currentUser?.id) {
       dispatch(fetchUserEnrollments(Number(currentUser?.id)));
       dispatch(fetchStudentAcademicCourses(currentUser.id));
+    }
+    if (
+      currentUser?.role === "student_academic" &&
+      currentUser?.userStudentAcademic?.id
+    ) {
+      dispatch(
+        fetchStudentAcademicProgram(Number(currentUser.userStudentAcademic.id))
+      );
     }
   }, [dispatch, id, currentUser, navigate]);
 
@@ -141,6 +153,39 @@ const CourseDetail: React.FC = () => {
       dispatch(fetchInstructorById(currentCourse?.instructor?.id));
     }
   }, [currentCourse, id]);
+
+  // Kiểm tra khóa học có bị khóa không (nếu thuộc chương trình đào tạo và chưa đến ngày mở)
+  const isCourseLocked = () => {
+    // Chỉ khóa với sinh viên học thuật
+    if (
+      currentUser?.role !== "student_academic" ||
+      !studentAcademicProgram?.programCourses ||
+      !currentCourse?.id
+    ) {
+      return false;
+    }
+
+    // Tìm khóa học trong chương trình đào tạo
+    const programCourse = studentAcademicProgram.programCourses.find(
+      (pc) => pc.course?.id === currentCourse.id
+    );
+
+    if (!programCourse) {
+      console.log("Course not found in program");
+      return false;
+    }
+
+    // Nếu chưa đến ngày mở thì khóa
+    if (programCourse.start_time) {
+      const start = new Date(programCourse.start_time);
+      const now = new Date();
+      const locked = start > now;
+
+      return locked;
+    }
+
+    return false;
+  };
 
   const handleSectionToggle = (sectionId: number) => {
     setExpandedSections((prev) =>
@@ -524,7 +569,30 @@ const CourseDetail: React.FC = () => {
                                   </Box>
                                 }
                               />
-                              {true && (
+                              {lesson.isFree === "1" ||
+                              lesson.isFree === 1 ||
+                              lesson.isFree === true ? (
+                                <Typography
+                                  sx={{
+                                    transformOrigin: "center",
+                                    background:
+                                      "linear-gradient(135deg, #4caf50 0%, #45a049 100%)",
+                                    color: "white",
+                                    padding: "1px 2px",
+                                    borderRadius: "6px",
+                                    fontSize: "0.65rem",
+                                    fontWeight: 700,
+                                    letterSpacing: "0.5px",
+                                    textTransform: "uppercase",
+                                    boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                                    border: "1px solid rgba(255,255,255,0.3)",
+                                    textShadow: "0 1px 2px rgba(0,0,0,0.3)",
+                                  }}
+                                  variant="caption"
+                                >
+                                  Free
+                                </Typography>
+                              ) : (
                                 <Lock color="error" sx={{ fontSize: 20 }} />
                               )}
                             </ListItem>
@@ -537,45 +605,54 @@ const CourseDetail: React.FC = () => {
               </Card>
 
               {/* Add What You'll Learn section */}
-              <Card sx={{ mb: 4 }}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Bạn sẽ học được gì
-                  </Typography>
-                  <Grid container spacing={2}>
-                    {currentCourse?.learned?.split("\n").map((item, index) => (
-                      <Grid item xs={12} sm={6} key={index}>
-                        <Box sx={{ display: "flex", gap: 1 }}>
-                          <CheckCircle color="success" sx={{ mt: 0.5 }} />
-                          <Typography>{item}</Typography>
-                        </Box>
-                      </Grid>
-                    ))}
-                  </Grid>
-                </CardContent>
-              </Card>
+
+              {currentCourse?.learned?.length > 0 && (
+                <Card sx={{ my: 1 }}>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Bạn sẽ học được gì
+                    </Typography>
+                    <Grid container spacing={2}>
+                      {currentCourse?.learned
+                        ?.split("\n")
+                        .map((item, index) => (
+                          <Grid item xs={12} sm={6} key={index}>
+                            <Box sx={{ display: "flex", gap: 1 }}>
+                              <CheckCircle color="success" sx={{ mt: 0.5 }} />
+                              <Typography>{item}</Typography>
+                            </Box>
+                          </Grid>
+                        ))}
+                    </Grid>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Add Requirements section */}
-              <Card sx={{ mb: 4 }}>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Yêu cầu
-                  </Typography>
-                  <List>
-                    {currentCourse?.required?.split("\n").map((req, index) => (
-                      <ListItem key={index} sx={{ px: 0 }}>
-                        <ListItemIcon>
-                          <CheckCircle color="primary" />
-                        </ListItemIcon>
-                        <ListItemText primary={req} />
-                      </ListItem>
-                    ))}
-                  </List>
-                </CardContent>
-              </Card>
+              {currentCourse?.required?.length > 0 && (
+                <Card sx={{ my: 1 }}>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Yêu cầu
+                    </Typography>
+                    <List>
+                      {currentCourse?.required
+                        ?.split("\n")
+                        .map((req, index) => (
+                          <ListItem key={index} sx={{ px: 0 }}>
+                            <ListItemIcon>
+                              <CheckCircle color="primary" />
+                            </ListItemIcon>
+                            <ListItemText primary={req} />
+                          </ListItem>
+                        ))}
+                    </List>
+                  </CardContent>
+                </Card>
+              )}
 
               {/* Add Certificate section */}
-              <Card sx={{ mb: 4 }}>
+              <Card sx={{ my: 1 }}>
                 <CardContent>
                   <Typography variant="h6" gutterBottom>
                     Chứng chỉ
@@ -1042,6 +1119,7 @@ const CourseDetail: React.FC = () => {
                 </Grid>
               </Box>
 
+              {/* Nút đăng ký/học, áp dụng disabled nếu bị khóa */}
               {currentCourse &&
               currentCourse?.price == 0 &&
               currentCourse?.for !== "student_academic" &&
@@ -1075,8 +1153,11 @@ const CourseDetail: React.FC = () => {
                     }
                   }}
                   sx={{ mb: 2 }}
+                  disabled={isCourseLocked()}
                 >
-                  Đăng ký miễn phí
+                  {isCourseLocked()
+                    ? "Chưa đến thời gian mở"
+                    : "Đăng ký miễn phí"}
                 </Button>
               ) : (
                 <Button
@@ -1100,10 +1181,13 @@ const CourseDetail: React.FC = () => {
                     !canEnroll() ||
                     (currentCourse?.for === "student_academic" &&
                       currentUser?.role === "student_academic" &&
-                      !isEnrolled)
+                      !isEnrolled) ||
+                    isCourseLocked()
                   }
                 >
-                  {isEnrolled
+                  {isCourseLocked()
+                    ? "Chưa đến thời gian mở"
+                    : isEnrolled
                     ? "Tiếp tục học"
                     : currentCourse?.for === "student_academic" &&
                       currentUser?.role === "student_academic" &&
@@ -1113,6 +1197,39 @@ const CourseDetail: React.FC = () => {
                     ? "Đăng ký ngay"
                     : "Không có quyền đăng ký"}
                 </Button>
+              )}
+
+              {/* Thông báo nếu bị khóa */}
+              {isCourseLocked() && (
+                <Box sx={{ textAlign: "center" }}>
+                  <Typography
+                    color="error"
+                    fontWeight={600}
+                    variant="body1"
+                    sx={{ mb: 1 }}
+                  >
+                    Khóa học này sẽ mở vào{" "}
+                    {(() => {
+                      const programCourse =
+                        studentAcademicProgram?.programCourses?.find(
+                          (pc) => pc.course?.id === currentCourse?.id
+                        );
+                      return programCourse?.start_time
+                        ? new Date(programCourse.start_time).toLocaleDateString(
+                            "vi-VN"
+                          )
+                        : "";
+                    })()}
+                  </Typography>
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    onClick={() => navigate("/academic-program")}
+                    sx={{ mt: 1, mb: 2 }}
+                  >
+                    Xem chương trình đào tạo
+                  </Button>
+                </Box>
               )}
 
               {(!isEnrolled || // Kiểm tra enrollment trong khóa học thuật
@@ -1127,20 +1244,26 @@ const CourseDetail: React.FC = () => {
                       break;
                     }
                   }
-                  return firstLesson && firstLesson.isFree == "1";
-                })() && (
-                  <Button
-                    variant="contained"
-                    fullWidth
-                    size="large"
-                    sx={{ mb: 2 }}
-                    onClick={() => {
-                      navigate(`/course/${id}/learn`);
-                    }}
-                  >
-                    Học thử khóa học
-                  </Button>
-                )}
+                  // Nếu bị khóa thì không cho học thử
+                  if (
+                    isCourseLocked() ||
+                    currentCourse?.for == "student_academic"
+                  )
+                    return null;
+                  return firstLesson && firstLesson.isFree == "1" ? (
+                    <Button
+                      variant="contained"
+                      fullWidth
+                      size="large"
+                      sx={{ mb: 2 }}
+                      onClick={() => {
+                        navigate(`/course/${id}/learn`);
+                      }}
+                    >
+                      Học thử khóa học
+                    </Button>
+                  ) : null;
+                })()}
 
               {!canEnroll() && (
                 <Typography

@@ -317,6 +317,14 @@ const InstructorAttendances = () => {
     };
   };
 
+  // Helper function to check if a schedule is in progress
+  const isScheduleInProgress = (schedule: TeachingSchedule) => {
+    const now = new Date();
+    const startTime = new Date(schedule.startTime);
+    const endTime = new Date(schedule.endTime);
+    return now >= startTime && now <= endTime;
+  };
+
   const handleEditNote = (attendance: any, note: string) => {
     setEditingAttendance(attendance);
     setNoteValue(note || "");
@@ -577,23 +585,73 @@ const InstructorAttendances = () => {
 
     // Sắp xếp
     if (sortBy === "date_desc") {
-      filtered = filtered.sort(
-        (a, b) =>
+      filtered = filtered.sort((a, b) => {
+        const aInProgress = isScheduleInProgress(a);
+        const bInProgress = isScheduleInProgress(b);
+
+        // Ưu tiên buổi học đang diễn ra lên đầu
+        if (aInProgress && !bInProgress) return -1;
+        if (!aInProgress && bInProgress) return 1;
+
+        // Nếu cả hai đều đang diễn ra hoặc không đang diễn ra, sắp xếp theo thời gian
+        if (aInProgress && bInProgress) {
+          // Nếu đều đang diễn ra, sắp xếp theo thời gian bắt đầu (sớm hơn lên đầu)
+          return (
+            new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+          );
+        }
+
+        // Nếu không đang diễn ra, sắp xếp theo thời gian (mới nhất lên đầu)
+        return (
           new Date(b.startTime).getTime() - new Date(a.startTime).getTime()
-      );
+        );
+      });
     } else if (sortBy === "date_asc") {
-      filtered = filtered.sort(
-        (a, b) =>
+      filtered = filtered.sort((a, b) => {
+        const aInProgress = isScheduleInProgress(a);
+        const bInProgress = isScheduleInProgress(b);
+
+        // Ưu tiên buổi học đang diễn ra lên đầu
+        if (aInProgress && !bInProgress) return -1;
+        if (!aInProgress && bInProgress) return 1;
+
+        // Nếu cả hai đều đang diễn ra hoặc không đang diễn ra, sắp xếp theo thời gian
+        if (aInProgress && bInProgress) {
+          // Nếu đều đang diễn ra, sắp xếp theo thời gian bắt đầu (sớm hơn lên đầu)
+          return (
+            new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+          );
+        }
+
+        // Nếu không đang diễn ra, sắp xếp theo thời gian (cũ nhất lên đầu)
+        return (
           new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
-      );
+        );
+      });
     } else if (sortBy === "student_desc") {
-      filtered = filtered.sort(
-        (a, b) => (b.attendances?.length || 0) - (a.attendances?.length || 0)
-      );
+      filtered = filtered.sort((a, b) => {
+        const aInProgress = isScheduleInProgress(a);
+        const bInProgress = isScheduleInProgress(b);
+
+        // Ưu tiên buổi học đang diễn ra lên đầu
+        if (aInProgress && !bInProgress) return -1;
+        if (!aInProgress && bInProgress) return 1;
+
+        // Nếu cả hai đều đang diễn ra hoặc không đang diễn ra, sắp xếp theo số sinh viên
+        return (b.attendances?.length || 0) - (a.attendances?.length || 0);
+      });
     } else if (sortBy === "student_asc") {
-      filtered = filtered.sort(
-        (a, b) => (a.attendances?.length || 0) - (b.attendances?.length || 0)
-      );
+      filtered = filtered.sort((a, b) => {
+        const aInProgress = isScheduleInProgress(a);
+        const bInProgress = isScheduleInProgress(b);
+
+        // Ưu tiên buổi học đang diễn ra lên đầu
+        if (aInProgress && !bInProgress) return -1;
+        if (!aInProgress && bInProgress) return 1;
+
+        // Nếu cả hai đều đang diễn ra hoặc không đang diễn ra, sắp xếp theo số sinh viên
+        return (a.attendances?.length || 0) - (b.attendances?.length || 0);
+      });
     }
 
     return filtered;
